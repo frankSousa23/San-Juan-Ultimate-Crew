@@ -89,6 +89,36 @@ Los prototipos `.txt` de diseño fueron retirados del repositorio. Consulta `doc
   - `GET /api/messages?channelId=&limit=30&before=ts&since=ts` — lista de mensajes (orden desc en API).
   - `POST /api/messages { channelId, authorId?, content }` — crea mensaje.
 
+## Verificación rápida (smoke tests)
+
+- Preparación:
+  - Copia `.env` de ejemplo y levanta Postgres con Docker (si no lo tienes activo):
+
+```powershell
+cmd /c copy /Y apps\api\.env.example apps\api\.env
+docker compose up -d
+cmd /c npm --workspace apps/api run prisma:generate
+cmd /c npm --workspace apps/api run prisma:migrate
+cmd /c npm --workspace apps/api run prisma:seed
+```
+
+- Ejecutar API y Web en dev:
+
+```powershell
+cmd /c npm run dev
+```
+
+- Probar endpoints clave (API en 4000 por defecto del .env.example):
+
+```powershell
+node -e "(async()=>{const axios=require('axios');const ok=a=>a.status>=200&&a.status<300;const base='http://localhos
+t:4000';const ping=async(p)=>{try{const r=await axios.get(base+p);console.log(p,ok(r)?'OK':r.status)}catch(e){consol
+e.log(p,'ERR',e?.response?.status||e.code)}};for(const p of ['/health','/api/players','/api/events','/api/channels','
+/api/transactions','/api/stats','/api/injuries','/api/rivals','/api/plays'])await ping(p)})()"
+```
+
+Resultados esperados: todos en OK.
+
 ## Flujo de trabajo sugerido
 
 - Ramas: `main`, `dev`, feature branches `feat/<modulo>`
