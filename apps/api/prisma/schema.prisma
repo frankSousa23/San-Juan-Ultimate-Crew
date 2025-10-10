@@ -1,0 +1,219 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PlayerPosition {
+  HANDLER
+  CUTTER
+  HYBRID
+}
+
+enum PlayerStatus {
+  ACTIVE
+  INJURED
+  INACTIVE
+}
+
+enum EventType {
+  TRAINING
+  TOURNAMENT
+  SOCIAL
+  WORKSHOP
+}
+
+enum EventStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+// Injuries
+enum InjurySeverity {
+  MILD
+  MODERATE
+  SEVERE
+}
+
+enum InjuryStatus {
+  ACTIVE
+  RECOVERING
+  RESOLVED
+}
+
+// Plays
+enum PlayCategory {
+  OFFENSE
+  DEFENSE
+  DRILL
+}
+
+// Finance
+enum AccountType {
+  CASH
+  BANK
+  MOBILE
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+model Player {
+  id         Int            @id @default(autoincrement())
+  name       String
+  number     Int             @unique
+  position   PlayerPosition
+  status     PlayerStatus    @default(ACTIVE)
+  heightCm   Int?
+  experience String?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  messages   Message[]
+  attendances Attendance[]
+  eventParticipants EventParticipant[]
+  injuries   Injury[]
+}
+
+model Event {
+  id          Int           @id @default(autoincrement())
+  title       String
+  description String?
+  type        EventType
+  status      EventStatus   @default(UPCOMING)
+  location    String?
+  startsAt    DateTime
+  endsAt      DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  participants EventParticipant[]
+  attendances  Attendance[]
+  channel      Channel?
+}
+
+model EventParticipant {
+  event   Event @relation(fields: [eventId], references: [id])
+  eventId Int
+  player  Player @relation(fields: [playerId], references: [id])
+  playerId Int
+  role    String?
+  status  String? // confirmed, tentative, declined
+
+  @@id([eventId, playerId])
+}
+
+model Channel {
+  id        Int       @id @default(autoincrement())
+  name      String
+  eventId   Int?      @unique
+  createdAt DateTime  @default(now())
+  messages  Message[]
+
+  event     Event?    @relation(fields: [eventId], references: [id])
+}
+
+model Message {
+  id        Int       @id @default(autoincrement())
+  channel   Channel   @relation(fields: [channelId], references: [id])
+  channelId Int
+  author    Player?   @relation(fields: [authorId], references: [id])
+  authorId  Int?
+  content   String
+  createdAt DateTime  @default(now())
+}
+
+model Attendance {
+  id        Int      @id @default(autoincrement())
+  player    Player   @relation(fields: [playerId], references: [id])
+  playerId  Int
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   Int
+  status    String   // present, absent, late
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@unique([playerId, eventId])
+}
+
+model Account {
+  id        Int          @id @default(autoincrement())
+  name      String
+  type      AccountType
+  createdAt DateTime      @default(now())
+  transactions Transaction[]
+}
+
+model Category {
+  id        Int             @id @default(autoincrement())
+  name      String
+  kind      TransactionType
+  createdAt DateTime         @default(now())
+  transactions Transaction[]
+}
+
+model Transaction {
+  id          Int             @id @default(autoincrement())
+  account     Account         @relation(fields: [accountId], references: [id])
+  accountId   Int
+  category    Category?       @relation(fields: [categoryId], references: [id])
+  categoryId  Int?
+  type        TransactionType
+  amountCents Int
+  occurredAt  DateTime
+  description String?
+  createdAt   DateTime        @default(now())
+
+  @@index([occurredAt])
+  @@index([accountId, occurredAt])
+}
+
+model Injury {
+  id          Int            @id @default(autoincrement())
+  player      Player         @relation(fields: [playerId], references: [id])
+  playerId    Int
+  type        String
+  severity    InjurySeverity
+  status      InjuryStatus   @default(ACTIVE)
+  startDate   DateTime
+  endDate     DateTime?
+  description String?
+  createdAt   DateTime       @default(now())
+
+  @@index([playerId])
+  @@index([status])
+  @@index([severity])
+}
+
+model Rival {
+  id            Int       @id @default(autoincrement())
+  name          String
+  strengths     String?
+  weaknesses    String?
+  lastPlayedAt  DateTime?
+  notes         String?
+  createdAt     DateTime  @default(now())
+
+  @@index([name])
+}
+
+model Play {
+  id          Int          @id @default(autoincrement())
+  name        String
+  category    PlayCategory
+  description String?
+  diagramUrl  String?
+  content     String?      // Markdown o JSON
+  createdAt   DateTime     @default(now())
+
+  @@index([category])
+  @@index([name])
+}

@@ -1,0 +1,236 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { channelsApi, messagesApi } from '../lib/api'
+import { Channel, Message } from '../types/communications'
+
+export default function Communications() {
+  const [channels, setChannels] = useState<Channel[]>([])
+  const [activeId, setActiveId] = useState<number | null>(null)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [loading, setLoading] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [composer, setComposer] = useState('')
+  const pollRef = useRef<number | null>(null)
+  const bottomRef = useRef<HTMLDivElement | null>(null)
+  const [newChannelOpen, setNewChannelOpen] = useState(false)
+  const [newChannelName, setNewChannelName] = useState('')
+  const [params] = useSearchParams()
+  const listRef = useRef<HTMLDivElement | null>(null)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingOlder, setLoadingOlder] = useState(false)
+  const [atBottom, setAtBottom] = useState(true)
+  const latestAtRef = useRef<string | undefined>(undefined)
+
+  useEffect(() => {
+    channelsApi.list().then(setChannels).catch(() => setError('No se pudieron cargar los canales'))
+  }, [])
+
+  useEffect(() => {
+    // deep link: ?channelId=123
+    const cid = params.get('channelId')
+    if (cid) setActiveId(Number(cid))
+  }, [params])
+
+  useEffect(() => {
+    if (!activeId) return
+    setLoading(true)
+    messagesApi.list(activeId, { limit: 30 }).then(data => {
+      // Server returns desc; show asc in UI
+      const asc = [...data].reverse()
+      setMessages(asc)
+      setHasMore(data.length === 30)
+      latestAtRef.current = asc.length ? asc[asc.length - 1].createdAt : undefined
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'auto' }), 0)
+    }).catch(() => setError('No se pudieron cargar los mensajes')).finally(() => setLoading(false))
+    // polling new messages
+    if (pollRef.current) window.clearInterval(pollRef.current)
+    pollRef.current = window.setInterval(async () => {
+      try {
+        const since = latestAtRef.current
+        const chunk = await messagesApi.list(activeId, { since })
+        if (chunk.length) {
+          // chunk is desc order; append reversed
+          const asc = [...chunk].reverse()
+          setMessages(prev => {
+            const next = [...prev, ...asc]
+            latestAtRef.current = next.length ? next[next.length - 1].createdAt : since
+            return next
+          })
+          setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 0)
+        }
+      } catch { /* ignore */ }
+    }, 8000)
+    return () => { if (pollRef.current) window.clearInterval(pollRef.current) }
+  }, [activeId])
+
+  useEffect(() => {
+    latestAtRef.current = messages.length ? messages[messages.length - 1].createdAt : undefined
+  }, [messages])
+
+  useEffect(() => {
+    const el = listRef.current
+    if (!el) return
+    const onScroll = () => {
+      const threshold = 24
+      const distance = el.scrollHeight - el.scrollTop - el.clientHeight
+      setAtBottom(distance <= threshold)
+    }
+    onScroll()
+    el.addEventListener('scroll', onScroll)
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [listRef, messages])
+
+  const loadOlder = async () => {
+    if (!activeId || loadingOlder || messages.length === 0) return
+    setLoadingOlder(true)
+    const oldest = messages[0]
+    const el = listRef.current
+    const prevHeight = el ? el.scrollHeight : 0
+    try {
+      const chunk = await messagesApi.list(activeId, { before: oldest.createdAt, limit: 30 })
+      const asc = [...chunk].reverse()
+      setMessages(prev => [...asc, ...prev])
+      setHasMore(chunk.length === 30)
+      setTimeout(() => {
+        if (el) {
+          const newHeight = el.scrollHeight
+          el.scrollTop = newHeight - prevHeight
+        }
+      }, 0)
+    } catch {
+      // ignore
+    } finally {
+      setLoadingOlder(false)
+    }
+  }
+
+  const activeChannel = useMemo(() => channels.find(c => c.id === activeId) || null, [channels, activeId])
+
+  const send = async () => {
+    if (!activeId || !composer.trim()) return
+    setSending(true)
+    const optimistic: Message = {
+      id: Math.random(),
+      channelId: activeId,
+      content: composer,
+      createdAt: new Date().toISOString(),
+      authorId: undefined,
+    }
+    setMessages(prev => [...prev, optimistic])
+    setComposer('')
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 0)
+    try {
+      const real = await messagesApi.create({ channelId: activeId, content: optimistic.content })
+      setMessages(prev => prev.map(m => (m.id === optimistic.id ? real : m)))
+    } catch {
+      setMessages(prev => prev.filter(m => m.id !== optimistic.id))
+      alert('No se pudo enviar el mensaje')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <div className="h-full flex flex-col">
+      <h2 className="text-2xl font-bold text-gray-800 mb-4">Comunicaciones</h2>
+      <div className="flex-1 grid grid-cols-12 gap-4 min-h-[600px]">
+        {/* Channels list */}
+        <div className="col-span-12 md:col-span-3 bg-white rounded-lg shadow p-3 flex flex-col">
+          <div className="flex items-center justify-between mb-2">
+            <div className="font-semibold text-gray-700">Canales</div>
+            <button onClick={() => setNewChannelOpen(true)} className="text-sm text-purple-700 hover:underline">Nuevo</button>
+          </div>
+          <div className="overflow-auto divide-y">
+            {channels.map(c => (
+              <button key={c.id} className={`w-full text-left px-2 py-2 ${activeId === c.id ? 'bg-purple-50' : ''}`} onClick={() => setActiveId(c.id)}>
+                <div className="font-medium text-gray-800 truncate">{c.name}</div>
+                <div className="text-xs text-gray-500">{c._count?.messages ?? 0} mensajes</div>
+              </button>
+            ))}
+            {channels.length === 0 && <div className="text-gray-500 text-sm p-2">No hay canales.</div>}
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="col-span-12 md:col-span-9 bg-white rounded-lg shadow flex flex-col">
+          <div className="border-b px-4 py-2 flex items-center justify-between">
+            <div className="font-semibold text-gray-800">{activeChannel?.name || 'Selecciona un canal'}</div>
+          </div>
+          <div ref={listRef} className="flex-1 overflow-auto px-4 py-3 space-y-2 relative">
+            {hasMore && (
+              <div className="flex justify-center">
+                <button disabled={loadingOlder} onClick={loadOlder} className="text-xs text-gray-600 hover:underline disabled:opacity-60">
+                  {loadingOlder ? 'Cargando...' : 'Cargar mensajes anteriores'}
+                </button>
+              </div>
+            )}
+            {loading && <div className="text-gray-500">Cargando...</div>}
+            {!loading && messages.length === 0 && activeChannel && <div className="text-gray-500">Sin mensajes aún.</div>}
+            {messages.map(m => (
+              <div key={m.id} className="flex">
+                <div className="bg-gray-100 text-gray-800 px-3 py-2 rounded-lg max-w-[80%]">{m.content}</div>
+              </div>
+            ))}
+            <div ref={bottomRef} />
+            {!atBottom && messages.length > 0 && (
+              <button
+                onClick={() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                className="absolute right-4 bottom-4 bg-purple-600 text-white text-xs px-3 py-2 rounded-full shadow-lg hover:bg-purple-700"
+              >Ir al final</button>
+            )}
+          </div>
+          <div className="border-t p-3 flex gap-2">
+            <input
+              value={composer}
+              onChange={e => setComposer(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
+              disabled={!activeId || sending}
+              placeholder={activeId ? 'Escribe un mensaje...' : 'Selecciona un canal para escribir'}
+              className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+            <button onClick={send} disabled={!activeId || sending || !composer.trim()} className="bg-purple-600 text-white px-4 py-2 rounded-lg disabled:opacity-60">Enviar</button>
+          </div>
+        </div>
+      </div>
+      {error && <div className="text-sm text-red-600 mt-2">{error}</div>}
+
+      {newChannelOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setNewChannelOpen(false)}>
+          <div className="bg-white rounded-xl max-w-sm w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4">
+              <div className="text-lg font-bold">Crear Canal</div>
+            </div>
+            <div className="p-4 space-y-3">
+              <input
+                autoFocus
+                value={newChannelName}
+                onChange={e => setNewChannelName(e.target.value)}
+                placeholder="Nombre del canal"
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <div className="flex gap-2">
+                <button
+                  className="flex-1 bg-purple-600 text-white py-2 rounded-lg disabled:opacity-60"
+                  disabled={!newChannelName.trim()}
+                  onClick={async () => {
+                    try {
+                      const ch = await channelsApi.create({ name: newChannelName.trim() })
+                      setChannels(prev => [ch, ...prev])
+                      setNewChannelName('')
+                      setNewChannelOpen(false)
+                      setActiveId(ch.id)
+                    } catch (e: any) {
+                      alert('No se pudo crear el canal: ' + (e?.response?.data?.error || ''))
+                    }
+                  }}
+                >Crear</button>
+                <button className="flex-1 bg-gray-100 text-gray-800 py-2 rounded-lg" onClick={() => setNewChannelOpen(false)}>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

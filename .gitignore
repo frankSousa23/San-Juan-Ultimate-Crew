@@ -1,0 +1,32 @@
+# Node
+node_modules/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/
+
+# Build outputs
+**/dist/
+**/build/
+/.turbo/
+/.next/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Editor
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Prisma
+**/prisma/migrations/
+
+# Design prototypes (removed before first commit)
+/*.txt
+
+# Coverage
+coverage/
