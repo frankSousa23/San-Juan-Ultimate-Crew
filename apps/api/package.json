@@ -12,7 +12,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts",
     "lint": "echo \"no lint configured\"",
-    "smoke:finance": "tsx scripts/smoke-finance.ts"
+    "smoke:finance": "tsx scripts/smoke-finance.ts",
+    "smoke:e2e": "tsx scripts/smoke-e2e.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.17.0",

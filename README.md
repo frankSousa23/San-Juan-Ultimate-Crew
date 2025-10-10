@@ -119,6 +119,59 @@ e.log(p,'ERR',e?.response?.status||e.code)}};for(const p of ['/health','/api/pla
 
 Resultados esperados: todos en OK.
 
+## Chequeo de flujo completo (E2E) y estabilidad
+
+Este proyecto incluye un smoke E2E que recorre el flujo completo y limpia datos de prueba al final.
+
+1) Health: verifica `/health` hasta que la API esté lista.
+2) Players: crea un jugador.
+3) Events: crea un evento.
+4) Attendance: registra asistencia del jugador al evento.
+5) Channels/Messages: crea canal vinculado al evento y publica un mensaje.
+6) Finanzas: crea categoría, cuenta y transacción.
+7) Rivals/Plays/Injuries: crea un rival, una jugada y una lesión; luego actualiza la lesión.
+8) Cleanup: elimina los registros creados para no ensuciar la DB.
+
+Ejecución local (PowerShell):
+
+```powershell
+# Asegúrate que la API esté en 4000 (por defecto)
+cmd /c npm --workspace apps/api run start
+
+# En otra terminal: correr el smoke E2E (JS plano)
+node apps\api\scripts\smoke-e2e.js
+```
+
+Salida esperada (resumen):
+
+```text
+SMOKE_E2E_SUMMARY
+1) /health: 200
+2) player: { id, number }
+3) event: { id }
+4) attendance: { id, status }
+5) channel: { id }
+6) message: { id }
+7) finance: { txn }
+8) rival: { id }
+9) play: { id }
+10) injury: { id, status }
+11) injury-update: { id, status }
+12) cleanup: OK
+```
+
+Notas de estabilidad:
+
+- Ports: API por defecto en 4000; Web consume `VITE_API_URL` o fallback a 4000.
+- Prisma en Windows: si aparece un EPERM sobre `query_engine-windows.dll.node`, eliminar el archivo y regenerar:
+
+```powershell
+cmd /c del /F /Q "node_modules\.prisma\client\query_engine-windows.dll.node"
+cmd /c npm --workspace apps/api run prisma:generate
+```
+
+- Docker: si cambias puertos de Postgres, actualiza `DATABASE_URL` en `apps/api/.env`.
+
 ## Flujo de trabajo sugerido
 
 - Ramas: `main`, `dev`, feature branches `feat/<modulo>`

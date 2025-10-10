@@ -6,7 +6,7 @@ import { AttendanceRecord, UpsertAttendanceInput } from '../types/attendance'
 import { Account, Category, TransactionItem, TransactionList, FinanceSummary, CreateAccountInput, CreateCategoryInput, CreateTransactionInput, UpdateTransactionInput } from '../types/finance'
 import { PlayItem, CreatePlayInput, UpdatePlayInput } from '../types/plays'
 
-const baseURL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4001'
+const baseURL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000'
 
 export const http = axios.create({ baseURL })
 
