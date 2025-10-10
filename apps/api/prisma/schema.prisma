@@ -101,9 +101,9 @@ model Event {
 }
 
 model EventParticipant {
-  event   Event @relation(fields: [eventId], references: [id])
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId Int
-  player  Player @relation(fields: [playerId], references: [id])
+  player  Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
   playerId Int
   role    String?
   status  String? // confirmed, tentative, declined
@@ -118,14 +118,14 @@ model Channel {
   createdAt DateTime  @default(now())
   messages  Message[]
 
-  event     Event?    @relation(fields: [eventId], references: [id])
+  event     Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }
 
 model Message {
   id        Int       @id @default(autoincrement())
-  channel   Channel   @relation(fields: [channelId], references: [id])
+  channel   Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
   channelId Int
-  author    Player?   @relation(fields: [authorId], references: [id])
+  author    Player?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
   authorId  Int?
   content   String
   createdAt DateTime  @default(now())
@@ -133,9 +133,9 @@ model Message {
 
 model Attendance {
   id        Int      @id @default(autoincrement())
-  player    Player   @relation(fields: [playerId], references: [id])
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
   playerId  Int
-  event     Event    @relation(fields: [eventId], references: [id])
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId   Int
   status    String   // present, absent, late
   note      String?
@@ -178,7 +178,7 @@ model Transaction {
 
 model Injury {
   id          Int            @id @default(autoincrement())
-  player      Player         @relation(fields: [playerId], references: [id])
+  player      Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
   playerId    Int
   type        String
   severity    InjurySeverity

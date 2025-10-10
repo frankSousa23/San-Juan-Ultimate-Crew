@@ -41,15 +41,15 @@ async function main() {
     push('6) message', { id: msg.id })
 
     // 6) Finanzas (category, account, transaction)
-    const cat = (await axios.post(base + '/api/categories', { name: 'QA', kind: 'EXPENSE' })).data
-    const acct = (await axios.post(base + '/api/accounts', { name: 'QA Caja', type: 'CASH' })).data
-    const txn = (await axios.post(base + '/api/transactions', { amount: 1.23, type: 'EXPENSE', accountId: acct.id, categoryId: cat.id, description: 'qa' })).data
+  const cat = (await axios.post(base + '/api/categories', { name: 'QA', kind: 'EXPENSE' })).data
+  const acct = (await axios.post(base + '/api/accounts', { name: 'QA Caja', type: 'CASH' })).data
+  const txn = (await axios.post(base + '/api/transactions', { amountCents: 123, occurredAt: new Date().toISOString(), type: 'EXPENSE', accountId: acct.id, categoryId: cat.id, description: 'qa' })).data
     push('7) finance', { txn: txn.id })
 
     // 7) Rivals / Plays / Injuries
     const rival = (await axios.post(base + '/api/rivals', { name: 'Rival QA' })).data
     push('8) rival', { id: rival.id })
-    const play = (await axios.post(base + '/api/plays', { name: 'Play QA', category: 'OFFENSIVE', description: 'md' })).data
+  const play = (await axios.post(base + '/api/plays', { name: 'Play QA', category: 'OFFENSE', description: 'md' })).data
     push('9) play', { id: play.id })
     let inj = (await axios.post(base + '/api/injuries', { playerId: player.id, type: 'Tobillo', severity: 'MILD', startDate: new Date().toISOString() })).data
     push('10) injury', { id: inj.id, status: inj.status })

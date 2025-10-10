@@ -62,9 +62,9 @@ Nota: Algunos .txt eran variantes del mismo módulo (p.ej., “Finanzas”, “G
 
 - Roster Torneo.txt
   - Propósito: Selección específica para torneos con configuración de alineaciones.
-  - Implementación: Selección y gestión específica no se implementó aún como vista dedicada.
-  - Estado: Pendiente (se puede derivar de Players + Events).
-  - Rutas API: N/A (por definir si requiere entidad/relación específica).
+  - Implementación: API para selección por evento disponible vía `EventParticipant` (GET/PUT/DELETE en `/api/event-participants`). Vista dedicada en frontend aún no implementada.
+  - Estado: Parcial (backend listo, frontend pendiente).
+  - Rutas API: /api/event-participants
 
 - Centro de Recursos.txt
   - Propósito: Repositorio de archivos/recursos, posiblemente con categorías y descargas.
@@ -89,7 +89,7 @@ Nota: Algunos .txt eran variantes del mismo módulo (p.ej., “Finanzas”, “G
 - Player: /api/players
 - Event (+ asistencia): /api/events, /api/attendance
 - Channel/Message (comunicaciones): /api/channels, /api/messages
-- Finanzas: Account, Category, Transaction → /api/accounts, /api/categories, /api/transactions
+- Finanzas: Account, Category, Transaction → /api/accounts, /api/categories, /api/transactions (incluye DELETE en accounts/categories y cascadas para facilitar cleanup)
 - Estadísticas: /api/stats (agregados)
 - Lesiones: /api/injuries
 - Rivales: /api/rivals
@@ -99,3 +99,7 @@ Nota: Algunos .txt eran variantes del mismo módulo (p.ej., “Finanzas”, “G
 
 - Los .txt se usaron como prototipos de UI. El sistema consolidó y normalizó estos diseños en módulos React + API REST.
 - Para módulos “Pendiente”, abrimos opción de issues/tickets con alcance funcional y de datos antes de implementar.
+
+---
+
+Validación funcional: Ejecutado smoke E2E localmente (scripts en `apps/api/scripts`) con creación/edición/borrado de entidades clave. Cleanup silencioso y ordenado. Fecha: 10-Oct-2025. La guía de ejecución está en README.

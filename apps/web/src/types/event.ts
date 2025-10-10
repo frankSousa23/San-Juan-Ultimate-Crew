@@ -14,3 +14,12 @@ export interface EventItem {
 
 export type CreateEventInput = Omit<EventItem, 'id'>
 export type UpdateEventInput = Partial<Omit<EventItem, 'id'>>
+
+export interface EventParticipant {
+  eventId: number
+  playerId: number
+  role?: string | null
+  status?: string | null
+  player?: { id: number; name: string; number: number }
+  event?: { id: number; title: string }
+}

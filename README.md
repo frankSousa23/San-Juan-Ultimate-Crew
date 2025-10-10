@@ -13,14 +13,14 @@ Tecnologías:
 - Node.js 18+
 - Docker (opcional para BD)
 
-## Configuración rápida
+## Configuración rápida (Windows PowerShell)
 
-• Copiar variables de entorno:
+• Copiar variables de entorno (API en 4000 y Web apuntando a esa API):
 
 - Backend: `apps/api/.env.example` -> `apps/api/.env`
 - Web: `apps/web/.env.example` -> `apps/web/.env.local`
 
-• Levantar PostgreSQL (opcional, con Docker):
+• Levantar PostgreSQL (con Docker recomendado):
 
 - Ver sección "Base de datos con Docker"
 
@@ -32,7 +32,7 @@ Tecnologías:
 cmd /c npm install
 ```
 
-• Generar Prisma Client (opcional hasta tener DB):
+• Generar Prisma Client (requiere DB accesible):
 
 ```powershell
 cmd /c npm --workspace apps/api run prisma:generate
@@ -51,10 +51,11 @@ cmd /c npm run dev
 - `npm run dev:web`   Solo Web
 - `npm run build`     Compila API y Web
 - `npm run start`     Ejecuta API compilada
+- `node apps/api/scripts/smoke-e2e.cjs`  Ejecuta smoke E2E (CommonJS)
 
 ## Base de datos con Docker
 
-Usa PostgreSQL local con Docker:
+Usa PostgreSQL local con Docker (sin campo `version` en docker-compose para evitar warnings):
 
 - Copia `.env.example` a `.env` en `apps/api` y ajusta `DATABASE_URL` si cambias puertos.
 - Levanta el contenedor:
@@ -63,10 +64,11 @@ Usa PostgreSQL local con Docker:
 docker compose up -d
 ```
 
-- Ejecuta migraciones (cuando el esquema esté listo):
+- Ejecuta migraciones y carga de datos seed:
 
 ```powershell
 cmd /c npm --workspace apps/api run prisma:migrate
+cmd /c npm --workspace apps/api run prisma:seed
 ```
 
 ## Estructura de carpetas
@@ -89,6 +91,16 @@ Los prototipos `.txt` de diseño fueron retirados del repositorio. Consulta `doc
   - `GET /api/messages?channelId=&limit=30&before=ts&since=ts` — lista de mensajes (orden desc en API).
   - `POST /api/messages { channelId, authorId?, content }` — crea mensaje.
 
+- Event Participants (selección por evento):
+  - `GET /api/event-participants?eventId=` — lista participantes por evento (incluye player y event).
+  - `PUT /api/event-participants { eventId, playerId, role?, status? }` — crea/actualiza la relación.
+  - `DELETE /api/event-participants?eventId=&playerId=` — elimina la relación.
+  
+  Finanzas (actualizado):
+  - Accounts: `GET/POST/DELETE /api/accounts[/:id]`
+  - Categories: `GET/POST/DELETE /api/categories[/:id]`
+  - Transactions: `GET/POST/PUT/DELETE /api/transactions[/:id]`
+
 ## Verificación rápida (smoke tests)
 
 - Preparación:
@@ -108,16 +120,24 @@ cmd /c npm --workspace apps/api run prisma:seed
 cmd /c npm run dev
 ```
 
-- Probar endpoints clave (API en 4000 por defecto del .env.example):
+- Probar endpoints clave (API en 4000 por defecto del .env.example) con PowerShell puro:
 
 ```powershell
-node -e "(async()=>{const axios=require('axios');const ok=a=>a.status>=200&&a.status<300;const base='http://localhos
-t:4000';const ping=async(p)=>{try{const r=await axios.get(base+p);console.log(p,ok(r)?'OK':r.status)}catch(e){consol
-e.log(p,'ERR',e?.response?.status||e.code)}};for(const p of ['/health','/api/players','/api/events','/api/channels','
-/api/transactions','/api/stats','/api/injuries','/api/rivals','/api/plays'])await ping(p)})()"
+$base = 'http://localhost:4000'
+$paths = '/health','/api/players','/api/events','/api/channels','/api/transactions','/api/stats','/api/injuries','/api/rivals','/api/plays'
+foreach ($p in $paths) {
+  try {
+    $null = Invoke-RestMethod -Uri ($base + $p) -TimeoutSec 2
+    Write-Host "$p OK"
+  } catch {
+    Write-Host "$p ERR"
+  }
+}
 ```
 
-Resultados esperados: todos en OK.
+Resultados esperados: todos en OK. El cleanup del E2E ahora es silencioso (ordenado y tolerante a 404) y no deja residuos.
+
+
 
 ## Chequeo de flujo completo (E2E) y estabilidad
 
@@ -132,14 +152,14 @@ Este proyecto incluye un smoke E2E que recorre el flujo completo y limpia datos 
 7) Rivals/Plays/Injuries: crea un rival, una jugada y una lesión; luego actualiza la lesión.
 8) Cleanup: elimina los registros creados para no ensuciar la DB.
 
-Ejecución local (PowerShell):
+Ejecución local (PowerShell o Git Bash):
 
 ```powershell
-# Asegúrate que la API esté en 4000 (por defecto)
+# Asegúrate que la API esté en 4000 (por defecto). En un terminal:
 cmd /c npm --workspace apps/api run start
 
-# En otra terminal: correr el smoke E2E (JS plano)
-node apps\api\scripts\smoke-e2e.js
+# En otra terminal: correr el smoke E2E (CommonJS)
+node apps\api\scripts\smoke-e2e.cjs
 ```
 
 Salida esperada (resumen):
@@ -160,7 +180,7 @@ SMOKE_E2E_SUMMARY
 12) cleanup: OK
 ```
 
-Notas de estabilidad:
+Notas de estabilidad y solución de problemas:
 
 - Ports: API por defecto en 4000; Web consume `VITE_API_URL` o fallback a 4000.
 - Prisma en Windows: si aparece un EPERM sobre `query_engine-windows.dll.node`, eliminar el archivo y regenerar:
@@ -170,7 +190,37 @@ cmd /c del /F /Q "node_modules\.prisma\client\query_engine-windows.dll.node"
 cmd /c npm --workspace apps/api run prisma:generate
 ```
 
+- Si `docker compose up -d` falla, verifica que Docker Desktop esté abierto y que el puerto 5432 no esté ocupado. Para reiniciar el contenedor:
+
+```powershell
+docker compose down ; docker compose up -d
+```
+
+- Si la Web no carga datos, confirma que `apps/web/.env.local` tenga `VITE_API_URL=http://localhost:4000` o que la API esté arriba en 4000.
+
+Web preview (opcional):
+
+- Tarea en VS Code: "Web: preview (5176)" lanza vite preview en <http://localhost:5176/> usando Git Bash.
+- Manualmente (Git Bash):
+
+```bash
+npm -w apps/web run build
+npm -w apps/web run preview -- --port 5176 --strictPort
+```
+
+Validado: 10-Oct-2025
+
 - Docker: si cambias puertos de Postgres, actualiza `DATABASE_URL` en `apps/api/.env`.
+
+## Quality gates (10-Oct-2025)
+
+- Build (API/Web): PASS
+- Typecheck (tsc API): PASS
+- DB migrations/seed: PASS
+- API health (/health): PASS
+- E2E smoke (apps/api/scripts/smoke-e2e.cjs): PASS
+- Nuevos endpoints verificados: /api/event-participants (GET/PUT/DELETE)
+- Limpieza E2E silenciosa y nuevos DELETE en cuentas/categorías: PASS
 
 ## Flujo de trabajo sugerido
 

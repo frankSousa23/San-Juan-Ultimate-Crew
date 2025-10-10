@@ -29,4 +29,16 @@ router.post('/', async (req: Request, res: Response) => {
   }
 })
 
+router.delete('/:id', async (req: Request, res: Response) => {
+  const id = Number(req.params.id)
+  if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid id' })
+  try {
+    await prisma.category.delete({ where: { id } })
+    res.status(204).send()
+  } catch (e: any) {
+    if (e?.code === 'P2025') return res.status(404).json({ error: 'Category not found' })
+    res.status(500).json({ error: 'Failed to delete category' })
+  }
+})
+
 export default router

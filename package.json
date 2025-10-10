@@ -9,7 +9,8 @@
     "dev:web": "npm --workspace apps/web run dev",
     "dev": "concurrently -n api,web -c yellow,cyan \"npm:dev:api\" \"npm:dev:web\"",
     "build": "npm -w apps/api run build && npm -w apps/web run build",
-    "start": "npm -w apps/api run start"
+    "start": "npm -w apps/api run start",
+    "smoke:e2e": "node apps/api/scripts/smoke-e2e.cjs"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

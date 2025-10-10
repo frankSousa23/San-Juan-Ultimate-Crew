@@ -14,6 +14,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <nav className="flex gap-2 flex-wrap">
               <NavLink to="/" className={linkClass}>Dashboard</NavLink>
               <NavLink to="/roster" className={linkClass}>Roster</NavLink>
+              <NavLink to="/roster-torneo" className={linkClass}>Roster Torneo</NavLink>
               <NavLink to="/eventos" className={linkClass}>Eventos</NavLink>
               <NavLink to="/comunicacion" className={linkClass}>Comunicaciones</NavLink>
               <NavLink to="/finanzas" className={linkClass}>Finanzas</NavLink>

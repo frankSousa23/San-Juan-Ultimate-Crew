@@ -40,30 +40,41 @@ const sleep = (ms) => new Promise(res => setTimeout(res, ms))
     // Finance
     const cat = (await axios.post(base + '/api/categories', { name: 'QA', kind: 'EXPENSE' })).data
     const acct = (await axios.post(base + '/api/accounts', { name: 'QA Caja', type: 'CASH' })).data
-    const txn = (await axios.post(base + '/api/transactions', { amount: 1.23, type: 'EXPENSE', accountId: acct.id, categoryId: cat.id, description: 'qa' })).data
+    const txn = (await axios.post(base + '/api/transactions', {
+      amountCents: 123,
+      occurredAt: new Date().toISOString(),
+      type: 'EXPENSE',
+      accountId: acct.id,
+      categoryId: cat.id,
+      description: 'qa'
+    })).data
     push('7) finance', { txn: txn.id })
 
     // Rivals / Plays / Injuries
     const rival = (await axios.post(base + '/api/rivals', { name: 'Rival QA' })).data
     push('8) rival', { id: rival.id })
-  const play = (await axios.post(base + '/api/plays', { name: 'Play QA', category: 'OFFENSE', description: 'md' })).data
+    const play = (await axios.post(base + '/api/plays', { name: 'Play QA', category: 'OFFENSE', description: 'md' })).data
     push('9) play', { id: play.id })
     let inj = (await axios.post(base + '/api/injuries', { playerId: player.id, type: 'Tobillo', severity: 'MILD', startDate: new Date().toISOString() })).data
     push('10) injury', { id: inj.id, status: inj.status })
     inj = (await axios.put(base + `/api/injuries/${inj.id}`, { status: 'RECOVERING' })).data
     push('11) injury-update', { id: inj.id, status: inj.status })
 
-    // Cleanup best-effort
-    await Promise.allSettled([
-      axios.delete(base + `/api/injuries/${inj.id}`),
-      axios.delete(base + `/api/plays/${play.id}`),
-      axios.delete(base + `/api/rivals/${rival.id}`),
-      axios.delete(base + `/api/transactions/${txn.id}`),
-      axios.delete(base + `/api/categories/${cat.id}`),
-      axios.delete(base + `/api/accounts/${acct.id}`),
-      axios.delete(base + `/api/players/${player.id}`),
-      axios.delete(base + `/api/events/${event.id}`),
-    ])
+    // Cleanup in FK-safe order (messages -> channel -> attendance -> injuries -> plays -> transactions -> categories/accounts -> event -> player)
+    const safeDelete = async (fn) => {
+      try { await fn() } catch (_) { /* ignore */ }
+    }
+    await safeDelete(() => axios.delete(base + `/api/injuries/${inj.id}`))
+    await safeDelete(() => axios.delete(base + `/api/plays/${play.id}`))
+    await safeDelete(() => axios.delete(base + `/api/rivals/${rival.id}`))
+    await safeDelete(() => axios.delete(base + `/api/transactions/${txn.id}`))
+    await safeDelete(() => axios.delete(base + `/api/categories/${cat.id}`))
+    await safeDelete(() => axios.delete(base + `/api/accounts/${acct.id}`))
+    // Attendance may exist; try delete
+    await safeDelete(() => axios.delete(base + `/api/attendance`, { params: { eventId: event.id, playerId: player.id } }))
+    // Channel delete is not exposed; it will cascade via Event delete now
+    await safeDelete(() => axios.delete(base + `/api/events/${event.id}`))
+    await safeDelete(() => axios.delete(base + `/api/players/${player.id}`))
     push('12) cleanup', 'OK')
 
     console.log('SMOKE_E2E_SUMMARY\n' + log.join('\n'))

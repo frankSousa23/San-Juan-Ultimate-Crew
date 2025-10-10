@@ -5,6 +5,7 @@ import { Channel, Message, CreateChannelInput, CreateMessageInput } from '../typ
 import { AttendanceRecord, UpsertAttendanceInput } from '../types/attendance'
 import { Account, Category, TransactionItem, TransactionList, FinanceSummary, CreateAccountInput, CreateCategoryInput, CreateTransactionInput, UpdateTransactionInput } from '../types/finance'
 import { PlayItem, CreatePlayInput, UpdatePlayInput } from '../types/plays'
+import { EventParticipant } from '../types/event'
 
 const baseURL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000'
 
@@ -102,6 +103,34 @@ export const attendanceApi = {
   remove: async (eventId: number, playerId: number): Promise<void> => {
     await http.delete('/api/attendance', { params: { eventId, playerId } })
   },
+}
+
+// Event Participants
+export const eventParticipantsApi = {
+  listByEvent: async (eventId: number): Promise<EventParticipant[]> => (
+    await http.get<EventParticipant[]>('/api/event-participants', { params: { eventId } })
+  ).data,
+  upsert: async (payload: { eventId: number; playerId: number; role?: string | null; status?: string | null }): Promise<EventParticipant> => (
+    await http.put<EventParticipant>('/api/event-participants', payload)
+  ).data,
+  remove: async (eventId: number, playerId: number): Promise<void> => {
+    await http.delete('/api/event-participants', { params: { eventId, playerId } })
+  },
+}
+
+export async function exportEventParticipantsCsv(eventId: number): Promise<Blob> {
+  const items = await eventParticipantsApi.listByEvent(eventId)
+  const header = ['eventId','playerId','playerNumber','playerName','role','status']
+  const rows = items.map((it: any) => [
+    it.eventId,
+    it.playerId,
+    it.player?.number ?? '',
+    JSON.stringify(it.player ? it.player.name : ''),
+    JSON.stringify(it.role ?? ''),
+    JSON.stringify(it.status ?? ''),
+  ].join(','))
+  const csv = [header.join(','), ...rows].join('\n')
+  return new Blob([csv], { type: 'text/csv;charset=utf-8;' })
 }
 
 export const playsApi = {

@@ -17,6 +17,7 @@ import attendanceRouter from './routes/attendance.js';
 import injuriesRouter from './routes/injuries.js';
 import rivalsRouter from './routes/rivals.js';
 import playsRouter from './routes/plays.js';
+import eventParticipantsRouter from './routes/eventParticipants.js';
 
 export const app = express();
 
@@ -39,5 +40,6 @@ app.use('/api/attendance', attendanceRouter);
 app.use('/api/injuries', injuriesRouter);
 app.use('/api/rivals', rivalsRouter);
 app.use('/api/plays', playsRouter);
+app.use('/api/event-participants', eventParticipantsRouter);
 
 app.get('/', (_req: Request, res: Response) => res.json({ name: 'San Juan Ultimate Crew API', ok: true }));
