@@ -222,7 +222,7 @@ Validado: 11-Oct-2025
 
 - Docker: si cambias puertos de Postgres, actualiza `DATABASE_URL` en `apps/api/.env`.
 
-## Quality gates (10-Oct-2025)
+## Quality gates (11-Oct-2025)
 
 - Build (API/Web): PASS
 - Typecheck (tsc API): PASS
@@ -232,6 +232,74 @@ Validado: 11-Oct-2025
 - Nuevos endpoints verificados: /api/event-participants (GET/PUT/DELETE)
   y /api/resources (CRUD)
 - Limpieza E2E silenciosa y nuevos DELETE en cuentas/categorías: PASS
+
+Web: filtros con URL-sync
+
+- Jugadas (`/jugadas`): filtros `q`, `category` y `limit` sincronizados con la URL. Se leen preferencias iniciales desde localStorage si la URL no tiene parámetros, y el tamaño de página se recuerda como `plays.limit`.
+- Lesiones (`/lesiones`): filtros `playerId`, `severity`, `status` y `limit` sincronizados con la URL. Preferencias iniciales desde localStorage si falta en URL; `injuries.limit` persiste el tamaño de página.
+- Centro de Recursos (`/recursos`): ya contaba con URL-sync para `q`, `category`, `order` y `limit`.
+- Eventos (`/eventos`): filtros `tab`, `type`, `status`, `q`, `limit` y `page` sincronizados con la URL; paginación en cliente y `events.limit` persiste el tamaño de página.
+- Finanzas (`/finanzas`): filtros `from`, `to`, `type`, `accountId`, `categoryId`, además de `limit` y `page` sincronizados con la URL; `finances.limit` persiste el tamaño de página.
+
+VS Code tasks
+
+- Se añadieron tareas rápidas para abrir rutas en el navegador (requiere preview en 5176):
+  - "Open: Recursos" → <http://localhost:5176/recursos>
+  - "Open: Roster Torneo" → <http://localhost:5176/roster-torneo>
+  - "Open: Jugadas" → <http://localhost:5176/jugadas>
+  - "Open: Lesiones" → <http://localhost:5176/lesiones>
+
+- Orquestación de desarrollo (Windows-friendly):
+  - "Dev: start stack (db+api+wait+web)" levanta en orden la BD con Docker, inicia la API en background, espera `/health` y abre el preview web en 5176.
+  - E2E: "E2E: start api + wait + smoke" inicia la API en background, espera `/health` y ejecuta el smoke E2E (CommonJS) en una terminal aparte.
+
+## Estado del proyecto (11-Oct-2025)
+
+- Backend API estable (Express + Prisma) con endpoints para Players, Events, Attendance, Communications (channels/messages), Finances (accounts/categories/transactions), Rivals, Plays, Injuries, Event Participants y Resources (CRUD, paginado, categorías, export, upload y estáticos `/uploads`).
+- Frontend (React + Vite + Tailwind) con módulos: Dashboard, Roster, Eventos (con asistencia), Comunicaciones, Finanzas, Rivales, Jugadas, Lesiones y Centro de Recursos.
+- UX consolidada: banners de error con Reintentar/Ocultar, toasts de éxito, confirmaciones de borrado, exportaciones CSV seguras y filtros con URL-sync (Recursos, Jugadas, Lesiones; Eventos con tabs/params).
+- Entorno Windows: tareas de VS Code limpias; preview en 5176; scripts compatibles con PowerShell/Git Bash.
+
+## Cómo ejecutar el flujo E2E en Windows (PowerShell)
+
+1. Base de datos
+
+- Asegúrate de tener Docker Desktop encendido.
+- En una terminal: `docker compose up -d`
+- Migraciones y seed (solo si cambió el esquema): `npm -w apps/api run prisma:migrate`; `npm -w apps/api run prisma:seed`
+
+1. Levanta la API en una terminal dedicada
+
+- En otra terminal: `npm -w apps/api run start`
+- Espera el log: API listening on <http://localhost:4000>
+
+1. Verifica salud antes del smoke
+
+- Realiza un GET a <http://localhost:4000/health> (puedes usar tu navegador o Invoke-RestMethod)
+
+1. Ejecuta el smoke E2E
+
+- En otra terminal: `npm run smoke:e2e`
+
+Notas:
+
+- Mantén la API corriendo en su propia terminal; no mezcles comandos en la misma sesión para evitar que se detenga el proceso.
+- Para desarrollo del frontend: `npm -w apps/web run dev` y navega a <http://localhost:5176>.
+
+## Troubleshooting en Windows
+
+- ECONNREFUSED al consultar /health
+  - Causa común: la API no está realmente ejecutándose (se cerró al correr otro comando en la misma terminal).
+  - Solución: ejecuta npm -w apps/api run start en una terminal dedicada y deja esa terminal sin uso.
+  - Verifica que no haya conflictos de puerto 4000: Get-Process -Id (Get-NetTCPConnection -LocalPort 4000 -State Listen).OwningProcess
+
+- Docker no arranca la base
+  - Verifica Docker Desktop y vuelve a ejecutar: docker compose up -d
+  - Si cambiaste variables de entorno, recrea: docker compose down; docker compose up -d
+
+- Migraciones/seed fallan
+  - Asegúrate de que la DB está arriba; revisa la cadena de conexión en .env de apps/api.
+  - Ejecuta: npm -w apps/api run prisma:migrate; npm -w apps/api run prisma:seed
 
 ## Flujo de trabajo sugerido
 
@@ -249,6 +317,8 @@ Validado: 11-Oct-2025
 - Panel de canales (crear/seleccionar), chat con scroll y composer.
 - Polling liviano cada ~8s usando `since` para nuevos mensajes.
 - Desde Eventos, botón “Abrir canal” crea o redirige al canal asociado: navega a `/comunicacion?channelId=ID`.
+- URL-sync: el canal activo se refleja en `?channelId=ID`. Al cambiar de canal o crear uno nuevo, la URL se actualiza; “Limpiar” quita la selección del URL.
+- Conveniencia: botón “Copiar enlace” copia la URL actual con `channelId`.
 
 ## Web: Roster Torneo
 
@@ -256,7 +326,29 @@ Validado: 11-Oct-2025
 - Permite seleccionar el plantel por evento (usa `/api/event-participants`).
 - Agregar/Quitar jugadores, editar rol/estado inline y exportar CSV del roster del evento.
 
+URL-sync y persistencia
+
+- Parámetros soportados: `eventId`, `q`, `pos`, `status`, `sort`.
+  - `eventId`: ID de evento seleccionado. Si falta, se usa el último guardado (localStorage: `rosterTorneo.eventId`) o el primer evento disponible.
+  - `q`: texto de búsqueda (por nombre o número).
+  - `pos`: posición del jugador (`HANDLER`, `CUTTER`, `HYBRID`).
+  - `status`: estado del jugador (`ACTIVE`, `INJURED`, `INACTIVE`).
+  - `sort`: `number` (por defecto) o `name`.
+- “Limpiar filtros” borra `q`, `pos`, `status` del URL pero conserva `eventId` y `sort`.
+- Al cambiar filtros o evento, la URL se actualiza automáticamente para facilitar compartir enlaces profundos.
+- Conveniencia: botón “Copiar enlace” copia la URL actual con los filtros y `eventId`.
+
 ## Web: Centro de Recursos
+
+## Web: Roster Principal
+
+- Ruta: `/roster`.
+- URL-sync de filtros para compartir vistas:
+  - `q`: búsqueda por nombre o número.
+  - `pos`: `HANDLER`, `CUTTER`, `HYBRID`.
+  - `st`: `ACTIVE`, `INJURED`, `INACTIVE`.
+  - Enter aplica filtros en la URL, Escape limpia el texto conservando selectores.
+
 
 - Ruta: `/recursos` (navbar).
 - Lista, filtra por texto/categoría y permite crear/eliminar recursos rápidos.
@@ -270,7 +362,23 @@ Subida de archivos (local)
 - Los archivos se guardan en `apps/api/uploads` y se sirven en `GET /uploads/<archivo>`.
 - Desde la Web, en la sección “Subir archivo” puedes cargar un archivo; el enlace resultante apunta a `${VITE_API_URL}/uploads/...`.
 - Notas:
-  - `DELETE /api/resources/:id` por ahora elimina el registro; si quieres que también borre el archivo físico, dilo y lo activo.
-  - Para límites de tamaño o filtrado de tipos MIME, puedo añadir validaciones y mensajes de error claros.
+  - `DELETE /api/resources/:id` elimina el registro y, si existe, borra el archivo físico asociado en el servidor.
   - Límite de tamaño actual: 10 MB por archivo.
   - Tipos permitidos: PDF, PNG, JPEG, GIF y TXT (text/plain).
+  - Errores de subida devuelven mensajes claros (HTTP 400) cuando el archivo no cumple las restricciones.
+
+Centro de Recursos: UX y paginación
+
+- Paginación server-side con `limit` y `offset` y orden estable (`createdAtDesc` o `titleAsc`).
+- El tamaño de página (limit) queda en la URL y además se recuerda en localStorage; botón “Reiniciar” devuelve a 20.
+- Filtros (q/categoría) con debounce (~500ms) que actualizan la URL; Enter aplica de inmediato, Escape limpia.
+- Banner de error con Reintentar/Ocultar (para fallos de carga y export CSV); toasts de éxito en crear, subir, editar, borrar simple y múltiple.
+- Datalist de categorías tanto en filtros como en formularios (crear, editar, subir).
+- Acciones: vista previa (imágenes/PDF), copiar enlace, selección múltiple con contador y “Invertir selección (página)”.
+
+Roster de Torneo: UX
+
+- Confirmación modal para “Agregar todos” y “Quitar todos”.
+- Botón “Limpiar filtros” y contador “Disponibles: N” en la lista de Jugadores disponibles.
+- Exportar CSV con manejo de errores.
+- URL-sync de filtros y evento activo (ver sección anterior).

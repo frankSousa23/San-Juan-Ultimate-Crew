@@ -1,8 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { accountsApi, categoriesApi, transactionsApi } from '../lib/api'
 import { Account, Category, TransactionItem, TransactionType } from '../types/finance'
+import Toast from '../components/Toast'
+import ConfirmModal from '../components/ConfirmModal'
 
 export default function Finances() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [items, setItems] = useState<TransactionItem[]>([])
@@ -22,23 +26,77 @@ export default function Finances() {
   const [acctForm, setAcctForm] = useState<any>({ name: '', type: 'CASH' })
   const [catModal, setCatModal] = useState(false)
   const [catForm, setCatForm] = useState<any>({ name: '', kind: 'INCOME' })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+  const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
 
   useEffect(() => {
     Promise.all([accountsApi.list(), categoriesApi.list()]).then(([as, cs]) => { setAccounts(as); setCategories(cs) })
   }, [])
 
+  // Seed from URL
+  useEffect(() => {
+    const sFrom = searchParams.get('from') || ''
+    const sTo = searchParams.get('to') || ''
+    const sType = (searchParams.get('type') || '') as '' | TransactionType
+    const sAccountId = searchParams.get('accountId')
+    const sCategoryId = searchParams.get('categoryId')
+    const sLimit = parseInt(searchParams.get('limit') || '')
+    const sPage = parseInt(searchParams.get('page') || '')
+
+    if (sFrom !== from) setFrom(sFrom)
+    if (sTo !== to) setTo(sTo)
+    if (sType !== type) setType(sType)
+    if (sAccountId && Number(sAccountId) !== accountId) setAccountId(Number(sAccountId))
+    if (!sAccountId && accountId !== '') setAccountId('')
+    if (sCategoryId && Number(sCategoryId) !== categoryId) setCategoryId(Number(sCategoryId))
+    if (!sCategoryId && categoryId !== '') setCategoryId('')
+    if (!Number.isNaN(sLimit) && sLimit >= 5 && sLimit <= 200 && sLimit !== limit) setLimit(sLimit)
+    if (!Number.isNaN(sPage) && sPage >= 1) {
+      const newOffset = (sPage - 1) * (Number.isNaN(sLimit) ? limit : sLimit)
+      if (newOffset !== offset) setOffset(newOffset)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  // Seed limit from localStorage if not in URL
+  useEffect(() => {
+    if (!searchParams.get('limit')) {
+      const saved = localStorage.getItem('finances.limit')
+      if (saved) {
+        const n = parseInt(saved)
+        if (!Number.isNaN(n) && n >= 5 && n <= 200) {
+          const params = new URLSearchParams(searchParams)
+          params.set('limit', String(n))
+          params.set('page', '1')
+          setSearchParams(params)
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const load = async () => {
-    const params: any = { limit, offset }
-    if (from) params.from = new Date(from).toISOString()
-    if (to) params.to = new Date(to).toISOString()
-    if (type) params.type = type
-    if (accountId) params.accountId = accountId
-    if (categoryId) params.categoryId = categoryId
-    const r = await transactionsApi.list(params)
-    setItems(r.items)
-    setTotal(r.total)
-    const s = await transactionsApi.summary({ from: params.from, to: params.to })
-    setSummary(s)
+    setLoading(true)
+    setError(null)
+    try {
+      const params: any = { limit, offset }
+      if (from) params.from = new Date(from).toISOString()
+      if (to) params.to = new Date(to).toISOString()
+      if (type) params.type = type
+      if (accountId) params.accountId = accountId
+      if (categoryId) params.categoryId = categoryId
+      const r = await transactionsApi.list(params)
+      setItems(r.items)
+      setTotal(r.total)
+      const s = await transactionsApi.summary({ from: params.from, to: params.to })
+      setSummary(s)
+    } catch (e: any) {
+      setError(e?.message || 'No se pudo cargar finanzas')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { load() }, [limit, offset])
@@ -59,61 +117,87 @@ export default function Finances() {
       else await transactionsApi.create(payload)
       setModalOpen(false)
       await load()
+      setToast('Transacción guardada')
     } catch (e: any) {
-      alert('Error al guardar: ' + (e?.response?.data?.error || ''))
+      setError('Error al guardar: ' + (e?.response?.data?.error || ''))
     }
   }
 
   const remove = async (id: number) => {
-    if (!confirm('¿Eliminar transacción?')) return
-    try { await transactionsApi.remove(id); await load() } catch { alert('No se pudo eliminar') }
+    setConfirmState({
+      message: '¿Eliminar transacción? Esta acción no se puede deshacer.',
+      onYes: async () => {
+        try {
+          await transactionsApi.remove(id)
+          await load()
+          setToast('Transacción eliminada')
+        } catch (e) {
+          setError('No se pudo eliminar')
+        }
+      }
+    })
   }
 
   const exportCsv = async () => {
     // Fetch all items respecting current filters
-    const params: any = {}
-    if (from) params.from = new Date(from).toISOString()
-    if (to) params.to = new Date(to).toISOString()
-    if (type) params.type = type
-    if (accountId) params.accountId = accountId
-    if (categoryId) params.categoryId = categoryId
-    const batch = 200
-    let off = 0
-    let all: TransactionItem[] = []
-    while (true) {
-      const r = await transactionsApi.list({ ...params, limit: batch, offset: off })
-      all = all.concat(r.items)
-      off += r.items.length
-      if (r.items.length < batch) break
+    try {
+      const params: any = {}
+      if (from) params.from = new Date(from).toISOString()
+      if (to) params.to = new Date(to).toISOString()
+      if (type) params.type = type
+      if (accountId) params.accountId = accountId
+      if (categoryId) params.categoryId = categoryId
+      const batch = 200
+      let off = 0
+      let all: TransactionItem[] = []
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const r = await transactionsApi.list({ ...params, limit: batch, offset: off })
+        all = all.concat(r.items)
+        off += r.items.length
+        if (r.items.length < batch) break
+      }
+      const headers = ['Fecha','Tipo','Cuenta','Categoría','Monto','Descripción']
+      const rows = all.map(it => [
+        new Date(it.occurredAt).toISOString(),
+        it.type,
+        it.account?.name || String(it.accountId),
+        it.category?.name || (it.categoryId ?? ''),
+        (it.amountCents/100).toFixed(2),
+        (it.description || '').replace(/\r?\n/g,' ')
+      ])
+      const csv = [headers, ...rows].map(r => r.map(v => {
+        const s = String(v)
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s
+      }).join(',')).join('\n')
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')
+      a.download = `transacciones-${ts}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (e: any) {
+      setError(e?.message || 'No se pudo exportar CSV')
     }
-    const headers = ['Fecha','Tipo','Cuenta','Categoría','Monto','Descripción']
-    const rows = all.map(it => [
-      new Date(it.occurredAt).toISOString(),
-      it.type,
-      it.account?.name || String(it.accountId),
-      it.category?.name || (it.categoryId ?? ''),
-      (it.amountCents/100).toFixed(2),
-      (it.description || '').replace(/\r?\n/g,' ')
-    ])
-    const csv = [headers, ...rows].map(r => r.map(v => {
-      const s = String(v)
-      return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s
-    }).join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')
-    a.download = `transacciones-${ts}.csv`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
   }
 
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold text-gray-800">Finanzas</h2>
+
+      {error && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded p-3 flex items-start justify-between">
+          <div className="pr-3">{error}</div>
+          <div className="flex gap-2 shrink-0">
+            <button className="px-2 py-1 bg-rose-100 rounded" onClick={() => load()}>Reintentar</button>
+            <button className="px-2 py-1 bg-gray-100 rounded" onClick={() => setError(null)}>Ocultar</button>
+          </div>
+        </div>
+      )}
 
       {/* Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -165,9 +249,33 @@ export default function Finances() {
           </select>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => { setOffset(0); load() }} className="flex-1 bg-indigo-600 text-white py-2 rounded-lg">Aplicar</button>
+          <button
+            onClick={() => {
+              const params: Record<string, string> = {}
+              if (from) params.from = from
+              if (to) params.to = to
+              if (type) params.type = type
+              if (accountId) params.accountId = String(accountId)
+              if (categoryId) params.categoryId = String(categoryId)
+              params.limit = String(limit)
+              params.page = '1'
+              setOffset(0)
+              setSearchParams(params)
+              load()
+            }}
+            className="flex-1 bg-indigo-600 text-white py-2 rounded-lg" disabled={loading}
+          >{loading ? 'Cargando…' : 'Aplicar'}</button>
           <button onClick={openCreate} className="flex-1 bg-emerald-600 text-white py-2 rounded-lg">+ Agregar</button>
           <button onClick={exportCsv} className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg">Exportar CSV</button>
+          <button
+            onClick={() => {
+              setFrom(''); setTo(''); setType(''); setAccountId(''); setCategoryId(''); setOffset(0); setLimit(20)
+              localStorage.removeItem('finances.limit')
+              setSearchParams({ page: '1', limit: '20' })
+              load()
+            }}
+            className="px-3 py-2 bg-gray-100 rounded-lg"
+          >Limpiar</button>
         </div>
       </div>
 
@@ -211,11 +319,71 @@ export default function Finances() {
         </div>
         {/* Pagination */}
         <div className="flex items-center justify-between px-4 py-2 text-sm">
-          <div>Total: {total}</div>
+          <div className="flex items-center gap-3">
+            <div>Total: {total}</div>
+            <label className="flex items-center gap-1">Por página:
+              <select
+                className="border rounded px-2 py-1"
+                value={limit}
+                onChange={e => {
+                  const n = Number(e.target.value)
+                  setOffset(0); setLimit(n)
+                  localStorage.setItem('finances.limit', String(n))
+                  const params = new URLSearchParams(searchParams)
+                  params.set('limit', String(n))
+                  params.set('page', '1')
+                  if (from) params.set('from', from); else params.delete('from')
+                  if (to) params.set('to', to); else params.delete('to')
+                  if (type) params.set('type', type); else params.delete('type')
+                  if (accountId) params.set('accountId', String(accountId)); else params.delete('accountId')
+                  if (categoryId) params.set('categoryId', String(categoryId)); else params.delete('categoryId')
+                  setSearchParams(params)
+                }}
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+            </label>
+          </div>
           <div className="flex items-center gap-2">
-            <button disabled={offset===0} onClick={() => setOffset(Math.max(0, offset - limit))} className="px-2 py-1 border rounded disabled:opacity-50">Prev</button>
+            <button
+              disabled={offset===0}
+              onClick={() => {
+                const newOffset = Math.max(0, offset - limit)
+                const newPage = Math.floor(newOffset/limit)+1
+                setOffset(newOffset)
+                const params = new URLSearchParams(searchParams)
+                params.set('page', String(newPage))
+                params.set('limit', String(limit))
+                if (from) params.set('from', from); else params.delete('from')
+                if (to) params.set('to', to); else params.delete('to')
+                if (type) params.set('type', type); else params.delete('type')
+                if (accountId) params.set('accountId', String(accountId)); else params.delete('accountId')
+                if (categoryId) params.set('categoryId', String(categoryId)); else params.delete('categoryId')
+                setSearchParams(params)
+              }}
+              className="px-2 py-1 border rounded disabled:opacity-50"
+            >Prev</button>
             <div>Página {Math.floor(offset/limit)+1} de {Math.max(1, pages)}</div>
-            <button disabled={(offset+limit)>=total} onClick={() => setOffset(offset + limit)} className="px-2 py-1 border rounded disabled:opacity-50">Next</button>
+            <button
+              disabled={(offset+limit)>=total}
+              onClick={() => {
+                const newOffset = offset + limit
+                const newPage = Math.floor(newOffset/limit)+1
+                setOffset(newOffset)
+                const params = new URLSearchParams(searchParams)
+                params.set('page', String(newPage))
+                params.set('limit', String(limit))
+                if (from) params.set('from', from); else params.delete('from')
+                if (to) params.set('to', to); else params.delete('to')
+                if (type) params.set('type', type); else params.delete('type')
+                if (accountId) params.set('accountId', String(accountId)); else params.delete('accountId')
+                if (categoryId) params.set('categoryId', String(categoryId)); else params.delete('categoryId')
+                setSearchParams(params)
+              }}
+              className="px-2 py-1 border rounded disabled:opacity-50"
+            >Next</button>
           </div>
         </div>
       </div>
@@ -298,7 +466,8 @@ export default function Finances() {
                     const as = await accountsApi.list(); setAccounts(as)
                     setAccountId(created.id)
                     setAcctModal(false); setAcctForm({ name: '', type: 'CASH' })
-                  } catch (e: any) { alert('No se pudo crear la cuenta') }
+                    setToast('Cuenta creada')
+                  } catch (e: any) { setError('No se pudo crear la cuenta') }
                 }}
                 className="flex-1 bg-emerald-600 text-white py-2 rounded-lg"
               >Guardar</button>
@@ -335,7 +504,8 @@ export default function Finances() {
                     const cs = await categoriesApi.list(); setCategories(cs)
                     setCategoryId(created.id)
                     setCatModal(false); setCatForm({ name: '', kind: 'INCOME' })
-                  } catch (e: any) { alert('No se pudo crear la categoría') }
+                    setToast('Categoría creada')
+                  } catch (e: any) { setError('No se pudo crear la categoría') }
                 }}
                 className="flex-1 bg-emerald-600 text-white py-2 rounded-lg"
               >Guardar</button>
@@ -343,6 +513,17 @@ export default function Finances() {
             </div>
           </div>
         </div>
+      )}
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+      {confirmState && (
+        <ConfirmModal
+          title="Confirmar eliminación"
+          message={confirmState.message}
+          confirmText="Eliminar"
+          cancelText="Cancelar"
+          onCancel={() => setConfirmState(null)}
+          onConfirm={async () => { await confirmState.onYes(); setConfirmState(null) }}
+        />
       )}
     </div>
   )

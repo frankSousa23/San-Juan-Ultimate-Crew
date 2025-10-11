@@ -1,11 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { playsApi, exportPlaysCsv } from '../lib/api'
+import Toast from '../components/Toast'
+import ConfirmModal from '../components/ConfirmModal'
 import type { PlayItem, PlayCategory } from '../types/plays'
 
 export default function Plays() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [items, setItems] = useState<PlayItem[]>([])
-  const [q, setQ] = useState(() => localStorage.getItem('plays.q') || '')
-  const [category, setCategory] = useState<'' | PlayCategory>(() => (localStorage.getItem('plays.category') as PlayCategory) || '')
+  const [q, setQ] = useState('')
+  const [category, setCategory] = useState<'' | PlayCategory>('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [limit, setLimit] = useState(20)
@@ -16,6 +20,8 @@ export default function Plays() {
   const [form, setForm] = useState<any>({ name: '', category: 'OFFENSE', description: '', diagramUrl: '', content: '' })
   const [showPreview, setShowPreview] = useState(false)
   const [previewHtml, setPreviewHtml] = useState<string>('')
+  const [toast, setToast] = useState<string | null>(null)
+  const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
 
   const load = async () => {
     setLoading(true); setError(null)
@@ -26,10 +32,50 @@ export default function Plays() {
     } catch (e: any) { setError(e?.response?.data?.error || 'No se pudo cargar jugadas') }
     finally { setLoading(false) }
   }
-
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [limit, offset])
   useEffect(() => { localStorage.setItem('plays.q', q) }, [q])
   useEffect(() => { if (category) localStorage.setItem('plays.category', category); else localStorage.removeItem('plays.category') }, [category])
+  // Sync from URL params and load when they change
+  useEffect(() => {
+    const qp = searchParams.get('q') ?? ''
+    const cat = (searchParams.get('category') as PlayCategory | null) ?? ''
+    const limRaw = searchParams.get('limit')
+    const limParsed = limRaw ? parseInt(limRaw, 10) : 20
+    const allowed = [10, 20, 50, 100, 200]
+    const lim = allowed.includes(limParsed) ? limParsed : 20
+    if (q !== qp) setQ(qp)
+    if (category !== (cat || '')) setCategory((cat || '') as any)
+    if (limit !== lim) setLimit(lim)
+    // Reset pagination when filters change via URL
+    setOffset(0)
+    // Load using the latest state after syncing
+    // Note: load depends on q/category/limit/offset; minor duplicate loads are acceptable
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+  // On first mount, if URL lacks params, seed from localStorage preferences
+  useEffect(() => {
+    const hasAny = searchParams.get('q') || searchParams.get('category') || searchParams.get('limit')
+    if (hasAny) return
+    try {
+      const params: Record<string, string> = {}
+      const savedQ = localStorage.getItem('plays.q') || ''
+      const savedCat = (localStorage.getItem('plays.category') as PlayCategory | null) || ''
+      const savedLim = localStorage.getItem('plays.limit')
+      if (savedQ) params.q = savedQ
+      if (savedCat) params.category = savedCat
+      if (savedLim && ['10','20','50','100','200'].includes(savedLim)) params.limit = savedLim
+      if (Object.keys(params).length > 0) setSearchParams(params)
+      else {
+        // Ensure we always have a limit in URL for consistency
+        setSearchParams({ limit: String(limit) })
+      }
+    } catch {
+      // Fallback: ensure limit param
+      setSearchParams({ limit: String(limit) })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const filtered = useMemo(() => items, [items])
 
   const openCreate = () => { setEdit(null); setForm({ name: '', category: 'OFFENSE', description: '', diagramUrl: '', content: '' }); setModalOpen(true) }
@@ -43,13 +89,17 @@ export default function Plays() {
     try {
       if (edit) await playsApi.update(edit.id, payload)
       else await playsApi.create(payload)
-      setModalOpen(false); await load()
-    } catch (e: any) { alert('Error al guardar: ' + (e?.response?.data?.error || '')) }
+      setModalOpen(false); await load(); setToast('Jugada guardada')
+    } catch (e: any) { setError('Error al guardar: ' + (e?.response?.data?.error || '')) }
   }
 
   const remove = async (id: number) => {
-    if (!confirm('¿Eliminar jugada?')) return
-    try { await playsApi.remove(id); await load() } catch { alert('No se pudo eliminar') }
+    setConfirmState({
+      message: '¿Eliminar jugada? Esta acción no se puede deshacer.',
+      onYes: async () => {
+        try { await playsApi.remove(id); await load(); setToast('Jugada eliminada') } catch { setError('No se pudo eliminar') }
+      }
+    })
   }
 
   return (
@@ -58,6 +108,16 @@ export default function Plays() {
         <h2 className="text-2xl font-bold text-gray-800">Jugadas</h2>
         <button onClick={openCreate} className="bg-indigo-600 text-white px-4 py-2 rounded-lg">+ Nueva Jugada</button>
       </div>
+
+      {error && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded p-3 flex items-start justify-between">
+          <div className="pr-3">{error}</div>
+          <div className="flex gap-2 shrink-0">
+            <button className="px-2 py-1 bg-rose-100 rounded" onClick={() => load()}>Reintentar</button>
+            <button className="px-2 py-1 bg-gray-100 rounded" onClick={() => setError(null)}>Ocultar</button>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow p-4 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar por nombre" className="px-3 py-2 border rounded-lg" />
@@ -68,16 +128,31 @@ export default function Plays() {
           <option value="DRILL">Drill</option>
         </select>
         <div className="flex gap-2">
-          <button onClick={() => { setOffset(0); load() }} className="px-3 py-2 rounded-lg bg-indigo-600 text-white">Aplicar</button>
+          <button onClick={() => {
+            setOffset(0)
+            const params: Record<string, string> = {}
+            if (q.trim()) params.q = q.trim()
+            if (category) params.category = category
+            params.limit = String(limit)
+            setSearchParams(params)
+          }} disabled={loading} className="px-3 py-2 rounded-lg bg-indigo-600 text-white">{loading ? 'Cargando…' : 'Aplicar'}</button>
           <button onClick={async () => {
-            const blob = await exportPlaysCsv({ q: q || undefined, category: category || undefined })
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url
-            a.download = 'jugadas.csv'
-            a.click()
-            URL.revokeObjectURL(url)
+            try {
+              const blob = await exportPlaysCsv({ q: q || undefined, category: category || undefined })
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = 'jugadas.csv'
+              a.click()
+              URL.revokeObjectURL(url)
+            } catch (e: any) {
+              setError(e?.message || 'No se pudo exportar CSV')
+            }
           }} className="px-3 py-2 rounded-lg bg-gray-100 text-gray-800">Exportar CSV</button>
+          <button onClick={() => {
+            setQ(''); setCategory('' as any); setOffset(0)
+            setSearchParams({ limit: String(limit) })
+          }} className="px-3 py-2 rounded-lg bg-gray-100 text-gray-800">Limpiar</button>
         </div>
       </div>
 
@@ -127,7 +202,16 @@ export default function Plays() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <select value={limit} onChange={e => { setLimit(Number(e.target.value)); setOffset(0); }} className="px-2 py-1 border rounded">
+            <select value={limit} onChange={e => {
+              const newLim = Number(e.target.value)
+              setLimit(newLim); setOffset(0)
+              const params: Record<string, string> = {}
+              if (q.trim()) params.q = q.trim()
+              if (category) params.category = category
+              params.limit = String(newLim)
+              setSearchParams(params)
+              try { localStorage.setItem('plays.limit', String(newLim)) } catch {}
+            }} className="px-2 py-1 border rounded">
               {[10,20,50,100,200].map(n => <option key={n} value={n}>{n}/página</option>)}
             </select>
             <button disabled={offset === 0} onClick={() => setOffset(o => Math.max(0, o - limit))} className="px-2 py-1 border rounded disabled:opacity-50">Anterior</button>
@@ -195,6 +279,18 @@ export default function Plays() {
             </div>
           </div>
         </div>
+      )}
+
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+      {confirmState && (
+        <ConfirmModal
+          title="Confirmar eliminación"
+          message={confirmState.message}
+          confirmText="Eliminar"
+          cancelText="Cancelar"
+          onCancel={() => setConfirmState(null)}
+          onConfirm={async () => { await confirmState.onYes(); setConfirmState(null) }}
+        />
       )}
     </div>
   )

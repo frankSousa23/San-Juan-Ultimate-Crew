@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { channelsApi, messagesApi } from '../lib/api'
 import { Channel, Message } from '../types/communications'
+import Toast from '../components/Toast'
 
 export default function Communications() {
   const [channels, setChannels] = useState<Channel[]>([])
@@ -15,12 +16,13 @@ export default function Communications() {
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const [newChannelOpen, setNewChannelOpen] = useState(false)
   const [newChannelName, setNewChannelName] = useState('')
-  const [params] = useSearchParams()
+  const [params, setSearchParams] = useSearchParams()
   const listRef = useRef<HTMLDivElement | null>(null)
   const [hasMore, setHasMore] = useState(false)
   const [loadingOlder, setLoadingOlder] = useState(false)
   const [atBottom, setAtBottom] = useState(true)
   const latestAtRef = useRef<string | undefined>(undefined)
+  const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
     channelsApi.list().then(setChannels).catch(() => setError('No se pudieron cargar los canales'))
@@ -32,6 +34,22 @@ export default function Communications() {
     if (cid) setActiveId(Number(cid))
   }, [params])
 
+  // Keep URL param in sync when active channel changes
+  useEffect(() => {
+    const current = params.get('channelId')
+    if (activeId && current !== String(activeId)) {
+      const next = new URLSearchParams(params)
+      next.set('channelId', String(activeId))
+      setSearchParams(next)
+    }
+    if (!activeId && current) {
+      const next = new URLSearchParams(params)
+      next.delete('channelId')
+      setSearchParams(next)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId])
+
   useEffect(() => {
     if (!activeId) return
     setLoading(true)
@@ -42,7 +60,7 @@ export default function Communications() {
       setHasMore(data.length === 30)
       latestAtRef.current = asc.length ? asc[asc.length - 1].createdAt : undefined
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'auto' }), 0)
-    }).catch(() => setError('No se pudieron cargar los mensajes')).finally(() => setLoading(false))
+  }).catch(() => setError('No se pudieron cargar los mensajes')).finally(() => setLoading(false))
     // polling new messages
     if (pollRef.current) window.clearInterval(pollRef.current)
     pollRef.current = window.setInterval(async () => {
@@ -125,7 +143,7 @@ export default function Communications() {
       setMessages(prev => prev.map(m => (m.id === optimistic.id ? real : m)))
     } catch {
       setMessages(prev => prev.filter(m => m.id !== optimistic.id))
-      alert('No se pudo enviar el mensaje')
+      setError('No se pudo enviar el mensaje')
     } finally {
       setSending(false)
     }
@@ -134,16 +152,28 @@ export default function Communications() {
   return (
     <div className="h-full flex flex-col">
       <h2 className="text-2xl font-bold text-gray-800 mb-4">Comunicaciones</h2>
+      {error && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded p-3 mb-3 flex items-start justify-between">
+          <div className="pr-3">{error}</div>
+          <div className="flex gap-2 shrink-0">
+            <button className="px-2 py-1 bg-rose-100 rounded" onClick={() => { setError(null); if (activeId) { setLoading(true); messagesApi.list(activeId, { limit: 30 }).then(d => { const asc = [...d].reverse(); setMessages(asc); setHasMore(d.length===30); }).finally(()=>setLoading(false)) } else { channelsApi.list().then(setChannels) } }}>Reintentar</button>
+            <button className="px-2 py-1 bg-gray-100 rounded" onClick={() => setError(null)}>Ocultar</button>
+          </div>
+        </div>
+      )}
       <div className="flex-1 grid grid-cols-12 gap-4 min-h-[600px]">
         {/* Channels list */}
         <div className="col-span-12 md:col-span-3 bg-white rounded-lg shadow p-3 flex flex-col">
           <div className="flex items-center justify-between mb-2">
             <div className="font-semibold text-gray-700">Canales</div>
-            <button onClick={() => setNewChannelOpen(true)} className="text-sm text-purple-700 hover:underline">Nuevo</button>
+            <div className="flex items-center gap-3">
+              <button onClick={() => setNewChannelOpen(true)} className="text-sm text-purple-700 hover:underline">Nuevo</button>
+              <button onClick={() => setActiveId(null)} className="text-xs text-gray-600 hover:underline" title="Limpiar selección">Limpiar</button>
+            </div>
           </div>
           <div className="overflow-auto divide-y">
             {channels.map(c => (
-              <button key={c.id} className={`w-full text-left px-2 py-2 ${activeId === c.id ? 'bg-purple-50' : ''}`} onClick={() => setActiveId(c.id)}>
+              <button key={c.id} className={`w-full text-left px-2 py-2 ${activeId === c.id ? 'bg-purple-50' : ''}`} onClick={() => { setActiveId(c.id); const next = new URLSearchParams(params); next.set('channelId', String(c.id)); setSearchParams(next) }}>
                 <div className="font-medium text-gray-800 truncate">{c.name}</div>
                 <div className="text-xs text-gray-500">{c._count?.messages ?? 0} mensajes</div>
               </button>
@@ -156,6 +186,19 @@ export default function Communications() {
         <div className="col-span-12 md:col-span-9 bg-white rounded-lg shadow flex flex-col">
           <div className="border-b px-4 py-2 flex items-center justify-between">
             <div className="font-semibold text-gray-800">{activeChannel?.name || 'Selecciona un canal'}</div>
+            {activeId && (
+              <button
+                className="text-xs text-gray-600 hover:underline"
+                onClick={() => {
+                  try {
+                    const url = new URL(window.location.href)
+                    url.searchParams.set('channelId', String(activeId))
+                    navigator.clipboard.writeText(url.toString())
+                    setToast('Enlace copiado')
+                  } catch { /* ignore */ }
+                }}
+              >Copiar enlace</button>
+            )}
           </div>
           <div ref={listRef} className="flex-1 overflow-auto px-4 py-3 space-y-2 relative">
             {hasMore && (
@@ -193,7 +236,7 @@ export default function Communications() {
           </div>
         </div>
       </div>
-      {error && <div className="text-sm text-red-600 mt-2">{error}</div>}
+  {/* Error banner rendered above; no extra footer error */}
 
       {newChannelOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setNewChannelOpen(false)}>
@@ -220,8 +263,12 @@ export default function Communications() {
                       setNewChannelName('')
                       setNewChannelOpen(false)
                       setActiveId(ch.id)
+                      const next = new URLSearchParams(params)
+                      next.set('channelId', String(ch.id))
+                      setSearchParams(next)
+                      setToast('Canal creado')
                     } catch (e: any) {
-                      alert('No se pudo crear el canal: ' + (e?.response?.data?.error || ''))
+                      setError('No se pudo crear el canal: ' + (e?.response?.data?.error || ''))
                     }
                   }}
                 >Crear</button>
@@ -231,6 +278,7 @@ export default function Communications() {
           </div>
         </div>
       )}
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
     </div>
   )
 }

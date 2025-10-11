@@ -31,6 +31,8 @@ export default function Resources() {
   const [toast, setToast] = useState<string | null>(null)
   const [preview, setPreview] = useState<ResourceItem | null>(null)
   const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
+  const [debounceTimer, setDebounceTimer] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const formatBytes = (bytes?: number) => {
     if (!bytes || bytes <= 0) return ''
@@ -53,7 +55,10 @@ export default function Resources() {
       setTotal(total)
       setOffset(nextOffset + page.length)
       setItems(prev => (reset ? page : [...prev, ...page]))
-      setSelected([])
+      if (reset) setSelected([])
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || 'Error al cargar recursos'
+      setError(msg)
     } finally {
       setIsLoading(false)
     }
@@ -111,6 +116,23 @@ export default function Resources() {
     })()
   }, [])
 
+  // If URL lacks limit but a saved preference exists, apply it once on mount
+  useEffect(() => {
+    const hasLimit = !!searchParams.get('limit')
+    if (hasLimit) return
+    try {
+      const saved = localStorage.getItem('resources.limit')
+      if (saved && ['10','20','50'].includes(saved)) {
+        const params: Record<string, string> = {}
+        searchParams.forEach((v, k) => { if (v) params[k] = v })
+        params.order = (params.order === 'titleAsc' ? 'titleAsc' : 'createdAtDesc')
+        params.limit = saved
+        setSearchParams(params)
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const sortedItems = useMemo(() => items, [items])
 
   const toggleSelected = (id: number) => {
@@ -139,12 +161,34 @@ export default function Resources() {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="p-2 bg-red-100 text-red-700 rounded flex items-center justify-between">
+          <div className="text-sm truncate pr-2">{error}</div>
+          <div className="flex items-center gap-2">
+            <button className="px-2 py-1 rounded bg-gray-200" onClick={() => load(true)}>Reintentar</button>
+            <button className="px-2 py-1 rounded bg-gray-200" onClick={() => setError(null)}>Ocultar</button>
+          </div>
+        </div>
+      )}
       <div className="flex items-center gap-2 flex-wrap">
         <input
           className="border rounded px-2 py-1"
           placeholder="Buscar"
           value={q}
-          onChange={e => setQ(e.target.value)}
+          onChange={e => {
+            setQ(e.target.value)
+            if (debounceTimer) window.clearTimeout(debounceTimer)
+            const t = window.setTimeout(() => {
+              const params: Record<string, string> = {}
+              const qv = e.target.value.trim()
+              if (qv) params.q = qv
+              if (category.trim()) params.category = category.trim()
+              params.order = sortMode
+              params.limit = String(limit)
+              setSearchParams(params)
+            }, 500)
+            setDebounceTimer(t)
+          }}
           onKeyDown={async e => {
             if (e.key === 'Enter') { e.preventDefault(); await applyFilters() }
             if (e.key === 'Escape') { e.preventDefault(); clearFilters() }
@@ -155,7 +199,20 @@ export default function Resources() {
           className="border rounded px-2 py-1"
           placeholder="Categoría"
           value={category}
-          onChange={e => setCategory(e.target.value)}
+          onChange={e => {
+            setCategory(e.target.value)
+            if (debounceTimer) window.clearTimeout(debounceTimer)
+            const t = window.setTimeout(() => {
+              const params: Record<string, string> = {}
+              if (q.trim()) params.q = q.trim()
+              const catv = e.target.value.trim()
+              if (catv) params.category = catv
+              params.order = sortMode
+              params.limit = String(limit)
+              setSearchParams(params)
+            }, 500)
+            setDebounceTimer(t)
+          }}
           onKeyDown={async e => {
             if (e.key === 'Enter') { e.preventDefault(); await applyFilters() }
             if (e.key === 'Escape') { e.preventDefault(); clearFilters() }
@@ -184,13 +241,17 @@ export default function Resources() {
           onClick={applyFilters}
         >Filtrar</button>
         <button className="px-2 py-1 rounded bg-slate-700 text-white" onClick={async () => {
-          const blob = await exportResourcesCsvServer({ q, category: category || undefined, order: sortMode })
-          const url = URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = 'recursos.csv'
-          a.click()
-          URL.revokeObjectURL(url)
+          try {
+            const blob = await exportResourcesCsvServer({ q, category: category || undefined, order: sortMode })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = 'recursos.csv'
+            a.click()
+            URL.revokeObjectURL(url)
+          } catch (err: any) {
+            setError(err?.response?.data?.error || 'Error al exportar CSV')
+          }
         }}>Exportar CSV</button>
         <button
           className="px-2 py-1 rounded bg-gray-200 text-gray-800"
@@ -203,7 +264,7 @@ export default function Resources() {
             const ids = [...selected]
             setConfirmState({
               message: `¿Eliminar ${ids.length} recurso(s)? Esta acción no se puede deshacer.`,
-              onYes: async () => { await resourcesApi.bulkDelete(ids); await load() }
+              onYes: async () => { await resourcesApi.bulkDelete(ids); await load(); setToast('Recursos eliminados'); setTimeout(() => setToast(null), 1500) }
             })
           }}
         >Eliminar seleccionados ({selected.length})</button>
@@ -232,6 +293,7 @@ export default function Resources() {
             setTitle(''); setUrl(''); setDesc(''); setCatNew('');
             await load()
             try { setCatOptions(await resourcesApi.categories()) } catch {}
+            setToast('Recurso creado'); setTimeout(() => setToast(null), 1500)
           }}>Crear</button>
         </div>
       </div>
@@ -259,11 +321,13 @@ export default function Resources() {
             return
           }
           form.reset()
+          setUploadPct(0)
           await load()
+          setToast('Archivo subido'); setTimeout(() => setToast(null), 1500)
         }}>
           <input name="title" className="border rounded px-2 py-1" placeholder="Título (opcional)" />
           <input name="description" className="border rounded px-2 py-1" placeholder="Descripción (opcional)" />
-          <input name="category" className="border rounded px-2 py-1" placeholder="Categoría (opcional)" />
+          <input name="category" list="resource-categories" className="border rounded px-2 py-1" placeholder="Categoría (opcional)" />
           <input name="file" type="file" accept="application/pdf,image/png,image/jpeg,image/gif,text/plain" className="border rounded px-2 py-1" />
           <div className="md:col-span-4">
             <button type="submit" className="px-3 py-1 rounded bg-indigo-600 text-white">Subir</button>
@@ -282,7 +346,10 @@ export default function Resources() {
 
       {/* Summary + page size selector */}
       <div className="flex items-center justify-between text-sm text-gray-600">
-        <div>Mostrando {Math.min(offset, total)} de {total}</div>
+        <div className="flex items-center gap-3">
+          <div>Mostrando {Math.min(offset, total)} de {total}</div>
+          <div className="text-gray-500">Seleccionados: {selected.length}</div>
+        </div>
         <div className="flex items-center gap-2">
           <span>Tamaño página</span>
           <select
@@ -297,12 +364,28 @@ export default function Resources() {
               params.order = sortMode
               params.limit = String(newLim)
               setSearchParams(params)
+              try { localStorage.setItem('resources.limit', String(newLim)) } catch {}
             }}
           >
             <option value={10}>10</option>
             <option value={20}>20</option>
             <option value={50}>50</option>
           </select>
+          <button
+            type="button"
+            className="px-2 py-1 rounded bg-gray-200"
+            title="Restaurar tamaño de página por defecto"
+            onClick={() => {
+              setLimit(20)
+              try { localStorage.removeItem('resources.limit') } catch {}
+              const params: Record<string, string> = {}
+              if (q.trim()) params.q = q.trim()
+              if (category.trim()) params.category = category.trim()
+              params.order = sortMode
+              params.limit = '20'
+              setSearchParams(params)
+            }}
+          >Reiniciar</button>
         </div>
       </div>
 
@@ -316,7 +399,7 @@ export default function Resources() {
                   <input className="border rounded px-2 py-1" value={eTitle} onChange={e => setETitle(e.target.value)} placeholder="Título" />
                   <input className="border rounded px-2 py-1" value={eUrl} onChange={e => setEUrl(e.target.value)} placeholder="URL" />
                   <input className="border rounded px-2 py-1" value={eDesc} onChange={e => setEDesc(e.target.value)} placeholder="Descripción" />
-                  <input className="border rounded px-2 py-1" value={eCat} onChange={e => setECat(e.target.value)} placeholder="Categoría" />
+                  <input list="resource-categories" className="border rounded px-2 py-1" value={eCat} onChange={e => setECat(e.target.value)} placeholder="Categoría" />
                 </div>
               ) : (
                 <div>
@@ -349,6 +432,7 @@ export default function Resources() {
                     await resourcesApi.update(it.id, { title: eTitle, url: eUrl, description: eDesc || undefined, category: eCat || undefined })
                     cancelEdit()
                     await load()
+                    setToast('Cambios guardados'); setTimeout(() => setToast(null), 1500)
                   }}>Guardar</button>
                 </>
               ) : (
@@ -374,7 +458,7 @@ export default function Resources() {
                   <button className="px-2 py-1 rounded bg-rose-600 text-white" onClick={async () => {
                     setConfirmState({
                       message: '¿Eliminar este recurso? Esta acción no se puede deshacer.',
-                      onYes: async () => { await resourcesApi.remove(it.id); await load() }
+                      onYes: async () => { await resourcesApi.remove(it.id); await load(); setToast('Recurso eliminado'); setTimeout(() => setToast(null), 1500) }
                     })
                   }}>Eliminar</button>
                 </>
@@ -386,7 +470,22 @@ export default function Resources() {
       </div>
       {offset < total && (
         <div className="mt-3">
-          <button className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50" disabled={isLoading} onClick={() => load(false)}>Cargar más ({Math.max(total - offset, 0)})</button>
+          <div className="flex items-center gap-2">
+            <button className="px-3 py-1 rounded bg-gray-200 disabled:opacity-50" disabled={isLoading} onClick={() => load(false)}>
+              {isLoading ? 'Cargando…' : `Cargar más (${Math.max(total - offset, 0)})`}
+            </button>
+            <button className="px-3 py-1 rounded bg-gray-200" onClick={() => {
+              // Toggle selection for current page items, preserve others
+              const pageIds = new Set(sortedItems.map(i => i.id))
+              setSelected(prev => {
+                const next = new Set(prev)
+                pageIds.forEach(id => {
+                  if (next.has(id)) next.delete(id); else next.add(id)
+                })
+                return Array.from(next)
+              })
+            }}>Invertir selección (página)</button>
+          </div>
         </div>
       )}
 

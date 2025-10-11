@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { eventsApi, channelsApi, attendanceApi, playersApi } from '../lib/api'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import EventForm from '../components/EventForm'
 import { EventItem, EventType, EventStatus } from '../types/event'
+import ConfirmModal from '../components/ConfirmModal'
+import Toast from '../components/Toast'
 
 const typeLabel: Record<EventType, string> = {
   TRAINING: 'Entrenamiento',
@@ -20,29 +22,101 @@ const statusBadge: Record<EventStatus, string> = {
 
 export default function Events() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [events, setEvents] = useState<EventItem[]>([])
   const [tab, setTab] = useState<'events' | 'calendar' | 'tournaments' | 'stats'>('events')
   const [typeFilter, setTypeFilter] = useState<'all' | EventType>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | EventStatus>('all')
+  const [q, setQ] = useState('')
+  const [limit, setLimit] = useState<number>(20)
+  const [page, setPage] = useState<number>(1)
   const [createOpen, setCreateOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<EventItem | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [attEvent, setAttEvent] = useState<EventItem | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+  const [confirmState, setConfirmState] = useState<{ title?: string; message: string; onYes: () => Promise<void> } | null>(null)
 
-  useEffect(() => {
+  const reload = async () => {
     setLoading(true)
     setError(null)
-    eventsApi.list().then(setEvents).catch(() => setError('No se pudo cargar eventos')).finally(() => setLoading(false))
+    try {
+      const list = await eventsApi.list()
+      setEvents(list)
+    } catch {
+      setError('No se pudo cargar eventos')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    reload()
+  }, [])
+  // Sync state from URL
+  useEffect(() => {
+    const t = searchParams.get('tab') as any
+    const type = searchParams.get('type') as any
+    const status = searchParams.get('status') as any
+    const sq = searchParams.get('q') || ''
+    const slimit = parseInt(searchParams.get('limit') || '')
+    const spage = parseInt(searchParams.get('page') || '')
+    if (t && ['events','calendar','tournaments','stats'].includes(t) && tab !== t) setTab(t)
+    if (type && (['TOURNAMENT','TRAINING','SOCIAL','WORKSHOP'].includes(type) || type === 'all') && typeFilter !== type) setTypeFilter(type)
+    if (status && (['UPCOMING','ONGOING','COMPLETED','CANCELLED'].includes(status) || status === 'all') && statusFilter !== status) setStatusFilter(status)
+    if (sq !== q) setQ(sq)
+    if (!Number.isNaN(slimit) && slimit >= 5 && slimit <= 200 && slimit !== limit) setLimit(slimit)
+    if (!Number.isNaN(spage) && spage >= 1 && spage !== page) setPage(spage)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  // Seed limit from localStorage on first load if URL has no limit
+  useEffect(() => {
+    if (!searchParams.get('limit')) {
+      const saved = localStorage.getItem('events.limit')
+      if (saved) {
+        const n = parseInt(saved)
+        if (!Number.isNaN(n) && n >= 5 && n <= 200) {
+          const params = new URLSearchParams(searchParams)
+          params.set('limit', String(n))
+          params.set('page', '1')
+          setSearchParams(params)
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const filtered = useMemo(() => {
-    return events.filter(e => (typeFilter === 'all' || e.type === typeFilter) && (statusFilter === 'all' || e.status === statusFilter))
-  }, [events, typeFilter, statusFilter])
+    const text = q.trim().toLowerCase()
+    return events.filter(e =>
+      (typeFilter === 'all' || e.type === typeFilter) &&
+      (statusFilter === 'all' || e.status === statusFilter) &&
+      (text === '' || e.title.toLowerCase().includes(text))
+    )
+  }, [events, typeFilter, statusFilter, q])
+
+  const total = filtered.length
+  const totalPages = Math.max(1, Math.ceil(total / limit))
+  const currentPage = Math.min(page, totalPages)
+  const paged = useMemo(() => {
+    const start = (currentPage - 1) * limit
+    return filtered.slice(start, start + limit)
+  }, [filtered, currentPage, limit])
 
   return (
     <>
     <div className="space-y-6">
+      {error && (
+        <div className="p-2 bg-red-100 text-red-700 rounded flex items-center justify-between">
+          <div className="text-sm truncate pr-2">{error}</div>
+          <div className="flex items-center gap-2">
+            <button className="px-2 py-1 rounded bg-gray-200" onClick={reload}>Reintentar</button>
+            <button className="px-2 py-1 rounded bg-gray-200" onClick={() => setError(null)}>Ocultar</button>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">Sistema de Eventos</h2>
         <button onClick={() => setCreateOpen(true)} className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600">+ Crear Evento</button>
@@ -58,7 +132,14 @@ export default function Events() {
               { k: 'tournaments', label: 'Torneos' },
               { k: 'stats', label: 'Estadísticas' },
             ].map(t => (
-              <button key={t.k} onClick={() => setTab(t.k as any)} className={`py-3 px-2 text-sm font-medium border-b-2 ${tab === t.k ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-600 hover:text-gray-800'}`}>
+              <button key={t.k} onClick={() => {
+                setTab(t.k as any)
+                const params: Record<string, string> = {}
+                params.tab = t.k
+                if (typeFilter !== 'all') params.type = typeFilter
+                if (statusFilter !== 'all') params.status = statusFilter
+                setSearchParams(params)
+              }} className={`py-3 px-2 text-sm font-medium border-b-2 ${tab === t.k ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-600 hover:text-gray-800'}`}>
                 {t.label}
               </button>
             ))}
@@ -68,25 +149,98 @@ export default function Events() {
           {tab === 'events' && (
             <div className="space-y-4">
               {/* Filters */}
-              <div className="flex gap-2">
-                <select value={typeFilter} onChange={e => setTypeFilter(e.target.value as any)} className="px-3 py-2 border rounded-lg text-sm">
+              <div className="flex gap-2 items-center flex-wrap">
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const params: Record<string, string> = { tab: 'events' }
+                      if (typeFilter !== 'all') params.type = typeFilter
+                      if (statusFilter !== 'all') params.status = statusFilter
+                      if (q.trim()) params.q = q.trim()
+                      params.page = '1'
+                      setSearchParams(params)
+                    } else if (e.key === 'Escape') {
+                      setQ('')
+                      const params: Record<string, string> = { tab: 'events' }
+                      if (typeFilter !== 'all') params.type = typeFilter
+                      if (statusFilter !== 'all') params.status = statusFilter
+                      params.page = '1'
+                      setSearchParams(params)
+                    }
+                  }}
+                  placeholder="Buscar por título…"
+                  className="px-3 py-2 border rounded-lg text-sm min-w-[220px]"
+                />
+                <select value={typeFilter} onChange={e => {
+                  const val = e.target.value as any
+                  setTypeFilter(val)
+                  const params: Record<string, string> = { tab: 'events' }
+                  if (val !== 'all') params.type = val
+                  if (statusFilter !== 'all') params.status = statusFilter
+                  if (q.trim()) params.q = q.trim()
+                  params.page = '1'
+                  setSearchParams(params)
+                }} className="px-3 py-2 border rounded-lg text-sm">
                   <option value="all">Todos los tipos</option>
                   <option value="TOURNAMENT">Torneos</option>
                   <option value="TRAINING">Entrenamientos</option>
                   <option value="SOCIAL">Eventos Sociales</option>
                   <option value="WORKSHOP">Talleres</option>
                 </select>
-                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as any)} className="px-3 py-2 border rounded-lg text-sm">
+                <select value={statusFilter} onChange={e => {
+                  const val = e.target.value as any
+                  setStatusFilter(val)
+                  const params: Record<string, string> = { tab: 'events' }
+                  if (typeFilter !== 'all') params.type = typeFilter
+                  if (val !== 'all') params.status = val
+                  if (q.trim()) params.q = q.trim()
+                  params.page = '1'
+                  setSearchParams(params)
+                }} className="px-3 py-2 border rounded-lg text-sm">
                   <option value="all">Todos los estados</option>
                   <option value="UPCOMING">Próximos</option>
                   <option value="ONGOING">En curso</option>
                   <option value="COMPLETED">Completados</option>
                   <option value="CANCELLED">Cancelados</option>
                 </select>
+                <select
+                  value={String(limit)}
+                  onChange={(e) => {
+                    const n = parseInt(e.target.value)
+                    setLimit(n)
+                    localStorage.setItem('events.limit', String(n))
+                    const params: Record<string, string> = { tab: 'events', page: '1', limit: String(n) }
+                    if (typeFilter !== 'all') params.type = typeFilter
+                    if (statusFilter !== 'all') params.status = statusFilter
+                    if (q.trim()) params.q = q.trim()
+                    setSearchParams(params)
+                  }}
+                  className="px-3 py-2 border rounded-lg text-sm"
+                >
+                  {[10,20,50,100,200].map(n => <option key={n} value={n}>{n} por página</option>)}
+                </select>
+                <span className="text-sm text-gray-600">Mostrando {paged.length} de {filtered.length} (Total {events.length})</span>
+                <button className="px-2 py-1 rounded bg-gray-100" onClick={() => {
+                  setTypeFilter('all'); setStatusFilter('all'); setQ(''); setLimit(20); setPage(1)
+                  localStorage.removeItem('events.limit')
+                  setSearchParams({ tab: 'events', page: '1', limit: '20' })
+                }}>Limpiar filtros</button>
+                <button
+                  className="px-3 py-2 rounded bg-amber-100 text-amber-700"
+                  onClick={() => {
+                    const params: Record<string, string> = { tab: 'events', page: '1', limit: String(limit) }
+                    if (typeFilter !== 'all') params.type = typeFilter
+                    if (statusFilter !== 'all') params.status = statusFilter
+                    if (q.trim()) params.q = q.trim()
+                    setSearchParams(params)
+                  }}
+                >Aplicar</button>
               </div>
 
               <div className="space-y-3">
-                {filtered.map(e => (
+                {paged.map(e => (
                   <div key={e.id} className="bg-white border rounded-lg p-4 flex items-center justify-between">
                     <div>
                       <div className="font-semibold text-gray-800">{e.title}</div>
@@ -103,26 +257,70 @@ export default function Events() {
                           if (!ch) ch = await channelsApi.create({ name: `Canal ${e.title}`, eventId: e.id })
                           navigate(`/comunicacion?channelId=${ch.id}`)
                         } catch {
-                          alert('No se pudo abrir el canal')
+                          setToast('No se pudo abrir el canal')
                         }
                       }}>Abrir canal</button>
                       <button className="text-teal-700 hover:underline" onClick={() => setAttEvent(e)}>Asistencia</button>
                       <button className="text-amber-700 hover:underline" onClick={() => setEditTarget(e)}>Editar</button>
-                      <button className="text-red-600 hover:underline" onClick={async () => {
-                        if (!confirm(`¿Eliminar evento "${e.title}"?`)) return
-                        try {
-                          await eventsApi.remove(e.id)
-                          setEvents(prev => prev.filter(x => x.id !== e.id))
-                        } catch {
-                          alert('No se pudo eliminar')
-                        }
+                      <button className="text-red-600 hover:underline" onClick={() => {
+                        setConfirmState({
+                          title: 'Confirmar eliminación',
+                          message: `¿Eliminar evento "${e.title}"? Esta acción no se puede deshacer.`,
+                          onYes: async () => {
+                            try {
+                              await eventsApi.remove(e.id)
+                              setEvents(prev => prev.filter(x => x.id !== e.id))
+                              setToast('Evento eliminado')
+                            } catch {
+                              setError('No se pudo eliminar')
+                            }
+                          }
+                        })
                       }}>Eliminar</button>
                     </div>
                   </div>
                 ))}
                 {loading && <div className="text-gray-600">Cargando...</div>}
                 {!loading && filtered.length === 0 && <div className="text-gray-600">No hay eventos para los filtros seleccionados.</div>}
-                {error && <div className="text-sm text-red-600">{error}</div>}
+                {!loading && filtered.length > 0 && (
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="text-sm text-gray-600">Página {currentPage} de {totalPages}</div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="px-2 py-1 rounded bg-gray-100 disabled:opacity-50"
+                        disabled={currentPage <= 1}
+                        onClick={() => {
+                          const np = currentPage - 1
+                          setPage(np)
+                          const params = new URLSearchParams(searchParams)
+                          params.set('tab', 'events')
+                          params.set('page', String(np))
+                          params.set('limit', String(limit))
+                          if (typeFilter !== 'all') params.set('type', typeFilter); else params.delete('type')
+                          if (statusFilter !== 'all') params.set('status', statusFilter); else params.delete('status')
+                          if (q.trim()) params.set('q', q.trim()); else params.delete('q')
+                          setSearchParams(params)
+                        }}
+                      >Anterior</button>
+                      <button
+                        className="px-2 py-1 rounded bg-gray-100 disabled:opacity-50"
+                        disabled={currentPage >= totalPages}
+                        onClick={() => {
+                          const np = currentPage + 1
+                          setPage(np)
+                          const params = new URLSearchParams(searchParams)
+                          params.set('tab', 'events')
+                          params.set('page', String(np))
+                          params.set('limit', String(limit))
+                          if (typeFilter !== 'all') params.set('type', typeFilter); else params.delete('type')
+                          if (statusFilter !== 'all') params.set('status', statusFilter); else params.delete('status')
+                          if (q.trim()) params.set('q', q.trim()); else params.delete('q')
+                          setSearchParams(params)
+                        }}
+                      >Siguiente</button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -139,6 +337,17 @@ export default function Events() {
         </div>
       </div>
     </div>
+    {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+    {confirmState && (
+      <ConfirmModal
+        title={confirmState.title || 'Confirmar'}
+        message={confirmState.message}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        onCancel={() => setConfirmState(null)}
+        onConfirm={async () => { await confirmState.onYes(); setConfirmState(null) }}
+      />
+    )}
       {createOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setCreateOpen(false)}>
           <div className="bg-white rounded-xl max-w-lg w-full overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -155,8 +364,9 @@ export default function Events() {
                     const r = await eventsApi.create(data as any)
                     setEvents(prev => [...prev, r].sort((a,b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()))
                     setCreateOpen(false)
+                    setToast('Evento creado')
                   } catch (e: any) {
-                    alert('Error al crear: ' + (e?.response?.data?.error || ''))
+                    setError('Error al crear: ' + (e?.response?.data?.error || ''))
                   }
                 }}
               />
@@ -181,8 +391,9 @@ export default function Events() {
                     const r = await eventsApi.update(id, data as any)
                     setEvents(prev => prev.map(ev => ev.id === id ? r : ev).sort((a,b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()))
                     setEditTarget(null)
+                    setToast('Evento guardado')
                   } catch (e: any) {
-                    alert('Error al guardar: ' + (e?.response?.data?.error || ''))
+                    setError('Error al guardar: ' + (e?.response?.data?.error || ''))
                   }
                 }}
               />

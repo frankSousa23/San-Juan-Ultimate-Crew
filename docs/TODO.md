@@ -1,11 +1,11 @@
-# TODO / Próximos módulos
+# TODO / Próximas iteraciones
 
 Pequeño backlog para próximas iteraciones. Crear issues por cada ítem antes de implementar.
 
 - Centro de Recursos
-  - Backend: modelo Resource + endpoints CRUD implementados (sin subida de archivos aún)
-  - Pendiente: soporte de archivos subidos (multer/S3), visor enriquecido, edición inline/masiva
-  - Web: página `/recursos` implementada (listado, filtros y alta/borrado básico)
+  - Backend: Implementado con CRUD, paginado, categorías, export, subida de archivos local (límite 10 MB, tipos PDF/PNG/JPEG/GIF/TXT) y estáticos `/uploads/...`.
+  - Web: Página `/recursos` con URL-sync (q/categoría/orden/limit), edición inline, borrado múltiple, previsualización imágenes/PDF y export CSV con BOM.
+  - Pendiente: Opcional S3 en vez de almacenamiento local; visor enriquecido para más tipos.
 
 - Medios / Marketing
   - Alcance: calendario de contenidos, enlaces a redes, métricas (manuales o API externas)
@@ -31,9 +31,8 @@ Pequeño backlog para próximas iteraciones. Crear issues por cada ítem antes d
 
 ---
 
-Estado actualizado (10-Oct-2025):
+Estado actualizado (11-Oct-2025):
 
-- Implementado E2E smoke (API) para flujo principal; ver README para ejecución.
-- Semillas incluidas para Finanzas, Rivales y Jugadas.
-- Borrados en cascada habilitados en Prisma y endpoints DELETE añadidos (accounts/categories).
-Pendientes: Centro de Recursos (uploads/visor), Medios, Reserva, y estadísticas avanzadas.
+Implementado: E2E smoke (API) para flujo principal; semillas para Finanzas, Rivales y Jugadas; cascadas en Prisma y DELETE en accounts/categories.
+Novedades: Centro de Recursos con uploads/visor básico y URL-sync; Jugadas y Lesiones con URL-sync en filtros y tamaño de página.
+Pendientes: Medios, Reserva, estadísticas avanzadas y pruebas automatizadas Web.

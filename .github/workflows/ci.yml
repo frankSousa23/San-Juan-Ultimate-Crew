@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sju
+          POSTGRES_PASSWORD: sju
+          POSTGRES_DB: sju_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://sju:sju@localhost:5432/sju_dev?schema=public
+      PORT: 4000
+      CORS_ORIGIN: http://localhost:5173
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install deps
+        run: npm ci
+      - name: Generate Prisma Client
+        run: npm -w apps/api run prisma:generate
+      - name: Migrate DB
+        run: npm -w apps/api run prisma:migrate -- --name ci
+      - name: Seed DB
+        run: npm -w apps/api run prisma:seed
+      - name: Build API
+        run: npm -w apps/api run build
+      - name: Build Web
+        run: npm -w apps/web run build
+      - name: Start API
+        run: node apps/api/dist/index.js &
+      - name: Wait for /health
+        run: node apps/api/scripts/wait-health.cjs
+      - name: Smoke E2E (CJS)
+        run: node apps/api/scripts/smoke-e2e.cjs

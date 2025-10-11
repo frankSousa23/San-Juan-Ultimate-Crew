@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import ConfirmModal from '../components/ConfirmModal'
 import { eventsApi, playersApi, eventParticipantsApi, exportEventParticipantsCsv } from '../lib/api'
 import type { EventItem } from '../types/event'
 import type { Player } from '../types/player'
 
 export default function RosterTorneo() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [events, setEvents] = useState<EventItem[]>([])
   const [players, setPlayers] = useState<Player[]>([])
   const [eventId, setEventId] = useState<number | null>(null)
@@ -15,6 +18,7 @@ export default function RosterTorneo() {
   const [pos, setPos] = useState<string>('')
   const [pstatus, setPstatus] = useState<string>('')
   const [sortKey, setSortKey] = useState<'number' | 'name'>('number')
+  const [confirmState, setConfirmState] = useState<{ title?: string; message: string; onYes: () => Promise<void> } | null>(null)
 
   // Auto-hide feedback
   useEffect(() => {
@@ -34,7 +38,15 @@ export default function RosterTorneo() {
         const [evs, pls] = await Promise.all([eventsApi.list(), playersApi.list()])
         setEvents(evs)
         setPlayers(pls)
-        if (evs.length > 0) setEventId(evs[0].id)
+        if (evs.length > 0) {
+          // Prefer URL param, then localStorage, otherwise first event
+          const spEvent = Number(searchParams.get('eventId') || '')
+          const lsEvent = Number(localStorage.getItem('rosterTorneo.eventId') || '')
+          const pick = (!Number.isNaN(spEvent) && evs.some(e => e.id === spEvent)) ? spEvent
+            : (!Number.isNaN(lsEvent) && evs.some(e => e.id === lsEvent)) ? lsEvent
+            : evs[0].id
+          setEventId(pick)
+        }
       } catch (e: any) {
         setError(e?.message || 'Error cargando datos')
       }
@@ -122,13 +134,17 @@ export default function RosterTorneo() {
 
   async function exportCsv() {
     if (!eventId) return
-    const blob = await exportEventParticipantsCsv(eventId)
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `roster-evento-${eventId}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    try {
+      const blob = await exportEventParticipantsCsv(eventId)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `roster-evento-${eventId}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e: any) {
+      setError(e?.message || 'Error al exportar CSV')
+    }
   }
 
   async function addAllFiltered() {
@@ -158,6 +174,39 @@ export default function RosterTorneo() {
     } finally { setLoading(false) }
   }
 
+  // URL-sync: read params -> state
+  useEffect(() => {
+    // eventId depends on events list to validate
+    const spEvent = Number(searchParams.get('eventId') || '')
+    if (!Number.isNaN(spEvent) && spEvent !== eventId && events.some(e => e.id === spEvent)) {
+      setEventId(spEvent)
+    }
+    const sq = searchParams.get('q') || ''
+    if (sq !== q) setQ(sq)
+    const spos = searchParams.get('pos') || ''
+    if (spos !== pos) setPos(spos)
+    const sps = searchParams.get('status') || ''
+    if (sps !== pstatus) setPstatus(sps)
+    const ssort = (searchParams.get('sort') as 'number' | 'name') || 'number'
+    if (ssort !== sortKey) setSortKey(ssort)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, events])
+
+  // URL-sync: state -> params (only include non-empty filters)
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (eventId) params.set('eventId', String(eventId))
+    if (q.trim()) params.set('q', q.trim())
+    if (pos) params.set('pos', pos)
+    if (pstatus) params.set('status', pstatus)
+    if (sortKey !== 'number') params.set('sort', sortKey)
+    const next = params.toString()
+    const curr = searchParams.toString()
+    if (next !== curr) setSearchParams(params)
+    if (eventId) localStorage.setItem('rosterTorneo.eventId', String(eventId))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId, q, pos, pstatus, sortKey])
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -170,8 +219,28 @@ export default function RosterTorneo() {
             ))}
           </select>
           <button className="px-3 py-1 rounded bg-emerald-600 text-white" onClick={exportCsv} disabled={!eventId || loading}>Exportar CSV</button>
+          {eventId && (
+            <button
+              className="px-3 py-1 rounded bg-gray-100 text-gray-800"
+              onClick={() => {
+                try {
+                  const url = new URL(window.location.href)
+                  url.searchParams.set('eventId', String(eventId))
+                  if (q) url.searchParams.set('q', q); else url.searchParams.delete('q')
+                  if (pos) url.searchParams.set('pos', pos); else url.searchParams.delete('pos')
+                  if (pstatus) url.searchParams.set('status', pstatus); else url.searchParams.delete('status')
+                  if (sortKey !== 'number') url.searchParams.set('sort', sortKey); else url.searchParams.delete('sort')
+                  navigator.clipboard.writeText(url.toString())
+                  setToast('Enlace copiado')
+                } catch { /* ignore */ }
+              }}
+            >Copiar enlace</button>
+          )}
         </div>
       </div>
+      {eventId && (
+        <div className="text-sm text-gray-600">Evento actual: <span className="font-medium">{events.find(e => e.id === eventId)?.title}</span></div>
+      )}
 
       {error && <div className="p-2 bg-red-100 text-red-700 rounded">{error}</div>}
       {toast && (
@@ -203,8 +272,17 @@ export default function RosterTorneo() {
                 <option value="number">Orden: número</option>
                 <option value="name">Orden: nombre</option>
               </select>
+              <span className="text-gray-500">Disponibles: {availablePlayers.length}</span>
+              <button className="ml-2 px-2 py-1 rounded bg-gray-200" onClick={() => {
+                setQ(''); setPos(''); setPstatus('')
+                const params = new URLSearchParams()
+                if (eventId) params.set('eventId', String(eventId))
+                if (sortKey !== 'number') params.set('sort', sortKey)
+                setSearchParams(params)
+              }}>Limpiar filtros</button>
               <button className="ml-2 px-2 py-1 rounded bg-indigo-600 text-white disabled:opacity-50"
-                      onClick={addAllFiltered} disabled={loading || availablePlayers.length === 0}>Agregar todos</button>
+                      onClick={() => setConfirmState({ message: `¿Agregar ${availablePlayers.length} jugadores filtrados?`, onYes: addAllFiltered })}
+                      disabled={loading || availablePlayers.length === 0}>Agregar todos</button>
             </div>
           </div>
           <div className="max-h-96 overflow-auto divide-y">
@@ -223,12 +301,13 @@ export default function RosterTorneo() {
 
         <div className="bg-white rounded shadow p-4">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-medium">Seleccionados para este evento</h3>
+      <h3 className="font-medium">Seleccionados para este evento</h3>
             <span className="inline-flex items-center justify-center text-xs bg-purple-600 text-white rounded-full px-2 py-0.5">
               {participants.length}
             </span>
-            <button className="ml-auto px-2 py-1 rounded bg-rose-600 text-white disabled:opacity-50"
-                    onClick={removeAllSelected} disabled={loading || participants.length === 0}>Quitar todos</button>
+      <button className="ml-auto px-2 py-1 rounded bg-rose-600 text-white disabled:opacity-50"
+        onClick={() => setConfirmState({ message: `¿Quitar ${participants.length} seleccionados de este evento?`, onYes: removeAllSelected })}
+        disabled={loading || participants.length === 0}>Quitar todos</button>
           </div>
           <div className="max-h-96 overflow-auto divide-y">
             {participants.map(p => {
@@ -268,6 +347,16 @@ export default function RosterTorneo() {
           </div>
         </div>
       </div>
+      {confirmState && (
+        <ConfirmModal
+          title={confirmState.title || 'Confirmar'}
+          message={confirmState.message}
+          confirmText="Sí"
+          cancelText="Cancelar"
+          onCancel={() => setConfirmState(null)}
+          onConfirm={async () => { await confirmState.onYes(); setConfirmState(null) }}
+        />
+      )}
     </div>
   )
 }

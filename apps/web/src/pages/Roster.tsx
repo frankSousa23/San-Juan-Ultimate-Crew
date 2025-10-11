@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { playersApi } from '../lib/api'
 import PlayerForm from '../components/PlayerForm'
@@ -11,6 +12,7 @@ const badgeColor: Record<Status, string> = {
 }
 
 export default function Roster() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [players, setPlayers] = useState<Player[]>([])
   const [q, setQ] = useState('')
   const [pos, setPos] = useState<'' | Position>('')
@@ -30,6 +32,29 @@ export default function Roster() {
       .catch(() => setError('No se pudo cargar el roster'))
       .finally(() => setLoading(false))
   }, [])
+
+  // Sync from URL -> state
+  useEffect(() => {
+    const sq = searchParams.get('q') || ''
+    if (sq !== q) setQ(sq)
+    const spos = (searchParams.get('pos') as Position | null) || ''
+    if (spos !== pos) setPos(spos as any)
+    const sst = (searchParams.get('st') as Status | null) || ''
+    if (sst !== st) setSt(sst as any)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  // Sync state -> URL
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (q.trim()) params.set('q', q.trim())
+    if (pos) params.set('pos', pos)
+    if (st) params.set('st', st)
+    const next = params.toString()
+    const curr = searchParams.toString()
+    if (next !== curr) setSearchParams(params)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, pos, st])
 
   const filtered = useMemo(() => {
     return players.filter(p => {
@@ -60,6 +85,21 @@ export default function Roster() {
           <input
             value={q}
             onChange={e => setQ(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const params: Record<string, string> = {}
+                if (q.trim()) params.q = q.trim()
+                if (pos) params.pos = pos
+                if (st) params.st = st
+                setSearchParams(params)
+              } else if (e.key === 'Escape') {
+                setQ('')
+                const params: Record<string, string> = {}
+                if (pos) params.pos = pos
+                if (st) params.st = st
+                setSearchParams(params)
+              }
+            }}
             placeholder="Buscar jugador..."
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
