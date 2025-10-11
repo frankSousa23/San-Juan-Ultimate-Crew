@@ -6,6 +6,7 @@ import { AttendanceRecord, UpsertAttendanceInput } from '../types/attendance'
 import { Account, Category, TransactionItem, TransactionList, FinanceSummary, CreateAccountInput, CreateCategoryInput, CreateTransactionInput, UpdateTransactionInput } from '../types/finance'
 import { PlayItem, CreatePlayInput, UpdatePlayInput } from '../types/plays'
 import { EventParticipant } from '../types/event'
+import { ResourceItem, CreateResourceInput, UpdateResourceInput } from '../types/resource'
 
 const baseURL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000'
 
@@ -63,19 +64,19 @@ export const channelsApi = {
 }
 
 export const messagesApi = {
-  list: async (channelId: number, params?: { limit?: number; before?: string; since?: string }): Promise<Message[]> => {
-    const { data } = await http.get<Message[]>('/api/messages', { params: { channelId, ...params } })
-    return data
-  },
-  create: async (payload: CreateMessageInput): Promise<Message> => {
-    const { data } = await http.post<Message>('/api/messages', payload)
-    return data
-  }
+  list: async (channelId: number, params?: { limit?: number; before?: string; since?: string }): Promise<Message[]> => (
+    await http.get<Message[]>('/api/messages', { params: { channelId, ...params } })
+  ).data,
+  create: async (payload: CreateMessageInput): Promise<Message> => (
+    await http.post<Message>('/api/messages', payload)
+  ).data,
 }
 
 export const accountsApi = {
   list: async (): Promise<Account[]> => (await http.get<Account[]>('/api/accounts')).data,
-  create: async (payload: CreateAccountInput): Promise<Account> => (await http.post<Account>('/api/accounts', payload)).data,
+  create: async (payload: CreateAccountInput): Promise<Account> => (
+    await http.post<Account>('/api/accounts', payload)
+  ).data,
 }
 
 export const categoriesApi = {
@@ -237,4 +238,47 @@ export async function exportInjuriesCsv(params?: { playerId?: number; severity?:
   ].join(','))
   const csv = [header.join(','), ...rows].join('\n')
   return new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+}
+
+// Resources
+export const resourcesApi = {
+  list: async (params?: { q?: string; category?: string }): Promise<ResourceItem[]> => (
+    await http.get<ResourceItem[]>('/api/resources', { params })
+  ).data,
+  categories: async (): Promise<string[]> => (
+    await http.get<string[]>('/api/resources/categories')
+  ).data,
+  listPaged: async (params?: { q?: string; category?: string; limit?: number; offset?: number; order?: 'createdAtDesc' | 'titleAsc' }): Promise<{ items: ResourceItem[]; total: number; limit: number; offset: number }> => (
+    await http.get('/api/resources/paged', { params })
+  ).data,
+  create: async (payload: CreateResourceInput): Promise<ResourceItem> => (
+    await http.post<ResourceItem>('/api/resources', payload)
+  ).data,
+  update: async (id: number, payload: UpdateResourceInput): Promise<ResourceItem> => (
+    await http.put<ResourceItem>(`/api/resources/${id}`, payload)
+  ).data,
+  remove: async (id: number): Promise<void> => { await http.delete(`/api/resources/${id}`) },
+  bulkDelete: async (ids: number[]): Promise<{ deleted: number[] }> => (
+    await http.post<{ deleted: number[] }>(`/api/resources/bulk-delete`, { ids })
+  ).data,
+}
+
+export async function exportResourcesCsv(params?: { q?: string; category?: string }): Promise<Blob> {
+  const items = await resourcesApi.list(params)
+  const header = ['id','title','url','description','category','createdAt']
+  const rows = items.map(r => [
+    r.id,
+    JSON.stringify(r.title ?? ''),
+    JSON.stringify(r.url ?? ''),
+    JSON.stringify(r.description ?? ''),
+    JSON.stringify(r.category ?? ''),
+    r.createdAt,
+  ].join(','))
+  const csv = [header.join(','), ...rows].join('\n')
+  return new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+}
+
+export async function exportResourcesCsvServer(params?: { q?: string; category?: string; order?: 'createdAtDesc' | 'titleAsc' }): Promise<Blob> {
+  const res = await http.get('/api/resources/export', { params, responseType: 'blob' })
+  return res.data as Blob
 }

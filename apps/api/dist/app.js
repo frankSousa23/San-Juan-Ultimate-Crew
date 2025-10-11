@@ -17,6 +17,8 @@ import injuriesRouter from './routes/injuries.js';
 import rivalsRouter from './routes/rivals.js';
 import playsRouter from './routes/plays.js';
 import eventParticipantsRouter from './routes/eventParticipants.js';
+import resourcesRouter from './routes/resources.js';
+import path from 'path';
 export const app = express();
 const corsOrigins = process.env.CORS_ORIGIN?.split(',').map((s) => s.trim()) ?? ['*'];
 app.use(cors({ origin: corsOrigins }));
@@ -37,4 +39,8 @@ app.use('/api/injuries', injuriesRouter);
 app.use('/api/rivals', rivalsRouter);
 app.use('/api/plays', playsRouter);
 app.use('/api/event-participants', eventParticipantsRouter);
+app.use('/api/resources', resourcesRouter);
+// Serve uploaded files statically
+const uploadsDir = path.resolve(process.cwd(), 'apps', 'api', 'uploads');
+app.use('/uploads', express.static(uploadsDir));
 app.get('/', (_req, res) => res.json({ name: 'San Juan Ultimate Crew API', ok: true }));

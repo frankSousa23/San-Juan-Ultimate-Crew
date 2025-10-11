@@ -10,6 +10,7 @@ import Injuries from './pages/Injuries'
 import Rivals from './pages/Rivals'
 import Plays from './pages/Plays'
 import RosterTorneo from './pages/RosterTorneo'
+import Resources from './pages/Resources'
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/rivales" element={<Rivals />} />
         <Route path="/jugadas" element={<Plays />} />
         <Route path="/roster-torneo" element={<RosterTorneo />} />
+        <Route path="/recursos" element={<Resources />} />
       </Routes>
     </Layout>
   )

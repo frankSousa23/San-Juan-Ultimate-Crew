@@ -62,15 +62,15 @@ Nota: Algunos .txt eran variantes del mismo módulo (p.ej., “Finanzas”, “G
 
 - Roster Torneo.txt
   - Propósito: Selección específica para torneos con configuración de alineaciones.
-  - Implementación: API para selección por evento disponible vía `EventParticipant` (GET/PUT/DELETE en `/api/event-participants`). Vista dedicada en frontend aún no implementada.
-  - Estado: Parcial (backend listo, frontend pendiente).
+  - Implementación: API para selección por evento (`/api/event-participants`) y página frontend dedicada `Roster Torneo` (ruta `/roster-torneo`) con agregar/quitar jugadores y exportación CSV.
+  - Estado: Implementado.
   - Rutas API: /api/event-participants
 
 - Centro de Recursos.txt
   - Propósito: Repositorio de archivos/recursos, posiblemente con categorías y descargas.
-  - Implementación: No implementado.
-  - Estado: Pendiente.
-  - Rutas API: N/A.
+  - Implementación: Módulo de Recursos con listado, filtro por texto/categoría y CRUD básico; página `/recursos` en la web.
+  - Estado: Implementado (descargas/archivos binarios: Pendiente, actualmente URLs externas).
+  - Rutas API: /api/resources (GET con filtros, POST, PUT/:id, DELETE/:id).
 
 - Medios.txt
   - Propósito: Contenidos de redes/marketing, KPIs sociales.

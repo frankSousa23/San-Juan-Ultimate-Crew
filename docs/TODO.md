@@ -3,9 +3,9 @@
 Pequeño backlog para próximas iteraciones. Crear issues por cada ítem antes de implementar.
 
 - Centro de Recursos
-  - Backend: modelo Resource { id, title, description?, url | file, category?, createdAt }
-  - Endpoints: GET/POST/PUT/DELETE /api/resources, subida de archivos (multer/s3 según entorno)
-  - Web: listado, filtros por categoría, subida/edición, visor simple
+  - Backend: modelo Resource + endpoints CRUD implementados (sin subida de archivos aún)
+  - Pendiente: soporte de archivos subidos (multer/S3), visor enriquecido, edición inline/masiva
+  - Web: página `/recursos` implementada (listado, filtros y alta/borrado básico)
 
 - Medios / Marketing
   - Alcance: calendario de contenidos, enlaces a redes, métricas (manuales o API externas)
@@ -18,7 +18,7 @@ Pequeño backlog para próximas iteraciones. Crear issues por cada ítem antes d
 
 - Roster Torneo
   - Backend: listo con `/api/event-participants` (EventParticipant)
-  - Web: página dedicada para seleccionar plantel por evento, exportación a CSV
+  - Web: página dedicada implementada (`/roster-torneo`) con agregar/quitar y exportación CSV
   - Notas: cleanup E2E confirmado y cascadas en Prisma incorporadas para soporte estable de borrados
 
 - Estadísticas avanzadas
@@ -36,4 +36,4 @@ Estado actualizado (10-Oct-2025):
 - Implementado E2E smoke (API) para flujo principal; ver README para ejecución.
 - Semillas incluidas para Finanzas, Rivales y Jugadas.
 - Borrados en cascada habilitados en Prisma y endpoints DELETE añadidos (accounts/categories).
-Pendientes: Centro de Recursos, Medios, Reserva, Roster Torneo (vista web) y estadísticas avanzadas.
+Pendientes: Centro de Recursos (uploads/visor), Medios, Reserva, y estadísticas avanzadas.

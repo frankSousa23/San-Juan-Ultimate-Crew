@@ -30,3 +30,6 @@ Thumbs.db
 
 # Coverage
 coverage/
+ 
+# API uploads (local storage)
+apps/api/uploads/

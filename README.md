@@ -101,6 +101,16 @@ Los prototipos `.txt` de diseño fueron retirados del repositorio. Consulta `doc
   - Categories: `GET/POST/DELETE /api/categories[/:id]`
   - Transactions: `GET/POST/PUT/DELETE /api/transactions[/:id]`
 
+- Recursos (Centro de Recursos):
+  - `GET /api/resources?q=&category=` — lista recursos, filtro por texto y categoría.
+  - `GET /api/resources/categories` — devuelve categorías distintas (no vacías), ordenadas A→Z.
+  - `GET /api/resources/paged?q=&category=&limit=&offset=&order=` — listado paginado para ambos órdenes. Param `order`: `createdAtDesc` (por defecto) o `titleAsc`. Límite entre 1 y 200; `offset` ≥ 0.
+  - `GET /api/resources/export?q=&category=&order=` — exporta CSV con filtros aplicados. Param `order`: `createdAtDesc` (por defecto) o `titleAsc`. El CSV incluye BOM UTF‑8 para compatibilidad con Excel.
+  - `POST /api/resources { title, url, description?, category? }` — crea recurso.
+  - `PUT /api/resources/:id { ...partial }` — actualiza campos.
+  - `DELETE /api/resources/:id` — elimina recurso.
+  - `POST /api/resources/bulk-delete { ids:number[] }` — elimina múltiples recursos y limpia archivos asociados.
+
 ## Verificación rápida (smoke tests)
 
 - Preparación:
@@ -208,7 +218,7 @@ npm -w apps/web run build
 npm -w apps/web run preview -- --port 5176 --strictPort
 ```
 
-Validado: 10-Oct-2025
+Validado: 11-Oct-2025
 
 - Docker: si cambias puertos de Postgres, actualiza `DATABASE_URL` en `apps/api/.env`.
 
@@ -220,6 +230,7 @@ Validado: 10-Oct-2025
 - API health (/health): PASS
 - E2E smoke (apps/api/scripts/smoke-e2e.cjs): PASS
 - Nuevos endpoints verificados: /api/event-participants (GET/PUT/DELETE)
+  y /api/resources (CRUD)
 - Limpieza E2E silenciosa y nuevos DELETE en cuentas/categorías: PASS
 
 ## Flujo de trabajo sugerido
@@ -238,3 +249,28 @@ Validado: 10-Oct-2025
 - Panel de canales (crear/seleccionar), chat con scroll y composer.
 - Polling liviano cada ~8s usando `since` para nuevos mensajes.
 - Desde Eventos, botón “Abrir canal” crea o redirige al canal asociado: navega a `/comunicacion?channelId=ID`.
+
+## Web: Roster Torneo
+
+- Ruta: `/roster-torneo` (navbar).
+- Permite seleccionar el plantel por evento (usa `/api/event-participants`).
+- Agregar/Quitar jugadores, editar rol/estado inline y exportar CSV del roster del evento.
+
+## Web: Centro de Recursos
+
+- Ruta: `/recursos` (navbar).
+- Lista, filtra por texto/categoría y permite crear/eliminar recursos rápidos.
+- Campos: título, URL, descripción (opcional), categoría (opcional).
+- Acciones: edición inline, borrado múltiple, orden (recientes/título) y exportación CSV.
+- VS Code: tarea "Open: Recursos" abre la ruta en el navegador (requiere preview activo en 5176).
+
+Subida de archivos (local)
+
+- Endpoint: `POST /api/resources/upload` con `multipart/form-data` (campo `file`, y opcionales `title`, `description`, `category`).
+- Los archivos se guardan en `apps/api/uploads` y se sirven en `GET /uploads/<archivo>`.
+- Desde la Web, en la sección “Subir archivo” puedes cargar un archivo; el enlace resultante apunta a `${VITE_API_URL}/uploads/...`.
+- Notas:
+  - `DELETE /api/resources/:id` por ahora elimina el registro; si quieres que también borre el archivo físico, dilo y lo activo.
+  - Para límites de tamaño o filtrado de tipos MIME, puedo añadir validaciones y mensajes de error claros.
+  - Límite de tamaño actual: 10 MB por archivo.
+  - Tipos permitidos: PDF, PNG, JPEG, GIF y TXT (text/plain).

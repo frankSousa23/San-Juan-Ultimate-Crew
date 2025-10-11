@@ -217,3 +217,20 @@ model Play {
   @@index([category])
   @@index([name])
 }
+
+model Resource {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?
+  url         String?
+  category    String?
+  // File metadata (for uploaded resources)
+  fileName    String?
+  mimeType    String?
+  size        Int?
+  storagePath String?
+  createdAt   DateTime  @default(now())
+
+  @@index([category])
+  @@index([title])
+}
