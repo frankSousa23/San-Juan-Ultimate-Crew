@@ -66,6 +66,13 @@ enum TransactionType {
   TRANSFER
 }
 
+// Role Requests
+enum RoleRequestStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
 model Player {
   id         Int            @id @default(autoincrement())
   name       String
@@ -81,6 +88,12 @@ model Player {
   attendances Attendance[]
   eventParticipants EventParticipant[]
   injuries   Injury[]
+
+  // Reverse relation to User (one-to-one)
+  user       User?          @relation("PlayerUser")
+
+  // Reverse relation to RoleRequest.player
+  roleRequests RoleRequest[]
 }
 
 model Event {
@@ -233,4 +246,76 @@ model Resource {
 
   @@index([category])
   @@index([title])
+}
+
+// Auth & RBAC
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  name          String?
+  passwordHash  String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  roles         UserRole[]
+  playerId      Int?
+  player        Player?   @relation("PlayerUser", fields: [playerId], references: [id], onDelete: SetNull)
+
+  roleRequests  RoleRequest[]
+  // Reverse relation to RoleRequest.decidedBy
+  decidedRequests RoleRequest[] @relation("RoleRequestDecider")
+
+  @@unique([playerId])
+}
+
+model Role {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  createdAt   DateTime     @default(now())
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id        Int              @id @default(autoincrement())
+  name      String           @unique
+  createdAt DateTime         @default(now())
+  roles     RolePermission[]
+}
+
+model UserRole {
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int
+  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId Int
+
+  @@id([userId, roleId])
+}
+
+model RolePermission {
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId       Int
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  permissionId Int
+
+  @@id([roleId, permissionId])
+}
+
+model RoleRequest {
+  id           Int               @id @default(autoincrement())
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       Int
+  role         String            // requested role, currently only 'player' allowed by API
+  player       Player?           @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  playerId     Int?
+  status       RoleRequestStatus @default(PENDING)
+  note         String?
+  decidedBy    User?             @relation("RoleRequestDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedById  Int?
+  createdAt    DateTime          @default(now())
+  decidedAt    DateTime?
+
+  @@index([status])
+  @@index([userId])
 }

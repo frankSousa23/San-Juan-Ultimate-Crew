@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import axios from 'axios'
-import { playersApi } from '../lib/api'
+import { playersApi, authApi, getAuthToken } from '../lib/api'
 import PlayerForm from '../components/PlayerForm'
 import { Player, Position, Status } from '../types/player'
 
@@ -22,6 +22,8 @@ export default function Roster() {
   const [editOpen, setEditOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [user, setUser] = useState<{ roles?: string[]; playerId?: number | null } | null>(null)
+  const authed = !!getAuthToken()
 
 
   useEffect(() => {
@@ -32,6 +34,13 @@ export default function Roster() {
       .catch(() => setError('No se pudo cargar el roster'))
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    let cancel = false
+    if (!authed) { setUser(null); return }
+    authApi.me().then(me => { if (!cancel && me.user) setUser({ roles: me.user.roles, playerId: me.user.playerId }) }).catch(() => {})
+    return () => { cancel = true }
+  }, [authed])
 
   // Sync from URL -> state
   useEffect(() => {
@@ -76,7 +85,9 @@ export default function Roster() {
       {/* Header & Actions */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <h2 className="text-2xl font-bold text-gray-800">Roster Principal</h2>
-        <button onClick={() => setCreateOpen(true)} className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">+ Agregar Jugador</button>
+        {(user?.roles?.includes('admin')) && (
+          <button onClick={() => setCreateOpen(true)} className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">+ Agregar Jugador</button>
+        )}
       </div>
 
       {/* Filters */}
@@ -156,10 +167,13 @@ export default function Roster() {
               {selected.heightCm && <div className="text-sm"><span className="text-gray-500">Altura:</span> {selected.heightCm} cm</div>}
             </div>
             <div className="p-4 flex gap-2">
+              {(user?.roles?.includes('admin') || user?.playerId === selected.id) && (
               <button
                 className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700"
                 onClick={() => { setEditOpen(true) }}
               >Editar</button>
+              )}
+              {(user?.roles?.includes('admin')) && (
               <button
                 className="flex-1 bg-red-50 text-red-700 py-2 rounded-lg hover:bg-red-100"
                 onClick={async () => {
@@ -174,6 +188,7 @@ export default function Roster() {
                   }
                 }}
               >Eliminar</button>
+              )}
               <button className="flex-1 bg-gray-100 text-gray-800 py-2 rounded-lg hover:bg-gray-200" onClick={() => setSelected(null)}>Cerrar</button>
             </div>
           </div>

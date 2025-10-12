@@ -33,3 +33,10 @@ coverage/
  
 # API uploads (local storage)
 apps/api/uploads/
+
+# Playwright auth states (generated)
+apps/web/tests/.auth/
+
+# Playwright artifacts
+apps/web/playwright-report/
+apps/web/test-results/

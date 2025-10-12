@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { channelsApi, messagesApi } from '../lib/api'
 import { Channel, Message } from '../types/communications'
-import Toast from '../components/Toast'
+import { useToast } from '../components/Toast'
 
 export default function Communications() {
   const [channels, setChannels] = useState<Channel[]>([])
@@ -22,7 +22,7 @@ export default function Communications() {
   const [loadingOlder, setLoadingOlder] = useState(false)
   const [atBottom, setAtBottom] = useState(true)
   const latestAtRef = useRef<string | undefined>(undefined)
-  const [toast, setToast] = useState<string | null>(null)
+  const toasts = useToast()
 
   useEffect(() => {
     channelsApi.list().then(setChannels).catch(() => setError('No se pudieron cargar los canales'))
@@ -194,7 +194,7 @@ export default function Communications() {
                     const url = new URL(window.location.href)
                     url.searchParams.set('channelId', String(activeId))
                     navigator.clipboard.writeText(url.toString())
-                    setToast('Enlace copiado')
+                    toasts.info('Enlace copiado')
                   } catch { /* ignore */ }
                 }}
               >Copiar enlace</button>
@@ -266,7 +266,7 @@ export default function Communications() {
                       const next = new URLSearchParams(params)
                       next.set('channelId', String(ch.id))
                       setSearchParams(next)
-                      setToast('Canal creado')
+                      toasts.success('Canal creado')
                     } catch (e: any) {
                       setError('No se pudo crear el canal: ' + (e?.response?.data?.error || ''))
                     }
@@ -278,7 +278,7 @@ export default function Communications() {
           </div>
         </div>
       )}
-      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+      {/* global toasts via ToastProvider */}
     </div>
   )
 }

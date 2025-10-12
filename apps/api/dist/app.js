@@ -18,6 +18,8 @@ import rivalsRouter from './routes/rivals.js';
 import playsRouter from './routes/plays.js';
 import eventParticipantsRouter from './routes/eventParticipants.js';
 import resourcesRouter from './routes/resources.js';
+import authRouter from './routes/auth.js';
+import usersRouter from './routes/users.js';
 import path from 'path';
 export const app = express();
 const corsOrigins = process.env.CORS_ORIGIN?.split(',').map((s) => s.trim()) ?? ['*'];
@@ -40,6 +42,8 @@ app.use('/api/rivals', rivalsRouter);
 app.use('/api/plays', playsRouter);
 app.use('/api/event-participants', eventParticipantsRouter);
 app.use('/api/resources', resourcesRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/users', usersRouter);
 // Serve uploaded files statically
 const uploadsDir = path.resolve(process.cwd(), 'apps', 'api', 'uploads');
 app.use('/uploads', express.static(uploadsDir));

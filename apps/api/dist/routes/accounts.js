@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { z } from 'zod';
+import { requireRole } from './auth.js';
 const router = Router();
 router.get('/', async (_req, res) => {
     try {
@@ -15,7 +16,7 @@ const createAccountSchema = z.object({
     name: z.string().min(1),
     type: z.enum(['CASH', 'BANK', 'MOBILE'])
 });
-router.post('/', async (req, res) => {
+router.post('/', requireRole(['admin']), async (req, res) => {
     try {
         const payload = createAccountSchema.parse(req.body);
         const created = await prisma.account.create({ data: payload });
@@ -27,7 +28,7 @@ router.post('/', async (req, res) => {
         res.status(500).json({ error: 'Failed to create account' });
     }
 });
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireRole(['admin']), async (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id))
         return res.status(400).json({ error: 'Invalid id' });

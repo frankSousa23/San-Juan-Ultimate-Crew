@@ -1,0 +1,61 @@
+import request from 'supertest'
+import { app } from './app.js'
+
+const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
+const suite = AUTH_ON ? describe : describe.skip
+
+suite('Players self-or-admin guard (AUTH on)', () => {
+  const admin = { email: 'admin@example.com', password: 'admin123' }
+  const player = { email: 'player@example.com', password: 'admin123' }
+  let adminToken: string | null = null
+  let playerToken: string | null = null
+  let selfPlayerId: number | null = null
+  let otherPlayerId: number | null = null
+
+  it('login admin and player', async () => {
+    const la = await request(app).post('/api/auth/login').send(admin)
+    if (la.status !== 200) return
+    adminToken = la.body.token
+    const lp = await request(app).post('/api/auth/login').send(player)
+    if (lp.status !== 200) return
+    playerToken = lp.body.token
+  })
+
+  it('locate player records', async () => {
+    if (!playerToken) return
+    const me = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${playerToken}`)
+    if (me.status !== 200 || !me.body?.user?.playerId) return
+    selfPlayerId = me.body.user.playerId
+    const list = await request(app).get('/api/players')
+    const others = (list.body as any[]).map(p => p.id).filter((id: number) => id !== selfPlayerId)
+    otherPlayerId = others[0] ?? null
+  })
+
+  it('player can update self', async () => {
+    if (!playerToken || !selfPlayerId) return
+    const r = await request(app)
+      .put(`/api/players/${selfPlayerId}`)
+      .set('Authorization', `Bearer ${playerToken}`)
+      .send({ experience: 'test self' })
+    expect([200, 404]).toContain(r.status)
+    if (r.status === 200) expect(r.body?.id).toBe(selfPlayerId)
+  })
+
+  it('player cannot update others', async () => {
+    if (!playerToken || !otherPlayerId) return
+    const r = await request(app)
+      .put(`/api/players/${otherPlayerId}`)
+      .set('Authorization', `Bearer ${playerToken}`)
+      .send({ experience: 'test other' })
+    expect([403, 404]).toContain(r.status)
+  })
+
+  it('admin can update others', async () => {
+    if (!adminToken || !otherPlayerId) return
+    const r = await request(app)
+      .put(`/api/players/${otherPlayerId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ experience: 'test by admin' })
+    expect([200, 404]).toContain(r.status)
+  })
+})

@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { accountsApi, categoriesApi, transactionsApi } from '../lib/api'
+import { accountsApi, categoriesApi, transactionsApi, getAuthToken } from '../lib/api'
 import { Account, Category, TransactionItem, TransactionType } from '../types/finance'
-import Toast from '../components/Toast'
+import { useToast } from '../components/Toast'
 import ConfirmModal from '../components/ConfirmModal'
 
 export default function Finances() {
@@ -28,8 +28,9 @@ export default function Finances() {
   const [catForm, setCatForm] = useState<any>({ name: '', kind: 'INCOME' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const toasts = useToast()
   const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
+  const authed = !!getAuthToken()
 
   useEffect(() => {
     Promise.all([accountsApi.list(), categoriesApi.list()]).then(([as, cs]) => { setAccounts(as); setCategories(cs) })
@@ -103,8 +104,8 @@ export default function Finances() {
 
   const pages = useMemo(() => Math.ceil(total / limit), [total, limit])
 
-  const openCreate = () => { setEditing(null); setForm({ type: 'INCOME', amountCents: 0, occurredAt: '', accountId: '', categoryId: '' }); setModalOpen(true) }
-  const openEdit = (it: TransactionItem) => { setEditing(it); setForm({ ...it, occurredAt: it.occurredAt.slice(0,16) }) ; setModalOpen(true) }
+  const openCreate = () => { if (!authed) return; setEditing(null); setForm({ type: 'INCOME', amountCents: 0, occurredAt: '', accountId: '', categoryId: '' }); setModalOpen(true) }
+  const openEdit = (it: TransactionItem) => { if (!authed) return; setEditing(it); setForm({ ...it, occurredAt: it.occurredAt.slice(0,16) }) ; setModalOpen(true) }
 
   const save = async () => {
     const payload: any = { ...form }
@@ -117,20 +118,21 @@ export default function Finances() {
       else await transactionsApi.create(payload)
       setModalOpen(false)
       await load()
-      setToast('Transacción guardada')
+      toasts.success('Transacción guardada')
     } catch (e: any) {
       setError('Error al guardar: ' + (e?.response?.data?.error || ''))
     }
   }
 
   const remove = async (id: number) => {
+    if (!authed) return
     setConfirmState({
       message: '¿Eliminar transacción? Esta acción no se puede deshacer.',
       onYes: async () => {
         try {
           await transactionsApi.remove(id)
           await load()
-          setToast('Transacción eliminada')
+          toasts.success('Transacción eliminada')
         } catch (e) {
           setError('No se pudo eliminar')
         }
@@ -188,6 +190,9 @@ export default function Finances() {
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold text-gray-800">Finanzas</h2>
+      {!authed && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded p-3 text-sm">Inicia sesión para crear, editar o eliminar transacciones, cuentas y categorías.</div>
+      )}
 
       {error && (
         <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded p-3 flex items-start justify-between">
@@ -235,14 +240,14 @@ export default function Finances() {
           </select>
         </div>
         <div>
-          <label className="block text-sm text-gray-600 mb-1 flex items-center justify-between">Cuenta <button type="button" className="text-indigo-600 text-xs underline" onClick={() => setAcctModal(true)}>Nueva</button></label>
+          <label className="block text-sm text-gray-600 mb-1 flex items-center justify-between">Cuenta {authed && (<button type="button" className="text-indigo-600 text-xs underline" onClick={() => setAcctModal(true)}>Nueva</button>)}</label>
           <select value={accountId} onChange={e => setAccountId(e.target.value ? Number(e.target.value) : '')} className="w-full px-3 py-2 border rounded-lg">
             <option value="">Todas</option>
             {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-sm text-gray-600 mb-1 flex items-center justify-between">Categoría <button type="button" className="text-indigo-600 text-xs underline" onClick={() => setCatModal(true)}>Nueva</button></label>
+          <label className="block text-sm text-gray-600 mb-1 flex items-center justify-between">Categoría {authed && (<button type="button" className="text-indigo-600 text-xs underline" onClick={() => setCatModal(true)}>Nueva</button>)}</label>
           <select value={categoryId} onChange={e => setCategoryId(e.target.value ? Number(e.target.value) : '')} className="w-full px-3 py-2 border rounded-lg">
             <option value="">Todas</option>
             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -265,7 +270,7 @@ export default function Finances() {
             }}
             className="flex-1 bg-indigo-600 text-white py-2 rounded-lg" disabled={loading}
           >{loading ? 'Cargando…' : 'Aplicar'}</button>
-          <button onClick={openCreate} className="flex-1 bg-emerald-600 text-white py-2 rounded-lg">+ Agregar</button>
+          {authed && (<button onClick={openCreate} className="flex-1 bg-emerald-600 text-white py-2 rounded-lg">+ Agregar</button>)}
           <button onClick={exportCsv} className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg">Exportar CSV</button>
           <button
             onClick={() => {
@@ -304,8 +309,8 @@ export default function Finances() {
                   <td className="px-4 py-2 text-right">{(it.amountCents/100).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</td>
                   <td className="px-4 py-2">{it.description || ''}</td>
                   <td className="px-4 py-2 text-right space-x-2">
-                    <button onClick={() => openEdit(it)} className="text-indigo-700 hover:underline">Editar</button>
-                    <button onClick={() => remove(it.id)} className="text-red-700 hover:underline">Eliminar</button>
+                    {authed && <button onClick={() => openEdit(it)} className="text-indigo-700 hover:underline">Editar</button>}
+                    {authed && <button onClick={() => remove(it.id)} className="text-red-700 hover:underline">Eliminar</button>}
                   </td>
                 </tr>
               ))}
@@ -466,7 +471,7 @@ export default function Finances() {
                     const as = await accountsApi.list(); setAccounts(as)
                     setAccountId(created.id)
                     setAcctModal(false); setAcctForm({ name: '', type: 'CASH' })
-                    setToast('Cuenta creada')
+                    toasts.success('Cuenta creada')
                   } catch (e: any) { setError('No se pudo crear la cuenta') }
                 }}
                 className="flex-1 bg-emerald-600 text-white py-2 rounded-lg"
@@ -504,7 +509,7 @@ export default function Finances() {
                     const cs = await categoriesApi.list(); setCategories(cs)
                     setCategoryId(created.id)
                     setCatModal(false); setCatForm({ name: '', kind: 'INCOME' })
-                    setToast('Categoría creada')
+                    toasts.success('Categoría creada')
                   } catch (e: any) { setError('No se pudo crear la categoría') }
                 }}
                 className="flex-1 bg-emerald-600 text-white py-2 rounded-lg"
@@ -514,7 +519,7 @@ export default function Finances() {
           </div>
         </div>
       )}
-      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+      {/* global toasts via ToastProvider */}
       {confirmState && (
         <ConfirmModal
           title="Confirmar eliminación"

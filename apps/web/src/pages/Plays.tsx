@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { playsApi, exportPlaysCsv } from '../lib/api'
-import Toast from '../components/Toast'
+import { useToast } from '../components/Toast'
 import ConfirmModal from '../components/ConfirmModal'
 import type { PlayItem, PlayCategory } from '../types/plays'
 
 export default function Plays() {
+  const toasts = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const [items, setItems] = useState<PlayItem[]>([])
   const [q, setQ] = useState('')
@@ -20,7 +21,7 @@ export default function Plays() {
   const [form, setForm] = useState<any>({ name: '', category: 'OFFENSE', description: '', diagramUrl: '', content: '' })
   const [showPreview, setShowPreview] = useState(false)
   const [previewHtml, setPreviewHtml] = useState<string>('')
-  const [toast, setToast] = useState<string | null>(null)
+  
   const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
 
   const load = async () => {
@@ -87,9 +88,9 @@ export default function Plays() {
     if (!payload.description) payload.description = null
     if (!payload.content) payload.content = null
     try {
-      if (edit) await playsApi.update(edit.id, payload)
-      else await playsApi.create(payload)
-      setModalOpen(false); await load(); setToast('Jugada guardada')
+  if (edit) await playsApi.update(edit.id, payload)
+  else await playsApi.create(payload)
+  setModalOpen(false); await load(); toasts.success('Jugada guardada')
     } catch (e: any) { setError('Error al guardar: ' + (e?.response?.data?.error || '')) }
   }
 
@@ -97,7 +98,7 @@ export default function Plays() {
     setConfirmState({
       message: '¿Eliminar jugada? Esta acción no se puede deshacer.',
       onYes: async () => {
-        try { await playsApi.remove(id); await load(); setToast('Jugada eliminada') } catch { setError('No se pudo eliminar') }
+        try { await playsApi.remove(id); await load(); toasts.success('Jugada eliminada') } catch { setError('No se pudo eliminar') }
       }
     })
   }
@@ -281,7 +282,7 @@ export default function Plays() {
         </div>
       )}
 
-      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+  {/* global toasts via ToastProvider */}
       {confirmState && (
         <ConfirmModal
           title="Confirmar eliminación"

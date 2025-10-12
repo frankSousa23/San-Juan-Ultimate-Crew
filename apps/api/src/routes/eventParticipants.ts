@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { z } from 'zod'
+import { requireRole } from './auth.js'
 
 const router = Router()
 
@@ -31,7 +32,7 @@ const upsertSchema = z.object({
 })
 
 // PUT /api/event-participants  { eventId, playerId, role?, status? }
-router.put('/', async (req: Request, res: Response) => {
+router.put('/', requireRole(['admin']), async (req: Request, res: Response) => {
   const parsed = upsertSchema.safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() })
   const { eventId, playerId, role, status } = parsed.data
@@ -44,7 +45,7 @@ router.put('/', async (req: Request, res: Response) => {
 })
 
 // DELETE /api/event-participants?eventId=&playerId=
-router.delete('/', async (req: Request, res: Response) => {
+router.delete('/', requireRole(['admin']), async (req: Request, res: Response) => {
   const eventId = Number(req.query.eventId)
   const playerId = Number(req.query.playerId)
   if (!Number.isFinite(eventId) || !Number.isFinite(playerId)) {

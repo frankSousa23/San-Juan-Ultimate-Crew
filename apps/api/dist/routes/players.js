@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { requireRole } from './auth.js';
+import { requireSelfOrAdminForPlayer } from './auth.js';
 import { z } from 'zod';
 const router = Router();
 router.get('/', async (_req, res) => {
@@ -24,7 +26,8 @@ const createPlayerSchema = z.object({
 });
 const updatePlayerSchema = createPlayerSchema.partial();
 // Create
-router.post('/', async (req, res) => {
+// Only admin can create players
+router.post('/', requireRole(['admin']), async (req, res) => {
     try {
         const data = createPlayerSchema.parse(req.body);
         const created = await prisma.player.create({ data });
@@ -39,7 +42,8 @@ router.post('/', async (req, res) => {
     }
 });
 // Update
-router.put('/:id', async (req, res) => {
+// Admin or the player themself can update
+router.put('/:id', requireSelfOrAdminForPlayer(), async (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id))
         return res.status(400).json({ error: 'Invalid id' });
@@ -59,7 +63,8 @@ router.put('/:id', async (req, res) => {
     }
 });
 // Delete
-router.delete('/:id', async (req, res) => {
+// Only admin can delete players
+router.delete('/:id', requireRole(['admin']), async (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id))
         return res.status(400).json({ error: 'Invalid id' });

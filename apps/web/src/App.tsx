@@ -11,6 +11,9 @@ import Rivals from './pages/Rivals'
 import Plays from './pages/Plays'
 import RosterTorneo from './pages/RosterTorneo'
 import Resources from './pages/Resources'
+import Login from './pages/Login'
+import Profile from './pages/Profile'
+import AdminUsers from './pages/AdminUsers'
 
 export default function App() {
   return (
@@ -27,6 +30,9 @@ export default function App() {
         <Route path="/jugadas" element={<Plays />} />
         <Route path="/roster-torneo" element={<RosterTorneo />} />
         <Route path="/recursos" element={<Resources />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/perfil" element={<Profile />} />
+        <Route path="/admin/usuarios" element={<AdminUsers />} />
       </Routes>
     </Layout>
   )

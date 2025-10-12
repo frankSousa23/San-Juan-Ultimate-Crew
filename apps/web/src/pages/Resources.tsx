@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { resourcesApi, exportResourcesCsvServer, http } from '../lib/api'
-import Toast from '../components/Toast'
+import { resourcesApi, exportResourcesCsvServer, http, getAuthToken } from '../lib/api'
+import { useToast } from '../components/Toast'
 import ConfirmModal from '../components/ConfirmModal'
 import type { ResourceItem } from '../types/resource'
 
@@ -28,11 +28,12 @@ export default function Resources() {
   const [limit, setLimit] = useState(20)
   const [catOptions, setCatOptions] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
+  const toasts = useToast()
   const [preview, setPreview] = useState<ResourceItem | null>(null)
   const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
   const [debounceTimer, setDebounceTimer] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const authed = !!getAuthToken()
 
   const formatBytes = (bytes?: number) => {
     if (!bytes || bytes <= 0) return ''
@@ -239,7 +240,7 @@ export default function Resources() {
           className="px-2 py-1 rounded bg-indigo-600 text-white disabled:opacity-50"
           disabled={isLoading}
           onClick={applyFilters}
-        >Filtrar</button>
+        >Aplicar</button>
         <button className="px-2 py-1 rounded bg-slate-700 text-white" onClick={async () => {
           try {
             const blob = await exportResourcesCsvServer({ q, category: category || undefined, order: sortMode })
@@ -264,7 +265,7 @@ export default function Resources() {
             const ids = [...selected]
             setConfirmState({
               message: `¿Eliminar ${ids.length} recurso(s)? Esta acción no se puede deshacer.`,
-              onYes: async () => { await resourcesApi.bulkDelete(ids); await load(); setToast('Recursos eliminados'); setTimeout(() => setToast(null), 1500) }
+              onYes: async () => { await resourcesApi.bulkDelete(ids); await load(); toasts.success('Recursos eliminados') }
             })
           }}
         >Eliminar seleccionados ({selected.length})</button>
@@ -278,6 +279,7 @@ export default function Resources() {
         >Limpiar selección</button>
       </div>
 
+      {authed ? (
       <div className="bg-white rounded shadow p-4">
         <h3 className="font-medium mb-2">Nuevo recurso</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
@@ -293,11 +295,17 @@ export default function Resources() {
             setTitle(''); setUrl(''); setDesc(''); setCatNew('');
             await load()
             try { setCatOptions(await resourcesApi.categories()) } catch {}
-            setToast('Recurso creado'); setTimeout(() => setToast(null), 1500)
+            toasts.success('Recurso creado')
           }}>Crear</button>
         </div>
       </div>
+      ) : (
+        <div className="bg-yellow-50 text-yellow-800 border border-yellow-200 rounded p-3">
+          Inicia sesión para crear recursos y subir archivos.
+        </div>
+      )}
 
+      {authed && (
       <div className="bg-white rounded shadow p-4">
         <h3 className="font-medium mb-2">Subir archivo</h3>
         <form className="grid grid-cols-1 md:grid-cols-4 gap-2" onSubmit={async (e) => {
@@ -323,7 +331,7 @@ export default function Resources() {
           form.reset()
           setUploadPct(0)
           await load()
-          setToast('Archivo subido'); setTimeout(() => setToast(null), 1500)
+          toasts.success('Archivo subido')
         }}>
           <input name="title" className="border rounded px-2 py-1" placeholder="Título (opcional)" />
           <input name="description" className="border rounded px-2 py-1" placeholder="Descripción (opcional)" />
@@ -339,7 +347,8 @@ export default function Resources() {
         {uploadErr && (
           <div className="mt-2 text-sm text-rose-700">{uploadErr}</div>
         )}
-      </div>
+  </div>
+  )}
       <datalist id="resource-categories">
         {catOptions.map(c => <option key={c} value={c} />)}
       </datalist>
@@ -432,7 +441,7 @@ export default function Resources() {
                     await resourcesApi.update(it.id, { title: eTitle, url: eUrl, description: eDesc || undefined, category: eCat || undefined })
                     cancelEdit()
                     await load()
-                    setToast('Cambios guardados'); setTimeout(() => setToast(null), 1500)
+                    toasts.success('Cambios guardados')
                   }}>Guardar</button>
                 </>
               ) : (
@@ -450,17 +459,20 @@ export default function Resources() {
                     if (!link) return
                     try {
                       await navigator.clipboard.writeText(link)
-                      setToast('Enlace copiado al portapapeles')
-                      setTimeout(() => setToast(null), 1500)
+                      toasts.info('Enlace copiado al portapapeles')
                     } catch {}
                   }}>Copiar enlace</button>
+                  {authed && (
+                  <>
                   <button className="px-2 py-1 rounded bg-gray-200" onClick={() => startEdit(it)}>Editar</button>
                   <button className="px-2 py-1 rounded bg-rose-600 text-white" onClick={async () => {
                     setConfirmState({
                       message: '¿Eliminar este recurso? Esta acción no se puede deshacer.',
-                      onYes: async () => { await resourcesApi.remove(it.id); await load(); setToast('Recurso eliminado'); setTimeout(() => setToast(null), 1500) }
+                      onYes: async () => { await resourcesApi.remove(it.id); await load(); toasts.success('Recurso eliminado') }
                     })
                   }}>Eliminar</button>
+                  </>
+                  )}
                 </>
               )}
             </div>
@@ -489,7 +501,7 @@ export default function Resources() {
         </div>
       )}
 
-      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+  {/* global toasts via ToastProvider */}
       {confirmState && (
         <ConfirmModal
           title="Confirmar eliminación"

@@ -12,6 +12,40 @@ const baseURL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000
 
 export const http = axios.create({ baseURL })
 
+// Auth token management
+const TOKEN_KEY = 'sjuc.auth.token'
+export function setAuthToken(token?: string) {
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token)
+  } else {
+    localStorage.removeItem(TOKEN_KEY)
+  }
+}
+export function getAuthToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY)
+}
+http.interceptors.request.use((config) => {
+  const token = getAuthToken()
+  if (token) {
+    config.headers = config.headers || {}
+    ;(config.headers as any).Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+// Auth API
+export const authApi = {
+  login: async (email: string, password: string): Promise<{ token: string; user: { id: number; email: string; name?: string } }> => (
+    await http.post('/api/auth/login', { email, password })
+  ).data,
+  me: async (): Promise<{ user?: { id: number; email: string; name?: string; roles?: string[]; playerId?: number | null }; authDisabled?: boolean }> => (
+    await http.get('/api/auth/me')
+  ).data,
+  logout: async (): Promise<{ ok: boolean }> => (
+    await http.post('/api/auth/logout')
+  ).data,
+}
+
 export const playersApi = {
   list: async (): Promise<Player[]> => {
     const { data } = await http.get<Player[]>('/api/players')
@@ -281,4 +315,38 @@ export async function exportResourcesCsv(params?: { q?: string; category?: strin
 export async function exportResourcesCsvServer(params?: { q?: string; category?: string; order?: 'createdAtDesc' | 'titleAsc' }): Promise<Blob> {
   const res = await http.get('/api/resources/export', { params, responseType: 'blob' })
   return res.data as Blob
+}
+
+// Admin: Users and Role Requests
+export const adminUsersApi = {
+  list: async (): Promise<Array<{ id: number; email: string; name?: string; roles: string[]; playerId: number | null }>> => (
+    await http.get('/api/users')
+  ).data,
+  setRoles: async (id: number, roles: Array<'guest'|'player'>): Promise<{ ok: boolean }> => (
+    await http.put(`/api/users/${id}/roles`, { roles })
+  ).data,
+  linkPlayer: async (id: number, playerId: number): Promise<{ id: number; playerId: number }> => (
+    await http.put(`/api/users/${id}/link-player`, { playerId })
+  ).data,
+  listRoleRequests: async (status?: 'PENDING'|'APPROVED'|'DENIED'): Promise<any[]> => (
+    await http.get('/api/users/role-requests', { params: { status } })
+  ).data,
+  approveRoleRequest: async (id: number): Promise<any> => (
+    await http.post(`/api/users/role-requests/${id}/approve`, {})
+  ).data,
+  denyRoleRequest: async (id: number): Promise<any> => (
+    await http.post(`/api/users/role-requests/${id}/deny`, {})
+  ).data,
+  updateRoleRequest: async (id: number, payload: { playerId?: number | null; note?: string }): Promise<any> => (
+    await http.put(`/api/users/role-requests/${id}`, payload)
+  ).data,
+}
+
+export const myRoleRequestsApi = {
+  create: async (payload: { role: 'player'; playerId?: number; note?: string }): Promise<any> => (
+    await http.post('/api/users/role-requests', payload)
+  ).data,
+  listMine: async (): Promise<any[]> => (
+    await http.get('/api/users/me/role-requests')
+  ).data,
 }

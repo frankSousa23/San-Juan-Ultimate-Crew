@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import EventForm from '../components/EventForm'
 import { EventItem, EventType, EventStatus } from '../types/event'
 import ConfirmModal from '../components/ConfirmModal'
-import Toast from '../components/Toast'
+import { useToast } from '../components/Toast'
 
 const typeLabel: Record<EventType, string> = {
   TRAINING: 'Entrenamiento',
@@ -21,6 +21,7 @@ const statusBadge: Record<EventStatus, string> = {
 }
 
 export default function Events() {
+  const toasts = useToast()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [events, setEvents] = useState<EventItem[]>([])
@@ -35,7 +36,7 @@ export default function Events() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [attEvent, setAttEvent] = useState<EventItem | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  
   const [confirmState, setConfirmState] = useState<{ title?: string; message: string; onYes: () => Promise<void> } | null>(null)
 
   const reload = async () => {
@@ -257,7 +258,7 @@ export default function Events() {
                           if (!ch) ch = await channelsApi.create({ name: `Canal ${e.title}`, eventId: e.id })
                           navigate(`/comunicacion?channelId=${ch.id}`)
                         } catch {
-                          setToast('No se pudo abrir el canal')
+                          toasts.info('No se pudo abrir el canal')
                         }
                       }}>Abrir canal</button>
                       <button className="text-teal-700 hover:underline" onClick={() => setAttEvent(e)}>Asistencia</button>
@@ -270,7 +271,7 @@ export default function Events() {
                             try {
                               await eventsApi.remove(e.id)
                               setEvents(prev => prev.filter(x => x.id !== e.id))
-                              setToast('Evento eliminado')
+                              toasts.success('Evento eliminado')
                             } catch {
                               setError('No se pudo eliminar')
                             }
@@ -337,7 +338,7 @@ export default function Events() {
         </div>
       </div>
     </div>
-    {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+  {/* global toasts via ToastProvider */}
     {confirmState && (
       <ConfirmModal
         title={confirmState.title || 'Confirmar'}
@@ -364,7 +365,7 @@ export default function Events() {
                     const r = await eventsApi.create(data as any)
                     setEvents(prev => [...prev, r].sort((a,b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()))
                     setCreateOpen(false)
-                    setToast('Evento creado')
+                    toasts.success('Evento creado')
                   } catch (e: any) {
                     setError('Error al crear: ' + (e?.response?.data?.error || ''))
                   }
@@ -391,7 +392,7 @@ export default function Events() {
                     const r = await eventsApi.update(id, data as any)
                     setEvents(prev => prev.map(ev => ev.id === id ? r : ev).sort((a,b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()))
                     setEditTarget(null)
-                    setToast('Evento guardado')
+                    toasts.success('Evento guardado')
                   } catch (e: any) {
                     setError('Error al guardar: ' + (e?.response?.data?.error || ''))
                   }

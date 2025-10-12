@@ -1,6 +1,10 @@
 # San Juan Ultimate Crew
 
+![CI](https://github.com/frankSousa23/San-Juan-Ultimate-Crew/actions/workflows/ci.yml/badge.svg)
+
 Proyecto full-stack para la gestión del equipo de Ultimate Frisbee.
+
+Guía unificada y estado del proyecto: ver `docs/UNIFICADO.md`.
 
 Tecnologías:
 
@@ -20,17 +24,72 @@ Tecnologías:
 - Backend: `apps/api/.env.example` -> `apps/api/.env`
 - Web: `apps/web/.env.example` -> `apps/web/.env.local`
 
+Autenticación (opcional, desactivada por defecto)
+
+- Backend: `apps/api/.env.example` -> `apps/api/.env`
+- Variables relevantes:
+  - `AUTH_REQUIRED=false` (pon `true` para exigir JWT)
+  - `JWT_SECRET="cambia-esto"`, `JWT_EXPIRES_IN=15m`, `JWT_REFRESH_EXPIRES_IN=7d`
+
 • Levantar PostgreSQL (con Docker recomendado):
 
 - Ver sección "Base de datos con Docker"
 
-• Instalar dependencias en la raíz (workspaces):
+## Autenticación y Roles
 
-- En PowerShell, si hay restricciones, usa `cmd /c`:
+- Toggle: AUTH_REQUIRED en `apps/api/.env` (por defecto `false`).
+- Endpoint base: `/api/auth` con rutas `POST /login`, `POST /logout`, `GET /me`.
+- Usuario admin semilla: `admin@example.com` / `admin123` (ver `apps/api/prisma/seed.ts`).
+- Cuando `AUTH_REQUIRED=true`, se exige token Bearer en rutas sensibles.
+
+Roles soportados:
+
+- admin: acceso total; puede aceptar/otorgar roles.
+- player: usuario vinculado a un registro Player (playerId); puede editar su propio perfil de jugador y acceder a la mayoría de vistas.
+- guest: acceso limitado (Roster, Roster Torneo, Eventos/Calendario/Entrenamientos).
+
+Solicitud de rol (guest → player):
+
+- Los usuarios con rol guest pueden solicitar el rol player desde la página Perfil (`/perfil`). Pueden opcionalmente indicar `playerId` si ya existe su perfil de jugador en el roster.
+- Los administradores revisan solicitudes en `/admin/usuarios`, sección “Solicitudes de rol (pendientes)”, y pueden Aprobar o Denegar.
+- Al aprobar con `playerId`, se vincula el usuario a ese Player y se asigna el rol player; si ya está vinculado otro usuario, la API devuelve 409.
+- La navegación muestra secciones avanzadas siempre que el usuario NO sea “solo guest”. Si además tiene player o admin, ve todas las secciones permitidas.
+
+Rutas protegidas (rol admin):
+- Finanzas: `POST/PUT/DELETE /api/transactions`, `POST/DELETE /api/accounts`, `POST/DELETE /api/categories`.
+- Recursos: `POST /api/resources` (crear enlace), `PUT/DELETE /api/resources/:id`, `POST /api/resources/upload`, `POST /api/resources/bulk-delete`.
+- Roster Torneo: `PUT/DELETE /api/event-participants`.
+
+Frontend:
+- Página `/login` añadida. Al iniciar sesión se guarda el token en `localStorage` y se envía en `Authorization: Bearer`.
+- Header: botón Login/Salir y chip de perfil que muestra nombre/correo (si `AUTH_REQUIRED=true` y el token es válido) o "Auth OFF" cuando la autenticación está desactivada. Incluye un menú con Perfil y Logout.
+- Navegación: si el rol incluye `guest`, sólo se muestran Roster, Roster Torneo y Eventos.
+
+## Pruebas (API y E2E)
+
+API (unitarias):
+- Ejecutar todas: (necesita Postgres en marcha)
+
+  - Windows PowerShell
+    - npm -w apps/api run test
+
+- Auth Guards con AUTH_REQUIRED=true:
+
+  - Windows PowerShell
+    - npm -w apps/api run test:auth
+
+Web (Playwright E2E):
+- Orquestación automática: Playwright arranca la API (AUTH_REQUIRED=true) y el servidor web (5173) según `apps/web/playwright.config.ts`, espera `/health` y corre las pruebas.
+- Global setup: `apps/web/tests/global-setup.ts` espera la API, intenta login de admin y, si falta data inicial, ejecuta `prisma migrate` + `seed` (vía scripts de `apps/api`).
+- Ejecutar en local (PowerShell o Git Bash):
 
 ```powershell
-cmd /c npm install
+npm -w apps/web run test:e2e
 ```
+
+- Notas:
+  - Puedes forzar `BASE_URL` si lo necesitas, por defecto es `http://localhost:5173`.
+  - En PowerShell, si hay restricciones, usa `cmd /c` para ciertos comandos.
 
 • Generar Prisma Client (requiere DB accesible):
 
@@ -101,7 +160,6 @@ Los prototipos `.txt` de diseño fueron retirados del repositorio. Consulta `doc
   - Categories: `GET/POST/DELETE /api/categories[/:id]`
   - Transactions: `GET/POST/PUT/DELETE /api/transactions[/:id]`
 
-- Recursos (Centro de Recursos):
   - `GET /api/resources?q=&category=` — lista recursos, filtro por texto y categoría.
   - `GET /api/resources/categories` — devuelve categorías distintas (no vacías), ordenadas A→Z.
   - `GET /api/resources/paged?q=&category=&limit=&offset=&order=` — listado paginado para ambos órdenes. Param `order`: `createdAtDesc` (por defecto) o `titleAsc`. Límite entre 1 y 200; `offset` ≥ 0.
@@ -110,6 +168,13 @@ Los prototipos `.txt` de diseño fueron retirados del repositorio. Consulta `doc
   - `PUT /api/resources/:id { ...partial }` — actualiza campos.
   - `DELETE /api/resources/:id` — elimina recurso.
   - `POST /api/resources/bulk-delete { ids:number[] }` — elimina múltiples recursos y limpia archivos asociados.
+
+  - `POST /api/auth/register { email, password, name? }` → crea usuario y devuelve `{ token, user }`.
+  - `POST /api/auth/login { email, password }` → devuelve `{ token, user }`.
+  - `POST /api/auth/logout` → logout stateless (cliente borra token).
+  - `GET /api/auth/me` → devuelve `{ user }` si el token es válido.
+    - Forma de `user`: `{ id, email, name?, roles: string[], playerId?: number }` cuando AUTH está activo; `{ authDisabled: true }` cuando está desactivado.
+  - Enviar `Authorization: Bearer <token>` cuando `AUTH_REQUIRED=true`.
 
 ## Verificación rápida (smoke tests)
 
@@ -146,8 +211,6 @@ foreach ($p in $paths) {
 ```
 
 Resultados esperados: todos en OK. El cleanup del E2E ahora es silencioso (ordenado y tolerante a 404) y no deja residuos.
-
-
 
 ## Chequeo de flujo completo (E2E) y estabilidad
 
@@ -208,6 +271,10 @@ docker compose down ; docker compose up -d
 
 - Si la Web no carga datos, confirma que `apps/web/.env.local` tenga `VITE_API_URL=http://localhost:4000` o que la API esté arriba en 4000.
 
+E2E protegidos (Web):
+
+- Recursos y Finanzas: los tests se autentican vía API (JWT real), crean/borran datos y confirman acciones mediante un modal accesible. Gracias a la orquestación y al global setup, ya no se "saltan" por entorno.
+
 Web preview (opcional):
 
 - Tarea en VS Code: "Web: preview (5176)" lanza vite preview en <http://localhost:5176/> usando Git Bash.
@@ -222,6 +289,52 @@ Validado: 11-Oct-2025
 
 - Docker: si cambias puertos de Postgres, actualiza `DATABASE_URL` en `apps/api/.env`.
 
+### Tareas con autenticación activada (AUTH_REQUIRED=true)
+
+Para validar flujos protegidos con JWT sin pelear con comandos manuales, usa estas tareas de VS Code diseñadas para Windows:
+
+- AUTH ON: full flow (db+migrate+seed+api+web+e2e subset)
+  - Sube Docker, ejecuta migraciones y seed, arranca la API con `AUTH_REQUIRED=true`, espera `/health`, levanta la web en 5173 y corre el E2E de solicitudes de rol.
+
+- AUTH ON: api tests (role+guards)
+  - Arranca API, espera `/health` y ejecuta pruebas unitarias seleccionadas: `roleRequests.test`, `players.selfOrAdmin.guard.test`.
+
+- AUTH ON: e2e role-request subset
+  - Arranca API, espera `/health`, levanta web en 5173 y corre sólo el E2E del flujo guest→player por solicitud/ aprobación.
+
+Nota: Estas tareas establecen la variable de entorno `AUTH_REQUIRED=true` al iniciar la API. Si las ejecutas manualmente, asegúrate de exportar esa variable en el entorno o definirla en `apps/api/.env`.
+
+Adicionalmente:
+
+- AUTH ON: e2e player self-edit subset
+  - Arranca API, espera `/health`, levanta web en 5173 y corre el E2E donde un jugador edita su propio perfil y se valida que no pueda editar el de otros; luego un admin sí puede editar cualquiera.
+
+- AUTH ON: e2e admin inline role-request edit
+  - Arranca API, espera `/health`, levanta la web en 5173 y ejecuta un E2E que valida la edición inline de solicitudes de rol en `/admin/usuarios` (cambiar Nota y limpiar PlayerId en solicitudes PENDING). El test se salta si no hay solicitudes PENDING.
+
+### Edición inline de solicitudes de rol (Admin)
+
+En la página `Admin → Usuarios` existe una tabla de “Solicitudes de rol”. Para elementos en estado PENDING:
+
+- PlayerId: editable. Puedes asignar un `playerId` existente para preparar la aprobación o dejarlo vacío para eliminarlo.
+- Nota: editable. Texto libre (máx. 500 caracteres) para anotar contexto.
+- Botón Guardar: persiste cambios en el servidor.
+  - Muestra “Guardando…” mientras se envía.
+  - Muestra “Guardado” brevemente al éxito.
+  - Si hay error, aparece un mensaje inline en rojo con la causa.
+- Botones Aprobar / Denegar: disponibles sólo en PENDING. Al decidir, no podrás volver a editar (la API devolverá 409 en actualizaciones posteriores).
+
+Errores esperables de la API al guardar:
+
+- 404 Player not found: el `playerId` indicado no existe en la tabla de jugadores.
+- 409 Player already linked to another user: ya hay un usuario vinculado a ese `playerId`.
+- 409 Request already decided: intentaste actualizar una solicitud que ya fue Aprobada/Denegada.
+
+Consejos:
+
+- Para limpiar el `playerId`, deja el campo vacío y pulsa Guardar (la API lo almacena como `null`).
+- Puedes editar la nota sin tocar el `playerId` y viceversa; ambos campos son opcionales en la actualización.
+
 ## Quality gates (11-Oct-2025)
 
 - Build (API/Web): PASS
@@ -230,8 +343,9 @@ Validado: 11-Oct-2025
 - API health (/health): PASS
 - E2E smoke (apps/api/scripts/smoke-e2e.cjs): PASS
 - Nuevos endpoints verificados: /api/event-participants (GET/PUT/DELETE)
-  y /api/resources (CRUD)
+  y /api/resources (CRUD) y /api/users (list/roles/link) y /api/users/role-requests (crear/listar/aprobar/denegar)
 - Limpieza E2E silenciosa y nuevos DELETE en cuentas/categorías: PASS
+- Autenticación incluida (JWT + RBAC base) con toggle en env: BUILD PASS, TESTS PASS (AUTH_REQUIRED=false)
 
 Web: filtros con URL-sync
 
@@ -259,6 +373,27 @@ VS Code tasks
 - Frontend (React + Vite + Tailwind) con módulos: Dashboard, Roster, Eventos (con asistencia), Comunicaciones, Finanzas, Rivales, Jugadas, Lesiones y Centro de Recursos.
 - UX consolidada: banners de error con Reintentar/Ocultar, toasts de éxito, confirmaciones de borrado, exportaciones CSV seguras y filtros con URL-sync (Recursos, Jugadas, Lesiones; Eventos con tabs/params).
 - Entorno Windows: tareas de VS Code limpias; preview en 5176; scripts compatibles con PowerShell/Git Bash.
+
+### Toasts globales
+
+La app usa un sistema de toasts global mediante `ToastProvider` y el hook `useToast`.
+
+- `ToastProvider` envuelve la app en `apps/web/src/main.tsx`.
+- Usa `useToast()` en cualquier componente para mostrar notificaciones:
+
+```ts
+import { useToast } from '@/components/Toast' // o '../components/Toast' según tu ruta
+
+export function MiComponente() {
+  const toasts = useToast()
+  const onOk = () => toasts.success('Operación exitosa')
+  const onInfo = () => toasts.info('Algo para informar')
+  const onErr = () => toasts.error('Ocurrió un error')
+  return null
+}
+```
+
+Todas las páginas principales ya migraron a este sistema; se retiró el componente Toast local por página.
 
 ## Cómo ejecutar el flujo E2E en Windows (PowerShell)
 
@@ -348,8 +483,6 @@ URL-sync y persistencia
   - `pos`: `HANDLER`, `CUTTER`, `HYBRID`.
   - `st`: `ACTIVE`, `INJURED`, `INACTIVE`.
   - Enter aplica filtros en la URL, Escape limpia el texto conservando selectores.
-
-
 - Ruta: `/recursos` (navbar).
 - Lista, filtra por texto/categoría y permite crear/eliminar recursos rápidos.
 - Campos: título, URL, descripción (opcional), categoría (opcional).

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { z } from 'zod';
+import { requireRole } from './auth.js';
 const router = Router();
 // Helpers
 const parseQuery = (q) => {
@@ -44,7 +45,7 @@ const createSchema = z.object({
     occurredAt: z.coerce.date(),
     description: z.string().optional(),
 });
-router.post('/', async (req, res) => {
+router.post('/', requireRole(['admin']), async (req, res) => {
     try {
         const payload = createSchema.parse(req.body);
         const created = await prisma.transaction.create({ data: payload });
@@ -56,7 +57,7 @@ router.post('/', async (req, res) => {
         res.status(500).json({ error: 'Failed to create transaction' });
     }
 });
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireRole(['admin']), async (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id))
         return res.status(400).json({ error: 'Invalid id' });
@@ -73,7 +74,7 @@ router.put('/:id', async (req, res) => {
         res.status(500).json({ error: 'Failed to update transaction' });
     }
 });
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireRole(['admin']), async (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id))
         return res.status(400).json({ error: 'Invalid id' });

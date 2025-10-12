@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { http, playersApi, injuriesApi, exportInjuriesCsv } from '../lib/api'
-import Toast from '../components/Toast'
+import { useToast } from '../components/Toast'
 import ConfirmModal from '../components/ConfirmModal'
 
 type InjurySeverity = 'MILD' | 'MODERATE' | 'SEVERE'
@@ -20,6 +20,7 @@ interface InjuryItem {
 }
 
 export default function Injuries() {
+  const toasts = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const [items, setItems] = useState<InjuryItem[]>([])
   const [players, setPlayers] = useState<{ id: number; name: string; number: number }[]>([])
@@ -34,7 +35,7 @@ export default function Injuries() {
   const [edit, setEdit] = useState<InjuryItem | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState<any>({ playerId: '', type: '', severity: 'MILD', status: 'ACTIVE', startDate: '', endDate: '', description: '' })
-  const [toast, setToast] = useState<string | null>(null)
+  
   const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
 
   const load = async () => {
@@ -111,9 +112,9 @@ export default function Injuries() {
     payload.startDate = new Date(payload.startDate).toISOString()
     if (payload.endDate) payload.endDate = new Date(payload.endDate).toISOString(); else payload.endDate = null
     try {
-      if (edit) await http.put(`/api/injuries/${edit.id}`, payload)
-      else await http.post('/api/injuries', payload)
-      setModalOpen(false); await load(); setToast('Lesión guardada')
+  if (edit) await http.put(`/api/injuries/${edit.id}`, payload)
+  else await http.post('/api/injuries', payload)
+  setModalOpen(false); await load(); toasts.success('Lesión guardada')
     } catch (e: any) { setError('Error al guardar: ' + (e?.response?.data?.error || '')) }
   }
 
@@ -121,7 +122,7 @@ export default function Injuries() {
     setConfirmState({
       message: '¿Eliminar lesión? Esta acción no se puede deshacer.',
       onYes: async () => {
-        try { await http.delete(`/api/injuries/${id}`); await load(); setToast('Lesión eliminada') } catch { setError('No se pudo eliminar') }
+        try { await http.delete(`/api/injuries/${id}`); await load(); toasts.success('Lesión eliminada') } catch { setError('No se pudo eliminar') }
       }
     })
   }
@@ -322,7 +323,7 @@ export default function Injuries() {
         </div>
       )}
 
-      {toast && <Toast message={toast} onClose={() => setToast(null)} />}        
+  {/* global toasts via ToastProvider */}
       {confirmState && (
         <ConfirmModal
           title="Confirmar eliminación"

@@ -4,6 +4,7 @@ import { z } from 'zod'
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
+import { requireRole } from './auth.js'
 
 const router = Router()
 // Note: In some editor environments without Prisma type generation, direct access like prisma.resource may type-error.
@@ -123,7 +124,7 @@ const createSchema = z.object({
   category: z.string().optional(),
 })
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const data = createSchema.parse(req.body)
     if (!data.url) return res.status(400).json({ error: 'url is required when no file is uploaded' })
@@ -135,7 +136,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 })
 
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', requireRole(['admin']), async (req: Request, res: Response) => {
   const id = Number(req.params.id)
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid id' })
   try {
@@ -149,7 +150,7 @@ router.put('/:id', async (req: Request, res: Response) => {
   }
 })
 
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', requireRole(['admin']), async (req: Request, res: Response) => {
   const id = Number(req.params.id)
   if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid id' })
   try {
@@ -168,7 +169,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 })
 
 // Bulk delete resources
-router.post('/bulk-delete', async (req: Request, res: Response) => {
+router.post('/bulk-delete', requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const ids = Array.isArray(req.body?.ids) ? (req.body.ids as any[]).map(n => Number(n)).filter(n => Number.isInteger(n)) : []
     if (ids.length === 0) return res.status(400).json({ error: 'ids is required (non-empty array of integers)' })
@@ -211,7 +212,7 @@ const upload = multer({
   }
 })
 
-router.post('/upload', (req: Request, res: Response, next) => {
+router.post('/upload', requireRole(['admin']), (req: Request, res: Response, next) => {
   upload.single('file')(req as any, res as any, (err?: any) => {
     if (err) {
       if (err.message === 'Unsupported file type') return res.status(400).json({ error: 'Tipo de archivo no soportado' })

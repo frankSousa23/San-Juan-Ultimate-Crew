@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { http, rivalsApi, exportRivalsCsv } from '../lib/api'
-import Toast from '../components/Toast'
+import { useToast } from '../components/Toast'
 import ConfirmModal from '../components/ConfirmModal'
 
 interface RivalItem {
@@ -15,6 +15,7 @@ interface RivalItem {
 }
 
 export default function Rivals() {
+  const toasts = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const [items, setItems] = useState<RivalItem[]>([])
   const [q, setQ] = useState(() => localStorage.getItem('rivals.q') || '')
@@ -26,7 +27,7 @@ export default function Rivals() {
   const [limit, setLimit] = useState<number>(() => Number(localStorage.getItem('rivals.limit') || 20))
   const [offset, setOffset] = useState(0)
   const [total, setTotal] = useState(0)
-  const [toast, setToast] = useState<string | null>(null)
+  
   const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
 
   const load = async () => {
@@ -86,9 +87,9 @@ export default function Rivals() {
     const payload: any = { ...form }
     if (payload.lastPlayedAt) payload.lastPlayedAt = new Date(payload.lastPlayedAt).toISOString(); else payload.lastPlayedAt = null
     try {
-      if (edit) await http.put(`/api/rivals/${edit.id}`, payload)
-      else await http.post('/api/rivals', payload)
-      setModalOpen(false); await load(); setToast('Rival guardado')
+  if (edit) await http.put(`/api/rivals/${edit.id}`, payload)
+  else await http.post('/api/rivals', payload)
+  setModalOpen(false); await load(); toasts.success('Rival guardado')
     } catch (e: any) { setError('Error al guardar: ' + (e?.response?.data?.error || '')) }
   }
 
@@ -96,7 +97,7 @@ export default function Rivals() {
     setConfirmState({
       message: '¿Eliminar rival? Esta acción no se puede deshacer.',
       onYes: async () => {
-        try { await http.delete(`/api/rivals/${id}`); await load(); setToast('Rival eliminado') } catch { setError('No se pudo eliminar') }
+        try { await http.delete(`/api/rivals/${id}`); await load(); toasts.success('Rival eliminado') } catch { setError('No se pudo eliminar') }
       }
     })
   }
@@ -281,7 +282,7 @@ export default function Rivals() {
         </div>
       )}
 
-      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+  {/* global toasts via ToastProvider */}
       {confirmState && (
         <ConfirmModal
           title="Confirmar eliminación"
