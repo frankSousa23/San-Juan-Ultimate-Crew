@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { http, playersApi, injuriesApi, exportInjuriesCsv } from '../lib/api'
 import { useToast } from '../components/Toast'
+import { useApi } from '../hooks/useApi'
 import ConfirmModal from '../components/ConfirmModal'
 
 type InjurySeverity = 'MILD' | 'MODERATE' | 'SEVERE'
@@ -27,8 +28,6 @@ export default function Injuries() {
   const [severity, setSeverity] = useState<'' | InjurySeverity>('')
   const [status, setStatus] = useState<'' | InjuryStatus>('')
   const [playerId, setPlayerId] = useState<number | ''>('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [limit, setLimit] = useState<number>(20)
   const [offset, setOffset] = useState(0)
   const [total, setTotal] = useState(0)
@@ -38,22 +37,68 @@ export default function Injuries() {
   
   const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
 
+  // API hooks
+  const { execute: loadInjuries, loading, error } = useApi(
+    (params: any) => injuriesApi.listPaged(params),
+    {
+      onSuccess: (data) => {
+        setItems(data.items)
+        setTotal(data.total)
+      },
+      showErrorToast: true
+    }
+  )
+
+  const { execute: loadPlayers } = useApi(playersApi.list, {
+    onSuccess: (data) => setPlayers(data),
+    showErrorToast: true
+  })
+
+  const { execute: createInjury } = useApi(
+    (payload: any) => http.post('/api/injuries', payload),
+    {
+      onSuccess: () => {
+        setModalOpen(false)
+        load()
+        toasts.success('Lesión creada exitosamente')
+      },
+      showErrorToast: true
+    }
+  )
+
+  const { execute: updateInjury } = useApi(
+    (id: number, payload: any) => http.put(`/api/injuries/${id}`, payload),
+    {
+      onSuccess: () => {
+        setModalOpen(false)
+        load()
+        toasts.success('Lesión actualizada exitosamente')
+      },
+      showErrorToast: true
+    }
+  )
+
+  const { execute: deleteInjury } = useApi(
+    (id: number) => http.delete(`/api/injuries/${id}`),
+    {
+      onSuccess: () => {
+        load()
+        toasts.success('Lesión eliminada exitosamente')
+      },
+      showErrorToast: true
+    }
+  )
+
   const load = async () => {
-    setLoading(true); setError(null)
-    try {
-      const page = await injuriesApi.listPaged({
-        playerId: playerId ? Number(playerId) : undefined,
-        severity: severity || undefined,
-        status: status || undefined,
-        limit, offset,
-      })
-      setItems(page.items); setTotal(page.total)
-    } catch (e: any) {
-      setError(e?.response?.data?.error || 'No se pudo cargar lesiones')
-    } finally { setLoading(false) }
+    await loadInjuries({
+      playerId: playerId ? Number(playerId) : undefined,
+      severity: severity || undefined,
+      status: status || undefined,
+      limit, offset,
+    })
   }
 
-  useEffect(() => { playersApi.list().then(setPlayers) }, [])
+  useEffect(() => { loadPlayers() }, [])
   useEffect(() => { load() }, [limit, offset])
   useEffect(() => { if (severity) localStorage.setItem('injuries.severity', severity); else localStorage.removeItem('injuries.severity') }, [severity])
   useEffect(() => { if (status) localStorage.setItem('injuries.status', status); else localStorage.removeItem('injuries.status') }, [status])
@@ -111,18 +156,19 @@ export default function Injuries() {
     payload.playerId = Number(payload.playerId)
     payload.startDate = new Date(payload.startDate).toISOString()
     if (payload.endDate) payload.endDate = new Date(payload.endDate).toISOString(); else payload.endDate = null
-    try {
-  if (edit) await http.put(`/api/injuries/${edit.id}`, payload)
-  else await http.post('/api/injuries', payload)
-  setModalOpen(false); await load(); toasts.success('Lesión guardada')
-    } catch (e: any) { setError('Error al guardar: ' + (e?.response?.data?.error || '')) }
+    
+    if (edit) {
+      await updateInjury(edit.id, payload)
+    } else {
+      await createInjury(payload)
+    }
   }
 
   const remove = async (id: number) => {
     setConfirmState({
       message: '¿Eliminar lesión? Esta acción no se puede deshacer.',
       onYes: async () => {
-        try { await http.delete(`/api/injuries/${id}`); await load(); toasts.success('Lesión eliminada') } catch { setError('No se pudo eliminar') }
+        await deleteInjury(id)
       }
     })
   }

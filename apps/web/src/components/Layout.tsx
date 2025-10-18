@@ -1,148 +1,388 @@
-import { NavLink, useNavigate, useLocation } from 'react-router-dom'
-import React, { useEffect, useState } from 'react'
-import { authApi, getAuthToken, setAuthToken } from '../lib/api'
+import React, { useState, useEffect } from 'react'
 
-const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-purple-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`
+interface LayoutProps {
+  children: React.ReactNode
+  sidebar?: React.ReactNode
+  header?: React.ReactNode
+  footer?: React.ReactNode
+  variant?: 'default' | 'sidebar' | 'centered' | 'fullscreen'
+  className?: string
+}
 
-export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const [authed, setAuthed] = useState<boolean>(!!getAuthToken())
-  const [user, setUser] = useState<{ id: number; email: string; name?: string; roles?: string[]; playerId?: number | null } | null>(null)
-  const [authDisabled, setAuthDisabled] = useState<boolean>(false)
-  const [menuOpen, setMenuOpen] = useState<boolean>(false)
+export const Layout: React.FC<LayoutProps> = ({
+  children,
+  sidebar,
+  header,
+  footer,
+  variant = 'default',
+  className = ''
+}) => {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const variantClasses = {
+    default: 'min-h-screen bg-gray-50',
+    sidebar: 'min-h-screen bg-gray-50',
+    centered: 'min-h-screen bg-gray-50 flex items-center justify-center',
+    fullscreen: 'min-h-screen bg-gray-50'
+  }
+
+  const handleSidebarToggle = () => {
+    setSidebarOpen(!sidebarOpen)
+  }
+
+  // Close sidebar on mobile when clicking outside
   useEffect(() => {
-    setAuthed(!!getAuthToken())
-    setMenuOpen(false)
-  }, [location.pathname])
-
-  // Fetch user info when authenticated
-  useEffect(() => {
-    let cancelled = false
-    async function loadMe() {
-      setUser(null)
-      setAuthDisabled(false)
-      if (!authed) return
-      try {
-        const me = await authApi.me()
-        if (cancelled) return
-        if (me.authDisabled) {
-          setAuthDisabled(true)
-          // In this mode, backend is not enforcing auth; keep token for UI gating but no user data
-        } else if (me.user) {
-          setUser(me.user)
-        }
-      } catch {
-        // Token invalid or server not ready: clear token and auth state
-        setAuthToken(undefined)
-        setAuthed(false)
-        setUser(null)
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(false)
       }
     }
-    loadMe()
-    return () => { cancelled = true }
-  }, [authed])
 
-  // Close menu on outside click
-  useEffect(() => {
-    if (!menuOpen) return
-    function onDoc(e: MouseEvent) {
-      const el = e.target as HTMLElement
-      if (!el.closest?.('[data-auth-menu-root]')) setMenuOpen(false)
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setMenuOpen(false)
-    }
-    document.addEventListener('click', onDoc)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('click', onDoc)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [menuOpen])
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
-  async function onLogout() {
-    try { await authApi.logout() } catch {}
-    setAuthToken(undefined)
-    setAuthed(false)
-    const next = encodeURIComponent(location.pathname + location.search)
-    navigate(`/login?next=${next}`)
+  if (variant === 'centered') {
+    return (
+      <div className={`${variantClasses[variant]} ${className}`}>
+        <div className="w-full max-w-md mx-auto p-6">
+          {children}
+        </div>
+      </div>
+    )
+  }
+
+  if (variant === 'fullscreen') {
+    return (
+      <div className={`${variantClasses[variant]} ${className}`}>
+        {children}
+      </div>
+    )
+  }
+
+  if (variant === 'sidebar' && sidebar) {
+    return (
+      <div className={`${variantClasses[variant]} ${className}`}>
+        {/* Sidebar */}
+        <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0">
+          {sidebar}
+        </div>
+
+        {/* Main content */}
+        <div className="lg:pl-64">
+          {/* Header */}
+          {header && (
+            <header className="bg-white border-b border-gray-200 px-4 py-3 lg:px-6">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={handleSidebarToggle}
+                  className="lg:hidden p-2 rounded-md hover:bg-gray-100"
+                >
+                  <span className="text-gray-500">☰</span>
+                </button>
+                {header}
+              </div>
+            </header>
+          )}
+
+          {/* Content */}
+          <main className="flex-1 p-4 lg:p-6">
+            {children}
+          </main>
+
+          {/* Footer */}
+          {footer && (
+            <footer className="bg-white border-t border-gray-200 px-4 py-3 lg:px-6">
+              {footer}
+            </footer>
+          )}
+        </div>
+
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-md">
-        <div className="max-w-7xl mx-auto p-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold">San Juan Ultimate Crew</h1>
-            <nav className="flex gap-2 flex-wrap items-center">
-              <NavLink to="/" className={linkClass}>Dashboard</NavLink>
-              <NavLink to="/roster" className={linkClass}>Roster</NavLink>
-              <NavLink to="/roster-torneo" className={linkClass}>Roster Torneo</NavLink>
-              <NavLink to="/eventos" className={linkClass}>Eventos</NavLink>
-              {/* Hide privileged areas for guest role */}
-              {(() => {
-                const roles = user?.roles || []
-                const isGuestOnly = roles.length === 1 && roles.includes('guest')
-                return !isGuestOnly
-              })() && (
-                <>
-                  <NavLink to="/comunicacion" className={linkClass}>Comunicaciones</NavLink>
-                  <NavLink to="/finanzas" className={linkClass}>Finanzas</NavLink>
-                  <NavLink to="/estadisticas" className={linkClass}>Estadísticas</NavLink>
-                  <NavLink to="/lesiones" className={linkClass}>Lesiones</NavLink>
-                  <NavLink to="/rivales" className={linkClass}>Rivales</NavLink>
-                  <NavLink to="/jugadas" className={linkClass}>Jugadas</NavLink>
-                  <NavLink to="/recursos" className={linkClass}>Recursos</NavLink>
-                  {user?.roles?.includes('admin') && (
-                    <NavLink to="/admin/usuarios" className={linkClass}>Admin</NavLink>
-                  )}
-                </>
-              )}
-              <div className="ml-4 flex items-center gap-2">
-                {authed && (
-                  <div className="relative" data-auth-menu-root>
-                    <button
-                      type="button"
-                      onClick={() => setMenuOpen(v => !v)}
-                      className="px-2 py-1 rounded bg-black/20 text-sm hover:bg-black/30"
-                      title={user?.email || (authDisabled ? 'AUTH desactivada' : '')}
-                    >
-                      {user?.name || user?.email || (authDisabled ? 'Auth OFF' : 'Usuario')}
-                    </button>
-                    {menuOpen && (
-                      <div className="absolute right-0 mt-2 w-44 bg-white text-gray-800 rounded shadow border z-50">
-                        <div className="px-3 py-2 text-xs text-gray-500 border-b">Sesión</div>
-                        {user && (
-                          <div className="px-3 py-2 text-sm border-b">
-                            <div className="font-medium truncate" title={user.name || user.email}>{user.name || user.email}</div>
-                            {user.name && <div className="text-gray-500 truncate" title={user.email}>{user.email}</div>}
-                            {user.roles && user.roles.length > 0 && (
-                              <div className="text-xs text-gray-500 mt-1 truncate" title={user.roles.join(', ')}>Roles: {user.roles.join(', ')}</div>
-                            )}
-                          </div>
-                        )}
-                        {authDisabled && (
-                          <div className="px-3 py-2 text-xs text-yellow-700 bg-yellow-50 border-b">Auth desactivada</div>
-                        )}
-                        <NavLink to="/perfil" className={({ isActive }) => `block px-3 py-2 text-sm hover:bg-gray-100 ${isActive ? 'bg-gray-50' : ''}`}>Perfil</NavLink>
-                        <button onClick={onLogout} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100">Salir</button>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {!authed && (
-                  <NavLink to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} className={linkClass}>Login</NavLink>
-                )}
-              </div>
-            </nav>
-          </div>
-        </div>
-      </header>
-      <main className="max-w-7xl mx-auto p-4">
+    <div className={`${variantClasses[variant]} ${className}`}>
+      {/* Header */}
+      {header && (
+        <header className="bg-white border-b border-gray-200 px-4 py-3 lg:px-6">
+          {header}
+        </header>
+      )}
+
+      {/* Main content */}
+      <main className="flex-1 p-4 lg:p-6">
         {children}
       </main>
+
+      {/* Footer */}
+      {footer && (
+        <footer className="bg-white border-t border-gray-200 px-4 py-3 lg:px-6">
+          {footer}
+        </footer>
+      )}
+    </div>
+  )
+}
+
+// Dashboard Layout
+interface DashboardLayoutProps {
+  children: React.ReactNode
+  sidebar?: React.ReactNode
+  header?: React.ReactNode
+  className?: string
+}
+
+export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
+  children,
+  sidebar,
+  header,
+  className = ''
+}) => {
+  return (
+    <Layout
+      variant="sidebar"
+      sidebar={sidebar}
+      header={header}
+      className={className}
+    >
+      {children}
+    </Layout>
+  )
+}
+
+// Auth Layout
+interface AuthLayoutProps {
+  children: React.ReactNode
+  title?: string
+  subtitle?: string
+  className?: string
+}
+
+export const AuthLayout: React.FC<AuthLayoutProps> = ({
+  children,
+  title,
+  subtitle,
+  className = ''
+}) => {
+  return (
+    <Layout variant="centered" className={className}>
+      <div className="w-full max-w-md mx-auto">
+        {(title || subtitle) && (
+          <div className="text-center mb-8">
+            {title && (
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">{title}</h1>
+            )}
+            {subtitle && (
+              <p className="text-gray-600">{subtitle}</p>
+            )}
+          </div>
+        )}
+        {children}
+      </div>
+    </Layout>
+  )
+}
+
+// Page Layout
+interface PageLayoutProps {
+  children: React.ReactNode
+  title?: string
+  subtitle?: string
+  actions?: React.ReactNode
+  breadcrumbs?: React.ReactNode
+  className?: string
+}
+
+export const PageLayout: React.FC<PageLayoutProps> = ({
+  children,
+  title,
+  subtitle,
+  actions,
+  breadcrumbs,
+  className = ''
+}) => {
+  return (
+    <Layout className={className}>
+      {/* Breadcrumbs */}
+      {breadcrumbs && (
+        <nav className="mb-4">
+          {breadcrumbs}
+        </nav>
+      )}
+
+      {/* Page Header */}
+      {(title || subtitle || actions) && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              {title && (
+                <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+              )}
+              {subtitle && (
+                <p className="text-gray-600 mt-1">{subtitle}</p>
+              )}
+            </div>
+            {actions && (
+              <div className="flex items-center space-x-3">
+                {actions}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Page Content */}
+      {children}
+    </Layout>
+  )
+}
+
+// Card Layout
+interface CardLayoutProps {
+  children: React.ReactNode
+  title?: string
+  subtitle?: string
+  actions?: React.ReactNode
+  className?: string
+}
+
+export const CardLayout: React.FC<CardLayoutProps> = ({
+  children,
+  title,
+  subtitle,
+  actions,
+  className = ''
+}) => {
+  return (
+    <div className={`bg-white rounded-lg shadow ${className}`}>
+      {/* Card Header */}
+      {(title || subtitle || actions) && (
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              {title && (
+                <h3 className="text-lg font-medium text-gray-900">{title}</h3>
+              )}
+              {subtitle && (
+                <p className="text-gray-600 mt-1">{subtitle}</p>
+              )}
+            </div>
+            {actions && (
+              <div className="flex items-center space-x-3">
+                {actions}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Card Content */}
+      <div className="px-6 py-4">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+// Grid Layout
+interface GridLayoutProps {
+  children: React.ReactNode
+  columns?: 1 | 2 | 3 | 4 | 5 | 6
+  gap?: 'sm' | 'md' | 'lg'
+  className?: string
+}
+
+export const GridLayout: React.FC<GridLayoutProps> = ({
+  children,
+  columns = 3,
+  gap = 'md',
+  className = ''
+}) => {
+  const columnClasses = {
+    1: 'grid-cols-1',
+    2: 'grid-cols-1 md:grid-cols-2',
+    3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+    4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
+    5: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
+    6: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'
+  }
+
+  const gapClasses = {
+    sm: 'gap-3',
+    md: 'gap-4',
+    lg: 'gap-6'
+  }
+
+  return (
+    <div className={`grid ${columnClasses[columns]} ${gapClasses[gap]} ${className}`}>
+      {children}
+    </div>
+  )
+}
+
+// Flex Layout
+interface FlexLayoutProps {
+  children: React.ReactNode
+  direction?: 'row' | 'column'
+  align?: 'start' | 'center' | 'end' | 'stretch'
+  justify?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'
+  wrap?: boolean
+  gap?: 'sm' | 'md' | 'lg'
+  className?: string
+}
+
+export const FlexLayout: React.FC<FlexLayoutProps> = ({
+  children,
+  direction = 'row',
+  align = 'start',
+  justify = 'start',
+  wrap = false,
+  gap = 'md',
+  className = ''
+}) => {
+  const directionClasses = {
+    row: 'flex-row',
+    column: 'flex-col'
+  }
+
+  const alignClasses = {
+    start: 'items-start',
+    center: 'items-center',
+    end: 'items-end',
+    stretch: 'items-stretch'
+  }
+
+  const justifyClasses = {
+    start: 'justify-start',
+    center: 'justify-center',
+    end: 'justify-end',
+    between: 'justify-between',
+    around: 'justify-around',
+    evenly: 'justify-evenly'
+  }
+
+  const gapClasses = {
+    sm: 'gap-2',
+    md: 'gap-4',
+    lg: 'gap-6'
+  }
+
+  return (
+    <div
+      className={`flex ${directionClasses[direction]} ${alignClasses[align]} ${justifyClasses[justify]} ${
+        wrap ? 'flex-wrap' : ''
+      } ${gapClasses[gap]} ${className}`}
+    >
+      {children}
     </div>
   )
 }

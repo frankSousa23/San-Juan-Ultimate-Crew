@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { accountsApi, categoriesApi, transactionsApi, getAuthToken } from '../lib/api'
 import { Account, Category, TransactionItem, TransactionType } from '../types/finance'
 import { useToast } from '../components/Toast'
+import { useApi } from '../hooks/useApi'
 import ConfirmModal from '../components/ConfirmModal'
 
 export default function Finances() {
@@ -26,11 +27,71 @@ export default function Finances() {
   const [acctForm, setAcctForm] = useState<any>({ name: '', type: 'CASH' })
   const [catModal, setCatModal] = useState(false)
   const [catForm, setCatForm] = useState<any>({ name: '', kind: 'INCOME' })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const toasts = useToast()
   const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
   const authed = !!getAuthToken()
+
+  // API hooks
+  const { execute: loadTransactions, loading, error } = useApi(transactionsApi.list, {
+    onSuccess: (data) => {
+      setItems(data.items)
+      setTotal(data.total)
+    },
+    showErrorToast: true
+  })
+
+  const { execute: loadSummary } = useApi(transactionsApi.summary, {
+    onSuccess: (data) => setSummary(data),
+    showErrorToast: true
+  })
+
+  const { execute: createTransaction } = useApi(transactionsApi.create, {
+    onSuccess: () => {
+      setModalOpen(false)
+      load()
+      toasts.success('Transacción creada exitosamente')
+    },
+    showErrorToast: true
+  })
+
+  const { execute: updateTransaction } = useApi(transactionsApi.update, {
+    onSuccess: () => {
+      setModalOpen(false)
+      load()
+      toasts.success('Transacción actualizada exitosamente')
+    },
+    showErrorToast: true
+  })
+
+  const { execute: deleteTransaction } = useApi(transactionsApi.remove, {
+    onSuccess: () => {
+      load()
+      toasts.success('Transacción eliminada exitosamente')
+    },
+    showErrorToast: true
+  })
+
+  const { execute: createAccount } = useApi(accountsApi.create, {
+    onSuccess: (data) => {
+      setAccounts(prev => [...prev, data])
+      setAccountId(data.id)
+      setAcctModal(false)
+      setAcctForm({ name: '', type: 'CASH' })
+      toasts.success('Cuenta creada exitosamente')
+    },
+    showErrorToast: true
+  })
+
+  const { execute: createCategory } = useApi(categoriesApi.create, {
+    onSuccess: (data) => {
+      setCategories(prev => [...prev, data])
+      setCategoryId(data.id)
+      setCatModal(false)
+      setCatForm({ name: '', kind: 'INCOME' })
+      toasts.success('Categoría creada exitosamente')
+    },
+    showErrorToast: true
+  })
 
   useEffect(() => {
     Promise.all([accountsApi.list(), categoriesApi.list()]).then(([as, cs]) => { setAccounts(as); setCategories(cs) })
@@ -79,25 +140,15 @@ export default function Finances() {
   }, [])
 
   const load = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const params: any = { limit, offset }
-      if (from) params.from = new Date(from).toISOString()
-      if (to) params.to = new Date(to).toISOString()
-      if (type) params.type = type
-      if (accountId) params.accountId = accountId
-      if (categoryId) params.categoryId = categoryId
-      const r = await transactionsApi.list(params)
-      setItems(r.items)
-      setTotal(r.total)
-      const s = await transactionsApi.summary({ from: params.from, to: params.to })
-      setSummary(s)
-    } catch (e: any) {
-      setError(e?.message || 'No se pudo cargar finanzas')
-    } finally {
-      setLoading(false)
-    }
+    const params: any = { limit, offset }
+    if (from) params.from = new Date(from).toISOString()
+    if (to) params.to = new Date(to).toISOString()
+    if (type) params.type = type
+    if (accountId) params.accountId = accountId
+    if (categoryId) params.categoryId = categoryId
+    
+    await loadTransactions(params)
+    await loadSummary({ from: params.from, to: params.to })
   }
 
   useEffect(() => { load() }, [limit, offset])
@@ -113,14 +164,11 @@ export default function Finances() {
     payload.amountCents = Number(payload.amountCents)
     payload.accountId = Number(payload.accountId)
     if (payload.categoryId === '') delete payload.categoryId
-    try {
-      if (editing) await transactionsApi.update(editing.id, payload)
-      else await transactionsApi.create(payload)
-      setModalOpen(false)
-      await load()
-      toasts.success('Transacción guardada')
-    } catch (e: any) {
-      setError('Error al guardar: ' + (e?.response?.data?.error || ''))
+    
+    if (editing) {
+      await updateTransaction(editing.id, payload)
+    } else {
+      await createTransaction(payload)
     }
   }
 
@@ -129,13 +177,7 @@ export default function Finances() {
     setConfirmState({
       message: '¿Eliminar transacción? Esta acción no se puede deshacer.',
       onYes: async () => {
-        try {
-          await transactionsApi.remove(id)
-          await load()
-          toasts.success('Transacción eliminada')
-        } catch (e) {
-          setError('No se pudo eliminar')
-        }
+        await deleteTransaction(id)
       }
     })
   }
@@ -199,7 +241,6 @@ export default function Finances() {
           <div className="pr-3">{error}</div>
           <div className="flex gap-2 shrink-0">
             <button className="px-2 py-1 bg-rose-100 rounded" onClick={() => load()}>Reintentar</button>
-            <button className="px-2 py-1 bg-gray-100 rounded" onClick={() => setError(null)}>Ocultar</button>
           </div>
         </div>
       )}
@@ -465,15 +506,7 @@ export default function Finances() {
             </div>
             <div className="p-4 flex gap-2">
               <button
-                onClick={async () => {
-                  try {
-                    const created = await accountsApi.create({ name: String(acctForm.name || '').trim(), type: acctForm.type })
-                    const as = await accountsApi.list(); setAccounts(as)
-                    setAccountId(created.id)
-                    setAcctModal(false); setAcctForm({ name: '', type: 'CASH' })
-                    toasts.success('Cuenta creada')
-                  } catch (e: any) { setError('No se pudo crear la cuenta') }
-                }}
+                onClick={() => createAccount({ name: String(acctForm.name || '').trim(), type: acctForm.type })}
                 className="flex-1 bg-emerald-600 text-white py-2 rounded-lg"
               >Guardar</button>
               <button onClick={() => setAcctModal(false)} className="flex-1 bg-gray-100 text-gray-800 py-2 rounded-lg">Cancelar</button>
@@ -503,15 +536,7 @@ export default function Finances() {
             </div>
             <div className="p-4 flex gap-2">
               <button
-                onClick={async () => {
-                  try {
-                    const created = await categoriesApi.create({ name: String(catForm.name || '').trim(), kind: catForm.kind })
-                    const cs = await categoriesApi.list(); setCategories(cs)
-                    setCategoryId(created.id)
-                    setCatModal(false); setCatForm({ name: '', kind: 'INCOME' })
-                    toasts.success('Categoría creada')
-                  } catch (e: any) { setError('No se pudo crear la categoría') }
-                }}
+                onClick={() => createCategory({ name: String(catForm.name || '').trim(), kind: catForm.kind })}
                 className="flex-1 bg-emerald-600 text-white py-2 rounded-lg"
               >Guardar</button>
               <button onClick={() => setCatModal(false)} className="flex-1 bg-gray-100 text-gray-800 py-2 rounded-lg">Cancelar</button>

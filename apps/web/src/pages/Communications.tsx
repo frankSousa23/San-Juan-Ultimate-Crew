@@ -3,12 +3,12 @@ import { useSearchParams } from 'react-router-dom'
 import { channelsApi, messagesApi } from '../lib/api'
 import { Channel, Message } from '../types/communications'
 import { useToast } from '../components/Toast'
+import { useApi } from '../hooks/useApi'
 
 export default function Communications() {
   const [channels, setChannels] = useState<Channel[]>([])
   const [activeId, setActiveId] = useState<number | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
-  const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [composer, setComposer] = useState('')
@@ -24,8 +24,55 @@ export default function Communications() {
   const latestAtRef = useRef<string | undefined>(undefined)
   const toasts = useToast()
 
+  // API hooks
+  const { execute: loadChannels } = useApi(channelsApi.list, {
+    onSuccess: (data) => setChannels(data),
+    showErrorToast: true
+  })
+
+  const { execute: loadMessages, loading } = useApi(
+    (channelId: number, params?: any) => messagesApi.list(channelId, params),
+    {
+      onSuccess: (data) => {
+        const asc = [...data].reverse()
+        setMessages(asc)
+        setHasMore(data.length === 30)
+        latestAtRef.current = asc.length ? asc[asc.length - 1].createdAt : undefined
+        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'auto' }), 0)
+      },
+      showErrorToast: true
+    }
+  )
+
+  const { execute: sendMessage } = useApi(messagesApi.create, {
+    onSuccess: (real) => {
+      setMessages(prev => prev.map(m => (m.id === Math.random() ? real : m)))
+      setSending(false)
+    },
+    onError: () => {
+      setMessages(prev => prev.filter(m => m.id !== Math.random()))
+      setError('No se pudo enviar el mensaje')
+      setSending(false)
+    },
+    showErrorToast: true
+  })
+
+  const { execute: createChannel } = useApi(channelsApi.create, {
+    onSuccess: (data) => {
+      setChannels(prev => [data, ...prev])
+      setNewChannelName('')
+      setNewChannelOpen(false)
+      setActiveId(data.id)
+      const next = new URLSearchParams(params)
+      next.set('channelId', String(data.id))
+      setSearchParams(next)
+      toasts.success('Canal creado')
+    },
+    showErrorToast: true
+  })
+
   useEffect(() => {
-    channelsApi.list().then(setChannels).catch(() => setError('No se pudieron cargar los canales'))
+    loadChannels()
   }, [])
 
   useEffect(() => {
@@ -52,15 +99,7 @@ export default function Communications() {
 
   useEffect(() => {
     if (!activeId) return
-    setLoading(true)
-    messagesApi.list(activeId, { limit: 30 }).then(data => {
-      // Server returns desc; show asc in UI
-      const asc = [...data].reverse()
-      setMessages(asc)
-      setHasMore(data.length === 30)
-      latestAtRef.current = asc.length ? asc[asc.length - 1].createdAt : undefined
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'auto' }), 0)
-  }).catch(() => setError('No se pudieron cargar los mensajes')).finally(() => setLoading(false))
+    loadMessages(activeId, { limit: 30 })
     // polling new messages
     if (pollRef.current) window.clearInterval(pollRef.current)
     pollRef.current = window.setInterval(async () => {
@@ -138,15 +177,8 @@ export default function Communications() {
     setMessages(prev => [...prev, optimistic])
     setComposer('')
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 0)
-    try {
-      const real = await messagesApi.create({ channelId: activeId, content: optimistic.content })
-      setMessages(prev => prev.map(m => (m.id === optimistic.id ? real : m)))
-    } catch {
-      setMessages(prev => prev.filter(m => m.id !== optimistic.id))
-      setError('No se pudo enviar el mensaje')
-    } finally {
-      setSending(false)
-    }
+    
+    await sendMessage({ channelId: activeId, content: optimistic.content })
   }
 
   return (
@@ -256,21 +288,7 @@ export default function Communications() {
                 <button
                   className="flex-1 bg-purple-600 text-white py-2 rounded-lg disabled:opacity-60"
                   disabled={!newChannelName.trim()}
-                  onClick={async () => {
-                    try {
-                      const ch = await channelsApi.create({ name: newChannelName.trim() })
-                      setChannels(prev => [ch, ...prev])
-                      setNewChannelName('')
-                      setNewChannelOpen(false)
-                      setActiveId(ch.id)
-                      const next = new URLSearchParams(params)
-                      next.set('channelId', String(ch.id))
-                      setSearchParams(next)
-                      toasts.success('Canal creado')
-                    } catch (e: any) {
-                      setError('No se pudo crear el canal: ' + (e?.response?.data?.error || ''))
-                    }
-                  }}
+                  onClick={() => createChannel({ name: newChannelName.trim() })}
                 >Crear</button>
                 <button className="flex-1 bg-gray-100 text-gray-800 py-2 rounded-lg" onClick={() => setNewChannelOpen(false)}>Cancelar</button>
               </div>

@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import axios from 'axios'
 import { playersApi, authApi, getAuthToken } from '../lib/api'
+import { useApi } from '../hooks/useApi'
+import { useToast } from '../components/Toast'
 import PlayerForm from '../components/PlayerForm'
 import { Player, Position, Status } from '../types/player'
 
@@ -20,19 +21,43 @@ export default function Roster() {
   const [selected, setSelected] = useState<Player | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<{ roles?: string[]; playerId?: number | null } | null>(null)
   const authed = !!getAuthToken()
+  
+  const toasts = useToast()
+  const { execute: loadPlayers, loading, error } = useApi(playersApi.list, {
+    onSuccess: (data) => setPlayers(data),
+    showErrorToast: true
+  })
+  const { execute: createPlayer } = useApi(playersApi.create, {
+    onSuccess: (data) => {
+      setPlayers(prev => [...prev, data].sort((a,b) => a.number - b.number))
+      setCreateOpen(false)
+      toasts.success('Jugador creado exitosamente')
+    },
+    showErrorToast: true
+  })
+  const { execute: updatePlayer } = useApi(playersApi.update, {
+    onSuccess: (data) => {
+      setPlayers(prev => prev.map(p => p.id === selected?.id ? data : p).sort((a,b) => a.number - b.number))
+      setEditOpen(false)
+      setSelected(data)
+      toasts.success('Jugador actualizado exitosamente')
+    },
+    showErrorToast: true
+  })
+  const { execute: deletePlayer } = useApi(playersApi.remove, {
+    onSuccess: () => {
+      setPlayers(prev => prev.filter(p => p.id !== selected?.id))
+      setSelected(null)
+      toasts.success('Jugador eliminado exitosamente')
+    },
+    showErrorToast: true
+  })
 
 
   useEffect(() => {
-    setLoading(true)
-    setError(null)
-    playersApi.list()
-      .then(setPlayers)
-      .catch(() => setError('No se pudo cargar el roster'))
-      .finally(() => setLoading(false))
+    loadPlayers()
   }, [])
 
   useEffect(() => {
@@ -176,16 +201,10 @@ export default function Roster() {
               {(user?.roles?.includes('admin')) && (
               <button
                 className="flex-1 bg-red-50 text-red-700 py-2 rounded-lg hover:bg-red-100"
-                onClick={async () => {
+                onClick={() => {
                   if (!selected) return
                   if (!confirm(`¿Eliminar a ${selected.name}?`)) return
-                  try {
-                    await playersApi.remove(selected.id)
-                    setPlayers(prev => prev.filter(p => p.id !== selected.id))
-                    setSelected(null)
-                  } catch {
-                    alert('No se pudo eliminar')
-                  }
+                  deletePlayer(selected.id)
                 }}
               >Eliminar</button>
               )}
@@ -207,15 +226,7 @@ export default function Roster() {
                 mode="create"
                 initial={null}
                 onCancel={() => setCreateOpen(false)}
-                onSubmit={async (data) => {
-                  try {
-                    const r = await playersApi.create(data as any)
-                    setPlayers(prev => [...prev, r].sort((a,b) => a.number - b.number))
-                    setCreateOpen(false)
-                  } catch (e: any) {
-                    alert('Error al crear: ' + (e?.response?.data?.error || ''))
-                  }
-                }}
+                onSubmit={(data) => createPlayer(data as any)}
               />
             </div>
           </div>
@@ -234,16 +245,7 @@ export default function Roster() {
                 mode="edit"
                 initial={selected}
                 onCancel={() => setEditOpen(false)}
-                onSubmit={async (data) => {
-                  try {
-                    const r = await playersApi.update(selected.id, data as any)
-                    setPlayers(prev => prev.map(p => p.id === selected.id ? r : p).sort((a,b) => a.number - b.number))
-                    setEditOpen(false)
-                    setSelected(r)
-                  } catch (e: any) {
-                    alert('Error al guardar: ' + (e?.response?.data?.error || ''))
-                  }
-                }}
+                onSubmit={(data) => selected && updatePlayer(selected.id, data as any)}
               />
             </div>
           </div>

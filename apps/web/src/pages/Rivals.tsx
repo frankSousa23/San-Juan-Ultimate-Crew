@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { http, rivalsApi, exportRivalsCsv } from '../lib/api'
 import { useToast } from '../components/Toast'
+import { useApi } from '../hooks/useApi'
 import ConfirmModal from '../components/ConfirmModal'
 
 interface RivalItem {
@@ -22,22 +23,61 @@ export default function Rivals() {
   const [edit, setEdit] = useState<RivalItem | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState<any>({ name: '', strengths: '', weaknesses: '', lastPlayedAt: '', notes: '' })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [limit, setLimit] = useState<number>(() => Number(localStorage.getItem('rivals.limit') || 20))
   const [offset, setOffset] = useState(0)
   const [total, setTotal] = useState(0)
   
   const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
 
-  const load = async () => {
-    setLoading(true); setError(null)
-    try {
-      const page = await rivalsApi.listPaged({ q: q || undefined, limit, offset })
-      setItems(page.items); setTotal(page.total)
+  // API hooks
+  const { execute: loadRivals, loading, error } = useApi(
+    (params: any) => rivalsApi.listPaged(params),
+    {
+      onSuccess: (data) => {
+        setItems(data.items)
+        setTotal(data.total)
+      },
+      showErrorToast: true
     }
-    catch (e: any) { setError(e?.response?.data?.error || 'No se pudo cargar rivales') }
-    finally { setLoading(false) }
+  )
+
+  const { execute: createRival } = useApi(
+    (payload: any) => http.post('/api/rivals', payload),
+    {
+      onSuccess: () => {
+        setModalOpen(false)
+        load()
+        toasts.success('Rival creado exitosamente')
+      },
+      showErrorToast: true
+    }
+  )
+
+  const { execute: updateRival } = useApi(
+    (id: number, payload: any) => http.put(`/api/rivals/${id}`, payload),
+    {
+      onSuccess: () => {
+        setModalOpen(false)
+        load()
+        toasts.success('Rival actualizado exitosamente')
+      },
+      showErrorToast: true
+    }
+  )
+
+  const { execute: deleteRival } = useApi(
+    (id: number) => http.delete(`/api/rivals/${id}`),
+    {
+      onSuccess: () => {
+        load()
+        toasts.success('Rival eliminado exitosamente')
+      },
+      showErrorToast: true
+    }
+  )
+
+  const load = async () => {
+    await loadRivals({ q: q || undefined, limit, offset })
   }
 
   useEffect(() => { load() }, [])
@@ -86,18 +126,19 @@ export default function Rivals() {
   const save = async () => {
     const payload: any = { ...form }
     if (payload.lastPlayedAt) payload.lastPlayedAt = new Date(payload.lastPlayedAt).toISOString(); else payload.lastPlayedAt = null
-    try {
-  if (edit) await http.put(`/api/rivals/${edit.id}`, payload)
-  else await http.post('/api/rivals', payload)
-  setModalOpen(false); await load(); toasts.success('Rival guardado')
-    } catch (e: any) { setError('Error al guardar: ' + (e?.response?.data?.error || '')) }
+    
+    if (edit) {
+      await updateRival(edit.id, payload)
+    } else {
+      await createRival(payload)
+    }
   }
 
   const remove = async (id: number) => {
     setConfirmState({
       message: '¿Eliminar rival? Esta acción no se puede deshacer.',
       onYes: async () => {
-        try { await http.delete(`/api/rivals/${id}`); await load(); toasts.success('Rival eliminado') } catch { setError('No se pudo eliminar') }
+        await deleteRival(id)
       }
     })
   }

@@ -3,6 +3,8 @@ import { prisma } from '../lib/prisma.js';
 import { requireRole } from './auth.js';
 import { requireSelfOrAdminForPlayer } from './auth.js';
 import { z } from 'zod';
+import { validateBody, validateParams } from '../middleware/validation.js';
+import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = Router();
 
@@ -30,48 +32,28 @@ const updatePlayerSchema = createPlayerSchema.partial();
 
 // Create
 // Only admin can create players
-router.post('/', requireRole(['admin']), async (req: Request, res: Response) => {
-  try {
-    const data = createPlayerSchema.parse(req.body);
-    const created = await prisma.player.create({ data });
-    res.status(201).json(created);
-  } catch (e: any) {
-    if (e?.code === 'P2002') return res.status(409).json({ error: 'Player number must be unique' })
-    if (e?.issues) return res.status(400).json({ error: 'Invalid payload', issues: e.issues });
-    res.status(500).json({ error: 'Failed to create player' });
-  }
-});
+router.post('/', requireRole(['admin']), validateBody(createPlayerSchema), asyncHandler(async (req: Request, res: Response) => {
+  const created = await prisma.player.create({ data: req.body });
+  res.status(201).json(created);
+}));
 
 // Update
 // Admin or the player themself can update
-router.put('/:id', requireSelfOrAdminForPlayer(), async (req: Request, res: Response) => {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid id' });
-  try {
-    const data = updatePlayerSchema.parse(req.body);
-    const updated = await prisma.player.update({ where: { id }, data });
-    res.json(updated);
-  } catch (e: any) {
-    if (e?.code === 'P2025') return res.status(404).json({ error: 'Player not found' });
-    if (e?.code === 'P2002') return res.status(409).json({ error: 'Player number must be unique' })
-    if (e?.issues) return res.status(400).json({ error: 'Invalid payload', issues: e.issues });
-    res.status(500).json({ error: 'Failed to update player' });
-  }
+const playerIdSchema = z.object({
+  id: z.coerce.number().int().positive()
 });
+
+router.put('/:id', requireSelfOrAdminForPlayer(), validateParams(playerIdSchema), validateBody(updatePlayerSchema), asyncHandler(async (req: Request, res: Response) => {
+  const updated = await prisma.player.update({ where: { id: Number(req.params.id) }, data: req.body });
+  res.json(updated);
+}));
 
 // Delete
 // Only admin can delete players
-router.delete('/:id', requireRole(['admin']), async (req: Request, res: Response) => {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid id' });
-  try {
-    await prisma.player.delete({ where: { id } });
-    res.status(204).send();
-  } catch (e: any) {
-    if (e?.code === 'P2025') return res.status(404).json({ error: 'Player not found' });
-    res.status(500).json({ error: 'Failed to delete player' });
-  }
-});
+router.delete('/:id', requireRole(['admin']), validateParams(playerIdSchema), asyncHandler(async (req: Request, res: Response) => {
+  await prisma.player.delete({ where: { id: Number(req.params.id) } });
+  res.status(204).send();
+}));
 
 const samplePlayers = [
   { id: 1, name: 'Juan Martínez', number: 7, position: 'HANDLER', status: 'ACTIVE' },

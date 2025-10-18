@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { resourcesApi, exportResourcesCsvServer, http, getAuthToken } from '../lib/api'
 import { useToast } from '../components/Toast'
+import { useApi } from '../hooks/useApi'
 import ConfirmModal from '../components/ConfirmModal'
 import type { ResourceItem } from '../types/resource'
 
@@ -27,13 +28,66 @@ export default function Resources() {
   const [offset, setOffset] = useState(0)
   const [limit, setLimit] = useState(20)
   const [catOptions, setCatOptions] = useState<string[]>([])
-  const [isLoading, setIsLoading] = useState(false)
   const toasts = useToast()
   const [preview, setPreview] = useState<ResourceItem | null>(null)
   const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
   const [debounceTimer, setDebounceTimer] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const authed = !!getAuthToken()
+
+  // API hooks
+  const { execute: loadResources, loading: isLoading } = useApi(
+    (params: any) => resourcesApi.listPaged(params),
+    {
+      onSuccess: (data) => {
+        setTotal(data.total)
+        setOffset(data.offset + data.items.length)
+        setItems(prev => (data.offset === 0 ? data.items : [...prev, ...data.items]))
+        if (data.offset === 0) setSelected([])
+      },
+      showErrorToast: true
+    }
+  )
+
+  const { execute: loadCategories } = useApi(resourcesApi.categories, {
+    onSuccess: (data) => setCatOptions(data),
+    showErrorToast: true
+  })
+
+  const { execute: createResource } = useApi(resourcesApi.create, {
+    onSuccess: () => {
+      setTitle(''); setUrl(''); setDesc(''); setCatNew('');
+      load(true)
+      loadCategories()
+      toasts.success('Recurso creado exitosamente')
+    },
+    showErrorToast: true
+  })
+
+  const { execute: updateResource } = useApi(resourcesApi.update, {
+    onSuccess: () => {
+      cancelEdit()
+      load(true)
+      toasts.success('Recurso actualizado exitosamente')
+    },
+    showErrorToast: true
+  })
+
+  const { execute: deleteResource } = useApi(resourcesApi.remove, {
+    onSuccess: () => {
+      load(true)
+      toasts.success('Recurso eliminado exitosamente')
+    },
+    showErrorToast: true
+  })
+
+  const { execute: bulkDeleteResources } = useApi(resourcesApi.bulkDelete, {
+    onSuccess: () => {
+      load(true)
+      toasts.success('Recursos eliminados exitosamente')
+    },
+    showErrorToast: true
+  })
 
   const formatBytes = (bytes?: number) => {
     if (!bytes || bytes <= 0) return ''
@@ -45,24 +99,13 @@ export default function Resources() {
   }
 
   async function load(reset = true, opts?: { q?: string; category?: string; order?: 'createdAtDesc'|'titleAsc'; limit?: number }) {
-    setIsLoading(true)
     const qVal = opts?.q ?? q
     const catVal = opts?.category ?? category
     const ordVal = opts?.order ?? sortMode
     const limVal = opts?.limit ?? limit
     const nextOffset = reset ? 0 : offset
-    try {
-      const { items: page, total } = await resourcesApi.listPaged({ q: qVal, category: catVal || undefined, limit: limVal, offset: nextOffset, order: ordVal })
-      setTotal(total)
-      setOffset(nextOffset + page.length)
-      setItems(prev => (reset ? page : [...prev, ...page]))
-      if (reset) setSelected([])
-    } catch (err: any) {
-      const msg = err?.response?.data?.error || 'Error al cargar recursos'
-      setError(msg)
-    } finally {
-      setIsLoading(false)
-    }
+    
+    await loadResources({ q: qVal, category: catVal || undefined, limit: limVal, offset: nextOffset, order: ordVal })
   }
   const applyFilters = async () => {
     const current = {
@@ -79,7 +122,7 @@ export default function Resources() {
     }
     if (current.q === next.q && current.category === next.category && current.order === next.order && current.limit === next.limit) {
       await load(true)
-      try { setCatOptions(await resourcesApi.categories()) } catch {}
+      loadCategories()
     } else {
       const params: Record<string, string> = {}
       if (next.q) params.q = next.q
@@ -109,12 +152,7 @@ export default function Resources() {
 
   // Load category suggestions once (and refresh when list changes on filter apply)
   useEffect(() => {
-    (async () => {
-      try {
-        const cats = await resourcesApi.categories()
-        setCatOptions(cats)
-      } catch {}
-    })()
+    loadCategories()
   }, [])
 
   // If URL lacks limit but a saved preference exists, apply it once on mount
@@ -265,7 +303,7 @@ export default function Resources() {
             const ids = [...selected]
             setConfirmState({
               message: `¿Eliminar ${ids.length} recurso(s)? Esta acción no se puede deshacer.`,
-              onYes: async () => { await resourcesApi.bulkDelete(ids); await load(); toasts.success('Recursos eliminados') }
+              onYes: async () => { await bulkDeleteResources(ids) }
             })
           }}
         >Eliminar seleccionados ({selected.length})</button>
@@ -289,13 +327,9 @@ export default function Resources() {
           <input list="resource-categories" className="border rounded px-2 py-1" placeholder="Categoría" value={catNew} onChange={e => setCatNew(e.target.value)} />
         </div>
         <div className="mt-2">
-          <button className="px-3 py-1 rounded bg-emerald-600 text-white" onClick={async () => {
+          <button className="px-3 py-1 rounded bg-emerald-600 text-white" onClick={() => {
             if (!title || !url) return
-            await resourcesApi.create({ title, url, description: desc || undefined, category: catNew || undefined })
-            setTitle(''); setUrl(''); setDesc(''); setCatNew('');
-            await load()
-            try { setCatOptions(await resourcesApi.categories()) } catch {}
-            toasts.success('Recurso creado')
+            createResource({ title, url, description: desc || undefined, category: catNew || undefined })
           }}>Crear</button>
         </div>
       </div>
@@ -437,11 +471,8 @@ export default function Resources() {
               {editingId === it.id ? (
                 <>
                   <button className="px-2 py-1 rounded bg-gray-200" onClick={cancelEdit}>Cancelar</button>
-                  <button className="px-2 py-1 rounded bg-emerald-600 text-white" onClick={async () => {
-                    await resourcesApi.update(it.id, { title: eTitle, url: eUrl, description: eDesc || undefined, category: eCat || undefined })
-                    cancelEdit()
-                    await load()
-                    toasts.success('Cambios guardados')
+                  <button className="px-2 py-1 rounded bg-emerald-600 text-white" onClick={() => {
+                    updateResource(it.id, { title: eTitle, url: eUrl, description: eDesc || undefined, category: eCat || undefined })
                   }}>Guardar</button>
                 </>
               ) : (
@@ -465,10 +496,10 @@ export default function Resources() {
                   {authed && (
                   <>
                   <button className="px-2 py-1 rounded bg-gray-200" onClick={() => startEdit(it)}>Editar</button>
-                  <button className="px-2 py-1 rounded bg-rose-600 text-white" onClick={async () => {
+                  <button className="px-2 py-1 rounded bg-rose-600 text-white" onClick={() => {
                     setConfirmState({
                       message: '¿Eliminar este recurso? Esta acción no se puede deshacer.',
-                      onYes: async () => { await resourcesApi.remove(it.id); await load(); toasts.success('Recurso eliminado') }
+                      onYes: async () => { await deleteResource(it.id) }
                     })
                   }}>Eliminar</button>
                   </>

@@ -5,6 +5,7 @@ import EventForm from '../components/EventForm'
 import { EventItem, EventType, EventStatus } from '../types/event'
 import ConfirmModal from '../components/ConfirmModal'
 import { useToast } from '../components/Toast'
+import { useApi } from '../hooks/useApi'
 
 const typeLabel: Record<EventType, string> = {
   TRAINING: 'Entrenamiento',
@@ -33,27 +34,45 @@ export default function Events() {
   const [page, setPage] = useState<number>(1)
   const [createOpen, setCreateOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<EventItem | null>(null)
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [attEvent, setAttEvent] = useState<EventItem | null>(null)
   
   const [confirmState, setConfirmState] = useState<{ title?: string; message: string; onYes: () => Promise<void> } | null>(null)
 
-  const reload = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const list = await eventsApi.list()
-      setEvents(list)
-    } catch {
-      setError('No se pudo cargar eventos')
-    } finally {
-      setLoading(false)
-    }
-  }
+  // API hooks
+  const { execute: loadEvents, loading } = useApi(eventsApi.list, {
+    onSuccess: (data) => setEvents(data),
+    showErrorToast: true
+  })
+
+  const { execute: createEvent } = useApi(eventsApi.create, {
+    onSuccess: (data) => {
+      setEvents(prev => [...prev, data].sort((a,b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()))
+      setCreateOpen(false)
+      toasts.success('Evento creado exitosamente')
+    },
+    showErrorToast: true
+  })
+
+  const { execute: updateEvent } = useApi(eventsApi.update, {
+    onSuccess: (data) => {
+      setEvents(prev => prev.map(ev => ev.id === editTarget?.id ? data : ev).sort((a,b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()))
+      setEditTarget(null)
+      toasts.success('Evento actualizado exitosamente')
+    },
+    showErrorToast: true
+  })
+
+  const { execute: deleteEvent } = useApi(eventsApi.remove, {
+    onSuccess: () => {
+      setEvents(prev => prev.filter(x => x.id !== confirmState?.onYes))
+      toasts.success('Evento eliminado exitosamente')
+    },
+    showErrorToast: true
+  })
 
   useEffect(() => {
-    reload()
+    loadEvents()
   }, [])
   // Sync state from URL
   useEffect(() => {
@@ -113,7 +132,7 @@ export default function Events() {
         <div className="p-2 bg-red-100 text-red-700 rounded flex items-center justify-between">
           <div className="text-sm truncate pr-2">{error}</div>
           <div className="flex items-center gap-2">
-            <button className="px-2 py-1 rounded bg-gray-200" onClick={reload}>Reintentar</button>
+            <button className="px-2 py-1 rounded bg-gray-200" onClick={() => loadEvents()}>Reintentar</button>
             <button className="px-2 py-1 rounded bg-gray-200" onClick={() => setError(null)}>Ocultar</button>
           </div>
         </div>
@@ -268,13 +287,7 @@ export default function Events() {
                           title: 'Confirmar eliminación',
                           message: `¿Eliminar evento "${e.title}"? Esta acción no se puede deshacer.`,
                           onYes: async () => {
-                            try {
-                              await eventsApi.remove(e.id)
-                              setEvents(prev => prev.filter(x => x.id !== e.id))
-                              toasts.success('Evento eliminado')
-                            } catch {
-                              setError('No se pudo eliminar')
-                            }
+                            await deleteEvent(e.id)
                           }
                         })
                       }}>Eliminar</button>
@@ -360,16 +373,7 @@ export default function Events() {
                 mode="create"
                 initial={null}
                 onCancel={() => setCreateOpen(false)}
-                onSubmit={async (data) => {
-                  try {
-                    const r = await eventsApi.create(data as any)
-                    setEvents(prev => [...prev, r].sort((a,b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()))
-                    setCreateOpen(false)
-                    toasts.success('Evento creado')
-                  } catch (e: any) {
-                    setError('Error al crear: ' + (e?.response?.data?.error || ''))
-                  }
-                }}
+                onSubmit={(data) => createEvent(data as any)}
               />
             </div>
           </div>
@@ -386,17 +390,7 @@ export default function Events() {
                 mode="edit"
                 initial={editTarget}
                 onCancel={() => setEditTarget(null)}
-                onSubmit={async (data) => {
-                  try {
-                    const id = editTarget!.id
-                    const r = await eventsApi.update(id, data as any)
-                    setEvents(prev => prev.map(ev => ev.id === id ? r : ev).sort((a,b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()))
-                    setEditTarget(null)
-                    toasts.success('Evento guardado')
-                  } catch (e: any) {
-                    setError('Error al guardar: ' + (e?.response?.data?.error || ''))
-                  }
-                }}
+                onSubmit={(data) => editTarget && updateEvent(editTarget.id, data as any)}
               />
             </div>
           </div>

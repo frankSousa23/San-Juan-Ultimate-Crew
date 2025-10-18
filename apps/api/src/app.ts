@@ -3,6 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import 'dotenv/config';
+import { errorHandler } from './middleware/errorHandler.js';
+import { requestLogger, errorLogger } from './middleware/logging.js';
+import { generalLimiter, authLimiter, uploadLimiter, securityHeaders, sanitizeRequest, corsOptions } from './middleware/security.js';
 
 import healthRouter from './routes/health.js';
 import playersRouter from './routes/players.js';
@@ -25,11 +28,21 @@ import path from 'path';
 
 export const app = express();
 
-const corsOrigins = process.env.CORS_ORIGIN?.split(',').map((s: string) => s.trim()) ?? ['*'];
-app.use(cors({ origin: corsOrigins }));
-app.use(express.json());
-app.use(helmet());
-app.use(morgan('dev'));
+// Security middleware
+app.use(securityHeaders);
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Logging middleware
+app.use(requestLogger);
+app.use(morgan('combined'));
+
+// Rate limiting
+app.use(generalLimiter);
+
+// Request sanitization
+app.use(sanitizeRequest);
 
 app.use('/health', healthRouter);
 app.use('/api/players', playersRouter);
@@ -46,11 +59,20 @@ app.use('/api/rivals', rivalsRouter);
 app.use('/api/plays', playsRouter);
 app.use('/api/event-participants', eventParticipantsRouter);
 app.use('/api/resources', resourcesRouter);
+// Apply specific rate limiting to auth routes
+app.use('/api/auth', authLimiter);
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
+
+// Apply upload rate limiting to resource uploads
+app.use('/api/resources/upload', uploadLimiter);
 
 // Serve uploaded files statically
 const uploadsDir = path.resolve(process.cwd(), 'apps', 'api', 'uploads');
 app.use('/uploads', express.static(uploadsDir));
 
 app.get('/', (_req: Request, res: Response) => res.json({ name: 'San Juan Ultimate Crew API', ok: true }));
+
+// Error handling middleware (must be last)
+app.use(errorLogger);
+app.use(errorHandler);
