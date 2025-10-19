@@ -18,6 +18,8 @@ import Resources from './pages/Resources'
 import Login from './pages/Login'
 import Profile from './pages/Profile'
 import AdminUsers from './pages/AdminUsers'
+import SystemMonitoring from './pages/SystemMonitoring'
+import SystemMonitoring from './pages/SystemMonitoring'
 
 export default function App() {
   return (
@@ -41,6 +43,7 @@ export default function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/perfil" element={<Profile />} />
                 <Route path="/admin/usuarios" element={<AdminUsers />} />
+                <Route path="/admin/monitoring" element={<SystemMonitoring />} />
               </Routes>
             </Layout>
           </DataInitializer>
