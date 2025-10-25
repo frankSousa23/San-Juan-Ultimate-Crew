@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Servicio de optimización de red
 export interface NetworkOptimizationOptions {
   maxConcurrentRequests?: number

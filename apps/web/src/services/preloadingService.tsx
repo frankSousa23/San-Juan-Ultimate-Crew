@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Sistema de preloading y prefetching avanzado
 export interface PreloadResource {
   id: string

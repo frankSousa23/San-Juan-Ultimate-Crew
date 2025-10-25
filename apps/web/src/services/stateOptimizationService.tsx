@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Sistema de optimización de estado global
 export interface StateNode {
   id: string

@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 import { useDataCache } from '../hooks/useOptimization'
 
 // Tipos para el sistema de cache

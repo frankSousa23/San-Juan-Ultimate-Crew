@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { resourcesApi, exportResourcesCsvServer, http, getAuthToken } from '../lib/api'
-import { useToast } from '../components/Toast'
+import { useToast } from '../hooks/useToast'
 import { useApi } from '../hooks/useApi'
 import ConfirmModal from '../components/ConfirmModal'
 import type { ResourceItem } from '../types/resource'

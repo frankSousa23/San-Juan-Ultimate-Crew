@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { playersApi, authApi, getAuthToken } from '../lib/api'
 import { useApi } from '../hooks/useApi'
-import { useToast } from '../components/Toast'
+import { useToast } from '../hooks/useToast'
 import PlayerForm from '../components/PlayerForm'
 import { Player, Position, Status } from '../types/player'
 

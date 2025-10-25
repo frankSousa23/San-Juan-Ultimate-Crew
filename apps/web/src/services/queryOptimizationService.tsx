@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Sistema de optimización de consultas de base de datos
 export interface QueryInfo {
   id: string

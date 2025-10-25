@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Servicio de optimización de estado
 export interface StateOptimizationOptions {
   debounceMs?: number

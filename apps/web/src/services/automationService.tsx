@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Sistema de automatización de tareas de desarrollo
 export interface AutomationTask {
   id: string

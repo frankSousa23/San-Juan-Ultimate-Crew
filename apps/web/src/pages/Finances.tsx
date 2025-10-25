@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { accountsApi, categoriesApi, transactionsApi, getAuthToken } from '../lib/api'
 import { Account, Category, TransactionItem, TransactionType } from '../types/finance'
-import { useToast } from '../components/Toast'
+import { useToast } from '../hooks/useToast'
 import { useApi } from '../hooks/useApi'
 import ConfirmModal from '../components/ConfirmModal'
 

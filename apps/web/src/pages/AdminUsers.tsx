@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useToast } from '../components/Toast'
+import { useToast } from '../hooks/useToast'
 import { http, adminUsersApi } from '../lib/api'
 
 interface UserItem { id: number; email: string; name?: string; roles: string[]; playerId: number | null }

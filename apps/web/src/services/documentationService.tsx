@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Servicio de documentación automática
 export interface DocumentationItem {
   id: string

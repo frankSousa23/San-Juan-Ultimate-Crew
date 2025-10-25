@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { http } from '../lib/api'
 import { useApi } from '../hooks/useApi'
-import { useToast } from '../components/Toast'
+import { useToast } from '../hooks/useToast'
 
 type Stats = {
   players: number

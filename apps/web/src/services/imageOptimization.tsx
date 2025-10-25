@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Servicio de optimización de imágenes
 export interface ImageOptimizationOptions {
   quality?: number // 0-100

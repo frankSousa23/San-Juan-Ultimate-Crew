@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { useToast } from '../components/Toast'
+import { useToast } from './useToast'
 
 interface UseApiState<T> {
   data: T | null

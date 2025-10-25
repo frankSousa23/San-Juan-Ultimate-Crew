@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Servicio de optimización de consultas
 export interface QueryOptions {
   limit?: number

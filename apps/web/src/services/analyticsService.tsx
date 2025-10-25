@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Servicio de analytics y métricas avanzadas
 export interface AnalyticsEvent {
   id: string

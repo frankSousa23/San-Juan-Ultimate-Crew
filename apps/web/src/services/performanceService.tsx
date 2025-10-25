@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 import { PerformanceMonitor } from '../utils/performance'
 
 // Servicio de métricas de rendimiento

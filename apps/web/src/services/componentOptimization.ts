@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Servicio de optimización de componentes
 export interface ComponentOptimizationOptions {
   enableMemoization?: boolean

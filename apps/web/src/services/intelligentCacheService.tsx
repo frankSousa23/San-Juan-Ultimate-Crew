@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Sistema de cache inteligente y persistencia
 export interface CacheEntry<T = any> {
   key: string
@@ -225,7 +227,7 @@ export class IntelligentCacheService {
       const size = new Blob([compressed]).size
       const checksum = this.calculateChecksum(value)
 
-      const entry: CacheEntry<T> = {
+        const entry: CacheEntry<T> = {
         key,
         value: compressed as T,
         timestamp: Date.now(),
@@ -533,14 +535,14 @@ export function useIntelligentCache() {
     setOperations(intelligentCacheService.getRecentOperations())
   }, [])
 
-  const get = useCallback(<T>(key: string): T | null => {
+  const get = useCallback(<T,>(key: string): T | null => {
     const result = intelligentCacheService.get<T>(key)
     setStats(intelligentCacheService.getStats())
     setOperations(intelligentCacheService.getRecentOperations())
     return result
   }, [])
 
-  const set = useCallback(<T>(key: string, value: T, options?: any): boolean => {
+  const set = useCallback(<T,>(key: string, value: T, options?: any): boolean => {
     const result = intelligentCacheService.set(key, value, options)
     setStats(intelligentCacheService.getStats())
     setEntries(intelligentCacheService.getAllEntries())

@@ -1,4 +1,13 @@
-import { api } from '../lib/api'
+import React, { useState, useEffect, useCallback } from 'react'
+
+import axios from 'axios'
+
+const api = axios.create({
+  baseURL: '/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
 
 // Types
 export interface Player {

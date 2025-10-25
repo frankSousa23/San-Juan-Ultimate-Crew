@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { channelsApi, messagesApi } from '../lib/api'
 import { Channel, Message } from '../types/communications'
-import { useToast } from '../components/Toast'
+import { useToast } from '../hooks/useToast'
 import { useApi } from '../hooks/useApi'
 
 export default function Communications() {

@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Sistema de optimización de imágenes y assets
 export interface AssetInfo {
   id: string

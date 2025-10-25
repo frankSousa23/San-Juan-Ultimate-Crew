@@ -498,7 +498,7 @@ export function DataProvider({ children }: DataProviderProps) {
   const { showErrorToast, showSuccessToast } = useToast()
 
   // Helper function to handle API calls
-  const handleApiCall = async <T>(
+  const handleApiCall = async <T,>(
     apiCall: () => Promise<T>,
     loadingKey: keyof DataState['loading'],
     errorKey: keyof DataState['errors'],

@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Servicio de monitoreo de seguridad
 export interface SecurityEvent {
   id: string

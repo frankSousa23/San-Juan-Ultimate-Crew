@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import EventForm from '../components/EventForm'
 import { EventItem, EventType, EventStatus } from '../types/event'
 import ConfirmModal from '../components/ConfirmModal'
-import { useToast } from '../components/Toast'
+import { useToast } from '../hooks/useToast'
 import { useApi } from '../hooks/useApi'
 
 const typeLabel: Record<EventType, string> = {

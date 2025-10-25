@@ -13,7 +13,14 @@ import {
   DatabasePerformanceDashboard, 
   MemoryPerformanceDashboard, 
   CPUPerformanceDashboard, 
-  DiskPerformanceDashboard 
+  DiskPerformanceDashboard,
+  AutomationDashboard,
+  IntelligentCacheDashboard,
+  AssetOptimizationDashboard,
+  PreloadingDashboard,
+  QueryOptimizationDashboard,
+  CompressionDashboard,
+  StateOptimizationDashboard
 } from '../services'
 
 export default function SystemMonitoring() {
@@ -34,6 +41,13 @@ export default function SystemMonitoring() {
     { id: 'memory-performance', label: 'Memory Performance', component: MemoryPerformanceDashboard },
     { id: 'cpu-performance', label: 'CPU Performance', component: CPUPerformanceDashboard },
     { id: 'disk-performance', label: 'Disk Performance', component: DiskPerformanceDashboard },
+    { id: 'automation', label: 'Automation', component: AutomationDashboard },
+    { id: 'intelligent-cache', label: 'Intelligent Cache', component: IntelligentCacheDashboard },
+    { id: 'asset-optimization', label: 'Asset Optimization', component: AssetOptimizationDashboard },
+    { id: 'preloading', label: 'Preloading', component: PreloadingDashboard },
+    { id: 'query-optimization', label: 'Query Optimization', component: QueryOptimizationDashboard },
+    { id: 'compression', label: 'Compression', component: CompressionDashboard },
+    { id: 'state-optimization', label: 'State Optimization', component: StateOptimizationDashboard },
   ]
 
   const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component

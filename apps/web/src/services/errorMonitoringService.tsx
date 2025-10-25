@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Servicio de monitoreo de errores y logging avanzado
 export interface ErrorEvent {
   id: string

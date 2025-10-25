@@ -4,7 +4,7 @@ import ConfirmModal from '../components/ConfirmModal'
 import { eventsApi, playersApi, eventParticipantsApi, exportEventParticipantsCsv, getAuthToken } from '../lib/api'
 import type { EventItem } from '../types/event'
 import type { Player } from '../types/player'
-import { useToast } from '../components/Toast'
+import { useToast } from '../hooks/useToast'
 
 export default function RosterTorneo() {
   const [searchParams, setSearchParams] = useSearchParams()

@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Servicio de monitoreo de accesibilidad
 export interface AccessibilityIssue {
   id: string

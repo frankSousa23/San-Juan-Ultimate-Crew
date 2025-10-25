@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Servicio de testing y validación avanzada
 export interface TestCase {
   id: string

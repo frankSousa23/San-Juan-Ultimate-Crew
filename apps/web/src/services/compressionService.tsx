@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Sistema de compresión y minificación avanzado
 export interface CompressionInfo {
   id: string

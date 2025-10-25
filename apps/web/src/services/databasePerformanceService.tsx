@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Servicio de monitoreo de rendimiento de base de datos
 export interface DatabasePerformanceMetric {
   id: string

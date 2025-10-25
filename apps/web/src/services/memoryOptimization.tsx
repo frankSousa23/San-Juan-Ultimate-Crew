@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react'
+
 // Servicio de optimización de memoria
 export interface MemoryOptimizationOptions {
   enableGarbageCollection?: boolean
