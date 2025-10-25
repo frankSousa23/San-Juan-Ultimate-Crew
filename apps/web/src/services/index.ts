@@ -1,24 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react'
+// Servicios de optimización - archivos temporales comentados para evitar loops infinitos
+// Los servicios de monitoreo avanzado se implementarán gradualmente
 
-// Exportar todos los servicios de optimización
-export * from './analyticsService'
-export * from './testingService'
-export * from './documentationService'
-export * from './errorMonitoringService'
-export * from './securityMonitoringService'
-export * from './codeQualityService'
-export * from './accessibilityService'
-export * from './seoMonitoringService'
-export * from './usabilityMonitoringService'
-export * from './networkPerformanceService'
-export * from './databasePerformanceService'
-export * from './memoryPerformanceService'
-export * from './cpuPerformanceService'
-export * from './diskPerformanceService'
-export * from './automationService'
-export * from './intelligentCacheService'
-export * from './assetOptimizationService'
-export * from './preloadingService'
-export * from './queryOptimizationService'
-export * from './compressionService'
-export * from './stateOptimizationService'
+// Exportar solo los servicios básicos que existen
+export * from './dataService'
