@@ -4,6 +4,18 @@ import { app } from './app.js'
 describe('Event Participants API', () => {
   let eventId: number | null = null
   let playerId: number | null = null
+  const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
+  let authHeader: string | undefined
+
+  beforeAll(async () => {
+    if (AUTH_ON) {
+      const login = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'admin@example.com', password: 'admin123' })
+      const token = (login.body && login.body.token) || ''
+      authHeader = token ? `Bearer ${token}` : undefined
+    }
+  })
 
   it('bootstraps: gets events and players', async () => {
     const evs = await request(app).get('/api/events').expect(200)
@@ -18,8 +30,9 @@ describe('Event Participants API', () => {
 
   it('upserts a participant with role and status', async () => {
     if (!eventId || !playerId) return
-    const r = await request(app)
-      .put('/api/event-participants')
+    let req = request(app).put('/api/event-participants')
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const r = await req
       .send({ eventId, playerId, role: 'Handler', status: 'confirmed' })
       .expect(200)
     expect(r.body?.eventId).toBe(eventId)
@@ -37,9 +50,8 @@ describe('Event Participants API', () => {
 
   it('deletes the participant', async () => {
     if (!eventId || !playerId) return
-    await request(app)
-      .delete('/api/event-participants')
-      .query({ eventId, playerId })
-      .expect(204)
+    let req = request(app).delete('/api/event-participants')
+    if (authHeader) req = req.set('Authorization', authHeader)
+    await req.query({ eventId, playerId }).expect(204)
   })
 })

@@ -2,7 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { ErrorBoundary } from './components/ErrorBoundary'
 // import { DataProvider } from './contexts/DataContext'
-// import { ToastProvider } from './components/Toast'
+import { ToastProvider } from './components/Toast'
 // import { DataInitializer } from './components/DataInitializer'
 import Dashboard from './pages/Dashboard'
 import Roster from './pages/Roster'
@@ -19,11 +19,13 @@ import Login from './pages/Login'
 import Profile from './pages/Profile'
 import AdminUsers from './pages/AdminUsers'
 import SystemMonitoring from './pages/SystemMonitoring'
+import { ProtectedRoute } from './components/ProtectedRoute'
 
 export default function App() {
   return (
     <ErrorBoundary>
-      <Layout>
+      <ToastProvider>
+        <Layout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/roster" element={<Roster />} />
@@ -38,10 +40,11 @@ export default function App() {
           <Route path="/recursos" element={<Resources />} />
           <Route path="/login" element={<Login />} />
           <Route path="/perfil" element={<Profile />} />
-          <Route path="/admin/usuarios" element={<AdminUsers />} />
-          <Route path="/admin/monitoring" element={<SystemMonitoring />} />
+          <Route path="/admin/usuarios" element={<ProtectedRoute requireRoles={["admin"]}><AdminUsers /></ProtectedRoute>} />
+          <Route path="/admin/monitoring" element={<ProtectedRoute requireRoles={["admin"]}><SystemMonitoring /></ProtectedRoute>} />
         </Routes>
-      </Layout>
-    </ErrorBoundary>
+          </Layout>
+        </ToastProvider>
+      </ErrorBoundary>
   )
 }

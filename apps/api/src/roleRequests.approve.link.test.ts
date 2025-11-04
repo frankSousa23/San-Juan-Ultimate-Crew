@@ -60,6 +60,12 @@ suite('Role request approve with player linking', () => {
     }
     if (!reqId) return
 
+    // Ensure request has playerId set to link on approve (idempotent)
+    await request(app)
+      .put(`/api/users/role-requests/${reqId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ playerId: free.id })
+
     // Approve
     const approve = await request(app)
       .post(`/api/users/role-requests/${reqId}/approve`)

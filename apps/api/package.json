@@ -17,6 +17,7 @@
     "smoke:e2e": "tsx scripts/smoke-e2e.ts",
     "test:auth": "cross-env AUTH_REQUIRED=true vitest run src/auth.guard.test.ts",
     "test": "vitest run",
+    "test:all:auth": "cross-env AUTH_REQUIRED=true vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {

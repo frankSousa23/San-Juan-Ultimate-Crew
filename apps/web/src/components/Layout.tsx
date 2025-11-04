@@ -21,7 +21,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Jugadas', href: '/jugadas', icon: '🎯' },
     { name: 'Roster Torneo', href: '/roster-torneo', icon: '🏆' },
     { name: 'Recursos', href: '/recursos', icon: '📁' },
-    { name: 'Perfil', href: '/perfil', icon: '👤' },
+    { name: 'Mi Perfil', href: '/perfil', icon: '👤' },
   ]
 
   const isActive = (href: string) => {

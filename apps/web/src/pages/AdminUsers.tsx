@@ -79,6 +79,7 @@ export default function AdminUsers() {
       const list = Array.from(roles[id] || [])
       await adminUsersApi.setRoles(id, list as Array<'guest'|'player'>)
       await load()
+      toast.showSuccessToast('Roles actualizados')
     } catch (e: any) { alert('No se pudo guardar roles') }
   }
 
@@ -88,6 +89,7 @@ export default function AdminUsers() {
     try {
       await adminUsersApi.linkPlayer(id, pid)
       await load()
+      toast.showSuccessToast('Jugador vinculado')
     } catch (e: any) { alert('No se pudo vincular jugador') }
   }
 
@@ -224,7 +226,7 @@ export default function AdminUsers() {
                           setRequestError(prev => ({ ...prev, [r.id]: null }))
                           await adminUsersApi.updateRoleRequest(r.id, { playerId: pid, note: requestNote[r.id] ?? undefined })
                           setRequestSaved(prev => ({ ...prev, [r.id]: true }))
-                          toast.success('Solicitud actualizada')
+                          toast.showSuccessToast('Solicitud actualizada')
                             // auto-clear success after a short delay
                             setTimeout(() => {
                               setRequestSaved(prev => ({ ...prev, [r.id]: false }))
@@ -233,15 +235,15 @@ export default function AdminUsers() {
                         } catch (e: any) {
                           const msg = e?.response?.data?.error || 'No se pudo actualizar la solicitud'
                           setRequestError(prev => ({ ...prev, [r.id]: msg }))
-                          toast.error(msg)
+                          toast.showErrorToast(msg)
                         } finally {
                           setRequestSaving(prev => ({ ...prev, [r.id]: false }))
                         }
                       }}>
                         {requestSaving[r.id] ? 'Guardando…' : 'Guardar'}
                       </button>
-                      <button className="px-2 py-1 bg-emerald-600 text-white rounded" onClick={async () => { await adminUsersApi.approveRoleRequest(r.id); toast.success('Solicitud aprobada'); await loadRequests() }}>Aprobar</button>
-                      <button className="px-2 py-1 bg-rose-600 text-white rounded" onClick={async () => { await adminUsersApi.denyRoleRequest(r.id); toast.info('Solicitud denegada'); await loadRequests() }}>Denegar</button>
+                      <button className="px-2 py-1 bg-emerald-600 text-white rounded" onClick={async () => { await adminUsersApi.approveRoleRequest(r.id); toast.showSuccessToast('Solicitud aprobada'); await loadRequests() }}>Aprobar</button>
+                      <button className="px-2 py-1 bg-rose-600 text-white rounded" onClick={async () => { await adminUsersApi.denyRoleRequest(r.id); toast.showInfoToast('Solicitud denegada'); await loadRequests() }}>Denegar</button>
                     </>
                   )}
                 </td>

@@ -49,7 +49,7 @@ export default function Finances() {
     onSuccess: () => {
       setModalOpen(false)
       load()
-      toasts.success('Transacción creada exitosamente')
+      toasts.showSuccessToast('Transacción creada exitosamente')
     },
     showErrorToast: true
   })
@@ -58,7 +58,7 @@ export default function Finances() {
     onSuccess: () => {
       setModalOpen(false)
       load()
-      toasts.success('Transacción actualizada exitosamente')
+      toasts.showSuccessToast('Transacción actualizada exitosamente')
     },
     showErrorToast: true
   })
@@ -66,7 +66,7 @@ export default function Finances() {
   const { execute: deleteTransaction } = useApi(transactionsApi.remove, {
     onSuccess: () => {
       load()
-      toasts.success('Transacción eliminada exitosamente')
+      toasts.showSuccessToast('Transacción eliminada exitosamente')
     },
     showErrorToast: true
   })
@@ -77,7 +77,7 @@ export default function Finances() {
       setAccountId(data.id)
       setAcctModal(false)
       setAcctForm({ name: '', type: 'CASH' })
-      toasts.success('Cuenta creada exitosamente')
+      toasts.showSuccessToast('Cuenta creada')
     },
     showErrorToast: true
   })
@@ -88,7 +88,7 @@ export default function Finances() {
       setCategoryId(data.id)
       setCatModal(false)
       setCatForm({ name: '', kind: 'INCOME' })
-      toasts.success('Categoría creada exitosamente')
+      toasts.showSuccessToast('Categoría creada')
     },
     showErrorToast: true
   })

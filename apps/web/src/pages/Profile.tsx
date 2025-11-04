@@ -42,7 +42,7 @@ export default function Profile() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-gray-800">Perfil</h2>
+      <h2 className="text-2xl font-bold text-gray-800">Perfil de usuario</h2>
       {!authed && (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded p-3 text-sm">
           Inicia sesión para ver tu perfil.

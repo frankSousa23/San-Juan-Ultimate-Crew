@@ -25,7 +25,12 @@
     "prisma:seed": "npm --workspace apps/api run prisma:seed",
     "prisma:reset": "npm --workspace apps/api run prisma:migrate && npm --workspace apps/api run prisma:seed",
     "build:prod": "./scripts/build-optimized.sh",
-    "start:prod": "./start-production.sh"
+    "start:prod": "./start-production.sh",
+    "checkup": "node scripts/system-check.cjs",
+    "ci:test:api": "npm -w apps/api run test",
+    "ci:test:api:auth": "npm -w apps/api run test:all:auth",
+    "ci:test:web": "npm -w apps/web run test:e2e",
+    "ci:all": "npm run build && npm run ci:test:api && npm run ci:test:api:auth && npm run ci:test:web"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
