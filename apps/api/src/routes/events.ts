@@ -6,14 +6,10 @@ import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = Router();
 
-router.get('/', async (_req: Request, res: Response) => {
-  try {
-    const events = await prisma.event.findMany({ orderBy: { startsAt: 'asc' } });
-    res.json(events);
-  } catch (err) {
-    res.status(200).json(sampleEvents);
-  }
-});
+router.get('/', asyncHandler(async (_req: Request, res: Response) => {
+  const events = await prisma.event.findMany({ orderBy: { startsAt: 'asc' } });
+  res.json(events);
+}));
 
 const createEventSchema = z.object({
   title: z.string().min(1),
@@ -60,10 +56,5 @@ router.delete('/:id', validateParams(eventIdSchema), asyncHandler(async (req: Re
   await prisma.event.delete({ where: { id: Number(req.params.id) } });
   res.status(204).send();
 }));
-
-const sampleEvents = [
-  { id: 1, title: 'Entrenamiento', type: 'TRAINING', status: 'UPCOMING', startsAt: new Date().toISOString() },
-  { id: 2, title: 'Torneo Regional', type: 'TOURNAMENT', status: 'UPCOMING', startsAt: new Date().toISOString() }
-];
 
 export default router;
