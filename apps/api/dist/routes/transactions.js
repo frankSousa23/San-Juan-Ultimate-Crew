@@ -3,11 +3,12 @@ import { prisma } from '../lib/prisma.js';
 import { z } from 'zod';
 import { requireRole } from './auth.js';
 const router = Router();
-// Helpers
 const parseQuery = (q) => {
     const from = q.from ? new Date(String(q.from)) : undefined;
     const to = q.to ? new Date(String(q.to)) : undefined;
-    const type = q.type && ['INCOME', 'EXPENSE', 'TRANSFER'].includes(String(q.type)) ? String(q.type) : undefined;
+    const type = q.type && ['INCOME', 'EXPENSE', 'TRANSFER'].includes(String(q.type))
+        ? String(q.type)
+        : undefined;
     const accountId = q.accountId ? Number(q.accountId) : undefined;
     const categoryId = q.categoryId ? Number(q.categoryId) : undefined;
     const limit = q.limit ? Math.min(100, Math.max(1, Number(q.limit))) : 50;
@@ -19,8 +20,12 @@ router.get('/', async (req, res) => {
     try {
         const { from, to, type, accountId, categoryId, limit, offset } = parseQuery(req.query);
         const where = {};
-        if (from || to)
-            where.occurredAt = { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) };
+        if (from || to) {
+            where.occurredAt = {
+                ...(from ? { gte: from } : {}),
+                ...(to ? { lte: to } : {})
+            };
+        }
         if (type)
             where.type = type;
         if (accountId)
@@ -51,9 +56,10 @@ router.post('/', requireRole(['admin']), async (req, res) => {
         const created = await prisma.transaction.create({ data: payload });
         res.status(201).json(created);
     }
-    catch (e) {
-        if (e?.issues)
-            return res.status(400).json({ error: 'Invalid payload', issues: e.issues });
+    catch (error) {
+        if (error && typeof error === 'object' && 'issues' in error) {
+            return res.status(400).json({ error: 'Invalid payload', issues: error.issues });
+        }
         res.status(500).json({ error: 'Failed to create transaction' });
     }
 });
@@ -66,11 +72,13 @@ router.put('/:id', requireRole(['admin']), async (req, res) => {
         const updated = await prisma.transaction.update({ where: { id }, data: payload });
         res.json(updated);
     }
-    catch (e) {
-        if (e?.code === 'P2025')
+    catch (error) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
             return res.status(404).json({ error: 'Transaction not found' });
-        if (e?.issues)
-            return res.status(400).json({ error: 'Invalid payload', issues: e.issues });
+        }
+        if (error && typeof error === 'object' && 'issues' in error) {
+            return res.status(400).json({ error: 'Invalid payload', issues: error.issues });
+        }
         res.status(500).json({ error: 'Failed to update transaction' });
     }
 });
@@ -82,9 +90,10 @@ router.delete('/:id', requireRole(['admin']), async (req, res) => {
         await prisma.transaction.delete({ where: { id } });
         res.status(204).send();
     }
-    catch (e) {
-        if (e?.code === 'P2025')
+    catch (error) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
             return res.status(404).json({ error: 'Transaction not found' });
+        }
         res.status(500).json({ error: 'Failed to delete transaction' });
     }
 });
@@ -93,8 +102,12 @@ router.get('/summary/overall', async (req, res) => {
     try {
         const { from, to } = parseQuery(req.query);
         const where = {};
-        if (from || to)
-            where.occurredAt = { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) };
+        if (from || to) {
+            where.occurredAt = {
+                ...(from ? { gte: from } : {}),
+                ...(to ? { lte: to } : {})
+            };
+        }
         const [incomeAgg, expenseAgg] = await Promise.all([
             prisma.transaction.aggregate({ _sum: { amountCents: true }, where: { ...where, type: 'INCOME' } }),
             prisma.transaction.aggregate({ _sum: { amountCents: true }, where: { ...where, type: 'EXPENSE' } })

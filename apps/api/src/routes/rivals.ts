@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { z } from 'zod'
+import type { Prisma } from '@prisma/client'
+import { asyncHandler } from '../middleware/errorHandler.js'
 
 const router = Router()
 
@@ -14,10 +16,10 @@ const createSchema = z.object({
 
 const updateSchema = createSchema.partial()
 
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', asyncHandler(async (_req: Request, res: Response) => {
   const items = await prisma.rival.findMany({ orderBy: { createdAt: 'desc' } })
   res.json(items)
-})
+}))
 
 const listQuerySchema = z.object({
   q: z.string().optional(),
@@ -25,41 +27,55 @@ const listQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 })
 
-router.get('/paged', async (req: Request, res: Response) => {
+router.get('/paged', asyncHandler(async (req: Request, res: Response) => {
   const parsed = listQuerySchema.safeParse(req.query)
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() })
   const { q, limit, offset } = parsed.data
-  const where: any = q ? { name: { contains: q, mode: 'insensitive' } } : {}
+  const where: Prisma.RivalWhereInput = q ? { name: { contains: q, mode: 'insensitive' } } : {}
   const [total, items] = await Promise.all([
     prisma.rival.count({ where }),
     prisma.rival.findMany({ where, orderBy: { createdAt: 'desc' }, take: limit, skip: offset })
   ])
   res.json({ items, total, limit, offset })
-})
+}))
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', asyncHandler(async (req: Request, res: Response) => {
   const parsed = createSchema.safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() })
   const data = parsed.data
   const created = await prisma.rival.create({ data: { ...data, lastPlayedAt: data.lastPlayedAt ?? undefined } })
   res.status(201).json(created)
-})
+}))
 
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
   const id = Number(req.params.id)
-  if (!id) return res.status(400).json({ error: 'id requerido' })
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'id requerido' })
   const parsed = updateSchema.safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() })
   const data = parsed.data
-  const updated = await prisma.rival.update({ where: { id }, data: { ...data, lastPlayedAt: data.lastPlayedAt ?? undefined } })
-  res.json(updated)
-})
+  try {
+    const updated = await prisma.rival.update({ where: { id }, data: { ...data, lastPlayedAt: data.lastPlayedAt ?? undefined } })
+    res.json(updated)
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
+      return res.status(404).json({ error: 'Rival not found' })
+    }
+    throw error
+  }
+}))
 
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
   const id = Number(req.params.id)
-  if (!id) return res.status(400).json({ error: 'id requerido' })
-  await prisma.rival.delete({ where: { id } })
-  res.status(204).end()
-})
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'id requerido' })
+  try {
+    await prisma.rival.delete({ where: { id } })
+    res.status(204).end()
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
+      return res.status(404).json({ error: 'Rival not found' })
+    }
+    throw error
+  }
+}))
 
 export default router

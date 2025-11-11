@@ -40,7 +40,10 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
     }
   }, [mode, initial])
 
-  const handleChange = (key: keyof (CreatePlayerInput & UpdatePlayerInput), value: any) => {
+  const handleChange = <K extends keyof (CreatePlayerInput & UpdatePlayerInput)>(
+    key: K, 
+    value: (CreatePlayerInput & UpdatePlayerInput)[K]
+  ) => {
     setForm(prev => ({ ...prev, [key]: value }))
   }
 
@@ -50,19 +53,27 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
     setSubmitting(true)
     try {
       // sanitize numeric fields
-      const payload: any = { ...form }
+      const payload: CreatePlayerInput | UpdatePlayerInput = { ...form }
       if (payload.number !== undefined) payload.number = Number(payload.number)
-      if (payload.heightCm !== undefined && payload.heightCm !== null && payload.heightCm !== '') payload.heightCm = Number(payload.heightCm)
-      if (payload.heightCm === '') delete payload.heightCm
+      if (payload.heightCm !== undefined && payload.heightCm !== null && payload.heightCm !== '') {
+        payload.heightCm = Number(payload.heightCm)
+      }
+      if (payload.heightCm === '') {
+        delete (payload as UpdatePlayerInput).heightCm
+      }
       if (mode === 'edit') {
         // Allow partial update: remove unchanged empty strings
         Object.keys(payload).forEach(k => {
-          if (payload[k] === '' || payload[k] === undefined) delete payload[k]
+          const key = k as keyof typeof payload
+          if (payload[key] === '' || payload[key] === undefined) {
+            delete (payload as Record<string, unknown>)[key]
+          }
         })
       }
       await onSubmit(payload)
-    } catch (err: any) {
-      setError(err?.message || 'Error al enviar el formulario')
+    } catch (err) {
+      const error = err as Error
+      setError(error?.message || 'Error al enviar el formulario')
     } finally {
       setSubmitting(false)
     }
@@ -76,7 +87,7 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
           <label className="block text-sm text-gray-600 mb-1">Nombre</label>
           <input
             required
-            value={(form as any).name || ''}
+            value={form.name || ''}
             onChange={e => handleChange('name', e.target.value)}
             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             placeholder="Nombre completo"
@@ -88,8 +99,8 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
             required
             type="number"
             min={0}
-            value={(form as any).number ?? ''}
-            onChange={e => handleChange('number', e.target.value)}
+            value={form.number ?? ''}
+            onChange={e => handleChange('number', Number(e.target.value) || 0)}
             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             placeholder="00"
           />
@@ -97,7 +108,7 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
         <div>
           <label className="block text-sm text-gray-600 mb-1">Posición</label>
           <select
-            value={(form as any).position || 'HYBRID'}
+            value={form.position || 'HYBRID'}
             onChange={e => handleChange('position', e.target.value as Position)}
             className="w-full px-3 py-2 border rounded-lg"
           >
@@ -109,7 +120,7 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
         <div>
           <label className="block text-sm text-gray-600 mb-1">Estado</label>
           <select
-            value={(form as any).status || 'ACTIVE'}
+            value={form.status || 'ACTIVE'}
             onChange={e => handleChange('status', e.target.value as Status)}
             className="w-full px-3 py-2 border rounded-lg"
           >
@@ -123,8 +134,11 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
           <input
             type="number"
             min={0}
-            value={(form as any).heightCm ?? ''}
-            onChange={e => handleChange('heightCm', e.target.value)}
+            value={form.heightCm ?? ''}
+            onChange={e => {
+              const val = e.target.value
+              handleChange('heightCm', val === '' ? undefined : Number(val) || undefined)
+            }}
             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             placeholder="175"
           />
@@ -132,7 +146,7 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
         <div>
           <label className="block text-sm text-gray-600 mb-1">Experiencia</label>
           <input
-            value={(form as any).experience ?? ''}
+            value={form.experience ?? ''}
             onChange={e => handleChange('experience', e.target.value)}
             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             placeholder="Años de juego, roles, etc."

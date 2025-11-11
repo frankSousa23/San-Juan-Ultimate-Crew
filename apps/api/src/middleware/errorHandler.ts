@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { Prisma } from '@prisma/client'
 import { ApiError, ValidationError } from '../types/index.js'
+import { logger } from '../lib/logger.js'
 
 export interface AppError extends Error {
   statusCode?: number
@@ -29,7 +30,6 @@ export function errorHandler(
   let statusCode = error.statusCode || 500
   let message = error.message || 'Internal Server Error'
 
-  // Prisma errors
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     switch (error.code) {
       case 'P2002':
@@ -50,7 +50,6 @@ export function errorHandler(
     }
   }
 
-  // JWT errors
   if (error.name === 'JsonWebTokenError') {
     statusCode = 401
     message = 'Invalid token'
@@ -61,16 +60,12 @@ export function errorHandler(
     message = 'Token expired'
   }
 
-  // Log error in development
-  if (process.env.NODE_ENV === 'development') {
-    console.error('Error:', {
-      message: error.message,
-      stack: error.stack,
-      statusCode,
-      url: req.url,
-      method: req.method
-    })
-  }
+  logger.error('Request error handled', error, {
+    statusCode,
+    url: req.url,
+    method: req.method,
+    path: req.path,
+  });
 
   res.status(statusCode).json({
     error: message,

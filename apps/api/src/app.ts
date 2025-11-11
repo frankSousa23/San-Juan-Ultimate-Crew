@@ -5,7 +5,7 @@ import morgan from 'morgan';
 import 'dotenv/config';
 import { errorHandler } from './middleware/errorHandler.js';
 import { requestLogger, errorLogger } from './middleware/logging.js';
-import { generalLimiter, authLimiter, uploadLimiter, securityHeaders, sanitizeRequest, corsOptions } from './middleware/security.js';
+import { generalLimiter, authLimiter, uploadLimiter, writeLimiter, readLimiter, securityHeaders, sanitizeRequest, corsOptions } from './middleware/security.js';
 
 import healthRouter from './routes/health.js';
 import playersRouter from './routes/players.js';
@@ -38,8 +38,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(requestLogger);
 app.use(morgan('combined'));
 
-// Rate limiting
+// Rate limiting - Apply general limiter first, then specific limiters on routes
 app.use(generalLimiter);
+// Apply read/write specific limiters
+app.use(readLimiter);
+app.use(writeLimiter);
 
 // Request sanitization
 app.use(sanitizeRequest);

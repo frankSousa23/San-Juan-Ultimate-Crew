@@ -6,6 +6,8 @@ import { EventItem, EventType, EventStatus } from '../types/event'
 import ConfirmModal from '../components/ConfirmModal'
 import { useToast } from '../hooks/useToast'
 import { useApi } from '../hooks/useApi'
+import { AttendanceRecord } from '../types/attendance'
+import { Player } from '../types/player'
 
 const typeLabel: Record<EventType, string> = {
   TRAINING: 'Entrenamiento',
@@ -76,15 +78,21 @@ export default function Events() {
   }, [])
   // Sync state from URL
   useEffect(() => {
-    const t = searchParams.get('tab') as any
-    const type = searchParams.get('type') as any
-    const status = searchParams.get('status') as any
+    const t = searchParams.get('tab')
+    const type = searchParams.get('type')
+    const status = searchParams.get('status')
     const sq = searchParams.get('q') || ''
     const slimit = parseInt(searchParams.get('limit') || '')
     const spage = parseInt(searchParams.get('page') || '')
-    if (t && ['events','calendar','tournaments','stats'].includes(t) && tab !== t) setTab(t)
-    if (type && (['TOURNAMENT','TRAINING','SOCIAL','WORKSHOP'].includes(type) || type === 'all') && typeFilter !== type) setTypeFilter(type)
-    if (status && (['UPCOMING','ONGOING','COMPLETED','CANCELLED'].includes(status) || status === 'all') && statusFilter !== status) setStatusFilter(status)
+    if (t && ['events','calendar','tournaments','stats'].includes(t) && tab !== t) {
+      setTab(t as 'events' | 'calendar' | 'tournaments' | 'stats')
+    }
+    if (type && (['TOURNAMENT','TRAINING','SOCIAL','WORKSHOP'].includes(type) || type === 'all') && typeFilter !== type) {
+      setTypeFilter(type as 'all' | EventType)
+    }
+    if (status && (['UPCOMING','ONGOING','COMPLETED','CANCELLED'].includes(status) || status === 'all') && statusFilter !== status) {
+      setStatusFilter(status as 'all' | EventStatus)
+    }
     if (sq !== q) setQ(sq)
     if (!Number.isNaN(slimit) && slimit >= 5 && slimit <= 200 && slimit !== limit) setLimit(slimit)
     if (!Number.isNaN(spage) && spage >= 1 && spage !== page) setPage(spage)
@@ -153,7 +161,7 @@ export default function Events() {
               { k: 'stats', label: 'Estadísticas' },
             ].map(t => (
               <button key={t.k} onClick={() => {
-                setTab(t.k as any)
+                setTab(t.k as 'events' | 'calendar' | 'tournaments' | 'stats')
                 const params: Record<string, string> = {}
                 params.tab = t.k
                 if (typeFilter !== 'all') params.type = typeFilter
@@ -194,7 +202,7 @@ export default function Events() {
                   className="px-3 py-2 border rounded-lg text-sm min-w-[220px]"
                 />
                 <select value={typeFilter} onChange={e => {
-                  const val = e.target.value as any
+                  const val = e.target.value as 'all' | EventType
                   setTypeFilter(val)
                   const params: Record<string, string> = { tab: 'events' }
                   if (val !== 'all') params.type = val
@@ -210,7 +218,7 @@ export default function Events() {
                   <option value="WORKSHOP">Talleres</option>
                 </select>
                 <select value={statusFilter} onChange={e => {
-                  const val = e.target.value as any
+                  const val = e.target.value as 'all' | EventStatus
                   setStatusFilter(val)
                   const params: Record<string, string> = { tab: 'events' }
                   if (typeFilter !== 'all') params.type = typeFilter
@@ -373,7 +381,7 @@ export default function Events() {
                 mode="create"
                 initial={null}
                 onCancel={() => setCreateOpen(false)}
-                onSubmit={(data) => createEvent(data as any)}
+                onSubmit={(data) => createEvent(data)}
               />
             </div>
           </div>
@@ -390,7 +398,7 @@ export default function Events() {
                 mode="edit"
                 initial={editTarget}
                 onCancel={() => setEditTarget(null)}
-                onSubmit={(data) => editTarget && updateEvent(editTarget.id, data as any)}
+                onSubmit={(data) => editTarget && updateEvent(editTarget.id, data)}
               />
             </div>
           </div>
@@ -467,8 +475,8 @@ function CalendarGrid({ events, onSelectDay }: { events: EventItem[]; onSelectDa
 }
 
 function AttendanceModal({ eventItem, onClose }: { eventItem: EventItem; onClose: () => void }) {
-  const [records, setRecords] = useState<any[]>([])
-  const [players, setPlayers] = useState<any[]>([])
+  const [records, setRecords] = useState<AttendanceRecord[]>([])
+  const [players, setPlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -534,8 +542,8 @@ function AttendanceModal({ eventItem, onClose }: { eventItem: EventItem; onClose
                       <td className="px-4 py-2">{p.name}</td>
                       <td className="px-4 py-2">
                         <div className="flex gap-2">
-                          {['present','absent','late'].map(st => (
-                            <button key={st} onClick={() => setStatus(p.id, st as any)} className={`px-2 py-1 rounded border text-xs ${statusOf(p.id)===st ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-gray-700'}`}>{st}</button>
+                          {(['present','absent','late'] as const).map(st => (
+                            <button key={st} onClick={() => setStatus(p.id, st)} className={`px-2 py-1 rounded border text-xs ${statusOf(p.id)===st ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-gray-700'}`}>{st}</button>
                           ))}
                         </div>
                       </td>

@@ -1,43 +1,38 @@
 import { Router, Request, Response } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { z } from 'zod'
+import { asyncHandler } from '../middleware/errorHandler.js'
 
 const router = Router()
 
 // GET /api/channels?eventId=
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const eventId = req.query.eventId ? Number(req.query.eventId) : undefined
-  if (req.query.eventId && !Number.isInteger(eventId!)) return res.status(400).json({ error: 'Invalid eventId' })
-  try {
-    const channels = await prisma.channel.findMany({
-      where: eventId ? { eventId } : undefined,
-      include: {
-        _count: { select: { messages: true } },
-        messages: { orderBy: { createdAt: 'desc' }, take: 1 },
-      },
-      orderBy: { id: 'desc' },
-    })
-    res.json(channels)
-  } catch (e) {
-    res.status(500).json({ error: 'Failed to list channels' })
+  if (req.query.eventId && (!Number.isInteger(eventId!) || eventId! <= 0)) {
+    return res.status(400).json({ error: 'Invalid eventId' })
   }
-})
+  const channels = await prisma.channel.findMany({
+    where: eventId ? { eventId } : undefined,
+    include: {
+      _count: { select: { messages: true } },
+      messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+    },
+    orderBy: { id: 'desc' },
+  })
+  res.json(channels)
+}))
 
 // GET /api/channels/:id
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
   const id = Number(req.params.id)
-  if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid id' })
-  try {
-    const ch = await prisma.channel.findUnique({
-      where: { id },
-      include: { messages: { orderBy: { createdAt: 'desc' }, take: 1 } },
-    })
-    if (!ch) return res.status(404).json({ error: 'Channel not found' })
-    res.json(ch)
-  } catch (e) {
-    res.status(500).json({ error: 'Failed to load channel' })
-  }
-})
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Invalid id' })
+  const ch = await prisma.channel.findUnique({
+    where: { id },
+    include: { messages: { orderBy: { createdAt: 'desc' }, take: 1 } },
+  })
+  if (!ch) return res.status(404).json({ error: 'Channel not found' })
+  res.json(ch)
+}))
 
 // POST /api/channels
 const createChannelSchema = z.object({
@@ -45,16 +40,20 @@ const createChannelSchema = z.object({
   eventId: z.coerce.number().int().positive().optional(),
 })
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', asyncHandler(async (req: Request, res: Response) => {
   try {
     const payload = createChannelSchema.parse(req.body)
     const created = await prisma.channel.create({ data: payload })
     res.status(201).json(created)
-  } catch (e: any) {
-    if (e?.code === 'P2002') return res.status(409).json({ error: 'Channel for event already exists' })
-    if (e?.issues) return res.status(400).json({ error: 'Invalid payload', issues: e.issues })
-    res.status(500).json({ error: 'Failed to create channel' })
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+      return res.status(409).json({ error: 'Channel for event already exists' })
+    }
+    if (error && typeof error === 'object' && 'issues' in error) {
+      return res.status(400).json({ error: 'Invalid payload', issues: (error as z.ZodError).issues })
+    }
+    throw error
   }
-})
+}))
 
 export default router

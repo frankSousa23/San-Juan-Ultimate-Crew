@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { z } from 'zod';
+import { asyncHandler } from '../middleware/errorHandler.js';
 const router = Router();
 const createSchema = z.object({
     name: z.string().min(1),
@@ -10,16 +11,16 @@ const createSchema = z.object({
     notes: z.string().optional().nullable(),
 });
 const updateSchema = createSchema.partial();
-router.get('/', async (_req, res) => {
+router.get('/', asyncHandler(async (_req, res) => {
     const items = await prisma.rival.findMany({ orderBy: { createdAt: 'desc' } });
     res.json(items);
-});
+}));
 const listQuerySchema = z.object({
     q: z.string().optional(),
     limit: z.coerce.number().int().min(1).max(200).default(20),
     offset: z.coerce.number().int().min(0).default(0),
 });
-router.get('/paged', async (req, res) => {
+router.get('/paged', asyncHandler(async (req, res) => {
     const parsed = listQuerySchema.safeParse(req.query);
     if (!parsed.success)
         return res.status(400).json({ error: parsed.error.flatten() });
@@ -30,31 +31,47 @@ router.get('/paged', async (req, res) => {
         prisma.rival.findMany({ where, orderBy: { createdAt: 'desc' }, take: limit, skip: offset })
     ]);
     res.json({ items, total, limit, offset });
-});
-router.post('/', async (req, res) => {
+}));
+router.post('/', asyncHandler(async (req, res) => {
     const parsed = createSchema.safeParse(req.body);
     if (!parsed.success)
         return res.status(400).json({ error: parsed.error.flatten() });
     const data = parsed.data;
     const created = await prisma.rival.create({ data: { ...data, lastPlayedAt: data.lastPlayedAt ?? undefined } });
     res.status(201).json(created);
-});
-router.put('/:id', async (req, res) => {
+}));
+router.put('/:id', asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    if (!id)
+    if (!Number.isInteger(id) || id <= 0)
         return res.status(400).json({ error: 'id requerido' });
     const parsed = updateSchema.safeParse(req.body);
     if (!parsed.success)
         return res.status(400).json({ error: parsed.error.flatten() });
     const data = parsed.data;
-    const updated = await prisma.rival.update({ where: { id }, data: { ...data, lastPlayedAt: data.lastPlayedAt ?? undefined } });
-    res.json(updated);
-});
-router.delete('/:id', async (req, res) => {
+    try {
+        const updated = await prisma.rival.update({ where: { id }, data: { ...data, lastPlayedAt: data.lastPlayedAt ?? undefined } });
+        res.json(updated);
+    }
+    catch (error) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
+            return res.status(404).json({ error: 'Rival not found' });
+        }
+        throw error;
+    }
+}));
+router.delete('/:id', asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    if (!id)
+    if (!Number.isInteger(id) || id <= 0)
         return res.status(400).json({ error: 'id requerido' });
-    await prisma.rival.delete({ where: { id } });
-    res.status(204).end();
-});
+    try {
+        await prisma.rival.delete({ where: { id } });
+        res.status(204).end();
+    }
+    catch (error) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
+            return res.status(404).json({ error: 'Rival not found' });
+        }
+        throw error;
+    }
+}));
 export default router;

@@ -2,14 +2,28 @@ import { Router, Request, Response } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { z } from 'zod'
 import { requireRole } from './auth.js'
+import type { Prisma } from '@prisma/client'
 
 const router = Router()
 
-// Helpers
-const parseQuery = (q: any) => {
+type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER'
+
+interface QueryParams {
+  from?: string
+  to?: string
+  type?: string
+  accountId?: string
+  categoryId?: string
+  limit?: string
+  offset?: string
+}
+
+const parseQuery = (q: QueryParams) => {
   const from = q.from ? new Date(String(q.from)) : undefined
   const to = q.to ? new Date(String(q.to)) : undefined
-  const type = q.type && ['INCOME', 'EXPENSE', 'TRANSFER'].includes(String(q.type)) ? String(q.type) as any : undefined
+  const type: TransactionType | undefined = q.type && ['INCOME', 'EXPENSE', 'TRANSFER'].includes(String(q.type)) 
+    ? (String(q.type) as TransactionType) 
+    : undefined
   const accountId = q.accountId ? Number(q.accountId) : undefined
   const categoryId = q.categoryId ? Number(q.categoryId) : undefined
   const limit = q.limit ? Math.min(100, Math.max(1, Number(q.limit))) : 50
@@ -20,9 +34,14 @@ const parseQuery = (q: any) => {
 // GET /api/transactions
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { from, to, type, accountId, categoryId, limit, offset } = parseQuery(req.query)
-    const where: any = {}
-    if (from || to) where.occurredAt = { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) }
+    const { from, to, type, accountId, categoryId, limit, offset } = parseQuery(req.query as QueryParams)
+    const where: Prisma.TransactionWhereInput = {}
+    if (from || to) {
+      where.occurredAt = { 
+        ...(from ? { gte: from } : {}), 
+        ...(to ? { lte: to } : {}) 
+      }
+    }
     if (type) where.type = type
     if (accountId) where.accountId = accountId
     if (categoryId) where.categoryId = categoryId
@@ -50,8 +69,10 @@ router.post('/', requireRole(['admin']), async (req: Request, res: Response) => 
     const payload = createSchema.parse(req.body)
     const created = await prisma.transaction.create({ data: payload })
     res.status(201).json(created)
-  } catch (e: any) {
-    if (e?.issues) return res.status(400).json({ error: 'Invalid payload', issues: e.issues })
+  } catch (error) {
+    if (error && typeof error === 'object' && 'issues' in error) {
+      return res.status(400).json({ error: 'Invalid payload', issues: (error as z.ZodError).issues })
+    }
     res.status(500).json({ error: 'Failed to create transaction' })
   }
 })
@@ -63,9 +84,13 @@ router.put('/:id', requireRole(['admin']), async (req: Request, res: Response) =
     const payload = createSchema.partial().parse(req.body)
     const updated = await prisma.transaction.update({ where: { id }, data: payload })
     res.json(updated)
-  } catch (e: any) {
-    if (e?.code === 'P2025') return res.status(404).json({ error: 'Transaction not found' })
-    if (e?.issues) return res.status(400).json({ error: 'Invalid payload', issues: e.issues })
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
+      return res.status(404).json({ error: 'Transaction not found' })
+    }
+    if (error && typeof error === 'object' && 'issues' in error) {
+      return res.status(400).json({ error: 'Invalid payload', issues: (error as z.ZodError).issues })
+    }
     res.status(500).json({ error: 'Failed to update transaction' })
   }
 })
@@ -76,8 +101,10 @@ router.delete('/:id', requireRole(['admin']), async (req: Request, res: Response
   try {
     await prisma.transaction.delete({ where: { id } })
     res.status(204).send()
-  } catch (e: any) {
-    if (e?.code === 'P2025') return res.status(404).json({ error: 'Transaction not found' })
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
+      return res.status(404).json({ error: 'Transaction not found' })
+    }
     res.status(500).json({ error: 'Failed to delete transaction' })
   }
 })
@@ -85,9 +112,14 @@ router.delete('/:id', requireRole(['admin']), async (req: Request, res: Response
 // GET /api/finance/summary
 router.get('/summary/overall', async (req: Request, res: Response) => {
   try {
-    const { from, to } = parseQuery(req.query)
-    const where: any = {}
-    if (from || to) where.occurredAt = { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) }
+    const { from, to } = parseQuery(req.query as QueryParams)
+    const where: Prisma.TransactionWhereInput = {}
+    if (from || to) {
+      where.occurredAt = { 
+        ...(from ? { gte: from } : {}), 
+        ...(to ? { lte: to } : {}) 
+      }
+    }
     const [incomeAgg, expenseAgg] = await Promise.all([
       prisma.transaction.aggregate({ _sum: { amountCents: true }, where: { ...where, type: 'INCOME' } }),
       prisma.transaction.aggregate({ _sum: { amountCents: true }, where: { ...where, type: 'EXPENSE' } })

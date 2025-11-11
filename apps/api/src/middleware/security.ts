@@ -2,7 +2,7 @@ import rateLimit from 'express-rate-limit'
 import helmet from 'helmet'
 import { Request, Response, NextFunction } from 'express'
 
-// Rate limiting
+// Rate limiting - General API requests
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
@@ -11,8 +11,13 @@ export const generalLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req: Request) => {
+    // Skip rate limiting for health checks
+    return req.path === '/health' || req.path === '/'
+  },
 })
 
+// Rate limiting - Authentication endpoints (stricter)
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // limit each IP to 5 requests per windowMs
@@ -21,8 +26,10 @@ export const authLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: false, // Count all requests, even successful ones
 })
 
+// Rate limiting - File uploads (very strict)
 export const uploadLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 10, // limit each IP to 10 uploads per minute
@@ -31,6 +38,36 @@ export const uploadLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+})
+
+// Rate limiting - Write operations (POST, PUT, DELETE)
+export const writeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // limit each IP to 50 write operations per windowMs
+  message: {
+    error: 'Too many write operations, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req: Request) => {
+    // Only apply to write methods
+    return !['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)
+  },
+})
+
+// Rate limiting - Read operations (GET)
+export const readLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 200, // limit each IP to 200 read requests per minute
+  message: {
+    error: 'Too many read requests, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req: Request) => {
+    // Only apply to read methods
+    return req.method !== 'GET'
+  },
 })
 
 // Security headers
@@ -68,17 +105,31 @@ export function sanitizeRequest(req: Request, res: Response, next: NextFunction)
 // CORS configuration
 export const corsOptions = {
   origin: function (origin: string | undefined, callback: Function) {
-    const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173']
+    const allowedOrigins = process.env.CORS_ORIGIN?.split(',').map(o => o.trim()) || ['http://localhost:5173']
+    const isProduction = process.env.NODE_ENV === 'production'
     
-    // Allow requests with no origin (mobile apps, etc.)
-    if (!origin) return callback(null, true)
+    // In production, be strict about origins
+    if (isProduction && !origin) {
+      return callback(new Error('CORS: Origin required in production'))
+    }
     
-    if (allowedOrigins.includes(origin)) {
+    // Allow requests with no origin in development (mobile apps, Postman, etc.)
+    if (!origin && !isProduction) {
+      return callback(null, true)
+    }
+    
+    if (origin && allowedOrigins.includes(origin)) {
       callback(null, true)
+    } else if (origin) {
+      callback(new Error(`CORS: Origin ${origin} not allowed`))
     } else {
-      callback(new Error('Not allowed by CORS'))
+      callback(null, true)
     }
   },
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
+  maxAge: 86400, // 24 hours
 }

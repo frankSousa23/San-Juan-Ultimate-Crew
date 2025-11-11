@@ -72,9 +72,13 @@ export default function Roster() {
     const sq = searchParams.get('q') || ''
     if (sq !== q) setQ(sq)
     const spos = (searchParams.get('pos') as Position | null) || ''
-    if (spos !== pos) setPos(spos as any)
+    if (spos !== pos && (spos === '' || ['HANDLER', 'CUTTER', 'HYBRID'].includes(spos))) {
+      setPos(spos as '' | Position)
+    }
     const sst = (searchParams.get('st') as Status | null) || ''
-    if (sst !== st) setSt(sst as any)
+    if (sst !== st && (sst === '' || ['ACTIVE', 'INJURED', 'INACTIVE'].includes(sst))) {
+      setSt(sst as '' | Status)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
@@ -139,13 +143,13 @@ export default function Roster() {
             placeholder="Buscar jugador..."
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
-          <select value={pos} onChange={e => setPos(e.target.value as any)} className="px-4 py-2 border rounded-lg">
+          <select value={pos} onChange={e => setPos(e.target.value as '' | Position)} className="px-4 py-2 border rounded-lg">
             <option value=''>Todas las posiciones</option>
             <option value='HANDLER'>Handler</option>
             <option value='CUTTER'>Cutter</option>
             <option value='HYBRID'>Hybrid</option>
           </select>
-          <select value={st} onChange={e => setSt(e.target.value as any)} className="px-4 py-2 border rounded-lg">
+          <select value={st} onChange={e => setSt(e.target.value as '' | Status)} className="px-4 py-2 border rounded-lg">
             <option value=''>Todos los estados</option>
             <option value='ACTIVE'>Activo</option>
             <option value='INJURED'>Lesionado</option>

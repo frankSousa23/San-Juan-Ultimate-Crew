@@ -1,14 +1,14 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { prisma } from '../lib/prisma.js'
-const db: any = prisma
+import { env } from '../lib/env.js'
 import jwt, { Secret, SignOptions } from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 
 const router = Router()
 
-const AUTH_REQUIRED = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
-const JWT_SECRET: Secret = process.env.JWT_SECRET || 'dev-secret'
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m'
+const AUTH_REQUIRED = env.AUTH_REQUIRED
+const JWT_SECRET: Secret = env.JWT_SECRET
+const JWT_EXPIRES_IN = env.JWT_EXPIRES_IN
 
 function signToken(payload: object) {
   const opts: SignOptions = { expiresIn: JWT_EXPIRES_IN as any }
@@ -34,7 +34,6 @@ export function requireRole(roles: string[]) {
     if (!AUTH_REQUIRED) return next()
     let u = (req as any).user as any
     if (!u?.sub) {
-      // Attempt to authenticate from Authorization header if user not already populated
       const auth = req.headers.authorization || ''
       const [, token] = auth.split(' ')
       if (!token) return res.status(401).json({ error: 'Unauthorized' })
@@ -45,7 +44,7 @@ export function requireRole(roles: string[]) {
         return res.status(401).json({ error: 'Invalid token' })
       }
     }
-  const user = await db.user.findUnique({
+  const user = await prisma.user.findUnique({
       where: { id: Number(u.sub) },
       include: { roles: { include: { role: true } } }
     })
@@ -55,7 +54,6 @@ export function requireRole(roles: string[]) {
   }
 }
 
-// Allow if admin or if current user's playerId matches :id param
 export function requireSelfOrAdminForPlayer() {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (!AUTH_REQUIRED) return next()
@@ -65,7 +63,7 @@ export function requireSelfOrAdminForPlayer() {
     let u: any
     try { u = jwt.verify(token, JWT_SECRET) as any } catch { return res.status(401).json({ error: 'Invalid token' }) }
     ;(req as any).user = u
-    const user = await db.user.findUnique({ where: { id: Number(u.sub) }, include: { roles: { include: { role: true } } } })
+    const user = await prisma.user.findUnique({ where: { id: Number(u.sub) }, include: { roles: { include: { role: true } } } })
     if (!user) return res.status(401).json({ error: 'Unauthorized' })
     const isAdmin = user.roles.some((ur: any) => ur.role?.name === 'admin')
     if (isAdmin) return next()
@@ -79,10 +77,10 @@ export function requireSelfOrAdminForPlayer() {
 router.post('/register', async (req: Request, res: Response) => {
   const { email, password, name } = req.body || {}
   if (!email || !password) return res.status(400).json({ error: 'email and password required' })
-  const exists = await db.user.findUnique({ where: { email } })
+  const exists = await prisma.user.findUnique({ where: { email } })
   if (exists) return res.status(409).json({ error: 'email already exists' })
   const passwordHash = await bcrypt.hash(password, 10)
-  const user = await db.user.create({ data: { email, passwordHash, name } })
+  const user = await prisma.user.create({ data: { email, passwordHash, name } })
   const token = signToken({ sub: user.id, email: user.email })
   res.json({ token, user: { id: user.id, email: user.email, name: user.name } })
 })
@@ -90,7 +88,7 @@ router.post('/register', async (req: Request, res: Response) => {
 router.post('/login', async (req: Request, res: Response) => {
   const { email, password } = req.body || {}
   if (!email || !password) return res.status(400).json({ error: 'email and password required' })
-  const user = await db.user.findUnique({ where: { email } })
+  const user = await prisma.user.findUnique({ where: { email } })
   if (!user) return res.status(401).json({ error: 'invalid credentials' })
   const ok = await bcrypt.compare(password, user.passwordHash)
   if (!ok) return res.status(401).json({ error: 'invalid credentials' })
@@ -99,7 +97,6 @@ router.post('/login', async (req: Request, res: Response) => {
 })
 
 router.post('/logout', (_req: Request, res: Response) => {
-  // Stateless JWT: logout se maneja del lado cliente (borrar token)
   res.json({ ok: true })
 })
 
@@ -107,7 +104,7 @@ router.get('/me', requireAuth, async (req: Request, res: Response) => {
   if (!AUTH_REQUIRED) return res.json({ authDisabled: true })
   const u = (req as any).user
   if (!u?.sub) return res.status(401).json({ error: 'Unauthorized' })
-  const user = await db.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: Number(u.sub) },
     include: { roles: { include: { role: true } } },
   })

@@ -19,24 +19,48 @@ yarn-error.log*
 
 # Editor
 .vscode/
+.idea/
 .DS_Store
 Thumbs.db
 
 # Prisma
 **/prisma/migrations/
 
-# Design prototypes (removed before first commit)
+# Design prototypes
 /*.txt
 
 # Coverage
 coverage/
- 
+*.lcov
+
 # API uploads (local storage)
 apps/api/uploads/
-
-# Playwright auth states (generated)
-apps/web/tests/.auth/
 
 # Playwright artifacts
 apps/web/playwright-report/
 apps/web/test-results/
+apps/web/tests/.auth/
+
+# Local development files
+local/
+reports/
+*.local.*
+logs/
+
+# Generated reports and scripts output
+*-report.md
+*-check-*.md
+MEJORAS_IMPLEMENTADAS.md
+REPORTE_COMPLETO_SISTEMA.md
+FINAL_IMPLEMENTATION_REPORT.md
+IMPLEMENTATION_SUMMARY.md
+
+# Temporary files
+*.tmp
+*.temp
+process.exit(1))
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,46 +1,53 @@
 import { Router, Request, Response } from 'express'
 import { prisma } from '../lib/prisma.js'
+import { asyncHandler } from '../middleware/errorHandler.js'
 
 const router = Router()
 
-router.get('/', async (_req: Request, res: Response) => {
-  try {
-    const [players, events, messages] = await Promise.all([
-      prisma.player.count(),
-      prisma.event.count(),
-      prisma.message.count(),
-    ])
+interface AttendanceGroup {
+  status: string
+  _count: { _all: number }
+}
 
-    // Attendance breakdown and upcoming events
-    const upcomingEvents = await prisma.event.findMany({
-      where: { startsAt: { gte: new Date() } },
-      orderBy: { startsAt: 'asc' },
-      take: 5,
-      select: { id: true, title: true, startsAt: true, type: true }
-    })
+interface EventTypeGroup {
+  type: string
+  _count: { _all: number }
+}
 
-    const attendanceTotals = await prisma.attendance.groupBy({
-      by: ['status'],
-      _count: { _all: true },
-    })
+router.get('/', asyncHandler(async (_req: Request, res: Response) => {
+  const [players, events, messages] = await Promise.all([
+    prisma.player.count(),
+    prisma.event.count(),
+    prisma.message.count(),
+  ])
 
-    // Events by type
-    const eventsByType = await prisma.event.groupBy({
-      by: ['type'],
-      _count: { _all: true },
-    })
+  // Attendance breakdown and upcoming events
+  const upcomingEvents = await prisma.event.findMany({
+    where: { startsAt: { gte: new Date() } },
+    orderBy: { startsAt: 'asc' },
+    take: 5,
+    select: { id: true, title: true, startsAt: true, type: true }
+  })
 
-    res.json({
-      players,
-      events,
-      messages,
-      upcomingEvents,
-      attendance: attendanceTotals.map((a: { status: string; _count: { _all: number } }) => ({ status: a.status, count: a._count._all })),
-      eventsByType: eventsByType.map((e: { type: string; _count: { _all: number } }) => ({ type: e.type, count: e._count._all })),
-    })
-  } catch (e: any) {
-    res.status(500).json({ error: e?.message || 'stats failed' })
-  }
-})
+  const attendanceTotals = await prisma.attendance.groupBy({
+    by: ['status'],
+    _count: { _all: true },
+  })
+
+  // Events by type
+  const eventsByType = await prisma.event.groupBy({
+    by: ['type'],
+    _count: { _all: true },
+  })
+
+  res.json({
+    players,
+    events,
+    messages,
+    upcomingEvents,
+    attendance: attendanceTotals.map((a: AttendanceGroup) => ({ status: a.status, count: a._count._all })),
+    eventsByType: eventsByType.map((e: EventTypeGroup) => ({ type: e.type, count: e._count._all })),
+  })
+}))
 
 export default router

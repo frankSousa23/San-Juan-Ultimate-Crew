@@ -36,23 +36,36 @@ export default function EventForm({ mode, initial, onCancel, onSubmit }: Props) 
     }
   }, [mode, initial])
 
-  const handleChange = (k: string, v: any) => setForm(prev => ({ ...prev, [k]: v }))
+  const handleChange = <K extends keyof (CreateEventInput & UpdateEventInput)>(
+    k: K,
+    v: (CreateEventInput & UpdateEventInput)[K]
+  ) => setForm(prev => ({ ...prev, [k]: v }))
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setSubmitting(true)
     try {
-      const payload: any = { ...form }
+      const payload: CreateEventInput | UpdateEventInput = { ...form }
       // Convert datetime-local to ISO for API
-      if (payload.startsAt) payload.startsAt = new Date(payload.startsAt).toISOString()
-      if (payload.endsAt) payload.endsAt = new Date(payload.endsAt).toISOString()
+      if (payload.startsAt) {
+        payload.startsAt = new Date(payload.startsAt as string).toISOString()
+      }
+      if (payload.endsAt) {
+        payload.endsAt = new Date(payload.endsAt as string).toISOString()
+      }
       if (mode === 'edit') {
-        Object.keys(payload).forEach(k => { if (payload[k] === '' || payload[k] === undefined) delete payload[k] })
+        Object.keys(payload).forEach(k => {
+          const key = k as keyof typeof payload
+          if (payload[key] === '' || payload[key] === undefined) {
+            delete (payload as Record<string, unknown>)[key]
+          }
+        })
       }
       await onSubmit(payload)
-    } catch (err: any) {
-      setError(err?.message || 'Error al enviar el formulario')
+    } catch (err) {
+      const error = err as Error
+      setError(error?.message || 'Error al enviar el formulario')
     } finally {
       setSubmitting(false)
     }
@@ -64,35 +77,35 @@ export default function EventForm({ mode, initial, onCancel, onSubmit }: Props) 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="md:col-span-2">
           <label className="block text-sm text-gray-600 mb-1">Título</label>
-          <input value={(form as any).title || ''} onChange={e => handleChange('title', e.target.value)} required className="w-full px-3 py-2 border rounded-lg" placeholder="Nombre del evento" />
+          <input value={form.title || ''} onChange={e => handleChange('title', e.target.value)} required className="w-full px-3 py-2 border rounded-lg" placeholder="Nombre del evento" />
         </div>
         <div>
           <label className="block text-sm text-gray-600 mb-1">Tipo</label>
-          <select value={(form as any).type} onChange={e => handleChange('type', e.target.value as EventType)} className="w-full px-3 py-2 border rounded-lg">
+          <select value={form.type} onChange={e => handleChange('type', e.target.value as EventType)} className="w-full px-3 py-2 border rounded-lg">
             {typeOptions.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
         <div>
           <label className="block text-sm text-gray-600 mb-1">Estado</label>
-          <select value={(form as any).status} onChange={e => handleChange('status', e.target.value as EventStatus)} className="w-full px-3 py-2 border rounded-lg">
+          <select value={form.status} onChange={e => handleChange('status', e.target.value as EventStatus)} className="w-full px-3 py-2 border rounded-lg">
             {statusOptions.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
           <label className="block text-sm text-gray-600 mb-1">Inicio</label>
-          <input type="datetime-local" value={(form as any).startsAt || ''} onChange={e => handleChange('startsAt', e.target.value)} required className="w-full px-3 py-2 border rounded-lg" />
+          <input type="datetime-local" value={form.startsAt || ''} onChange={e => handleChange('startsAt', e.target.value)} required className="w-full px-3 py-2 border rounded-lg" />
         </div>
         <div>
           <label className="block text-sm text-gray-600 mb-1">Fin</label>
-          <input type="datetime-local" value={(form as any).endsAt || ''} onChange={e => handleChange('endsAt', e.target.value)} className="w-full px-3 py-2 border rounded-lg" />
+          <input type="datetime-local" value={form.endsAt || ''} onChange={e => handleChange('endsAt', e.target.value)} className="w-full px-3 py-2 border rounded-lg" />
         </div>
         <div className="md:col-span-2">
           <label className="block text-sm text-gray-600 mb-1">Lugar</label>
-          <input value={(form as any).location || ''} onChange={e => handleChange('location', e.target.value)} className="w-full px-3 py-2 border rounded-lg" placeholder="Ubicación" />
+          <input value={form.location || ''} onChange={e => handleChange('location', e.target.value)} className="w-full px-3 py-2 border rounded-lg" placeholder="Ubicación" />
         </div>
         <div className="md:col-span-2">
           <label className="block text-sm text-gray-600 mb-1">Descripción</label>
-          <textarea value={(form as any).description || ''} onChange={e => handleChange('description', e.target.value)} className="w-full px-3 py-2 border rounded-lg" placeholder="Detalles"></textarea>
+          <textarea value={form.description || ''} onChange={e => handleChange('description', e.target.value)} className="w-full px-3 py-2 border rounded-lg" placeholder="Detalles"></textarea>
         </div>
       </div>
       <div className="flex gap-2 pt-2">

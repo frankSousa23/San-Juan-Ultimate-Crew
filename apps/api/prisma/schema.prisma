@@ -111,6 +111,10 @@ model Event {
   participants EventParticipant[]
   attendances  Attendance[]
   channel      Channel?
+
+  @@index([startsAt])
+  @@index([type])
+  @@index([status])
 }
 
 model EventParticipant {
@@ -142,6 +146,8 @@ model Message {
   authorId  Int?
   content   String
   createdAt DateTime  @default(now())
+
+  @@index([channelId, createdAt])
 }
 
 model Attendance {

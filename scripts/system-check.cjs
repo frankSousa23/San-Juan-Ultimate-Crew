@@ -1,9 +1,4 @@
 #!/usr/bin/env node
-/*
- Automated system check: brings up dependencies, builds, starts services,
- runs API unit tests and Web e2e tests, validates auth flow, and writes
- a timestamped Markdown report under reports/.
-*/
 
 const { spawn } = require('node:child_process');
 const { mkdirSync, writeFileSync } = require('node:fs');
@@ -49,7 +44,7 @@ function now() {
 
 async function main() {
   const stamp = now();
-  mkdirSync('reports', { recursive: true });
+  mkdirSync('local/reports', { recursive: true });
   const sections = [];
   const timings = [];
 
@@ -57,7 +52,6 @@ async function main() {
   const overallStart = Date.now()
   const overallTimeoutMs = Number(process.env.CHECK_TIMEOUT_MS || 10 * 60 * 1000)
   const watchdog = setTimeout(() => {
-    // eslint-disable-next-line no-console
     console.error(`Global timeout reached: ${overallTimeoutMs}ms. Forcing exit.`)
     process.exit(3)
   }, overallTimeoutMs)
@@ -83,19 +77,16 @@ async function main() {
     sections.push('Skipped (fast mode). Set CHECK_FULL=1 to enable.')
   }
 
-  // 3) API health (no dev spawn here; CI/E2E se encargan de iniciar si hace falta)
   sections.push('## API Health');
   const apiHealthy = await waitForUrl('http://localhost:4000/health', 2000)
   timings.push(`API health wait: ${apiHealthy ? 'OK' : 'FAILED'}`)
   sections.push(`API health: ${apiHealthy ? 'OK' : 'FAILED'}`);
 
-  // 4) Web dev server presence (no spawn; solo observación)
   sections.push('## Web Dev Presence');
   const webUp = await waitForUrl('http://localhost:5173', 2000)
   timings.push(`Web up wait: ${webUp ? 'OK' : 'FAILED'}`)
   sections.push(`Web dev server: ${webUp ? 'OK' : 'FAILED'}`);
 
-  // 5) Auth/Login sanity (use existing helper if present)
   sections.push('## Auth/Login Check');
   let authRes = { code: 0, stdout: '', stderr: '', durationMs: 0, timedOut: false }
   if (isFull) {
@@ -106,7 +97,6 @@ async function main() {
     sections.push('Skipped (fast mode). Set CHECK_FULL=1 to enable.')
   }
 
-  // 6) API unit tests
   sections.push('## API Tests');
   let apiTests = { code: 0, stdout: '', stderr: '', durationMs: 0, timedOut: false }
   if (isFull) {
@@ -117,7 +107,6 @@ async function main() {
     sections.push('Skipped (fast mode). Set CHECK_FULL=1 to enable.')
   }
 
-  // 7) Web e2e tests
   sections.push('## Web E2E Tests');
   let webTests = { code: 0, stdout: '', stderr: '', durationMs: 0, timedOut: false }
   if (isFull) {
@@ -128,9 +117,6 @@ async function main() {
     sections.push('Skipped (fast mode). Set CHECK_FULL=1 to enable.')
   }
 
-  // 8) Asegurar salida limpia (no dejamos procesos vivos aquí)
-
-  // 9) Summary and recommendations
   sections.push('## Summary');
   sections.push(`- API health: ${apiHealthy ? '**OK**' : '**FAILED**'}`);
   sections.push(`- Web dev server: ${webUp ? '**OK**' : '**FAILED**'}`);
@@ -146,23 +132,15 @@ async function main() {
   sections.push(timings.map(t => `- ${t}`).join('\n'))
   sections.push(`- Total: ${overallMs}ms (timeout: ${overallTimeoutMs}ms)`) 
 
-  sections.push('\n## Next Improvements');
-  sections.push('- Enforce route guards in frontend based on roles (protected routes).');
-  sections.push('- Cache API responses with SWR/React Query (limited TTL) to reduce bursts.');
-  sections.push('- Add rate-limit headers to UI logs to detect throttling conditions.');
-  sections.push('- Add CI job to run this script on each push and archive the report.');
 
-  const outPath = join('reports', `system-check-${stamp}.md`);
+  const outPath = join('local/reports', `system-check-${stamp}.md`);
   writeFileSync(outPath, sections.join('\n\n'), 'utf8');
-  // eslint-disable-next-line no-console
   console.log(`Report written to ${outPath}`);
-  // exit explícito para evitar manejadores pendientes
   clearTimeout(watchdog)
   process.exit(0)
 }
 
 main().catch((e) => {
-  // eslint-disable-next-line no-console
   console.error(e);
   process.exit(1);
 });
