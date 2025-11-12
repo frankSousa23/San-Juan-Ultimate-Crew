@@ -1,79 +1,110 @@
 import { Request, Response, NextFunction } from 'express'
 import { Prisma } from '@prisma/client'
-import { ApiError, ValidationError } from '../types/index.js'
+import { z } from 'zod'
+import { 
+  AppError, 
+  ErrorCode, 
+  createErrorResponse,
+  NotFoundError,
+  ConflictError,
+  UnauthorizedError,
+  ValidationError as AppValidationError
+} from '../lib/errors.js'
 import { logger } from '../lib/logger.js'
 
-export interface AppError extends Error {
+export interface LegacyAppError extends Error {
   statusCode?: number
   isOperational?: boolean
 }
 
-export class CustomError extends Error implements AppError {
-  statusCode: number
-  isOperational: boolean
-
-  constructor(message: string, statusCode: number = 500, isOperational: boolean = true) {
-    super(message)
-    this.statusCode = statusCode
-    this.isOperational = isOperational
-    
-    Error.captureStackTrace(this, this.constructor)
-  }
-}
-
 export function errorHandler(
-  error: AppError,
+  error: LegacyAppError | AppError | Error,
   req: Request,
   res: Response,
   next: NextFunction
 ) {
-  let statusCode = error.statusCode || 500
-  let message = error.message || 'Internal Server Error'
+  let appError: AppError
 
+  // Manejar errores de Prisma
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     switch (error.code) {
       case 'P2002':
-        statusCode = 409
-        message = 'Resource already exists'
+        appError = new ConflictError('Resource', {
+          target: error.meta?.target,
+          code: error.code,
+        })
         break
       case 'P2025':
-        statusCode = 404
-        message = 'Resource not found'
+        appError = new NotFoundError('Record', error.meta?.model as string)
         break
       case 'P2003':
-        statusCode = 400
-        message = 'Invalid reference'
+        appError = new AppValidationError('Foreign key constraint violation', {
+          code: error.code,
+          field: error.meta?.field_name,
+        })
         break
       default:
-        statusCode = 400
-        message = 'Database error'
+        appError = new AppError(
+          ErrorCode.DATABASE_ERROR,
+          400,
+          'Database error',
+          { code: error.code, meta: error.meta }
+        )
     }
   }
-
-  if (error.name === 'JsonWebTokenError') {
-    statusCode = 401
-    message = 'Invalid token'
+  // Manejar errores de Zod
+  else if (error instanceof z.ZodError) {
+    appError = new AppValidationError('Validation failed', {
+      issues: error.errors.map(err => ({
+        field: err.path.join('.'),
+        message: err.message,
+        code: err.code,
+      })),
+    })
+  }
+  // Manejar errores de JWT
+  else if (error.name === 'JsonWebTokenError') {
+    appError = new UnauthorizedError('Invalid token')
+  }
+  else if (error.name === 'TokenExpiredError') {
+    appError = new AppError(ErrorCode.TOKEN_EXPIRED, 401, 'Token expired')
+  }
+  // Si ya es un AppError, usarlo directamente
+  else if (error instanceof AppError) {
+    appError = error
+  }
+  // Errores legacy con statusCode
+  else if ('statusCode' in error && typeof error.statusCode === 'number') {
+    appError = new AppError(
+      ErrorCode.INTERNAL_ERROR,
+      error.statusCode,
+      error.message || 'Internal Server Error'
+    )
+  }
+  // Error genérico
+  else {
+    appError = new AppError(
+      ErrorCode.INTERNAL_ERROR,
+      500,
+      error.message || 'Internal Server Error'
+    )
   }
 
-  if (error.name === 'TokenExpiredError') {
-    statusCode = 401
-    message = 'Token expired'
-  }
-
-  logger.error('Request error handled', error, {
-    statusCode,
+  // Log del error
+  logger.error('Request error handled', appError, {
+    statusCode: appError.statusCode,
+    code: appError.code,
     url: req.url,
     method: req.method,
     path: req.path,
-  });
-
-  res.status(statusCode).json({
-    error: message,
-    ...(process.env.NODE_ENV === 'development' && {
-      stack: error.stack,
-      details: error
-    })
+    isOperational: appError.isOperational,
   })
+
+  // Crear respuesta de error
+  const includeStack = process.env.NODE_ENV === 'development'
+  const errorResponse = createErrorResponse(appError, includeStack)
+
+  res.status(appError.statusCode).json(errorResponse)
 }
 
 export function asyncHandler(fn: Function) {

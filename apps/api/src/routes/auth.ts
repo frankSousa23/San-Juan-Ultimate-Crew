@@ -3,6 +3,9 @@ import { prisma } from '../lib/prisma.js'
 import { env } from '../lib/env.js'
 import jwt, { Secret, SignOptions } from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
+import { createAuditHelper } from '../lib/audit.js'
+import { success, validationError, conflict, unauthorized, notFound } from '../lib/response.js'
+import { asyncHandler } from '../middleware/errorHandler.js'
 
 const router = Router()
 
@@ -74,43 +77,130 @@ export function requireSelfOrAdminForPlayer() {
   }
 }
 
-router.post('/register', async (req: Request, res: Response) => {
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *               name:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid input
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: Email already exists
+ */
+router.post('/register', asyncHandler(async (req: Request, res: Response) => {
   const { email, password, name } = req.body || {}
-  if (!email || !password) return res.status(400).json({ error: 'email and password required' })
+  if (!email || !password) return validationError(res, 'email and password required')
   const exists = await prisma.user.findUnique({ where: { email } })
-  if (exists) return res.status(409).json({ error: 'email already exists' })
+  if (exists) return conflict(res, 'email already exists')
   const passwordHash = await bcrypt.hash(password, 10)
   const user = await prisma.user.create({ data: { email, passwordHash, name } })
   const token = signToken({ sub: user.id, email: user.email })
-  res.json({ token, user: { id: user.id, email: user.email, name: user.name } })
-})
+  return success(res, { token, user: { id: user.id, email: user.email, name: user.name } })
+}))
 
-router.post('/login', async (req: Request, res: Response) => {
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Login user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/login', asyncHandler(async (req: Request, res: Response) => {
   const { email, password } = req.body || {}
-  if (!email || !password) return res.status(400).json({ error: 'email and password required' })
+  if (!email || !password) return validationError(res, 'email and password required')
   const user = await prisma.user.findUnique({ where: { email } })
-  if (!user) return res.status(401).json({ error: 'invalid credentials' })
+  if (!user) return unauthorized(res, 'invalid credentials')
   const ok = await bcrypt.compare(password, user.passwordHash)
-  if (!ok) return res.status(401).json({ error: 'invalid credentials' })
+  if (!ok) return unauthorized(res, 'invalid credentials')
   const token = signToken({ sub: user.id, email: user.email })
-  res.json({ token, user: { id: user.id, email: user.email, name: user.name } })
-})
+  const audit = createAuditHelper(req)
+  await audit.log('LOGIN', 'User', user.id, { email: user.email })
+  return success(res, { token, user: { id: user.id, email: user.email, name: user.name } })
+}))
 
 router.post('/logout', (_req: Request, res: Response) => {
-  res.json({ ok: true })
+  return success(res, { ok: true })
 })
 
-router.get('/me', requireAuth, async (req: Request, res: Response) => {
-  if (!AUTH_REQUIRED) return res.json({ authDisabled: true })
+router.get('/me', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  if (!AUTH_REQUIRED) return success(res, { authDisabled: true })
   const u = (req as any).user
-  if (!u?.sub) return res.status(401).json({ error: 'Unauthorized' })
+  if (!u?.sub) return unauthorized(res, 'Unauthorized')
   const user = await prisma.user.findUnique({
     where: { id: Number(u.sub) },
     include: { roles: { include: { role: true } } },
   })
-  if (!user) return res.status(404).json({ error: 'User not found' })
+  if (!user) return notFound(res, 'User')
   const roleNames = Array.isArray(user.roles) ? user.roles.map((ur: any) => ur.role?.name).filter(Boolean) : []
-  res.json({ user: { id: user.id, email: user.email, name: user.name, roles: roleNames, playerId: user.playerId ?? null } })
-})
+  return success(res, { user: { id: user.id, email: user.email, name: user.name, roles: roleNames, playerId: user.playerId ?? null } })
+}))
 
 export default router

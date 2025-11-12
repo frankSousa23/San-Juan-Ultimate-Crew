@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { z } from 'zod';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { success, created, updated, deleted, paginated, validationError } from '../lib/response.js';
 const router = Router();
 const createSchema = z.object({
     playerId: z.coerce.number().int().positive(),
@@ -13,9 +14,25 @@ const createSchema = z.object({
     description: z.string().optional().nullable(),
 });
 const updateSchema = createSchema.partial();
+/**
+ * @swagger
+ * /api/injuries:
+ *   get:
+ *     summary: Get all injuries
+ *     tags: [Injuries]
+ *     responses:
+ *       200:
+ *         description: List of injuries with player information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Injury'
+ */
 router.get('/', asyncHandler(async (_req, res) => {
     const items = await prisma.injury.findMany({ include: { player: true }, orderBy: { startDate: 'desc' } });
-    res.json(items);
+    return success(res, items);
 }));
 const listQuerySchema = z.object({
     playerId: z.coerce.number().int().positive().optional(),
@@ -24,10 +41,71 @@ const listQuerySchema = z.object({
     limit: z.coerce.number().int().min(1).max(200).default(20),
     offset: z.coerce.number().int().min(0).default(0),
 });
+/**
+ * @swagger
+ * /api/injuries/paged:
+ *   get:
+ *     summary: Get paginated injuries with filters
+ *     tags: [Injuries]
+ *     parameters:
+ *       - in: query
+ *         name: playerId
+ *         schema:
+ *           type: integer
+ *         description: Filter by player ID
+ *       - in: query
+ *         name: severity
+ *         schema:
+ *           type: string
+ *           enum: [MILD, MODERATE, SEVERE]
+ *         description: Filter by severity
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [ACTIVE, RECOVERING, RESOLVED]
+ *         description: Filter by status
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 200
+ *           default: 20
+ *         description: Number of items per page
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *           default: 0
+ *         description: Number of items to skip
+ *     responses:
+ *       200:
+ *         description: Paginated list of injuries
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Injury'
+ *                 total:
+ *                   type: integer
+ *                 limit:
+ *                   type: integer
+ *                 offset:
+ *                   type: integer
+ *       400:
+ *         description: Invalid query parameters
+ */
 router.get('/paged', asyncHandler(async (req, res) => {
     const parsed = listQuerySchema.safeParse(req.query);
-    if (!parsed.success)
-        return res.status(400).json({ error: parsed.error.flatten() });
+    if (!parsed.success) {
+        return validationError(res, 'Invalid query parameters', parsed.error.errors);
+    }
     const { playerId, severity, status, limit, offset } = parsed.data;
     const where = {};
     if (playerId)
@@ -40,27 +118,130 @@ router.get('/paged', asyncHandler(async (req, res) => {
         prisma.injury.count({ where }),
         prisma.injury.findMany({ where, include: { player: true }, orderBy: { startDate: 'desc' }, take: limit, skip: offset })
     ]);
-    res.json({ items, total, limit, offset });
+    return paginated(res, items, total, limit, offset);
 }));
+/**
+ * @swagger
+ * /api/injuries:
+ *   post:
+ *     summary: Create a new injury
+ *     tags: [Injuries]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - playerId
+ *               - type
+ *               - severity
+ *               - startDate
+ *             properties:
+ *               playerId:
+ *                 type: integer
+ *               type:
+ *                 type: string
+ *               severity:
+ *                 type: string
+ *                 enum: [MILD, MODERATE, SEVERE]
+ *               status:
+ *                 type: string
+ *                 enum: [ACTIVE, RECOVERING, RESOLVED]
+ *               startDate:
+ *                 type: string
+ *                 format: date-time
+ *               endDate:
+ *                 type: string
+ *                 format: date-time
+ *                 nullable: true
+ *               description:
+ *                 type: string
+ *                 nullable: true
+ *     responses:
+ *       201:
+ *         description: Injury created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Injury'
+ *       400:
+ *         description: Invalid input
+ */
 router.post('/', asyncHandler(async (req, res) => {
     const parsed = createSchema.safeParse(req.body);
-    if (!parsed.success)
-        return res.status(400).json({ error: parsed.error.flatten() });
+    if (!parsed.success) {
+        return validationError(res, 'Invalid input', parsed.error.errors);
+    }
     const data = parsed.data;
-    const created = await prisma.injury.create({ data: { ...data, endDate: data.endDate ?? undefined }, include: { player: true } });
-    res.status(201).json(created);
+    const injury = await prisma.injury.create({ data: { ...data, endDate: data.endDate ?? undefined }, include: { player: true } });
+    return created(res, injury);
 }));
+/**
+ * @swagger
+ * /api/injuries/{id}:
+ *   put:
+ *     summary: Update an injury
+ *     tags: [Injuries]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Injury ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               playerId:
+ *                 type: integer
+ *               type:
+ *                 type: string
+ *               severity:
+ *                 type: string
+ *                 enum: [MILD, MODERATE, SEVERE]
+ *               status:
+ *                 type: string
+ *                 enum: [ACTIVE, RECOVERING, RESOLVED]
+ *               startDate:
+ *                 type: string
+ *                 format: date-time
+ *               endDate:
+ *                 type: string
+ *                 format: date-time
+ *                 nullable: true
+ *               description:
+ *                 type: string
+ *                 nullable: true
+ *     responses:
+ *       200:
+ *         description: Injury updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Injury'
+ *       400:
+ *         description: Invalid input
+ *       404:
+ *         description: Injury not found
+ */
 router.put('/:id', asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0)
-        return res.status(400).json({ error: 'id requerido' });
+    if (!Number.isInteger(id) || id <= 0) {
+        return validationError(res, 'Invalid id');
+    }
     const parsed = updateSchema.safeParse(req.body);
-    if (!parsed.success)
-        return res.status(400).json({ error: parsed.error.flatten() });
+    if (!parsed.success) {
+        return validationError(res, 'Invalid input', parsed.error.errors);
+    }
     const data = parsed.data;
     try {
-        const updated = await prisma.injury.update({ where: { id }, data: { ...data, endDate: data.endDate ?? undefined }, include: { player: true } });
-        res.json(updated);
+        const injury = await prisma.injury.update({ where: { id }, data: { ...data, endDate: data.endDate ?? undefined }, include: { player: true } });
+        return updated(res, injury);
     }
     catch (error) {
         if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
@@ -69,13 +250,35 @@ router.put('/:id', asyncHandler(async (req, res) => {
         throw error;
     }
 }));
+/**
+ * @swagger
+ * /api/injuries/{id}:
+ *   delete:
+ *     summary: Delete an injury
+ *     tags: [Injuries]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Injury ID
+ *     responses:
+ *       204:
+ *         description: Injury deleted successfully
+ *       400:
+ *         description: Invalid ID
+ *       404:
+ *         description: Injury not found
+ */
 router.delete('/:id', asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0)
-        return res.status(400).json({ error: 'id requerido' });
+    if (!Number.isInteger(id) || id <= 0) {
+        return validationError(res, 'Invalid id');
+    }
     try {
         await prisma.injury.delete({ where: { id } });
-        res.status(204).end();
+        return deleted(res);
     }
     catch (error) {
         if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {

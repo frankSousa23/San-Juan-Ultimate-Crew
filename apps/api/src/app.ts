@@ -2,10 +2,13 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import compression from 'compression';
+import swaggerUi from 'swagger-ui-express';
 import 'dotenv/config';
 import { errorHandler } from './middleware/errorHandler.js';
 import { requestLogger, errorLogger } from './middleware/logging.js';
 import { generalLimiter, authLimiter, uploadLimiter, writeLimiter, readLimiter, securityHeaders, sanitizeRequest, corsOptions } from './middleware/security.js';
+import { swaggerSpec } from './lib/swagger.js';
 
 import healthRouter from './routes/health.js';
 import playersRouter from './routes/players.js';
@@ -24,6 +27,7 @@ import eventParticipantsRouter from './routes/eventParticipants.js';
 import resourcesRouter from './routes/resources.js';
 import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
+import auditRouter from './routes/audit.js';
 import path from 'path';
 
 export const app = express();
@@ -31,6 +35,21 @@ export const app = express();
 // Security middleware
 app.use(securityHeaders);
 app.use(cors(corsOptions));
+
+// Compression middleware (should be before body parsing)
+app.use(compression({
+  filter: (req: Request, res: Response) => {
+    // Don't compress if client doesn't support it
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    // Use compression filter function
+    return compression.filter(req, res);
+  },
+  level: 6, // Compression level (0-9, 6 is a good balance)
+  threshold: 1024, // Only compress responses larger than 1KB
+}));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -66,6 +85,7 @@ app.use('/api/resources', resourcesRouter);
 app.use('/api/auth', authLimiter);
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/audit', auditRouter);
 
 // Apply upload rate limiting to resource uploads
 app.use('/api/resources/upload', uploadLimiter);
@@ -75,6 +95,12 @@ const uploadsDir = path.resolve(process.cwd(), 'apps', 'api', 'uploads');
 app.use('/uploads', express.static(uploadsDir));
 
 app.get('/', (_req: Request, res: Response) => res.json({ name: 'San Juan Ultimate Crew API', ok: true }));
+
+// Swagger documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'San Juan Ultimate Crew API Documentation',
+}));
 
 // Error handling middleware (must be last)
 app.use(errorLogger);

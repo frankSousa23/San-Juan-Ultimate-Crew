@@ -76,37 +76,41 @@ enum RoleRequestStatus {
 model Player {
   id         Int            @id @default(autoincrement())
   name       String
-  number     Int             @unique
+  number     Int            @unique
   position   PlayerPosition
-  status     PlayerStatus    @default(ACTIVE)
+  status     PlayerStatus   @default(ACTIVE)
   heightCm   Int?
   experience String?
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
 
-  messages   Message[]
-  attendances Attendance[]
+  messages          Message[]
+  attendances       Attendance[]
   eventParticipants EventParticipant[]
-  injuries   Injury[]
+  injuries          Injury[]
 
   // Reverse relation to User (one-to-one)
-  user       User?          @relation("PlayerUser")
+  user User? @relation("PlayerUser")
 
   // Reverse relation to RoleRequest.player
   roleRequests RoleRequest[]
+
+  @@index([status])
+  @@index([position])
+  @@index([number])
 }
 
 model Event {
-  id          Int           @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   title       String
   description String?
   type        EventType
-  status      EventStatus   @default(UPCOMING)
+  status      EventStatus @default(UPCOMING)
   location    String?
   startsAt    DateTime
   endsAt      DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   participants EventParticipant[]
   attendances  Attendance[]
@@ -118,14 +122,16 @@ model Event {
 }
 
 model EventParticipant {
-  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  eventId Int
-  player  Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  event    Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId  Int
+  player   Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
   playerId Int
-  role    String?
-  status  String? // confirmed, tentative, declined
+  role     String?
+  status   String? // confirmed, tentative, declined
 
   @@id([eventId, playerId])
+  @@index([eventId])
+  @@index([playerId])
 }
 
 model Channel {
@@ -135,17 +141,17 @@ model Channel {
   createdAt DateTime  @default(now())
   messages  Message[]
 
-  event     Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }
 
 model Message {
-  id        Int       @id @default(autoincrement())
-  channel   Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  id        Int      @id @default(autoincrement())
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
   channelId Int
-  author    Player?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  author    Player?  @relation(fields: [authorId], references: [id], onDelete: SetNull)
   authorId  Int?
   content   String
-  createdAt DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   @@index([channelId, createdAt])
 }
@@ -156,26 +162,28 @@ model Attendance {
   playerId  Int
   event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId   Int
-  status    String   // present, absent, late
+  status    String // present, absent, late
   note      String?
   createdAt DateTime @default(now())
 
   @@unique([playerId, eventId])
+  @@index([eventId])
+  @@index([playerId])
 }
 
 model Account {
-  id        Int          @id @default(autoincrement())
-  name      String
-  type      AccountType
-  createdAt DateTime      @default(now())
+  id           Int           @id @default(autoincrement())
+  name         String
+  type         AccountType
+  createdAt    DateTime      @default(now())
   transactions Transaction[]
 }
 
 model Category {
-  id        Int             @id @default(autoincrement())
-  name      String
-  kind      TransactionType
-  createdAt DateTime         @default(now())
+  id           Int             @id @default(autoincrement())
+  name         String
+  kind         TransactionType
+  createdAt    DateTime        @default(now())
   transactions Transaction[]
 }
 
@@ -193,6 +201,9 @@ model Transaction {
 
   @@index([occurredAt])
   @@index([accountId, occurredAt])
+  @@index([type])
+  @@index([categoryId])
+  @@index([type, occurredAt])
 }
 
 model Injury {
@@ -210,16 +221,18 @@ model Injury {
   @@index([playerId])
   @@index([status])
   @@index([severity])
+  @@index([playerId, status])
+  @@index([startDate])
 }
 
 model Rival {
-  id            Int       @id @default(autoincrement())
-  name          String
-  strengths     String?
-  weaknesses    String?
-  lastPlayedAt  DateTime?
-  notes         String?
-  createdAt     DateTime  @default(now())
+  id           Int       @id @default(autoincrement())
+  name         String
+  strengths    String?
+  weaknesses   String?
+  lastPlayedAt DateTime?
+  notes        String?
+  createdAt    DateTime  @default(now())
 
   @@index([name])
 }
@@ -230,15 +243,17 @@ model Play {
   category    PlayCategory
   description String?
   diagramUrl  String?
-  content     String?      // Markdown o JSON
+  content     String? // Markdown o JSON
   createdAt   DateTime     @default(now())
 
   @@index([category])
   @@index([name])
+  @@index([createdAt])
+  @@index([category, createdAt])
 }
 
 model Resource {
-  id          Int       @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   title       String
   description String?
   url         String?
@@ -248,37 +263,40 @@ model Resource {
   mimeType    String?
   size        Int?
   storagePath String?
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime @default(now())
 
   @@index([category])
   @@index([title])
+  @@index([createdAt])
+  @@index([category, createdAt])
 }
 
 // Auth & RBAC
 
 model User {
-  id            Int       @id @default(autoincrement())
-  email         String    @unique
-  name          String?
-  passwordHash  String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  roles         UserRole[]
-  playerId      Int?
-  player        Player?   @relation("PlayerUser", fields: [playerId], references: [id], onDelete: SetNull)
+  roles    UserRole[]
+  playerId Int?
+  player   Player?    @relation("PlayerUser", fields: [playerId], references: [id], onDelete: SetNull)
 
-  roleRequests  RoleRequest[]
+  roleRequests    RoleRequest[]
   // Reverse relation to RoleRequest.decidedBy
   decidedRequests RoleRequest[] @relation("RoleRequestDecider")
+  auditLogs       AuditLog[]
 
   @@unique([playerId])
 }
 
 model Role {
-  id          Int          @id @default(autoincrement())
-  name        String       @unique
-  createdAt   DateTime     @default(now())
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  createdAt   DateTime         @default(now())
   users       UserRole[]
   permissions RolePermission[]
 }
@@ -309,19 +327,49 @@ model RolePermission {
 }
 
 model RoleRequest {
-  id           Int               @id @default(autoincrement())
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId       Int
-  role         String            // requested role, currently only 'player' allowed by API
-  player       Player?           @relation(fields: [playerId], references: [id], onDelete: SetNull)
-  playerId     Int?
-  status       RoleRequestStatus @default(PENDING)
-  note         String?
-  decidedBy    User?             @relation("RoleRequestDecider", fields: [decidedById], references: [id], onDelete: SetNull)
-  decidedById  Int?
-  createdAt    DateTime          @default(now())
-  decidedAt    DateTime?
+  id          Int               @id @default(autoincrement())
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      Int
+  role        String // requested role, currently only 'player' allowed by API
+  player      Player?           @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  playerId    Int?
+  status      RoleRequestStatus @default(PENDING)
+  note        String?
+  decidedBy   User?             @relation("RoleRequestDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedById Int?
+  createdAt   DateTime          @default(now())
+  decidedAt   DateTime?
 
   @@index([status])
   @@index([userId])
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  ROLE_CHANGE
+  PERMISSION_CHANGE
+  FILE_UPLOAD
+  FILE_DELETE
+}
+
+model AuditLog {
+  id         Int         @id @default(autoincrement())
+  action     AuditAction
+  entityType String // e.g., "User", "Transaction", "Resource", "Player"
+  entityId   Int?
+  userId     Int?
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  ipAddress  String?
+  userAgent  String?
+  details    String? // JSON string with additional context
+  createdAt  DateTime    @default(now())
+
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
 }

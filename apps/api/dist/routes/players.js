@@ -5,18 +5,29 @@ import { requireSelfOrAdminForPlayer } from './auth.js';
 import { z } from 'zod';
 import { validateBody, validateParams } from '../middleware/validation.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { createAuditHelper } from '../lib/audit.js';
+import { success, created, updated, deleted, notFound } from '../lib/response.js';
 const router = Router();
-router.get('/', async (_req, res) => {
-    try {
-        const players = await prisma.player.findMany({ orderBy: { number: 'asc' } });
-        if (players.length === 0)
-            return res.json(samplePlayers);
-        res.json(players);
-    }
-    catch (err) {
-        res.status(200).json(samplePlayers);
-    }
-});
+/**
+ * @swagger
+ * /api/players:
+ *   get:
+ *     summary: Get all players
+ *     tags: [Players]
+ *     responses:
+ *       200:
+ *         description: List of players
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Player'
+ */
+router.get('/', asyncHandler(async (_req, res) => {
+    const players = await prisma.player.findMany({ orderBy: { number: 'asc' } });
+    return success(res, players);
+}));
 // Schemas
 const createPlayerSchema = z.object({
     name: z.string().min(1),
@@ -27,30 +38,165 @@ const createPlayerSchema = z.object({
     experience: z.string().optional(),
 });
 const updatePlayerSchema = createPlayerSchema.partial();
-// Create
-// Only admin can create players
+/**
+ * @swagger
+ * /api/players:
+ *   post:
+ *     summary: Create a new player
+ *     tags: [Players]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - number
+ *               - position
+ *             properties:
+ *               name:
+ *                 type: string
+ *               number:
+ *                 type: integer
+ *                 minimum: 1
+ *               position:
+ *                 type: string
+ *                 enum: [HANDLER, CUTTER, HYBRID]
+ *               status:
+ *                 type: string
+ *                 enum: [ACTIVE, INJURED, INACTIVE]
+ *                 default: ACTIVE
+ *               heightCm:
+ *                 type: integer
+ *               experience:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Player created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Player'
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin role required
+ */
 router.post('/', requireRole(['admin']), validateBody(createPlayerSchema), asyncHandler(async (req, res) => {
-    const created = await prisma.player.create({ data: req.body });
-    res.status(201).json(created);
+    const player = await prisma.player.create({ data: req.body });
+    const audit = createAuditHelper(req);
+    await audit.log('CREATE', 'Player', player.id, {
+        name: player.name,
+        number: player.number,
+        position: player.position,
+    });
+    return created(res, player);
 }));
 // Update
 // Admin or the player themself can update
 const playerIdSchema = z.object({
     id: z.coerce.number().int().positive()
 });
+/**
+ * @swagger
+ * /api/players/{id}:
+ *   put:
+ *     summary: Update a player
+ *     tags: [Players]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               number:
+ *                 type: integer
+ *               position:
+ *                 type: string
+ *                 enum: [HANDLER, CUTTER, HYBRID]
+ *               status:
+ *                 type: string
+ *                 enum: [ACTIVE, INJURED, INACTIVE]
+ *               heightCm:
+ *                 type: integer
+ *               experience:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Player updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Player'
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Player not found
+ */
 router.put('/:id', requireSelfOrAdminForPlayer(), validateParams(playerIdSchema), validateBody(updatePlayerSchema), asyncHandler(async (req, res) => {
-    const updated = await prisma.player.update({ where: { id: Number(req.params.id) }, data: req.body });
-    res.json(updated);
+    const id = Number(req.params.id);
+    const player = await prisma.player.update({ where: { id }, data: req.body });
+    const audit = createAuditHelper(req);
+    await audit.log('UPDATE', 'Player', id, {
+        changes: Object.keys(req.body),
+    });
+    return updated(res, player);
 }));
-// Delete
-// Only admin can delete players
+/**
+ * @swagger
+ * /api/players/{id}:
+ *   delete:
+ *     summary: Delete a player
+ *     tags: [Players]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       204:
+ *         description: Player deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin role required
+ *       404:
+ *         description: Player not found
+ */
 router.delete('/:id', requireRole(['admin']), validateParams(playerIdSchema), asyncHandler(async (req, res) => {
-    await prisma.player.delete({ where: { id: Number(req.params.id) } });
-    res.status(204).send();
+    const id = Number(req.params.id);
+    const existing = await prisma.player.findUnique({ where: { id } });
+    if (!existing)
+        return notFound(res, 'Player not found');
+    await prisma.player.delete({ where: { id } });
+    const audit = createAuditHelper(req);
+    await audit.log('DELETE', 'Player', id, {
+        name: existing.name,
+        number: existing.number,
+    });
+    return deleted(res);
 }));
-const samplePlayers = [
-    { id: 1, name: 'Juan Martínez', number: 7, position: 'HANDLER', status: 'ACTIVE' },
-    { id: 2, name: 'María González', number: 12, position: 'CUTTER', status: 'ACTIVE' },
-    { id: 3, name: 'Carlos Rivera', number: 23, position: 'HYBRID', status: 'ACTIVE' }
-];
 export default router;
