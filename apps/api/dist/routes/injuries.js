@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { z } from 'zod';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import { success, created, updated, deleted, paginated, validationError } from '../lib/response.js';
+import { success, created, updated, deleted, paginated, validationError, notFound } from '../lib/response.js';
 const router = Router();
 const createSchema = z.object({
     playerId: z.coerce.number().int().positive(),
@@ -40,6 +40,9 @@ const listQuerySchema = z.object({
     status: z.enum(['ACTIVE', 'RECOVERING', 'RESOLVED']).optional(),
     limit: z.coerce.number().int().min(1).max(200).default(20),
     offset: z.coerce.number().int().min(0).default(0),
+});
+const injuryIdSchema = z.object({
+    id: z.coerce.number().int().positive()
 });
 /**
  * @swagger
@@ -230,10 +233,11 @@ router.post('/', asyncHandler(async (req, res) => {
  *         description: Injury not found
  */
 router.put('/:id', asyncHandler(async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) {
-        return validationError(res, 'Invalid id');
+    const parsedId = injuryIdSchema.safeParse(req.params);
+    if (!parsedId.success) {
+        return validationError(res, 'Invalid id', parsedId.error.errors);
     }
+    const { id } = parsedId.data;
     const parsed = updateSchema.safeParse(req.body);
     if (!parsed.success) {
         return validationError(res, 'Invalid input', parsed.error.errors);
@@ -245,7 +249,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
     }
     catch (error) {
         if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
-            return res.status(404).json({ error: 'Injury not found' });
+            return notFound(res, 'Injury');
         }
         throw error;
     }
@@ -272,17 +276,18 @@ router.put('/:id', asyncHandler(async (req, res) => {
  *         description: Injury not found
  */
 router.delete('/:id', asyncHandler(async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) {
-        return validationError(res, 'Invalid id');
+    const parsedId = injuryIdSchema.safeParse(req.params);
+    if (!parsedId.success) {
+        return validationError(res, 'Invalid id', parsedId.error.errors);
     }
+    const { id } = parsedId.data;
     try {
         await prisma.injury.delete({ where: { id } });
         return deleted(res);
     }
     catch (error) {
         if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
-            return res.status(404).json({ error: 'Injury not found' });
+            return notFound(res, 'Injury');
         }
         throw error;
     }

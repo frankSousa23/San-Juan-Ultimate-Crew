@@ -7,6 +7,9 @@ const router = Router();
 const getQuerySchema = z.object({
     eventId: z.coerce.number().int().positive().optional(),
 });
+const channelIdSchema = z.object({
+    id: z.coerce.number().int().positive()
+});
 /**
  * @swagger
  * /api/channels:
@@ -73,10 +76,11 @@ router.get('/', asyncHandler(async (req, res) => {
  *         description: Channel not found
  */
 router.get('/:id', asyncHandler(async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) {
-        return validationError(res, 'Invalid id');
+    const parsedId = channelIdSchema.safeParse(req.params);
+    if (!parsedId.success) {
+        return validationError(res, 'Invalid id', parsedId.error.errors);
     }
+    const { id } = parsedId.data;
     const ch = await prisma.channel.findUnique({
         where: { id },
         include: { messages: { orderBy: { createdAt: 'desc' }, take: 1 } },

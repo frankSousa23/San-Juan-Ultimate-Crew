@@ -3,7 +3,7 @@ import { prisma } from '../lib/prisma.js'
 import { z } from 'zod'
 import type { Prisma } from '@prisma/client'
 import { asyncHandler } from '../middleware/errorHandler.js'
-import { success, created, updated, deleted, paginated, validationError } from '../lib/response.js'
+import { success, created, updated, deleted, paginated, validationError, notFound } from '../lib/response.js'
 
 const router = Router()
 
@@ -29,6 +29,10 @@ const listQuerySchema = z.object({
   category: z.enum(['OFFENSE','DEFENSE','DRILL']).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(20),
   offset: z.coerce.number().int().min(0).default(0),
+})
+
+const playIdSchema = z.object({
+  id: z.coerce.number().int().positive()
 })
 
 /**
@@ -64,7 +68,7 @@ const listQuerySchema = z.object({
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const parsed = querySchema.safeParse(req.query)
   if (!parsed.success) {
-    return res.status(400).json({ error: 'Invalid query parameters', issues: parsed.error.errors })
+    return validationError(res, 'Invalid query parameters', parsed.error.errors)
   }
   
   const { category, q } = parsed.data
@@ -257,10 +261,11 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
  *         description: Play not found
  */
 router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
-  const id = Number(req.params.id)
-  if (!Number.isInteger(id) || id <= 0) {
-    return validationError(res, 'Invalid id')
+  const parsedId = playIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid id', parsedId.error.errors)
   }
+  const { id } = parsedId.data
   
   const parsed = updateSchema.safeParse(req.body)
   if (!parsed.success) {
@@ -272,7 +277,7 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
     return updated(res, play)
   } catch (error) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
-      return res.status(404).json({ error: 'Play not found' })
+      return notFound(res, 'Play')
     }
     throw error
   }
@@ -300,10 +305,11 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
  *         description: Play not found
  */
 router.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
-  const id = Number(req.params.id)
-  if (!Number.isInteger(id) || id <= 0) {
-    return validationError(res, 'Invalid id')
+  const parsedId = playIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid id', parsedId.error.errors)
   }
+  const { id } = parsedId.data
   
   try {
     await prisma.play.delete({ where: { id } })

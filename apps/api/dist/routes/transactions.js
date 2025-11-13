@@ -4,20 +4,17 @@ import { z } from 'zod';
 import { requireRole } from './auth.js';
 import { createAuditHelper } from '../lib/audit.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import { paginated, created, updated, deleted, success } from '../lib/response.js';
+import { paginated, created, updated, deleted, success, validationError, notFound } from '../lib/response.js';
 const router = Router();
-const parseQuery = (q) => {
-    const from = q.from ? new Date(String(q.from)) : undefined;
-    const to = q.to ? new Date(String(q.to)) : undefined;
-    const type = q.type && ['INCOME', 'EXPENSE', 'TRANSFER'].includes(String(q.type))
-        ? String(q.type)
-        : undefined;
-    const accountId = q.accountId ? Number(q.accountId) : undefined;
-    const categoryId = q.categoryId ? Number(q.categoryId) : undefined;
-    const limit = q.limit ? Math.min(100, Math.max(1, Number(q.limit))) : 50;
-    const offset = q.offset ? Math.max(0, Number(q.offset)) : 0;
-    return { from, to, type, accountId, categoryId, limit, offset };
-};
+const transactionQuerySchema = z.object({
+    from: z.coerce.date().optional(),
+    to: z.coerce.date().optional(),
+    type: z.enum(['INCOME', 'EXPENSE', 'TRANSFER']).optional(),
+    accountId: z.coerce.number().int().positive().optional(),
+    categoryId: z.coerce.number().int().positive().optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(50),
+    offset: z.coerce.number().int().min(0).default(0),
+});
 /**
  * @swagger
  * /api/transactions:
@@ -86,7 +83,11 @@ const parseQuery = (q) => {
  *                   type: integer
  */
 router.get('/', asyncHandler(async (req, res) => {
-    const { from, to, type, accountId, categoryId, limit, offset } = parseQuery(req.query);
+    const parsed = transactionQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+        return validationError(res, 'Invalid query parameters', parsed.error.errors);
+    }
+    const { from, to, type, accountId, categoryId, limit, offset } = parsed.data;
     const where = {};
     if (from || to) {
         where.occurredAt = {
@@ -164,63 +165,55 @@ const createSchema = z.object({
  *         description: Forbidden - Admin role required
  */
 router.post('/', requireRole(['admin']), asyncHandler(async (req, res) => {
-    try {
-        const payload = createSchema.parse(req.body);
-        const transaction = await prisma.transaction.create({ data: payload });
-        const audit = createAuditHelper(req);
-        await audit.log('CREATE', 'Transaction', transaction.id, {
-            type: transaction.type,
-            amountCents: transaction.amountCents,
-            accountId: transaction.accountId,
-        });
-        return created(res, transaction);
+    const parsed = createSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return validationError(res, 'Invalid payload', parsed.error.errors);
     }
-    catch (error) {
-        if (error && typeof error === 'object' && 'issues' in error) {
-            return res.status(400).json({ error: 'Invalid payload', issues: error.issues });
-        }
-        throw error;
-    }
+    const transaction = await prisma.transaction.create({ data: parsed.data });
+    const audit = createAuditHelper(req);
+    await audit.log('CREATE', 'Transaction', transaction.id, {
+        type: transaction.type,
+        amountCents: transaction.amountCents,
+        accountId: transaction.accountId,
+    });
+    return created(res, transaction);
 }));
+const transactionIdSchema = z.object({
+    id: z.coerce.number().int().positive()
+});
 router.put('/:id', requireRole(['admin']), asyncHandler(async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) {
-        return res.status(400).json({ error: 'Invalid id' });
+    const parsedId = transactionIdSchema.safeParse(req.params);
+    if (!parsedId.success) {
+        return validationError(res, 'Invalid id', parsedId.error.errors);
     }
-    try {
-        const existing = await prisma.transaction.findUnique({ where: { id } });
-        if (!existing) {
-            return res.status(404).json({ error: 'Transaction not found' });
-        }
-        const payload = createSchema.partial().parse(req.body);
-        const transaction = await prisma.transaction.update({ where: { id }, data: payload });
-        const audit = createAuditHelper(req);
-        await audit.log('UPDATE', 'Transaction', id, {
-            changes: Object.keys(payload),
-            oldAmount: existing.amountCents,
-            newAmount: transaction.amountCents,
-        });
-        return updated(res, transaction);
+    const { id } = parsedId.data;
+    const existing = await prisma.transaction.findUnique({ where: { id } });
+    if (!existing) {
+        return notFound(res, 'Transaction');
     }
-    catch (error) {
-        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
-            return res.status(404).json({ error: 'Transaction not found' });
-        }
-        if (error && typeof error === 'object' && 'issues' in error) {
-            return res.status(400).json({ error: 'Invalid payload', issues: error.issues });
-        }
-        throw error;
+    const parsed = createSchema.partial().safeParse(req.body);
+    if (!parsed.success) {
+        return validationError(res, 'Invalid payload', parsed.error.errors);
     }
+    const transaction = await prisma.transaction.update({ where: { id }, data: parsed.data });
+    const audit = createAuditHelper(req);
+    await audit.log('UPDATE', 'Transaction', id, {
+        changes: Object.keys(parsed.data),
+        oldAmount: existing.amountCents,
+        newAmount: transaction.amountCents,
+    });
+    return updated(res, transaction);
 }));
 router.delete('/:id', requireRole(['admin']), asyncHandler(async (req, res) => {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id <= 0) {
-        return res.status(400).json({ error: 'Invalid id' });
+    const parsedId = transactionIdSchema.safeParse(req.params);
+    if (!parsedId.success) {
+        return validationError(res, 'Invalid id', parsedId.error.errors);
     }
+    const { id } = parsedId.data;
     try {
         const existing = await prisma.transaction.findUnique({ where: { id } });
         if (!existing) {
-            return res.status(404).json({ error: 'Transaction not found' });
+            return notFound(res, 'Transaction');
         }
         await prisma.transaction.delete({ where: { id } });
         const audit = createAuditHelper(req);
@@ -233,7 +226,7 @@ router.delete('/:id', requireRole(['admin']), asyncHandler(async (req, res) => {
     }
     catch (error) {
         if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
-            return res.status(404).json({ error: 'Transaction not found' });
+            return notFound(res, 'Transaction');
         }
         throw error;
     }
@@ -273,8 +266,16 @@ router.delete('/:id', requireRole(['admin']), asyncHandler(async (req, res) => {
  *                   type: integer
  *                   description: Balance (income - expense) in cents
  */
+const summaryQuerySchema = z.object({
+    from: z.coerce.date().optional(),
+    to: z.coerce.date().optional(),
+});
 router.get('/summary/overall', asyncHandler(async (req, res) => {
-    const { from, to } = parseQuery(req.query);
+    const parsed = summaryQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+        return validationError(res, 'Invalid query parameters', parsed.error.errors);
+    }
+    const { from, to } = parsed.data;
     const where = {};
     if (from || to) {
         where.occurredAt = {

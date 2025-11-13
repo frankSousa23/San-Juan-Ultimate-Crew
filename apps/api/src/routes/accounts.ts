@@ -34,6 +34,10 @@ const createAccountSchema = z.object({
   type: z.enum(['CASH', 'BANK', 'MOBILE'])
 })
 
+const accountIdSchema = z.object({
+  id: z.coerce.number().int().positive()
+})
+
 /**
  * @swagger
  * /api/accounts:
@@ -119,10 +123,11 @@ router.post('/', requireRole(['admin']), asyncHandler(async (req: Request, res: 
  *         description: Account not found
  */
 router.delete('/:id', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
-  const id = Number(req.params.id)
-  if (!Number.isInteger(id) || id <= 0) {
-    return validationError(res, 'Invalid id')
+  const parsedId = accountIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid id', parsedId.error.errors)
   }
+  const { id } = parsedId.data
   
   try {
     const existing = await prisma.account.findUnique({ where: { id } })

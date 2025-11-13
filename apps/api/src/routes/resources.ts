@@ -20,6 +20,14 @@ const querySchema = z.object({
   category: z.string().optional(),
 })
 
+const pagedQuerySchema = z.object({
+  q: z.string().optional(),
+  category: z.string().optional(),
+  order: z.enum(['createdAtDesc', 'titleAsc']).default('createdAtDesc'),
+  limit: z.coerce.number().int().min(1).max(200).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+})
+
 /**
  * @swagger
  * /api/resources:
@@ -52,7 +60,7 @@ const querySchema = z.object({
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const parsed = querySchema.safeParse(req.query)
   if (!parsed.success) {
-    return res.status(400).json({ error: 'Invalid query parameters', issues: parsed.error.errors })
+    return validationError(res, 'Invalid query parameters', parsed.error.errors)
   }
   
   const { q, category } = parsed.data
@@ -76,25 +84,39 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   return success(res, items)
 }))
 
-router.get('/categories', async (_req: Request, res: Response) => {
-  try {
-    const rows = await prisma.resource.findMany({
-      where: { 
-        AND: [
-          { category: { not: null } },
-          { category: { not: '' } }
-        ]
-      },
-      distinct: ['category'],
-      select: { category: true },
-      orderBy: { category: 'asc' },
-    })
-    const categories = rows.map(r => r.category).filter((cat): cat is string => Boolean(cat))
-    res.json(categories)
-  } catch {
-    res.status(500).json({ error: 'Failed to list categories' })
-  }
-})
+/**
+ * @swagger
+ * /api/resources/categories:
+ *   get:
+ *     summary: Get all unique resource categories
+ *     tags: [Resources]
+ *     responses:
+ *       200:
+ *         description: List of unique categories
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: string
+ *       500:
+ *         description: Failed to list categories
+ */
+router.get('/categories', asyncHandler(async (_req: Request, res: Response) => {
+  const rows = await prisma.resource.findMany({
+    where: { 
+      AND: [
+        { category: { not: null } },
+        { category: { not: '' } }
+      ]
+    },
+    distinct: ['category'],
+    select: { category: true },
+    orderBy: { category: 'asc' },
+  })
+  const categories = rows.map(r => r.category).filter((cat): cat is string => Boolean(cat))
+  return success(res, categories)
+}))
 
 /**
  * @swagger
@@ -151,20 +173,23 @@ router.get('/categories', async (_req: Request, res: Response) => {
  *                   type: integer
  */
 router.get('/paged', asyncHandler(async (req: Request, res: Response) => {
-  const q = typeof req.query.q === 'string' ? req.query.q.trim() : undefined
-  const category = typeof req.query.category === 'string' ? req.query.category : undefined
-  const orderRaw = typeof req.query.order === 'string' ? req.query.order : undefined
-  const order: 'createdAtDesc' | 'titleAsc' = orderRaw === 'titleAsc' ? 'titleAsc' : 'createdAtDesc'
-  const limit = Math.min(Math.max(parseInt(String(req.query.limit ?? '20')) || 20, 1), 200)
-  const offset = Math.max(parseInt(String(req.query.offset ?? '0')) || 0, 0)
-
+  const parsed = pagedQuerySchema.safeParse(req.query)
+  if (!parsed.success) {
+    return validationError(res, 'Invalid query parameters', parsed.error.errors)
+  }
+  
+  const { q, category, order, limit, offset } = parsed.data
   const where: ResourceWhereInput = {}
+  
   if (category) where.category = category
   if (q) {
-    where.OR = [
-      { title: { contains: q, mode: 'insensitive' } },
-      { description: { contains: q, mode: 'insensitive' } },
-    ]
+    const trimmedQ = q.trim()
+    if (trimmedQ) {
+      where.OR = [
+        { title: { contains: trimmedQ, mode: 'insensitive' } },
+        { description: { contains: trimmedQ, mode: 'insensitive' } },
+      ]
+    }
   }
 
   const orderBy: ResourceOrderByInput = order === 'titleAsc'
@@ -179,55 +204,95 @@ router.get('/paged', asyncHandler(async (req: Request, res: Response) => {
   return paginated(res, items, total, limit, offset)
 }))
 
-router.get('/export', async (req: Request, res: Response) => {
-  try {
-    const q = typeof req.query.q === 'string' ? req.query.q.trim() : undefined
-    const category = typeof req.query.category === 'string' ? req.query.category : undefined
-    const orderRaw = typeof req.query.order === 'string' ? req.query.order : undefined
-    const order: 'createdAtDesc' | 'titleAsc' = orderRaw === 'titleAsc' ? 'titleAsc' : 'createdAtDesc'
-    
-    const where: ResourceWhereInput = {}
-    if (category) where.category = category
-    if (q) {
+/**
+ * @swagger
+ * /api/resources/export:
+ *   get:
+ *     summary: Export resources as CSV
+ *     tags: [Resources]
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         description: Search query
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by category
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum: [createdAtDesc, titleAsc]
+ *           default: createdAtDesc
+ *     responses:
+ *       200:
+ *         description: CSV file with resources
+ *         content:
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *       400:
+ *         description: Invalid query parameters
+ *       500:
+ *         description: Failed to export resources
+ */
+router.get('/export', asyncHandler(async (req: Request, res: Response) => {
+  const parsed = pagedQuerySchema.omit({ limit: true, offset: true }).safeParse(req.query)
+  if (!parsed.success) {
+    return validationError(res, 'Invalid query parameters', parsed.error.errors)
+  }
+  
+  const { q, category, order } = parsed.data
+  const where: ResourceWhereInput = {}
+  
+  if (category) where.category = category
+  if (q) {
+    const trimmedQ = q?.trim()
+    if (trimmedQ) {
       where.OR = [
-        { title: { contains: q, mode: 'insensitive' } },
-        { description: { contains: q, mode: 'insensitive' } },
+        { title: { contains: trimmedQ, mode: 'insensitive' } },
+        { description: { contains: trimmedQ, mode: 'insensitive' } },
       ]
     }
-    
-    const orderBy: ResourceOrderByInput = order === 'titleAsc'
-      ? [{ title: 'asc' }, { id: 'asc' }]
-      : [{ createdAt: 'desc' }, { id: 'desc' }]
-      
-    const items = await prisma.resource.findMany({ where, orderBy })
-    const header = ['id','title','url','description','category','fileName','mimeType','size','storagePath','createdAt']
-    const rows = items.map(r => [
-      r.id,
-      JSON.stringify(r.title ?? ''),
-      JSON.stringify(r.url ?? ''),
-      JSON.stringify(r.description ?? ''),
-      JSON.stringify(r.category ?? ''),
-      JSON.stringify(r.fileName ?? ''),
-      JSON.stringify(r.mimeType ?? ''),
-      r.size ?? '',
-      JSON.stringify(r.storagePath ?? ''),
-      r.createdAt?.toISOString?.() ?? r.createdAt,
-    ].join(','))
-    const csv = [header.join(','), ...rows].join('\n')
-    const bom = '\uFEFF'
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
-    res.setHeader('Content-Disposition', 'attachment; filename="resources.csv"')
-    res.send(bom + csv)
-  } catch {
-    res.status(500).json({ error: 'Failed to export resources' })
   }
-})
+  
+  const orderBy: ResourceOrderByInput = order === 'titleAsc'
+    ? [{ title: 'asc' }, { id: 'asc' }]
+    : [{ createdAt: 'desc' }, { id: 'desc' }]
+    
+  const items = await prisma.resource.findMany({ where, orderBy })
+  const header = ['id','title','url','description','category','fileName','mimeType','size','storagePath','createdAt']
+  const rows = items.map(r => [
+    r.id,
+    JSON.stringify(r.title ?? ''),
+    JSON.stringify(r.url ?? ''),
+    JSON.stringify(r.description ?? ''),
+    JSON.stringify(r.category ?? ''),
+    JSON.stringify(r.fileName ?? ''),
+    JSON.stringify(r.mimeType ?? ''),
+    r.size ?? '',
+    JSON.stringify(r.storagePath ?? ''),
+    r.createdAt?.toISOString?.() ?? r.createdAt,
+  ].join(','))
+  const csv = [header.join(','), ...rows].join('\n')
+  const bom = '\uFEFF'
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+  res.setHeader('Content-Disposition', 'attachment; filename="resources.csv"')
+  res.send(bom + csv)
+}))
 
 const createSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
   url: z.string().url().optional(),
   category: z.string().optional(),
+})
+
+const resourceIdSchema = z.object({
+  id: z.coerce.number().int().positive()
 })
 
 /**
@@ -336,8 +401,11 @@ router.post('/', requireRole(['admin']), asyncHandler(async (req: Request, res: 
  *         description: Resource not found
  */
 router.put('/:id', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
-  const id = Number(req.params.id)
-  if (!Number.isInteger(id)) return validationError(res, 'Invalid id')
+  const parsedId = resourceIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid id', parsedId.error.errors)
+  }
+  const { id } = parsedId.data
   try {
     const data = createSchema.partial().parse(req.body)
     const resource = await prisma.resource.update({ where: { id }, data })
@@ -354,8 +422,11 @@ router.put('/:id', requireRole(['admin']), asyncHandler(async (req: Request, res
 }))
 
 router.delete('/:id', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
-  const id = Number(req.params.id)
-  if (!Number.isInteger(id)) return validationError(res, 'Invalid id')
+  const parsedId = resourceIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid id', parsedId.error.errors)
+  }
+  const { id } = parsedId.data
   try {
     const existing = await prisma.resource.findUnique({ where: { id } })
     if (!existing) return notFound(res, 'Resource')

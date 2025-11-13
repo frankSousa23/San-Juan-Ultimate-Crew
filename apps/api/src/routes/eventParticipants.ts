@@ -57,6 +57,11 @@ const upsertSchema = z.object({
   status: z.string().optional().nullable(), // confirmed, tentative, declined
 })
 
+const deleteQuerySchema = z.object({
+  eventId: z.coerce.number().int().positive(),
+  playerId: z.coerce.number().int().positive(),
+})
+
 /**
  * @swagger
  * /api/event-participants:
@@ -146,17 +151,17 @@ router.put('/', requireRole(['admin']), asyncHandler(async (req: Request, res: R
  *         description: Event participant not found
  */
 router.delete('/', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
-  const eventId = Number(req.query.eventId)
-  const playerId = Number(req.query.playerId)
-  if (!Number.isFinite(eventId) || !Number.isFinite(playerId)) {
-    return validationError(res, 'eventId y playerId requeridos')
+  const parsed = deleteQuerySchema.safeParse(req.query)
+  if (!parsed.success) {
+    return validationError(res, 'eventId y playerId requeridos (números enteros positivos)', parsed.error.errors)
   }
+  const { eventId, playerId } = parsed.data
   try {
     await prisma.eventParticipant.delete({ where: { eventId_playerId: { eventId, playerId } } })
     return deleted(res)
   } catch (error) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
-      return notFound(res, 'Event participant not found')
+      return notFound(res, 'Event participant')
     }
     throw error
   }

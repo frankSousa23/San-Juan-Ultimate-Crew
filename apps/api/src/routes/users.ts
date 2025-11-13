@@ -55,147 +55,156 @@ interface UserWithRoles {
  *         description: Forbidden - Admin role required
  */
 router.get('/', requireRole(['admin']), asyncHandler(async (_req: Request, res: Response) => {
-  try {
-    const users = await prisma.user.findMany({ 
-      include: { roles: { include: { role: true } } } 
-    })
-    const list = users.map((u: UserWithRoles) => ({
-      id: u.id,
-      email: u.email,
-      name: u.name,
-      playerId: u.playerId ?? null,
-      roles: (u.roles || []).map(ur => ur.role?.name).filter((name): name is string => Boolean(name)),
-    }))
-    return success(res, list)
-  } catch {
-    return serverError(res, 'Failed to list users')
-  }
+  const users = await prisma.user.findMany({ 
+    include: { roles: { include: { role: true } } } 
+  })
+  const list = users.map((u: UserWithRoles) => ({
+    id: u.id,
+    email: u.email,
+    name: u.name,
+    playerId: u.playerId ?? null,
+    roles: (u.roles || []).map(ur => ur.role?.name).filter((name): name is string => Boolean(name)),
+  }))
+  return success(res, list)
 }))
+
+const userIdFromTokenSchema = z.object({
+  sub: z.string().transform(val => {
+    const num = Number(val)
+    if (!Number.isInteger(num) || num <= 0) {
+      throw new z.ZodError([{
+        code: 'custom',
+        path: ['sub'],
+        message: 'Invalid user ID'
+      }])
+    }
+    return num
+  })
+})
 
 router.get('/me/role-requests', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const u = (req as Request & { user?: { sub: string } }).user
   if (!u?.sub) return unauthorized(res, 'Unauthorized')
-  try {
-    const items = await prisma.roleRequest.findMany({ 
-      where: { userId: Number(u.sub) }, 
-      orderBy: { createdAt: 'desc' } 
-    })
-    return success(res, items)
-  } catch {
-    return serverError(res, 'Failed to list your requests')
+  
+  const parsed = userIdFromTokenSchema.safeParse({ sub: u.sub })
+  if (!parsed.success) {
+    return unauthorized(res, 'Invalid user token')
   }
+  
+  const items = await prisma.roleRequest.findMany({ 
+    where: { userId: parsed.data.sub }, 
+    orderBy: { createdAt: 'desc' } 
+  })
+  return success(res, items)
 }))
 
 const setRolesSchema = z.object({ roles: z.array(z.enum(['guest','player'])).default([]) })
+const userIdSchema = z.object({
+  id: z.coerce.number().int().positive()
+})
+
 router.put('/:id/roles', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
-  const userId = Number(req.params.id)
-  if (!Number.isInteger(userId)) return validationError(res, 'Invalid id')
-  let parsed
-  try { 
-    parsed = setRolesSchema.parse(req.body) 
-  } catch (error) { 
-    if (error && typeof error === 'object' && 'issues' in error) {
-      return validationError(res, 'Invalid roles', (error as z.ZodError).issues)
-    }
-    return validationError(res, 'Invalid roles')
+  const parsedId = userIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid id', parsedId.error.errors)
   }
-  const { roles } = parsed
-  try {
-    const user = await prisma.user.findUnique({ 
-      where: { id: userId }, 
-      include: { roles: true } 
+  const { id: userId } = parsedId.data
+  const parsed = setRolesSchema.safeParse(req.body)
+  if (!parsed.success) {
+    return validationError(res, 'Invalid roles', parsed.error.errors)
+  }
+  const { roles } = parsed.data
+  
+  const user = await prisma.user.findUnique({ 
+    where: { id: userId }, 
+    include: { roles: true } 
+  })
+  if (!user) return notFound(res, 'User')
+  
+  const roleRecords = await prisma.role.findMany({ 
+    where: { name: { in: ['guest','player'] } } 
+  })
+  const roleMap = new Map(roleRecords.map(r => [r.name, r.id]))
+  const existingRoleIds = user.roles.map(ur => ur.roleId).filter(id => {
+    const role = roleRecords.find(r => r.id === id)
+    return role && ['guest','player'].includes(role.name)
+  })
+  const targetRoleIds = roles.map(name => roleMap.get(name)).filter((id): id is number => id !== undefined)
+  const toRemove = existingRoleIds.filter(id => !targetRoleIds.includes(id))
+  const toAdd = targetRoleIds.filter(id => !existingRoleIds.includes(id))
+  if (toRemove.length > 0) {
+    await prisma.userRole.deleteMany({ 
+      where: { userId, roleId: { in: toRemove } } 
     })
-    if (!user) return notFound(res, 'User')
-    const roleRecords = await prisma.role.findMany({ 
-      where: { name: { in: ['guest','player'] } } 
+  }
+  if (toAdd.length > 0) {
+    await prisma.userRole.createMany({ 
+      data: toAdd.map(roleId => ({ userId, roleId })) 
     })
-    const roleMap = new Map(roleRecords.map(r => [r.name, r.id]))
-    const existingRoleIds = user.roles.map(ur => ur.roleId).filter(id => {
+  }
+  const updatedUser = await prisma.user.findUnique({ 
+    where: { id: userId }, 
+    include: { roles: { include: { role: true } } } 
+  })
+  if (!updatedUser) return notFound(res, 'User')
+  const roleNames = updatedUser.roles.map(ur => ur.role?.name).filter((name): name is string => Boolean(name))
+  const audit = createAuditHelper(req)
+  await audit.log('ROLE_CHANGE', 'User', userId, { 
+    addedRoles: roles.filter((_, idx) => toAdd.includes(targetRoleIds[idx])),
+    removedRoles: existingRoleIds.map(id => {
       const role = roleRecords.find(r => r.id === id)
-      return role && ['guest','player'].includes(role.name)
-    })
-    const targetRoleIds = roles.map(name => roleMap.get(name)).filter((id): id is number => id !== undefined)
-    const toRemove = existingRoleIds.filter(id => !targetRoleIds.includes(id))
-    const toAdd = targetRoleIds.filter(id => !existingRoleIds.includes(id))
-    if (toRemove.length > 0) {
-      await prisma.userRole.deleteMany({ 
-        where: { userId, roleId: { in: toRemove } } 
-      })
-    }
-    if (toAdd.length > 0) {
-      await prisma.userRole.createMany({ 
-        data: toAdd.map(roleId => ({ userId, roleId })) 
-      })
-    }
-    const updatedUser = await prisma.user.findUnique({ 
-      where: { id: userId }, 
-      include: { roles: { include: { role: true } } } 
-    })
-    if (!updatedUser) return notFound(res, 'User')
-    const roleNames = updatedUser.roles.map(ur => ur.role?.name).filter((name): name is string => Boolean(name))
-    const audit = createAuditHelper(req)
-    await audit.log('ROLE_CHANGE', 'User', userId, { 
-      addedRoles: roles.filter((_, idx) => toAdd.includes(targetRoleIds[idx])),
-      removedRoles: existingRoleIds.map(id => {
-        const role = roleRecords.find(r => r.id === id)
-        return role?.name
-      }).filter((name): name is string => Boolean(name))
-    })
-    return updated(res, { id: updatedUser.id, email: updatedUser.email, name: updatedUser.name, roles: roleNames })
-  } catch {
-    return serverError(res, 'Failed to update roles')
-  }
+      return role?.name
+    }).filter((name): name is string => Boolean(name))
+  })
+  return updated(res, { id: updatedUser.id, email: updatedUser.email, name: updatedUser.name, roles: roleNames })
 }))
 
 const linkPlayerSchema = z.object({ playerId: z.coerce.number().int().positive() })
 router.put('/:id/link-player', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
-  const userId = Number(req.params.id)
-  if (!Number.isInteger(userId)) return validationError(res, 'Invalid id')
-  let parsed
-  try { 
-    parsed = linkPlayerSchema.parse(req.body) 
-  } catch (error) { 
-    if (error && typeof error === 'object' && 'issues' in error) {
-      return validationError(res, 'Invalid playerId', (error as z.ZodError).issues)
-    }
-    return validationError(res, 'Invalid playerId')
+  const parsedId = userIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid id', parsedId.error.errors)
   }
-  const { playerId } = parsed
-  try {
-    const player = await prisma.player.findUnique({ where: { id: playerId } })
-    if (!player) return notFound(res, 'Player')
-    const existing = await prisma.user.findFirst({ where: { playerId } })
-    if (existing && existing.id !== userId) {
-      return conflict(res, 'Player already linked to another user')
-    }
-    const user = await prisma.user.update({ 
-      where: { id: userId }, 
-      data: { playerId } 
-    })
-    return updated(res, { id: user.id, email: user.email, name: user.name, playerId: user.playerId })
-  } catch (error) {
-    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
-      return notFound(res, 'User')
-    }
-    throw error
+  const { id: userId } = parsedId.data
+  const parsed = linkPlayerSchema.safeParse(req.body)
+  if (!parsed.success) {
+    return validationError(res, 'Invalid playerId', parsed.error.errors)
   }
+  const { playerId } = parsed.data
+  
+  const player = await prisma.player.findUnique({ where: { id: playerId } })
+  if (!player) return notFound(res, 'Player')
+  const existing = await prisma.user.findFirst({ where: { playerId } })
+  if (existing && existing.id !== userId) {
+    return conflict(res, 'Player already linked to another user')
+  }
+  const user = await prisma.user.update({ 
+    where: { id: userId }, 
+    data: { playerId } 
+  })
+  return updated(res, { id: user.id, email: user.email, name: user.name, playerId: user.playerId })
 }))
 
+const roleRequestsQuerySchema = z.object({
+  status: z.enum(['PENDING', 'APPROVED', 'DENIED']).optional(),
+})
+
 router.get('/role-requests', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
-  const status = req.query.status as string | undefined
-  try {
-    const where: Prisma.RoleRequestWhereInput = status 
-      ? { status: status as 'PENDING' | 'APPROVED' | 'DENIED' }
-      : {}
-    const items = await prisma.roleRequest.findMany({
-      where,
-      include: { user: { select: { id: true, email: true, name: true } } },
-      orderBy: { createdAt: 'desc' }
-    })
-    return success(res, items)
-  } catch {
-    return serverError(res, 'Failed to list role requests')
+  const parsed = roleRequestsQuerySchema.safeParse(req.query)
+  if (!parsed.success) {
+    return validationError(res, 'Invalid query parameters', parsed.error.errors)
   }
+  
+  const { status } = parsed.data
+  const where: Prisma.RoleRequestWhereInput = status 
+    ? { status }
+    : {}
+  const items = await prisma.roleRequest.findMany({
+    where,
+    include: { user: { select: { id: true, email: true, name: true } } },
+    orderBy: { createdAt: 'desc' }
+  })
+  return success(res, items)
 }))
 
 const createRoleRequestSchema = z.object({
@@ -207,32 +216,31 @@ const createRoleRequestSchema = z.object({
 router.post('/role-requests', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const u = (req as Request & { user?: { sub: string } }).user
   if (!u?.sub) return unauthorized(res, 'Unauthorized')
-  let parsed
-  try { 
-    parsed = createRoleRequestSchema.parse(req.body) 
-  } catch (error) {
-    if (error && typeof error === 'object' && 'issues' in error) {
-      return validationError(res, 'Invalid payload', (error as z.ZodError).issues)
-    }
-    return validationError(res, 'Invalid payload')
+  
+  const userParsed = userIdFromTokenSchema.safeParse({ sub: u.sub })
+  if (!userParsed.success) {
+    return unauthorized(res, 'Invalid user token')
   }
-  const { role, playerId, note } = parsed
-  try {
-    if (playerId) {
-      const player = await prisma.player.findUnique({ where: { id: playerId } })
-      if (!player) return notFound(res, 'Player')
-      const existing = await prisma.user.findFirst({ where: { playerId } })
-      if (existing) {
-        return conflict(res, 'Player already linked to another user')
-      }
-    }
-    const roleRequest = await prisma.roleRequest.create({
-      data: { userId: Number(u.sub), role, playerId: playerId ?? null, note: note ?? null }
-    })
-    return created(res, roleRequest)
-  } catch {
-    return serverError(res, 'Failed to create role request')
+  const userId = userParsed.data.sub
+  
+  const parsed = createRoleRequestSchema.safeParse(req.body)
+  if (!parsed.success) {
+    return validationError(res, 'Invalid payload', parsed.error.errors)
   }
+  const { role, playerId, note } = parsed.data
+  
+  if (playerId) {
+    const player = await prisma.player.findUnique({ where: { id: playerId } })
+    if (!player) return notFound(res, 'Player')
+    const existing = await prisma.user.findFirst({ where: { playerId } })
+    if (existing) {
+      return conflict(res, 'Player already linked to another user')
+    }
+  }
+  const roleRequest = await prisma.roleRequest.create({
+    data: { userId, role, playerId: playerId ?? null, note: note ?? null }
+  })
+  return created(res, roleRequest)
 }))
 
 const updateRoleRequestSchema = z.object({
@@ -240,52 +248,51 @@ const updateRoleRequestSchema = z.object({
   note: z.string().max(500).optional().nullable(),
 })
 
+const roleRequestIdSchema = z.object({
+  id: z.coerce.number().int().positive()
+})
+
 router.put('/role-requests/:id', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
-  const id = Number(req.params.id)
-  if (!Number.isInteger(id)) return validationError(res, 'Invalid id')
-  let parsed
-  try { 
-    parsed = updateRoleRequestSchema.parse(req.body) 
-  } catch (error) {
-    if (error && typeof error === 'object' && 'issues' in error) {
-      return validationError(res, 'Invalid payload', (error as z.ZodError).issues)
-    }
-    return validationError(res, 'Invalid payload')
+  const parsedId = roleRequestIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid id', parsedId.error.errors)
   }
-  const { playerId, note } = parsed
-  try {
-    const existing = await prisma.roleRequest.findUnique({ where: { id } })
-    if (!existing) return notFound(res, 'Role request')
-    if (existing.status !== 'PENDING') {
-      return conflict(res, 'Request already decided')
-    }
-    if (playerId !== null && playerId !== undefined) {
-      const player = await prisma.player.findUnique({ where: { id: playerId } })
-      if (!player) return notFound(res, 'Player')
-      const linkedUser = await prisma.user.findFirst({ where: { playerId } })
-      if (linkedUser && linkedUser.id !== existing.userId) {
-        return conflict(res, 'Player already linked to another user')
-      }
-    }
-    const roleRequest = await prisma.roleRequest.update({
-      where: { id },
-      data: { 
-        playerId: playerId === null ? null : playerId, 
-        note: note === null ? null : note 
-      }
-    })
-    return updated(res, roleRequest)
-  } catch (error) {
-    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
-      return notFound(res, 'Role request')
-    }
-    throw error
+  const { id } = parsedId.data
+  const parsed = updateRoleRequestSchema.safeParse(req.body)
+  if (!parsed.success) {
+    return validationError(res, 'Invalid payload', parsed.error.errors)
   }
+  const { playerId, note } = parsed.data
+  
+  const existing = await prisma.roleRequest.findUnique({ where: { id } })
+  if (!existing) return notFound(res, 'Role request')
+  if (existing.status !== 'PENDING') {
+    return conflict(res, 'Request already decided')
+  }
+  if (playerId !== null && playerId !== undefined) {
+    const player = await prisma.player.findUnique({ where: { id: playerId } })
+    if (!player) return notFound(res, 'Player')
+    const linkedUser = await prisma.user.findFirst({ where: { playerId } })
+    if (linkedUser && linkedUser.id !== existing.userId) {
+      return conflict(res, 'Player already linked to another user')
+    }
+  }
+  const roleRequest = await prisma.roleRequest.update({
+    where: { id },
+    data: { 
+      playerId: playerId === null ? null : playerId, 
+      note: note === null ? null : note 
+    }
+  })
+  return updated(res, roleRequest)
 }))
 
 router.post('/role-requests/:id/approve', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
-  const id = Number(req.params.id)
-  if (!Number.isInteger(id)) return validationError(res, 'Invalid id')
+  const parsedId = roleRequestIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid id', parsedId.error.errors)
+  }
+  const { id } = parsedId.data
   const admin = (req as Request & { user?: { sub: string } }).user
   if (!admin?.sub) return unauthorized(res, 'Unauthorized')
   try {
@@ -338,8 +345,11 @@ router.post('/role-requests/:id/approve', requireRole(['admin']), asyncHandler(a
 }))
 
 router.post('/role-requests/:id/deny', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
-  const id = Number(req.params.id)
-  if (!Number.isInteger(id)) return validationError(res, 'Invalid id')
+  const parsedId = roleRequestIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid id', parsedId.error.errors)
+  }
+  const { id } = parsedId.data
   const admin = (req as Request & { user?: { sub: string } }).user
   if (!admin?.sub) return unauthorized(res, 'Unauthorized')
   try {

@@ -3,7 +3,7 @@ import { prisma } from '../lib/prisma.js'
 import { z } from 'zod'
 import type { Prisma } from '@prisma/client'
 import { asyncHandler } from '../middleware/errorHandler.js'
-import { success, created, updated, deleted, paginated, validationError } from '../lib/response.js'
+import { success, created, updated, deleted, paginated, validationError, notFound } from '../lib/response.js'
 
 const router = Router()
 
@@ -42,6 +42,10 @@ const listQuerySchema = z.object({
   q: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(200).default(20),
   offset: z.coerce.number().int().min(0).default(0),
+})
+
+const rivalIdSchema = z.object({
+  id: z.coerce.number().int().positive()
 })
 
 /**
@@ -208,10 +212,11 @@ router.post('/', asyncHandler(async (req: Request, res: Response) => {
  *         description: Rival not found
  */
 router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
-  const id = Number(req.params.id)
-  if (!Number.isInteger(id) || id <= 0) {
-    return validationError(res, 'Invalid id')
+  const parsedId = rivalIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid id', parsedId.error.errors)
   }
+  const { id } = parsedId.data
   
   const parsed = updateSchema.safeParse(req.body)
   if (!parsed.success) {
@@ -224,7 +229,7 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
     return updated(res, rival)
   } catch (error) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
-      return res.status(404).json({ error: 'Rival not found' })
+      return notFound(res, 'Rival')
     }
     throw error
   }
@@ -252,17 +257,18 @@ router.put('/:id', asyncHandler(async (req: Request, res: Response) => {
  *         description: Rival not found
  */
 router.delete('/:id', asyncHandler(async (req: Request, res: Response) => {
-  const id = Number(req.params.id)
-  if (!Number.isInteger(id) || id <= 0) {
-    return validationError(res, 'Invalid id')
+  const parsedId = rivalIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid id', parsedId.error.errors)
   }
+  const { id } = parsedId.data
   
   try {
     await prisma.rival.delete({ where: { id } })
     return deleted(res)
   } catch (error) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
-      return res.status(404).json({ error: 'Rival not found' })
+      return notFound(res, 'Rival')
     }
     throw error
   }

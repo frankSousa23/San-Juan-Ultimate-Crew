@@ -34,6 +34,10 @@ const createCategorySchema = z.object({
   kind: z.enum(['INCOME', 'EXPENSE', 'TRANSFER'])
 })
 
+const categoryIdSchema = z.object({
+  id: z.coerce.number().int().positive()
+})
+
 /**
  * @swagger
  * /api/categories:
@@ -119,10 +123,11 @@ router.post('/', requireRole(['admin']), asyncHandler(async (req: Request, res: 
  *         description: Category not found
  */
 router.delete('/:id', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
-  const id = Number(req.params.id)
-  if (!Number.isInteger(id) || id <= 0) {
-    return validationError(res, 'Invalid id')
+  const parsedId = categoryIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid id', parsedId.error.errors)
   }
+  const { id } = parsedId.data
   
   try {
     const existing = await prisma.category.findUnique({ where: { id } })
