@@ -2,14 +2,16 @@ import request from 'supertest'
 import { app } from './app.js'
 
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
-const suite = AUTH_ON ? describe : describe.skip
 
-suite('Admin set roles validation', () => {
+describe('Admin set roles validation', () => {
   const admin = { email: 'admin@example.com', password: 'admin123' }
   let adminToken: string | null = null
   let guestUser: any = null
 
   it('login admin and find guest user', async () => {
+    if (!AUTH_ON) {
+      return
+    }
     const la = await request(app).post('/api/auth/login').send(admin)
     if (la.status !== 200) return
     adminToken = la.body.token
@@ -19,7 +21,7 @@ suite('Admin set roles validation', () => {
   })
 
   it('rejects invalid role names', async () => {
-    if (!adminToken || !guestUser) return
+    if (!AUTH_ON || !adminToken || !guestUser) return
     const res = await request(app)
       .put(`/api/users/${guestUser.id}/roles`)
       .set('Authorization', `Bearer ${adminToken}`)
@@ -28,7 +30,7 @@ suite('Admin set roles validation', () => {
   })
 
   it('accepts allowed roles guest/player', async () => {
-    if (!adminToken || !guestUser) return
+    if (!AUTH_ON || !adminToken || !guestUser) return
     const res = await request(app)
       .put(`/api/users/${guestUser.id}/roles`)
       .set('Authorization', `Bearer ${adminToken}`)

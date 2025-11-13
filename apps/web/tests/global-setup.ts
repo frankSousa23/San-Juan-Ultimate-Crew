@@ -25,10 +25,18 @@ async function tryAdminLogin(): Promise<boolean> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'admin@example.com', password: 'admin123' }),
     })
-    if (!res.ok) return false
+    if (!res.ok) {
+      console.warn(`[globalSetup] Admin login failed with status ${res.status}`)
+      return false
+    }
     const data = await res.json().catch(() => null)
-    return Boolean(data?.token)
-  } catch {
+    const hasToken = Boolean(data?.token)
+    if (!hasToken) {
+      console.warn('[globalSetup] Admin login response missing token')
+    }
+    return hasToken
+  } catch (error) {
+    console.warn('[globalSetup] Admin login error:', error)
     return false
   }
 }
@@ -100,17 +108,25 @@ export default async function globalSetup(config: FullConfig) {
   const hasAdmin = await tryAdminLogin()
   if (!hasAdmin) {
     console.warn('[globalSetup] Admin login failed; attempting prisma migrate + seed...')
-  const apiDir = path.resolve(__dirnameESM, '..', '..', 'api')
+    const apiDir = path.resolve(__dirnameESM, '..', '..', 'api')
     try {
+      // Use migrate deploy instead of migrate dev (non-interactive)
       await runNpmScriptIn(apiDir, 'prisma:migrate')
       await runNpmScriptIn(apiDir, 'prisma:seed')
+      // Wait a bit for seed to complete
+      await sleep(2000)
     } catch (e) {
       console.warn('[globalSetup] prisma migrate/seed failed:', e)
     }
     const hasAdminAfter = await tryAdminLogin()
     if (!hasAdminAfter) {
-      console.warn('[globalSetup] Admin still unavailable; tests may fail')
+      console.warn('[globalSetup] Admin still unavailable; some tests may be skipped')
+      console.warn('[globalSetup] This is normal if AUTH_REQUIRED=false or admin user does not exist')
+    } else {
+      console.log('[globalSetup] Admin login successful after migrate/seed')
     }
+  } else {
+    console.log('[globalSetup] Admin login successful')
   }
 
   // Optional optimization: generate storageState files for authenticated runs

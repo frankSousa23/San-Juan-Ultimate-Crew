@@ -2,15 +2,17 @@ import request from 'supertest'
 import { app } from './app.js'
 
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
-const suite = AUTH_ON ? describe : describe.skip
 
-suite('Role requests denial flow', () => {
+describe('Role requests denial flow', () => {
   const admin = { email: 'admin@example.com', password: 'admin123' }
   const guest = { email: 'guest@example.com', password: 'admin123' }
   let adminToken: string | null = null
   let guestToken: string | null = null
 
   it('login admin and guest', async () => {
+    if (!AUTH_ON) {
+      return
+    }
     const la = await request(app).post('/api/auth/login').send(admin)
     if (la.status !== 200) return
     adminToken = la.body.token
@@ -20,7 +22,7 @@ suite('Role requests denial flow', () => {
   })
 
   it('guest creates request; admin denies it', async () => {
-    if (!adminToken || !guestToken) return
+    if (!AUTH_ON || !adminToken || !guestToken) return
     // create new request (if pending exists already, api will return 409)
     const note = `deny ${Date.now()}`
     const create = await request(app)

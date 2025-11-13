@@ -25,7 +25,10 @@ test('authenticated user can create and delete a finance transaction', async ({ 
   await accountModal.locator('label:has-text("Nombre") ~ input').fill(acctName)
   // Type defaults to Efectivo (CASH); keep default
   await accountModal.getByRole('button', { name: 'Guardar' }).click()
-  await expect(page.getByText('Cuenta creada')).toBeVisible()
+  // Wait for modal to close and toast to appear
+  await expect(accountModal).not.toBeVisible({ timeout: 5000 })
+  // Verify toast appears (check for message in toast container)
+  await expect(page.locator('.fixed.top-0.right-0').getByText('Cuenta creada', { exact: false })).toBeVisible({ timeout: 3000 })
 
   // Create Category via UI
   await page.locator('label:has-text("Categoría") button:has-text("Nueva")').click()
@@ -34,7 +37,10 @@ test('authenticated user can create and delete a finance transaction', async ({ 
   await categoryModal.locator('label:has-text("Nombre") ~ input').fill(catName)
   // Kind defaults to Ingreso; keep default
   await categoryModal.getByRole('button', { name: 'Guardar' }).click()
-  await expect(page.getByText('Categoría creada')).toBeVisible()
+  // Wait for modal to close and toast to appear
+  await expect(categoryModal).not.toBeVisible({ timeout: 5000 })
+  // Verify toast appears
+  await expect(page.locator('.fixed.top-0.right-0').getByText('Categoría creada', { exact: false })).toBeVisible({ timeout: 3000 })
 
   // Open create transaction modal
   await page.getByRole('button', { name: '+ Agregar' }).click()

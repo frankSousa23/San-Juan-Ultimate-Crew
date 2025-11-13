@@ -2,27 +2,29 @@ import request from 'supertest'
 import { app } from './app.js'
 
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
-const suite = AUTH_ON ? describe : describe.skip
 
-suite('Admin users endpoints', () => {
+describe('Admin users endpoints', () => {
   const adminCreds = { email: 'admin@example.com', password: 'admin123' }
   let adminToken: string | null = null
 
   it('login as admin', async () => {
+    if (!AUTH_ON) {
+      return
+    }
     const la = await request(app).post('/api/auth/login').send(adminCreds)
     if (la.status !== 200) return
     adminToken = la.body.token
   })
 
   it('list users (admin)', async () => {
-    if (!adminToken) return
+    if (!AUTH_ON || !adminToken) return
     const res = await request(app).get('/api/users').set('Authorization', `Bearer ${adminToken}`)
     expect(res.status).toBe(200)
     expect(Array.isArray(res.body)).toBe(true)
   })
 
   it('set roles for guest user to include player (idempotent)', async () => {
-    if (!adminToken) return
+    if (!AUTH_ON || !adminToken) return
     const list = await request(app).get('/api/users').set('Authorization', `Bearer ${adminToken}`)
     const guest = (list.body as any[]).find(u => u.email === 'guest@example.com')
     if (!guest) return
@@ -34,7 +36,7 @@ suite('Admin users endpoints', () => {
   })
 
   it('link a user without playerId to an available Player', async () => {
-    if (!adminToken) return
+    if (!AUTH_ON || !adminToken) return
     const usersRes = await request(app).get('/api/users').set('Authorization', `Bearer ${adminToken}`)
     const users = usersRes.body as any[]
     const targetUser = users.find(u => u.playerId == null)

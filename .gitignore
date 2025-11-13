@@ -47,7 +47,18 @@ reports/
 *.local.*
 logs/
 
-# Generated reports and scripts output
+# Documentation (moved to local/)
+docs/*.md
+!docs/README.md
+DEVELOPMENT.md
+
+# Scripts de desarrollo (movidos a local/scripts/)
+scripts/*.ps1
+scripts/*.sh
+scripts/system-check.cjs
+!scripts/test-all.js
+
+# Reportes generados (movidos a local/reports/)
 *-report.md
 *-check-*.md
 MEJORAS_IMPLEMENTADAS.md

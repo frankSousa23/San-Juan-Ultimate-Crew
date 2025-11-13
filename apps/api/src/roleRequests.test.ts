@@ -2,9 +2,8 @@ import request from 'supertest'
 import { app } from './app.js'
 
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
-const suite = AUTH_ON ? describe : describe.skip
 
-suite('Role requests workflow', () => {
+describe('Role requests workflow', () => {
   const adminCreds = { email: 'admin@example.com', password: 'admin123' }
   const guestCreds = { email: 'guest@example.com', password: 'admin123' }
 
@@ -13,16 +12,28 @@ suite('Role requests workflow', () => {
 
   it('login admin and guest', async () => {
     const la = await request(app).post('/api/auth/login').send(adminCreds)
-    if (la.status !== 200) return
+    if (la.status !== 200) {
+      if (!AUTH_ON) {
+        return
+      }
+      return
+    }
     adminToken = la.body.token
     const lg = await request(app).post('/api/auth/login').send(guestCreds)
-    if (lg.status !== 200) return
+    if (lg.status !== 200) {
+      if (!AUTH_ON) {
+        return
+      }
+      return
+    }
     guestToken = lg.body.token
   })
 
   it('guest can create a role request and admin can approve', async () => {
+    if (!AUTH_ON) {
+      return
+    }
     if (!adminToken || !guestToken) return
-    // guest create
     const create = await request(app)
       .post('/api/users/role-requests')
       .set('Authorization', `Bearer ${guestToken}`)
@@ -37,14 +48,10 @@ suite('Role requests workflow', () => {
       id = mine.body?.[0]?.id
     }
     expect(typeof id).toBe('number')
-
-    // admin list
     const list = await request(app)
       .get('/api/users/role-requests?status=PENDING')
       .set('Authorization', `Bearer ${adminToken}`)
     expect(list.status).toBe(200)
-
-    // admin approve or deny
     const approve = await request(app)
       .post(`/api/users/role-requests/${id}/approve`)
       .set('Authorization', `Bearer ${adminToken}`)

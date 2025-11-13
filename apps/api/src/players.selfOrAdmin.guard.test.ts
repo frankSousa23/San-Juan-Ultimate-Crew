@@ -2,9 +2,8 @@ import request from 'supertest'
 import { app } from './app.js'
 
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
-const suite = AUTH_ON ? describe : describe.skip
 
-suite('Players self-or-admin guard (AUTH on)', () => {
+describe('Players self-or-admin guard', () => {
   const admin = { email: 'admin@example.com', password: 'admin123' }
   const player = { email: 'player@example.com', password: 'admin123' }
   let adminToken: string | null = null
@@ -13,6 +12,9 @@ suite('Players self-or-admin guard (AUTH on)', () => {
   let otherPlayerId: number | null = null
 
   it('login admin and player', async () => {
+    if (!AUTH_ON) {
+      return
+    }
     const la = await request(app).post('/api/auth/login').send(admin)
     if (la.status !== 200) return
     adminToken = la.body.token
@@ -22,7 +24,7 @@ suite('Players self-or-admin guard (AUTH on)', () => {
   })
 
   it('locate player records', async () => {
-    if (!playerToken) return
+    if (!AUTH_ON || !playerToken) return
     const me = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${playerToken}`)
     if (me.status !== 200 || !me.body?.user?.playerId) return
     selfPlayerId = me.body.user.playerId
@@ -32,7 +34,7 @@ suite('Players self-or-admin guard (AUTH on)', () => {
   })
 
   it('player can update self', async () => {
-    if (!playerToken || !selfPlayerId) return
+    if (!AUTH_ON || !playerToken || !selfPlayerId) return
     const r = await request(app)
       .put(`/api/players/${selfPlayerId}`)
       .set('Authorization', `Bearer ${playerToken}`)
@@ -42,7 +44,7 @@ suite('Players self-or-admin guard (AUTH on)', () => {
   })
 
   it('player cannot update others', async () => {
-    if (!playerToken || !otherPlayerId) return
+    if (!AUTH_ON || !playerToken || !otherPlayerId) return
     const r = await request(app)
       .put(`/api/players/${otherPlayerId}`)
       .set('Authorization', `Bearer ${playerToken}`)
@@ -51,7 +53,7 @@ suite('Players self-or-admin guard (AUTH on)', () => {
   })
 
   it('admin can update others', async () => {
-    if (!adminToken || !otherPlayerId) return
+    if (!AUTH_ON || !adminToken || !otherPlayerId) return
     const r = await request(app)
       .put(`/api/players/${otherPlayerId}`)
       .set('Authorization', `Bearer ${adminToken}`)

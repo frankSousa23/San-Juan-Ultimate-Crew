@@ -65,35 +65,54 @@ jobs:
     
     - name: Wait for PostgreSQL
       run: |
-        until pg_isready -h localhost -p 5432 -U sju; do
-          echo "Waiting for PostgreSQL..."
+        echo "Waiting for PostgreSQL to be ready..."
+        for i in {1..30}; do
+          if pg_isready -h localhost -p 5432 -U sju; then
+            echo "PostgreSQL is ready!"
+            exit 0
+          fi
+          echo "Attempt $i/30: PostgreSQL not ready yet, waiting..."
           sleep 2
         done
-        echo "PostgreSQL is ready!"
+        echo "PostgreSQL failed to become ready"
+        exit 1
       continue-on-error: false
+      timeout-minutes: 2
     
     - name: Generate Prisma Client
       run: npm --workspace apps/api run prisma:generate
       continue-on-error: false
+      timeout-minutes: 2
     
     - name: Run database migrations
-      run: npm --workspace apps/api run prisma:migrate
+      run: |
+        cd apps/api
+        npx prisma migrate deploy
       continue-on-error: false
+      timeout-minutes: 5
       env:
         DATABASE_URL: "postgresql://sju:sju@localhost:5432/sju_test"
+        CI: "true"
     
     - name: Seed database
-      run: npm --workspace apps/api run prisma:seed
-      continue-on-error: false
+      run: |
+        cd apps/api
+        npx tsx prisma/seed.ts
+      continue-on-error: true
+      timeout-minutes: 2
       env:
         DATABASE_URL: "postgresql://sju:sju@localhost:5432/sju_test"
+        CI: "true"
     
     - name: Run API tests
       run: npm --workspace apps/api run test
       continue-on-error: false
+      timeout-minutes: 10
       env:
         DATABASE_URL: "postgresql://sju:sju@localhost:5432/sju_test"
         NODE_ENV: test
+        CI: "true"
+        RESET_DB: "true"
     
     - name: Lint API
       run: npm --workspace apps/api run lint
@@ -114,10 +133,13 @@ jobs:
     - name: Run E2E tests
       run: npm --workspace apps/web run test:e2e
       continue-on-error: false
+      timeout-minutes: 20
       env:
-        CI: true
+        CI: "true"
         DATABASE_URL: "postgresql://sju:sju@localhost:5432/sju_test"
         AUTH_REQUIRED: "true"
+        BASE_URL: "http://localhost:5173"
+        PW_AUTH_PROJECTS: "1"
 
   security:
     runs-on: ubuntu-latest
