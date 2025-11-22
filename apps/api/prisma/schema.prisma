@@ -73,6 +73,13 @@ enum RoleRequestStatus {
   DENIED
 }
 
+// User Status
+enum UserStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model Player {
   id         Int            @id @default(autoincrement())
   name       String
@@ -274,12 +281,13 @@ model Resource {
 // Auth & RBAC
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
+  id           Int        @id @default(autoincrement())
+  email        String     @unique
   name         String?
   passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  status       UserStatus @default(PENDING)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   roles    UserRole[]
   playerId Int?
@@ -289,8 +297,11 @@ model User {
   // Reverse relation to RoleRequest.decidedBy
   decidedRequests RoleRequest[] @relation("RoleRequestDecider")
   auditLogs       AuditLog[]
+  passwordResets  PasswordResetToken[]
 
   @@unique([playerId])
+  @@index([status])
+  @@index([email])
 }
 
 model Role {
@@ -372,4 +383,18 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([userId])
   @@index([createdAt])
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
 }

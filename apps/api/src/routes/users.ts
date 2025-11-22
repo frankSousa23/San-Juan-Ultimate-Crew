@@ -6,6 +6,7 @@ import type { Prisma } from '@prisma/client'
 import { createAuditHelper } from '../lib/audit.js'
 import { success, updated, created, validationError, notFound, conflict, serverError, unauthorized } from '../lib/response.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
+import bcrypt from 'bcryptjs'
 
 const router = Router()
 
@@ -54,16 +55,26 @@ interface UserWithRoles {
  *       403:
  *         description: Forbidden - Admin role required
  */
-router.get('/', requireRole(['admin']), asyncHandler(async (_req: Request, res: Response) => {
+router.get('/', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+  const status = req.query.status as string | undefined
+  const where: Prisma.UserWhereInput = {}
+  if (status && ['PENDING', 'APPROVED', 'REJECTED'].includes(status)) {
+    where.status = status as any
+  }
+  
   const users = await prisma.user.findMany({ 
-    include: { roles: { include: { role: true } } } 
+    where,
+    include: { roles: { include: { role: true } } },
+    orderBy: { createdAt: 'desc' }
   })
-  const list = users.map((u: UserWithRoles) => ({
+  const list = users.map((u: UserWithRoles & { status: string; createdAt: Date }) => ({
     id: u.id,
     email: u.email,
     name: u.name,
+    status: u.status,
     playerId: u.playerId ?? null,
-    roles: (u.roles || []).map(ur => ur.role?.name).filter((name): name is string => Boolean(name)),
+    roles: (u.roles || []).map((ur: any) => ur.role?.name).filter((name): name is string => Boolean(name)),
+    createdAt: u.createdAt,
   }))
   return success(res, list)
 }))
@@ -680,6 +691,415 @@ router.post('/role-requests/:id/deny', requireRole(['admin']), asyncHandler(asyn
     }
     throw error
   }
+}))
+
+const approveUserSchema = z.object({
+  role: z.enum(['guest', 'player', 'admin']).optional(),
+  playerId: z.coerce.number().int().positive().optional(),
+})
+
+/**
+ * @swagger
+ * /api/users/{id}/approve:
+ *   post:
+ *     summary: Approve a pending user (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               role:
+ *                 type: string
+ *                 enum: [guest, player, admin]
+ *                 description: Role to assign to the user (defaults to guest)
+ *               playerId:
+ *                 type: integer
+ *                 description: Optional player ID to link to the user
+ *     responses:
+ *       200:
+ *         description: User approved successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin role required
+ *       404:
+ *         description: User not found
+ *       409:
+ *         description: User already approved/rejected or player already linked
+ */
+router.post('/:id/approve', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+  const parsedId = userIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid user ID', parsedId.error.errors)
+  }
+  const { id } = parsedId.data
+  
+  const parsed = approveUserSchema.safeParse(req.body)
+  if (!parsed.success) {
+    return validationError(res, 'Invalid payload', parsed.error.errors)
+  }
+  const { role = 'guest', playerId } = parsed.data
+  
+  const admin = (req as Request & { user?: { sub: string } }).user
+  if (!admin?.sub) return unauthorized(res, 'Unauthorized')
+  
+  const user = await prisma.user.findUnique({ where: { id } })
+  if (!user) return notFound(res, 'User')
+  
+  if (user.status === 'APPROVED') {
+    return conflict(res, 'User is already approved')
+  }
+  
+  if (user.status === 'REJECTED') {
+    return conflict(res, 'User is already rejected')
+  }
+  
+  // Check if playerId is already linked to another user
+  if (playerId) {
+    const player = await prisma.player.findUnique({ where: { id: playerId } })
+    if (!player) {
+      return notFound(res, 'Player')
+    }
+    
+    const existingUser = await prisma.user.findFirst({ 
+      where: { 
+        playerId,
+        id: { not: id }
+      } 
+    })
+    if (existingUser) {
+      return conflict(res, 'Player is already linked to another user')
+    }
+  }
+  
+  // Get the role
+  const roleRecord = await prisma.role.findUnique({ where: { name: role } })
+  if (!roleRecord) {
+    return serverError(res, 'Role not found')
+  }
+  
+  // Update user status and assign role
+  await prisma.$transaction(async (tx) => {
+    // Remove any existing roles first (clean slate for new approval)
+    await tx.userRole.deleteMany({
+      where: { userId: id }
+    })
+    
+    await tx.user.update({
+      where: { id },
+      data: {
+        status: 'APPROVED',
+        playerId: playerId ?? null,
+      }
+    })
+    
+    // Assign the new role
+    await tx.userRole.create({
+      data: { userId: id, roleId: roleRecord.id }
+    })
+  })
+  
+  const audit = createAuditHelper(req)
+  await audit.log('UPDATE', 'User', id, { 
+    action: 'APPROVED',
+    role,
+    playerId: playerId ?? null,
+    approvedBy: Number(admin.sub)
+  })
+  
+  const updatedUser = await prisma.user.findUnique({
+    where: { id },
+    include: { roles: { include: { role: true } } }
+  })
+  
+  return updated(res, {
+    id: updatedUser!.id,
+    email: updatedUser!.email,
+    name: updatedUser!.name,
+    status: updatedUser!.status,
+    roles: (updatedUser!.roles || []).map((ur: any) => ur.role?.name).filter(Boolean),
+    playerId: updatedUser!.playerId,
+  })
+}))
+
+/**
+ * @swagger
+ * /api/users/{id}/reject:
+ *   post:
+ *     summary: Reject a pending user (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: User rejected successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin role required
+ *       404:
+ *         description: User not found
+ *       409:
+ *         description: User already approved/rejected
+ */
+router.post('/:id/reject', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+  const parsedId = userIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid user ID', parsedId.error.errors)
+  }
+  const { id } = parsedId.data
+  
+  const admin = (req as Request & { user?: { sub: string } }).user
+  if (!admin?.sub) return unauthorized(res, 'Unauthorized')
+  
+  const user = await prisma.user.findUnique({ where: { id } })
+  if (!user) return notFound(res, 'User')
+  
+  if (user.status === 'APPROVED') {
+    return conflict(res, 'User is already approved')
+  }
+  
+  if (user.status === 'REJECTED') {
+    return conflict(res, 'User is already rejected')
+  }
+  
+  await prisma.user.update({
+    where: { id },
+    data: { status: 'REJECTED' }
+  })
+  
+  const audit = createAuditHelper(req)
+  await audit.log('UPDATE', 'User', id, { 
+    action: 'REJECTED',
+    email: user.email,
+    rejectedBy: Number(admin.sub),
+    previousStatus: user.status
+  })
+  
+  const updatedUser = await prisma.user.findUnique({ where: { id } })
+  
+  return updated(res, {
+    id: updatedUser!.id,
+    email: updatedUser!.email,
+    name: updatedUser!.name,
+    status: updatedUser!.status,
+  })
+}))
+
+const updateProfileSchema = z.object({
+  name: z.string().trim().min(1).max(100).optional(),
+})
+
+/**
+ * @swagger
+ * /api/users/me:
+ *   put:
+ *     summary: Update current user's profile
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 1
+ *                 maxLength: 100
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ */
+router.put('/me', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const u = (req as Request & { user?: { sub: string } }).user
+  if (!u?.sub) return unauthorized(res, 'Unauthorized')
+  
+  const userParsed = userIdFromTokenSchema.safeParse({ sub: u.sub })
+  if (!userParsed.success) {
+    return unauthorized(res, 'Invalid user token')
+  }
+  const userId = userParsed.data.sub
+  
+  const parsed = updateProfileSchema.safeParse(req.body)
+  if (!parsed.success) {
+    return validationError(res, 'Invalid payload', parsed.error.errors)
+  }
+  const { name } = parsed.data
+  
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user) return notFound(res, 'User')
+  
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: { name: name ?? user.name }
+  })
+  
+  const audit = createAuditHelper(req)
+  await audit.log('UPDATE', 'User', userId, { 
+    action: 'PROFILE_UPDATE',
+    field: 'name',
+    email: updatedUser.email
+  })
+  
+  return updated(res, {
+    id: updatedUser.id,
+    email: updatedUser.email,
+    name: updatedUser.name,
+    roles: (await prisma.user.findUnique({
+      where: { id: userId },
+      include: { roles: { include: { role: true } } }
+    }))?.roles.map((ur: any) => ur.role?.name).filter(Boolean) || [],
+    playerId: updatedUser.playerId
+  })
+}))
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(6).max(128),
+})
+
+/**
+ * @swagger
+ * /api/users/me/password:
+ *   put:
+ *     summary: Change current user's password
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 6
+ *                 maxLength: 128
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized or invalid current password
+ */
+router.put('/me/password', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const u = (req as Request & { user?: { sub: string } }).user
+  if (!u?.sub) return unauthorized(res, 'Unauthorized')
+  
+  const userParsed = userIdFromTokenSchema.safeParse({ sub: u.sub })
+  if (!userParsed.success) {
+    return unauthorized(res, 'Invalid user token')
+  }
+  const userId = userParsed.data.sub
+  
+  const parsed = changePasswordSchema.safeParse(req.body)
+  if (!parsed.success) {
+    return validationError(res, 'Invalid payload', parsed.error.errors)
+  }
+  const { currentPassword, newPassword } = parsed.data
+  
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user) return notFound(res, 'User')
+  
+  const match = await bcrypt.compare(currentPassword, user.passwordHash)
+  if (!match) {
+    return unauthorized(res, 'Current password is incorrect')
+  }
+  
+  const passwordHash = await bcrypt.hash(newPassword, 10)
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash }
+  })
+  
+  const audit = createAuditHelper(req)
+  await audit.log('UPDATE', 'User', userId, { 
+    action: 'PASSWORD_CHANGE',
+    email: user.email
+  })
+  
+  return success(res, { message: 'Password changed successfully' })
+}))
+
+/**
+ * @swagger
+ * /api/users/me/activity:
+ *   get:
+ *     summary: Get current user's activity log (audit logs)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Maximum number of logs to return
+ *     responses:
+ *       200:
+ *         description: List of audit logs for current user
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/me/activity', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const u = (req as Request & { user?: { sub: string } }).user
+  if (!u?.sub) return unauthorized(res, 'Unauthorized')
+  
+  const userParsed = userIdFromTokenSchema.safeParse({ sub: u.sub })
+  if (!userParsed.success) {
+    return unauthorized(res, 'Invalid user token')
+  }
+  const userId = userParsed.data.sub
+  
+  const limit = Math.min(Number(req.query.limit) || 50, 100)
+  
+  const logs = await prisma.auditLog.findMany({
+    where: {
+      OR: [
+        { entityType: 'User', entityId: userId },
+        { userId }
+      ]
+    },
+    orderBy: { createdAt: 'desc' },
+    take: limit
+  })
+  
+  return success(res, logs)
 }))
 
 export default router

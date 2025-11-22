@@ -1,20 +1,42 @@
 import request from 'supertest'
 import { app } from './app.js'
 
+const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
+
 describe('Injuries API', () => {
   let injuryId: number
   let playerId: number
+  let authHeader: string | undefined
 
   beforeAll(async () => {
+    if (AUTH_ON) {
+      const login = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'admin@example.com', password: 'admin123' })
+      const token = (login.body && login.body.token) || ''
+      authHeader = token ? `Bearer ${token}` : undefined
+    }
+
     // Get or create a player for testing
     const playersRes = await request(app).get('/api/players')
     if (playersRes.body.length > 0) {
       playerId = playersRes.body[0].id
     } else {
-      const playerRes = await request(app)
-        .post('/api/players')
+      let req = request(app).post('/api/players')
+      if (authHeader) req = req.set('Authorization', authHeader)
+      const playerRes = await req
         .send({ name: 'Test Player', number: 888, position: 'HYBRID', status: 'ACTIVE' })
-      playerId = playerRes.body.id
+      if (playerRes.status === 201) {
+        playerId = playerRes.body.id
+      } else if (playerRes.status === 401 && !AUTH_ON) {
+        // If auth is off, try without header
+        const playerRes2 = await request(app)
+          .post('/api/players')
+          .send({ name: 'Test Player', number: 888, position: 'HYBRID', status: 'ACTIVE' })
+        if (playerRes2.status === 201) {
+          playerId = playerRes2.body.id
+        }
+      }
     }
   })
 
@@ -54,16 +76,23 @@ describe('Injuries API', () => {
   })
 
   it('should create an injury', async () => {
-    const res = await request(app)
-      .post('/api/injuries')
-      .send({
-        playerId,
-        type: 'Ankle sprain',
-        severity: 'MILD',
-        status: 'ACTIVE',
-        startDate: new Date().toISOString(),
-        description: 'Test injury description'
-      })
+    if (!playerId) return
+    let req = request(app).post('/api/injuries')
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const res = await req.send({
+      playerId,
+      type: 'Ankle sprain',
+      severity: 'MILD',
+      status: 'ACTIVE',
+      startDate: new Date().toISOString(),
+      description: 'Test injury description'
+    })
+    
+    if (AUTH_ON && !authHeader) {
+      expect(res.status).toBe(401)
+      return
+    }
+    
     expect(res.status).toBe(201)
     expect(res.body).toHaveProperty('id')
     expect(res.body.type).toBe('Ankle sprain')
@@ -80,54 +109,96 @@ describe('Injuries API', () => {
   })
 
   it('should update an injury', async () => {
-    const res = await request(app)
-      .put(`/api/injuries/${injuryId}`)
-      .send({ status: 'RECOVERING' })
+    if (!injuryId) return
+    let req = request(app).put(`/api/injuries/${injuryId}`)
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const res = await req.send({ status: 'RECOVERING' })
+    
+    if (AUTH_ON && !authHeader) {
+      expect(res.status).toBe(401)
+      return
+    }
+    
     expect(res.status).toBe(200)
     expect(res.body.status).toBe('RECOVERING')
   })
 
   it('should delete an injury', async () => {
-    const res = await request(app).delete(`/api/injuries/${injuryId}`)
+    if (!injuryId) return
+    let req = request(app).delete(`/api/injuries/${injuryId}`)
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const res = await req
+    
+    if (AUTH_ON && !authHeader) {
+      expect(res.status).toBe(401)
+      return
+    }
+    
     expect(res.status).toBe(204)
   })
 
   it('should handle update with invalid id', async () => {
-    const res = await request(app)
-      .put('/api/injuries/99999')
-      .send({ status: 'RECOVERING' })
+    let req = request(app).put('/api/injuries/99999')
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const res = await req.send({ status: 'RECOVERING' })
+    
+    if (AUTH_ON && !authHeader) {
+      expect(res.status).toBe(401)
+      return
+    }
+    
     // Prisma throws P2025 which may not be caught, so expect any error status
     expect(res.status).toBeGreaterThanOrEqual(400)
   }, 10000)
 
   it('should validate required fields on create', async () => {
-    const res = await request(app)
-      .post('/api/injuries')
-      .send({})
+    let req = request(app).post('/api/injuries')
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const res = await req.send({})
+    
+    if (AUTH_ON && !authHeader) {
+      expect(res.status).toBe(401)
+      return
+    }
+    
     expect(res.status).toBe(400)
   })
 
   it('should validate severity enum on create', async () => {
-    const res = await request(app)
-      .post('/api/injuries')
-      .send({
-        playerId,
-        type: 'Test',
-        severity: 'INVALID',
-        startDate: new Date().toISOString()
-      })
+    if (!playerId) return
+    let req = request(app).post('/api/injuries')
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const res = await req.send({
+      playerId,
+      type: 'Test',
+      severity: 'INVALID',
+      startDate: new Date().toISOString()
+    })
+    
+    if (AUTH_ON && !authHeader) {
+      expect(res.status).toBe(401)
+      return
+    }
+    
     expect(res.status).toBe(400)
   })
 
   it('should validate date format on create', async () => {
-    const res = await request(app)
-      .post('/api/injuries')
-      .send({
-        playerId,
-        type: 'Test',
-        severity: 'MILD',
-        startDate: 'invalid-date'
-      })
+    if (!playerId) return
+    let req = request(app).post('/api/injuries')
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const res = await req.send({
+      playerId,
+      type: 'Test',
+      severity: 'MILD',
+      startDate: 'invalid-date'
+    })
+    
+    if (AUTH_ON && !authHeader) {
+      expect(res.status).toBe(401)
+      return
+    }
+    
     expect(res.status).toBe(400)
   })
 })

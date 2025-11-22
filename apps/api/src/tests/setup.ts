@@ -73,13 +73,25 @@ afterAll(async () => {
 })
 
 async function cleanupTestData() {
-  await prisma.auditLog.deleteMany({
-    where: {
-      createdAt: {
-        gte: new Date(Date.now() - 10000)
+  // Delete audit logs first, as they might reference other entities
+  // Check if AuditLog table exists before attempting to delete
+  try {
+    await prisma.$queryRaw`SELECT 1 FROM "public"."AuditLog" LIMIT 1;`
+    await prisma.auditLog.deleteMany({
+      where: {
+        createdAt: {
+          gte: new Date(Date.now() - 10000)
+        }
       }
+    })
+  } catch (e: any) {
+    if (e.code === 'P2021') {
+      // Table does not exist, skip audit log cleanup
+      console.warn('AuditLog table does not exist, skipping audit log cleanup.')
+    } else {
+      throw e
     }
-  })
+  }
   await prisma.roleRequest.deleteMany()
   
   // Get seed users to preserve their roles

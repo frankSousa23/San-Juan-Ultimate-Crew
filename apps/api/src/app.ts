@@ -7,7 +7,7 @@ import swaggerUi from 'swagger-ui-express';
 import 'dotenv/config';
 import { errorHandler } from './middleware/errorHandler.js';
 import { requestLogger, errorLogger } from './middleware/logging.js';
-import { generalLimiter, authLimiter, uploadLimiter, writeLimiter, readLimiter, securityHeaders, sanitizeRequest, corsOptions } from './middleware/security.js';
+import { generalLimiter, authLimiter, passwordResetLimiter, uploadLimiter, writeLimiter, readLimiter, securityHeaders, sanitizeRequest, corsOptions } from './middleware/security.js';
 import { swaggerSpec } from './lib/swagger.js';
 
 import healthRouter from './routes/health.js';
@@ -83,6 +83,9 @@ app.use('/api/event-participants', eventParticipantsRouter);
 app.use('/api/resources', resourcesRouter);
 // Apply specific rate limiting to auth routes
 app.use('/api/auth', authLimiter);
+// Apply stricter rate limiting to password reset endpoints
+app.use('/api/auth/forgot-password', passwordResetLimiter);
+app.use('/api/auth/reset-password', passwordResetLimiter);
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/audit', auditRouter);

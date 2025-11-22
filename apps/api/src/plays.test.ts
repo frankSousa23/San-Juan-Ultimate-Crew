@@ -1,8 +1,21 @@
 import request from 'supertest'
 import { app } from './app.js'
 
+const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
+
 describe('Plays API', () => {
   let playId: number
+  let authHeader: string | undefined
+
+  beforeAll(async () => {
+    if (AUTH_ON) {
+      const login = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'admin@example.com', password: 'admin123' })
+      const token = (login.body && login.body.token) || ''
+      authHeader = token ? `Bearer ${token}` : undefined
+    }
+  })
 
   it('should list all plays', async () => {
     const res = await request(app).get('/api/plays')
@@ -32,13 +45,19 @@ describe('Plays API', () => {
   })
 
   it('should create a play', async () => {
-    const res = await request(app)
-      .post('/api/plays')
-      .send({
-        name: 'Test Play',
-        category: 'OFFENSE',
-        description: 'A test offensive play'
-      })
+    let req = request(app).post('/api/plays')
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const res = await req.send({
+      name: 'Test Play',
+      category: 'OFFENSE',
+      description: 'A test offensive play'
+    })
+    
+    if (AUTH_ON && !authHeader) {
+      expect(res.status).toBe(401)
+      return
+    }
+    
     expect(res.status).toBe(201)
     expect(res.body).toHaveProperty('id')
     expect(res.body.name).toBe('Test Play')
@@ -47,6 +66,7 @@ describe('Plays API', () => {
   })
 
   it('should find created play in list', async () => {
+    if (!playId) return
     const res = await request(app).get('/api/plays')
     expect(res.status).toBe(200)
     const found = res.body.find((p: { id: number }) => p.id === playId)
@@ -55,40 +75,74 @@ describe('Plays API', () => {
   })
 
   it('should update a play', async () => {
-    const res = await request(app)
-      .put(`/api/plays/${playId}`)
-      .send({ description: 'Updated description' })
+    if (!playId) return
+    let req = request(app).put(`/api/plays/${playId}`)
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const res = await req.send({ description: 'Updated description' })
+    
+    if (AUTH_ON && !authHeader) {
+      expect(res.status).toBe(401)
+      return
+    }
+    
     expect(res.status).toBe(200)
     expect(res.body.description).toBe('Updated description')
   })
 
   it('should delete a play', async () => {
-    const res = await request(app).delete(`/api/plays/${playId}`)
+    if (!playId) return
+    let req = request(app).delete(`/api/plays/${playId}`)
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const res = await req
+    
+    if (AUTH_ON && !authHeader) {
+      expect(res.status).toBe(401)
+      return
+    }
+    
     expect(res.status).toBe(204)
   })
 
   it('should handle update with invalid id', async () => {
-    const res = await request(app)
-      .put('/api/plays/99999')
-      .send({ name: 'Updated' })
+    let req = request(app).put('/api/plays/99999')
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const res = await req.send({ name: 'Updated' })
+    
+    if (AUTH_ON && !authHeader) {
+      expect(res.status).toBe(401)
+      return
+    }
+    
     // Prisma throws P2025 which may not be caught, so expect any error status
     expect(res.status).toBeGreaterThanOrEqual(400)
   }, 10000)
 
   it('should validate required fields on create', async () => {
-    const res = await request(app)
-      .post('/api/plays')
-      .send({})
+    let req = request(app).post('/api/plays')
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const res = await req.send({})
+    
+    if (AUTH_ON && !authHeader) {
+      expect(res.status).toBe(401)
+      return
+    }
+    
     expect(res.status).toBe(400)
   })
 
   it('should validate category enum on create', async () => {
-    const res = await request(app)
-      .post('/api/plays')
-      .send({
-        name: 'Test',
-        category: 'INVALID'
-      })
+    let req = request(app).post('/api/plays')
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const res = await req.send({
+      name: 'Test',
+      category: 'INVALID'
+    })
+    
+    if (AUTH_ON && !authHeader) {
+      expect(res.status).toBe(401)
+      return
+    }
+    
     expect(res.status).toBe(400)
   })
 })

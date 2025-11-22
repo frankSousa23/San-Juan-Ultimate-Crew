@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useStats } from '../hooks/useData'
 import { transactionsApi } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
 
 interface FinanceSummary {
   income: number
@@ -9,23 +10,32 @@ interface FinanceSummary {
 }
 
 export default function Dashboard() {
+  const { user, isAuthenticated, hasRole } = useAuth()
   const { stats, loading: statsLoading } = useStats()
   const [financeSummary, setFinanceSummary] = useState<FinanceSummary | null>(null)
   const [financeLoading, setFinanceLoading] = useState(true)
 
   useEffect(() => {
     async function loadFinanceSummary() {
+      // Only load finance summary if user is admin
+      if (!hasRole('admin')) {
+        setFinanceLoading(false)
+        return
+      }
       try {
         const summary = await transactionsApi.summary()
         setFinanceSummary(summary)
-      } catch (error) {
-        console.error('Error loading finance summary:', error)
+      } catch (error: any) {
+        // Don't show error if it's 401 (handled by interceptor) or 403 (no permission)
+        if (error?.response?.status !== 401 && error?.response?.status !== 403) {
+          console.error('Error loading finance summary:', error)
+        }
       } finally {
         setFinanceLoading(false)
       }
     }
     loadFinanceSummary()
-  }, [])
+  }, [hasRole])
 
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('es-PR', {
@@ -64,17 +74,28 @@ export default function Dashboard() {
           <p className="text-sm text-gray-500">Total de eventos</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900">Finanzas</h3>
-          {financeLoading ? (
-            <p className="text-3xl font-bold text-gray-400">...</p>
-          ) : (
-            <p className={`text-3xl font-bold ${(financeSummary?.balance || 0) >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
-              {financeSummary ? formatCurrency(financeSummary.balance) : '$0'}
+        {hasRole('admin') && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-medium text-gray-900">Finanzas</h3>
+            {financeLoading ? (
+              <p className="text-3xl font-bold text-gray-400">...</p>
+            ) : (
+              <p className={`text-3xl font-bold ${(financeSummary?.balance || 0) >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
+                {financeSummary ? formatCurrency(financeSummary.balance) : '$0'}
+              </p>
+            )}
+            <p className="text-sm text-gray-500">Balance actual</p>
+          </div>
+        )}
+        {!hasRole('admin') && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-medium text-gray-900">Mi Estado</h3>
+            <p className="text-3xl font-bold text-indigo-600">
+              {user?.roles?.includes('player') ? 'Jugador' : 'Invitado'}
             </p>
-          )}
-          <p className="text-sm text-gray-500">Balance actual</p>
-        </div>
+            <p className="text-sm text-gray-500">Rol actual</p>
+          </div>
+        )}
 
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900">Mensajes</h3>
@@ -118,22 +139,43 @@ export default function Dashboard() {
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Accesos Rápidos</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <a href="/roster" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
-            <div className="text-2xl mb-2">👥</div>
-            <div className="text-sm font-medium">Roster</div>
-          </a>
-          <a href="/eventos" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
-            <div className="text-2xl mb-2">📅</div>
-            <div className="text-sm font-medium">Eventos</div>
-          </a>
-          <a href="/finanzas" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
-            <div className="text-2xl mb-2">💰</div>
-            <div className="text-sm font-medium">Finanzas</div>
-          </a>
-          <a href="/admin/monitoring" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
-            <div className="text-2xl mb-2">📊</div>
-            <div className="text-sm font-medium">Monitoreo</div>
-          </a>
+          {(hasRole('player') || hasRole('admin')) && (
+            <>
+              <a href="/roster" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
+                <div className="text-2xl mb-2">👥</div>
+                <div className="text-sm font-medium">Roster</div>
+              </a>
+              <a href="/eventos" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
+                <div className="text-2xl mb-2">📅</div>
+                <div className="text-sm font-medium">Eventos</div>
+              </a>
+            </>
+          )}
+          {hasRole('admin') && (
+            <>
+              <a href="/finanzas" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
+                <div className="text-2xl mb-2">💰</div>
+                <div className="text-sm font-medium">Finanzas</div>
+              </a>
+              <a href="/admin/monitoring" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
+                <div className="text-2xl mb-2">📊</div>
+                <div className="text-sm font-medium">Monitoreo</div>
+              </a>
+            </>
+          )}
+          {!hasRole('player') && !hasRole('admin') && (
+            <>
+              <a href="/perfil" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
+                <div className="text-2xl mb-2">👤</div>
+                <div className="text-sm font-medium">Mi Perfil</div>
+              </a>
+              <div className="p-4 border rounded-lg bg-gray-50 text-center opacity-60">
+                <div className="text-2xl mb-2">👥</div>
+                <div className="text-sm font-medium text-gray-500">Roster</div>
+                <div className="text-xs text-gray-400 mt-1">Solicita acceso</div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

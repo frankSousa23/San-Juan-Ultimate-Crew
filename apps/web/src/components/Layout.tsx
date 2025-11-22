@@ -20,7 +20,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     // Player & Admin
     { name: 'Roster', href: '/roster', icon: '👥', roles: ['player', 'admin'] },
     { name: 'Eventos', href: '/eventos', icon: '📅', roles: ['player', 'admin'] },
-    { name: 'Comunicación', href: '/comunicacion', icon: '💬', roles: ['player', 'admin'] },
+    // Communications: accessible to all authenticated users (guest can view)
+    { name: 'Comunicación', href: '/comunicacion', icon: '💬', roles: [] },
     { name: 'Estadísticas', href: '/estadisticas', icon: '📊', roles: ['player', 'admin'] },
     { name: 'Lesiones', href: '/lesiones', icon: '🏥', roles: ['player', 'admin'] },
     { name: 'Rivales', href: '/rivales', icon: '⚔️', roles: ['player', 'admin']},

@@ -93,6 +93,11 @@ const options: swaggerJsdoc.Options = {
             email: { type: 'string' },
             name: { type: 'string', nullable: true },
             playerId: { type: 'integer', nullable: true },
+            status: { 
+              type: 'string', 
+              enum: ['PENDING', 'APPROVED', 'REJECTED'],
+              description: 'User account status'
+            },
             roles: {
               type: 'array',
               items: { type: 'string' },

@@ -17,6 +17,9 @@ import RosterTorneo from './pages/RosterTorneo'
 import Resources from './pages/Resources'
 import Profile from './pages/Profile'
 import Login from './pages/Login'
+import Register from './pages/Register'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import AdminUsers from './pages/AdminUsers'
 import SystemMonitoring from './pages/SystemMonitoring'
 
@@ -47,15 +50,19 @@ function AppRoutes() {
     <Layout>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         
-        {/* Public or Semi-Public Routes */}
+        {/* Public or Semi-Public Routes - accessible to all authenticated users */}
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         
         {/* Player & Admin Routes */}
         <Route path="/roster" element={<ProtectedRoute requiredRole="player"><Roster /></ProtectedRoute>} />
         <Route path="/eventos" element={<ProtectedRoute requiredRole="player"><Events /></ProtectedRoute>} />
-        <Route path="/comunicacion" element={<ProtectedRoute requiredRole="player"><Communications /></ProtectedRoute>} />
+        {/* Communications: accessible to all authenticated users, but with different permissions */}
+        <Route path="/comunicacion" element={<ProtectedRoute><Communications /></ProtectedRoute>} />
         <Route path="/estadisticas" element={<ProtectedRoute requiredRole="player"><Statistics /></ProtectedRoute>} />
         <Route path="/lesiones" element={<ProtectedRoute requiredRole="player"><Injuries /></ProtectedRoute>} />
         <Route path="/rivales" element={<ProtectedRoute requiredRole="player"><Rivals /></ProtectedRoute>} />

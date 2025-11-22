@@ -33,16 +33,48 @@ http.interceptors.request.use((config) => {
   return config
 })
 
+// Response interceptor to handle token expiration
+http.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid - clear it and redirect to login
+      setAuthToken()
+      // Only redirect if we're not already on login/register/forgot-password/reset-password pages
+      const currentPath = window.location.pathname
+      if (!currentPath.includes('/login') && 
+          !currentPath.includes('/register') && 
+          !currentPath.includes('/forgot-password') && 
+          !currentPath.includes('/reset-password')) {
+        window.location.href = '/login'
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
 // Auth API
 export const authApi = {
-  login: async (email: string, password: string): Promise<{ token: string; user: { id: number; email: string; name?: string } }> => (
+  login: async (email: string, password: string): Promise<{ token: string; user: { id: number; email: string; name?: string; roles?: string[]; playerId?: number | null; status?: 'PENDING' | 'APPROVED' | 'REJECTED' } }> => (
     await http.post('/api/auth/login', { email, password })
   ).data,
-  me: async (): Promise<{ user?: { id: number; email: string; name?: string; roles?: string[]; playerId?: number | null }; authDisabled?: boolean }> => (
+  register: async (email: string, password: string, name?: string): Promise<{ message: string; user: { id: number; email: string; name?: string; status: string } }> => (
+    await http.post('/api/auth/register', { email, password, name })
+  ).data,
+  me: async (): Promise<{ user?: { id: number; email: string; name?: string; roles?: string[]; playerId?: number | null; status?: 'PENDING' | 'APPROVED' | 'REJECTED' }; authDisabled?: boolean }> => (
     await http.get('/api/auth/me')
   ).data,
   logout: async (): Promise<{ ok: boolean }> => (
     await http.post('/api/auth/logout')
+  ).data,
+  forgotPassword: async (email: string): Promise<{ message: string; token?: string }> => (
+    await http.post('/api/auth/forgot-password', { email })
+  ).data,
+  resetPassword: async (token: string, password: string): Promise<{ message: string }> => (
+    await http.post('/api/auth/reset-password', { token, password })
+  ).data,
+  checkStatus: async (email: string): Promise<{ exists: boolean; status?: 'PENDING' | 'APPROVED' | 'REJECTED'; createdAt?: string }> => (
+    await http.post('/api/auth/check-status', { email })
   ).data,
 }
 
@@ -348,5 +380,26 @@ export const myRoleRequestsApi = {
   ).data,
   listMine: async (): Promise<any[]> => (
     await http.get('/api/users/me/role-requests')
+  ).data,
+}
+
+export const usersApi = {
+  list: async (status?: 'PENDING' | 'APPROVED' | 'REJECTED'): Promise<any[]> => (
+    await http.get('/api/users', { params: { status } })
+  ).data,
+  approve: async (id: number, payload?: { role?: 'guest' | 'player' | 'admin'; playerId?: number }): Promise<any> => (
+    await http.post(`/api/users/${id}/approve`, payload || {})
+  ).data,
+  reject: async (id: number): Promise<any> => (
+    await http.post(`/api/users/${id}/reject`, {})
+  ).data,
+  updateProfile: async (payload: { name?: string }): Promise<{ id: number; email: string; name?: string; roles: string[]; playerId?: number | null }> => (
+    await http.put('/api/users/me', payload)
+  ).data,
+  changePassword: async (payload: { currentPassword: string; newPassword: string }): Promise<{ message: string }> => (
+    await http.put('/api/users/me/password', payload)
+  ).data,
+  getActivity: async (limit?: number): Promise<any[]> => (
+    await http.get('/api/users/me/activity', { params: { limit } })
   ).data,
 }

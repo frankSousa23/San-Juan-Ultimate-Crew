@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { playersApi, authApi, getAuthToken } from '../lib/api'
+import { playersApi, authApi, getAuthToken, attendanceApi, eventParticipantsApi, eventsApi } from '../lib/api'
 import { useApi } from '../hooks/useApi'
 import { useToast } from '../hooks/useToast'
 import PlayerForm from '../components/PlayerForm'
@@ -22,6 +22,14 @@ export default function Roster() {
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [user, setUser] = useState<{ roles?: string[]; playerId?: number | null } | null>(null)
+  const [playerStats, setPlayerStats] = useState<{
+    totalEvents: number
+    eventsAttended: number
+    attendanceRate: number
+    eventsParticipated: number
+    completedEvents: number
+  } | null>(null)
+  const [loadingStats, setLoadingStats] = useState(false)
   const authed = !!getAuthToken()
   
   const toasts = useToast()
@@ -66,6 +74,69 @@ export default function Roster() {
     authApi.me().then(me => { if (!cancel && me.user) setUser({ roles: me.user.roles, playerId: me.user.playerId }) }).catch(() => {})
     return () => { cancel = true }
   }, [authed])
+
+  // Load player statistics when a player is selected
+  useEffect(() => {
+    if (!selected) {
+      setPlayerStats(null)
+      return
+    }
+    
+    setLoadingStats(true)
+    const loadStats = async () => {
+      try {
+        const allEvents = await eventsApi.list()
+        const completedEvents = allEvents.filter(e => e.status === 'COMPLETED')
+        
+        // Get all attendances for this player from completed events
+        const allAttendances: any[] = []
+        for (const event of completedEvents.slice(0, 15)) { // Limit to first 15 to avoid too many requests
+          try {
+            const eventAttendances = await attendanceApi.listByEvent(event.id)
+            const playerAttendance = eventAttendances.find(a => a.playerId === selected.id)
+            if (playerAttendance) {
+              allAttendances.push(playerAttendance)
+            }
+          } catch {
+            // Event might not have attendances
+          }
+        }
+        
+        // Get all participants for this player
+        const allParticipants: any[] = []
+        for (const event of allEvents.slice(0, 15)) { // Limit to first 15
+          try {
+            const eventParticipants = await eventParticipantsApi.listByEvent(event.id)
+            const playerParticipant = eventParticipants.find(p => p.playerId === selected.id)
+            if (playerParticipant) {
+              allParticipants.push(playerParticipant)
+            }
+          } catch {
+            // Event might not have participants
+          }
+        }
+        
+        const eventsAttended = allAttendances.filter(a => a.status === 'present').length
+        const totalCompleted = completedEvents.length
+        const attendanceRate = totalCompleted > 0 ? Math.round((eventsAttended / totalCompleted) * 100) : 0
+        
+        setPlayerStats({
+          totalEvents: allEvents.length,
+          eventsAttended,
+          attendanceRate,
+          eventsParticipated: allParticipants.length,
+          completedEvents: totalCompleted
+        })
+      } catch (error) {
+        console.error('Error loading player stats:', error)
+        setPlayerStats(null)
+      } finally {
+        setLoadingStats(false)
+      }
+    }
+    
+    loadStats()
+  }, [selected])
 
   // Sync from URL -> state
   useEffect(() => {
@@ -190,10 +261,43 @@ export default function Roster() {
               <div className="text-lg font-bold">{selected.name} #{selected.number}</div>
               <div className="text-sm opacity-90">{selected.position}</div>
             </div>
-            <div className="p-4 space-y-2">
+            <div className="p-4 space-y-3">
               <div className="text-sm"><span className="text-gray-500">Estado:</span> <span className={`font-semibold ${badgeColor[selected.status]}`}>{selected.status}</span></div>
               {selected.experience && <div className="text-sm"><span className="text-gray-500">Experiencia:</span> {selected.experience}</div>}
               {selected.heightCm && <div className="text-sm"><span className="text-gray-500">Altura:</span> {selected.heightCm} cm</div>}
+              
+              {/* Player Statistics */}
+              <div className="border-t pt-3 mt-3">
+                <div className="font-semibold text-gray-700 mb-2">Estadísticas</div>
+                {loadingStats ? (
+                  <div className="text-sm text-gray-500">Cargando estadísticas...</div>
+                ) : playerStats ? (
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="bg-blue-50 p-2 rounded">
+                      <div className="text-gray-600 text-xs">Eventos Totales</div>
+                      <div className="font-bold text-blue-700">{playerStats.totalEvents}</div>
+                    </div>
+                    <div className="bg-green-50 p-2 rounded">
+                      <div className="text-gray-600 text-xs">Eventos Completados</div>
+                      <div className="font-bold text-green-700">{playerStats.completedEvents}</div>
+                    </div>
+                    <div className="bg-purple-50 p-2 rounded">
+                      <div className="text-gray-600 text-xs">Asistencias</div>
+                      <div className="font-bold text-purple-700">{playerStats.eventsAttended}</div>
+                    </div>
+                    <div className="bg-amber-50 p-2 rounded">
+                      <div className="text-gray-600 text-xs">Tasa de Asistencia</div>
+                      <div className="font-bold text-amber-700">{playerStats.attendanceRate}%</div>
+                    </div>
+                    <div className="bg-indigo-50 p-2 rounded col-span-2">
+                      <div className="text-gray-600 text-xs">Participaciones</div>
+                      <div className="font-bold text-indigo-700">{playerStats.eventsParticipated} eventos</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">No hay estadísticas disponibles</div>
+                )}
+              </div>
             </div>
             <div className="p-4 flex gap-2">
               {(user?.roles?.includes('admin') || user?.playerId === selected.id) && (

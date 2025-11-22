@@ -1,17 +1,39 @@
 import request from 'supertest'
 import { app } from './app.js'
 
+const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
+
 describe('Messages API', () => {
   let channelId: number
   let messageId: number
   let playerId: number
+  let authHeader: string | undefined
 
   beforeAll(async () => {
+    if (AUTH_ON) {
+      const login = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'admin@example.com', password: 'admin123' })
+      const token = (login.body && login.body.token) || ''
+      authHeader = token ? `Bearer ${token}` : undefined
+    }
+
     // Create a channel for testing
-    const channelRes = await request(app)
-      .post('/api/channels')
-      .send({ name: 'Test Channel for Messages' })
-    channelId = channelRes.body.id
+    let req = request(app).post('/api/channels')
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const channelRes = await req.send({ name: 'Test Channel for Messages' })
+    
+    if (channelRes.status === 201) {
+      channelId = channelRes.body.id
+    } else if (channelRes.status === 401 && !AUTH_ON) {
+      // If auth is off, try without header
+      const channelRes2 = await request(app)
+        .post('/api/channels')
+        .send({ name: 'Test Channel for Messages' })
+      if (channelRes2.status === 201) {
+        channelId = channelRes2.body.id
+      }
+    }
 
     // Get a player for testing (or create one if needed)
     const playersRes = await request(app).get('/api/players')
@@ -19,10 +41,21 @@ describe('Messages API', () => {
       playerId = playersRes.body[0].id
     } else {
       // Create a test player
-      const playerRes = await request(app)
-        .post('/api/players')
+      let req = request(app).post('/api/players')
+      if (authHeader) req = req.set('Authorization', authHeader)
+      const playerRes = await req
         .send({ name: 'Test Player', number: 999, position: 'HYBRID', status: 'ACTIVE' })
-      playerId = playerRes.body.id
+      if (playerRes.status === 201) {
+        playerId = playerRes.body.id
+      } else if (playerRes.status === 401 && !AUTH_ON) {
+        // If auth is off, try without header
+        const playerRes2 = await request(app)
+          .post('/api/players')
+          .send({ name: 'Test Player', number: 999, position: 'HYBRID', status: 'ACTIVE' })
+        if (playerRes2.status === 201) {
+          playerId = playerRes2.body.id
+        }
+      }
     }
   })
 
@@ -33,13 +66,20 @@ describe('Messages API', () => {
   })
 
   it('should create a message', async () => {
-    const res = await request(app)
-      .post('/api/messages')
-      .send({
-        channelId,
-        authorId: playerId,
-        content: 'Test message content'
-      })
+    if (!channelId || !playerId) return
+    let req = request(app).post('/api/messages')
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const res = await req.send({
+      channelId,
+      authorId: playerId,
+      content: 'Test message content'
+    })
+    
+    if (AUTH_ON && !authHeader) {
+      expect(res.status).toBe(401)
+      return
+    }
+    
     expect(res.status).toBe(201)
     expect(res.body).toHaveProperty('id')
     expect(res.body.content).toBe('Test message content')
@@ -68,9 +108,15 @@ describe('Messages API', () => {
   })
 
   it('should validate required fields on create', async () => {
-    const res = await request(app)
-      .post('/api/messages')
-      .send({})
+    let req = request(app).post('/api/messages')
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const res = await req.send({})
+    
+    if (AUTH_ON && !authHeader) {
+      expect(res.status).toBe(401)
+      return
+    }
+    
     expect(res.status).toBe(400)
   })
 

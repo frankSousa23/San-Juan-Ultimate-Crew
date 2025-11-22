@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js'
 import { env } from '../lib/env.js'
 import jwt, { Secret, SignOptions } from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 import { createAuditHelper } from '../lib/audit.js'
 import { success, validationError, conflict, unauthorized, notFound } from '../lib/response.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
@@ -27,8 +28,15 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     const decoded = jwt.verify(token, JWT_SECRET) as any
     ;(req as any).user = decoded
     return next()
-  } catch {
-    return res.status(401).json({ error: 'Invalid token' })
+  } catch (err: any) {
+    // Provide more specific error messages
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expired. Please log in again.' })
+    }
+    if (err.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: 'Invalid token' })
+    }
+    return res.status(401).json({ error: 'Authentication failed' })
   }
 }
 
@@ -43,8 +51,14 @@ export function requireRole(roles: string[]) {
       try {
         u = jwt.verify(token, JWT_SECRET) as any
         ;(req as any).user = u
-      } catch {
-        return res.status(401).json({ error: 'Invalid token' })
+      } catch (err: any) {
+        if (err.name === 'TokenExpiredError') {
+          return res.status(401).json({ error: 'Token expired. Please log in again.' })
+        }
+        if (err.name === 'JsonWebTokenError') {
+          return res.status(401).json({ error: 'Invalid token' })
+        }
+        return res.status(401).json({ error: 'Authentication failed' })
       }
     }
     const userId = Number(u.sub)
@@ -101,7 +115,17 @@ export function requireSelfOrAdminForPlayer() {
     const [, token] = auth.split(' ')
     if (!token) return res.status(401).json({ error: 'Unauthorized' })
     let u: any
-    try { u = jwt.verify(token, JWT_SECRET) as any } catch { return res.status(401).json({ error: 'Invalid token' }) }
+    try { 
+      u = jwt.verify(token, JWT_SECRET) as any 
+    } catch (err: any) {
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({ error: 'Token expired. Please log in again.' })
+      }
+      if (err.name === 'JsonWebTokenError') {
+        return res.status(401).json({ error: 'Invalid token' })
+      }
+      return res.status(401).json({ error: 'Authentication failed' })
+    }
     ;(req as any).user = u
     const user = await prisma.user.findUnique({ where: { id: Number(u.sub) }, include: { roles: { include: { role: true } } } })
     if (!user) return res.status(401).json({ error: 'Unauthorized' })
@@ -162,12 +186,83 @@ export function requireSelfOrAdminForPlayer() {
 router.post('/register', asyncHandler(async (req: Request, res: Response) => {
   const { email, password, name } = req.body || {}
   if (!email || !password) return validationError(res, 'email and password required')
-  const exists = await prisma.user.findUnique({ where: { email } })
-  if (exists) return conflict(res, 'email already exists')
+  
+  // Normalize email: trim whitespace and convert to lowercase
+  const normalizedEmail = email.trim().toLowerCase()
+  
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(normalizedEmail)) {
+    return validationError(res, 'Invalid email format')
+  }
+  
+  if (password.length < 6) return validationError(res, 'password must be at least 6 characters')
+  
+  // Additional password strength validation (optional but recommended)
+  if (password.length > 128) return validationError(res, 'password is too long (maximum 128 characters)')
+  
+  // Normalize and validate name if provided
+  const normalizedName = name ? name.trim() : null
+  if (normalizedName && normalizedName.length > 100) {
+    return validationError(res, 'name is too long (maximum 100 characters)')
+  }
+  
+  const exists = await prisma.user.findUnique({ where: { email: normalizedEmail } })
+  if (exists) {
+    if (exists.status === 'APPROVED' || exists.status === 'PENDING') {
+      return conflict(res, 'Email already exists')
+    }
+    // If user was rejected, allow re-registration by updating to PENDING
+    if (exists.status === 'REJECTED') {
+      const passwordHash = await bcrypt.hash(password, 10)
+      const updatedUser = await prisma.user.update({
+        where: { id: exists.id },
+        data: {
+          passwordHash,
+          name: normalizedName || exists.name,
+          status: 'PENDING'
+        }
+      })
+      
+      // Log re-registration of rejected user
+      const audit = createAuditHelper(req)
+      await audit.log('UPDATE', 'User', exists.id, { 
+        email: updatedUser.email,
+        action: 'RE_REGISTERED',
+        previousStatus: 'REJECTED',
+        newStatus: 'PENDING'
+      })
+      
+      return success(res, { 
+        message: 'Registration successful. Your account is pending admin approval.',
+        user: { id: updatedUser.id, email: updatedUser.email, name: updatedUser.name, status: 'PENDING' }
+      })
+    }
+  }
   const passwordHash = await bcrypt.hash(password, 10)
-  const user = await prisma.user.create({ data: { email, passwordHash, name } })
-  const token = signToken({ sub: user.id, email: user.email })
-  return success(res, { token, user: { id: user.id, email: user.email, name: user.name } })
+  const user = await prisma.user.create({ 
+    data: { 
+      email: normalizedEmail, 
+      passwordHash, 
+      name: normalizedName,
+      status: 'PENDING' // New users start as PENDING, need admin approval
+    } 
+  })
+  
+  // Log user registration
+  const audit = createAuditHelper(req)
+  await audit.log('CREATE', 'User', user.id, { 
+    email: user.email, 
+    name: user.name,
+    status: 'PENDING',
+    action: 'REGISTERED'
+  })
+  
+  // Don't return token - user needs to be approved first
+  return success(res, { 
+    message: 'Registration successful. Your account is pending admin approval.',
+    user: { id: user.id, email: user.email, name: user.name, status: 'PENDING' }
+  })
 }))
 
 /**
@@ -211,18 +306,93 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
 router.post('/login', asyncHandler(async (req: Request, res: Response) => {
   const { email, password } = req.body || {}
   if (!email || !password) return validationError(res, 'email and password required')
+  
+  // Normalize email: trim whitespace and convert to lowercase
+  const normalizedEmail = email.trim().toLowerCase()
+  
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: { email: normalizedEmail },
     include: { roles: { include: { role: true } } },
   })
   if (!user) return notFound(res, 'User')
+  
+  // Check if user is approved
+  if (user.status === 'PENDING') {
+    return unauthorized(res, 'Your account is pending admin approval. Please wait for approval before logging in.')
+  }
+  if (user.status === 'REJECTED') {
+    return unauthorized(res, 'Your account has been rejected. Please contact an administrator.')
+  }
+  
   const match = await bcrypt.compare(password, user.passwordHash)
   if (!match) return unauthorized(res, 'Invalid credentials')
   const token = signToken({ sub: user.id, email: user.email })
   const audit = createAuditHelper(req)
   await audit.log('LOGIN', 'User', user.id, { email: user.email })
   const roleNames = Array.isArray(user.roles) ? user.roles.map((ur: any) => ur.role?.name).filter(Boolean) : []
-  return success(res, { token, user: { id: user.id, email: user.email, name: user.name, roles: roleNames, playerId: user.playerId ?? null } })
+  return success(res, { 
+    token, 
+    user: { 
+      id: user.id, 
+      email: user.email, 
+      name: user.name, 
+      roles: roleNames, 
+      playerId: user.playerId ?? null,
+      status: user.status 
+    } 
+  })
+}))
+
+/**
+ * @swagger
+ * /api/auth/check-status:
+ *   post:
+ *     summary: Check user registration status by email (public endpoint)
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: User status information
+ *       400:
+ *         description: Invalid input
+ */
+router.post('/check-status', asyncHandler(async (req: Request, res: Response) => {
+  const { email } = req.body || {}
+  if (!email) return validationError(res, 'email required')
+  
+  // Normalize email: trim whitespace and convert to lowercase
+  const normalizedEmail = email.trim().toLowerCase()
+  
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(normalizedEmail)) {
+    return validationError(res, 'Invalid email format')
+  }
+  
+  const user = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+    select: { id: true, email: true, status: true, createdAt: true }
+  })
+  
+  if (!user) {
+    return success(res, { exists: false })
+  }
+  
+  return success(res, {
+    exists: true,
+    status: user.status,
+    createdAt: user.createdAt
+  })
 }))
 
 /**
@@ -338,6 +508,213 @@ router.post('/logout', requireAuth, asyncHandler(async (req: Request, res: Respo
   await audit.log('LOGOUT', 'User', userId, { email: u.email || 'unknown' })
   
   return success(res, { ok: true })
+}))
+
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Request password reset
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Password reset email sent (always returns success for security)
+ *       400:
+ *         description: Invalid input
+ */
+router.post('/forgot-password', asyncHandler(async (req: Request, res: Response) => {
+  const { email } = req.body || {}
+  if (!email) return validationError(res, 'email required')
+  
+  // Normalize email: trim whitespace and convert to lowercase
+  const normalizedEmail = email.trim().toLowerCase()
+  
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(normalizedEmail)) {
+    return validationError(res, 'Invalid email format')
+  }
+  
+  const user = await prisma.user.findUnique({ where: { email: normalizedEmail } })
+  
+  // Always return success for security (don't reveal if email exists)
+  if (!user) {
+    return success(res, { message: 'If an account with that email exists, a password reset link has been sent.' })
+  }
+  
+  // Check if user has a recent password reset token (prevent spam)
+  const recentToken = await prisma.passwordResetToken.findFirst({
+    where: {
+      userId: user.id,
+      used: false,
+      expiresAt: { gt: new Date() },
+      createdAt: { gt: new Date(Date.now() - 5 * 60 * 1000) } // Created within last 5 minutes
+    }
+  })
+  
+  if (recentToken) {
+    // Token already exists and is still valid, don't create a new one
+    return success(res, { 
+      message: 'If an account with that email exists, a password reset link has been sent.',
+      ...(process.env.NODE_ENV === 'development' && { token: recentToken.token })
+    })
+  }
+  
+  // Generate reset token
+  const token = crypto.randomBytes(32).toString('hex')
+  const expiresAt = new Date()
+  expiresAt.setHours(expiresAt.getHours() + 1) // Token expires in 1 hour
+  
+  // Clean up expired tokens for this user
+  await prisma.passwordResetToken.deleteMany({
+    where: { 
+      userId: user.id,
+      OR: [
+        { used: true },
+        { expiresAt: { lt: new Date() } }
+      ]
+    }
+  })
+  
+  // Delete any remaining active tokens for this user (only one active token at a time)
+  await prisma.passwordResetToken.deleteMany({
+    where: { userId: user.id }
+  })
+  
+  // Create new token
+  await prisma.passwordResetToken.create({
+    data: {
+      userId: user.id,
+      token,
+      expiresAt
+    }
+  })
+  
+  // In a real application, you would send an email here
+  // For now, we'll just log it (in production, use a proper email service)
+  if (process.env.NODE_ENV === 'development') {
+    const { logger } = await import('../lib/logger.js')
+    logger.info('Password reset token generated', { 
+      email, 
+      token,
+      resetLink: `${env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${token}`
+    })
+  }
+  
+  // Clean up old expired/used tokens periodically (background task, non-blocking)
+  prisma.passwordResetToken.deleteMany({
+    where: {
+      OR: [
+        { used: true, createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } }, // Delete used tokens older than 24h
+        { expiresAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } } // Delete expired tokens older than 24h
+      ]
+    }
+  }).catch(() => {
+    // Silently fail - this is a background cleanup task
+  })
+  
+  return success(res, { 
+    message: 'If an account with that email exists, a password reset link has been sent.',
+    // In development, return the token for testing
+    ...(process.env.NODE_ENV === 'development' && { token })
+  })
+}))
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Reset password with token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - password
+ *             properties:
+ *               token:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *       400:
+ *         description: Invalid input or expired token
+ *       404:
+ *         description: Invalid or expired token
+ */
+router.post('/reset-password', asyncHandler(async (req: Request, res: Response) => {
+  const { token, password } = req.body || {}
+  if (!token || !password) {
+    return validationError(res, 'token and password required')
+  }
+  if (password.length < 6) {
+    return validationError(res, 'password must be at least 6 characters')
+  }
+  if (password.length > 128) {
+    return validationError(res, 'password is too long (maximum 128 characters)')
+  }
+  
+  const resetToken = await prisma.passwordResetToken.findUnique({
+    where: { token },
+    include: { user: true }
+  })
+  
+  if (!resetToken) {
+    return notFound(res, 'Invalid or expired token')
+  }
+  
+  if (resetToken.used) {
+    return validationError(res, 'Token has already been used')
+  }
+  
+  if (resetToken.expiresAt < new Date()) {
+    // Clean up expired token
+    await prisma.passwordResetToken.delete({ where: { id: resetToken.id } })
+    return validationError(res, 'Token has expired')
+  }
+  
+  // Hash new password
+  const passwordHash = await bcrypt.hash(password, 10)
+  
+  // Update user password and mark token as used
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: resetToken.userId },
+      data: { passwordHash }
+    })
+    
+    await tx.passwordResetToken.update({
+      where: { id: resetToken.id },
+      data: { used: true }
+    })
+  })
+  
+  const audit = createAuditHelper(req)
+  await audit.log('UPDATE', 'User', resetToken.userId, { 
+    action: 'PASSWORD_RESET',
+    email: resetToken.user.email
+  })
+  
+  return success(res, { message: 'Password reset successful' })
 }))
 
 export default router

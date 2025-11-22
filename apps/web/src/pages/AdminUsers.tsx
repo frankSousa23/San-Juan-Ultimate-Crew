@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useToast } from '../hooks/useToast'
-import { http, adminUsersApi } from '../lib/api'
+import { http, adminUsersApi, usersApi } from '../lib/api'
 
-interface UserItem { id: number; email: string; name?: string; roles: string[]; playerId: number | null }
+interface UserItem { id: number; email: string; name?: string; roles: string[]; playerId: number | null; status?: string; createdAt?: string }
 
 export default function AdminUsers() {
   const toast = useToast()
@@ -19,11 +19,84 @@ export default function AdminUsers() {
   const [requestSaving, setRequestSaving] = useState<Record<number, boolean>>({})
   const [requestError, setRequestError] = useState<Record<number, string | null>>({})
   const [requestSaved, setRequestSaved] = useState<Record<number, boolean>>({})
+  const [pendingUsers, setPendingUsers] = useState<UserItem[]>([])
+  const [pendingLoading, setPendingLoading] = useState(false)
+  const [approveRole, setApproveRole] = useState<Record<number, 'guest' | 'player' | 'admin'>>({})
+  const [approvePlayerId, setApprovePlayerId] = useState<Record<number, string>>({})
+  const [approving, setApproving] = useState<Record<number, boolean>>({})
+  const [userStatusFilter, setUserStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL')
+
+  const loadPendingUsers = async () => {
+    setPendingLoading(true)
+    try {
+      const data = await usersApi.list('PENDING')
+      setPendingUsers(data)
+      const initRole: Record<number, 'guest' | 'player' | 'admin'> = {}
+      const initPlayer: Record<number, string> = {}
+      for (const u of data) {
+        initRole[u.id] = 'guest' // Default role
+        initPlayer[u.id] = ''
+      }
+      setApproveRole(initRole)
+      setApprovePlayerId(initPlayer)
+    } catch (e: any) {
+      toast.showErrorToast(e?.response?.data?.error || 'No se pudieron cargar usuarios pendientes')
+    } finally {
+      setPendingLoading(false)
+    }
+  }
+
+  const handleApproveUser = async (id: number) => {
+    // Validate player ID if provided
+    const playerIdStr = approvePlayerId[id]
+    if (playerIdStr && playerIdStr.trim() !== '') {
+      const playerIdNum = Number(playerIdStr)
+      if (isNaN(playerIdNum) || playerIdNum <= 0) {
+        toast.showErrorToast('El ID de jugador debe ser un número mayor a 0')
+        return
+      }
+    }
+    
+    setApproving(prev => ({ ...prev, [id]: true }))
+    try {
+      const role = approveRole[id] || 'guest'
+      const playerId = approvePlayerId[id] && approvePlayerId[id].trim() !== '' 
+        ? Number(approvePlayerId[id]) 
+        : undefined
+      const result = await usersApi.approve(id, { role, playerId })
+      toast.showSuccessToast(`Usuario aprobado con rol: ${result.roles?.[0] || role}`)
+      await loadPendingUsers()
+      await load() // Reload all users
+    } catch (e: any) {
+      const errorMsg = e?.response?.data?.error || 'No se pudo aprobar el usuario'
+      toast.showErrorToast(errorMsg)
+    } finally {
+      setApproving(prev => ({ ...prev, [id]: false }))
+    }
+  }
+
+  const handleRejectUser = async (id: number) => {
+    const user = pendingUsers.find(u => u.id === id)
+    const email = user?.email || 'este usuario'
+    if (!confirm(`¿Estás seguro de que deseas rechazar a ${email}? Esta acción no se puede deshacer.`)) return
+    setApproving(prev => ({ ...prev, [id]: true }))
+    try {
+      await usersApi.reject(id)
+      toast.showSuccessToast(`Usuario ${email} rechazado`)
+      await loadPendingUsers()
+      await load() // Reload all users
+    } catch (e: any) {
+      toast.showErrorToast(e?.response?.data?.error || 'No se pudo rechazar el usuario')
+    } finally {
+      setApproving(prev => ({ ...prev, [id]: false }))
+    }
+  }
 
   const load = async () => {
     setLoading(true); setError(null)
     try {
-      const data = await adminUsersApi.list()
+      const status = userStatusFilter !== 'ALL' ? userStatusFilter : undefined
+      const data = await usersApi.list(status)
       setUsers(data)
       const initRoles: Record<number, Set<string>> = {}
       const initPlayer: Record<number, string> = {}
@@ -41,7 +114,8 @@ export default function AdminUsers() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load(); loadPendingUsers() }, [])
+  useEffect(() => { load() }, [userStatusFilter])
 
   const loadRequests = async () => {
     setRequestsLoading(true)
@@ -95,14 +169,131 @@ export default function AdminUsers() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-gray-800">Admin: Usuarios</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-800">Admin: Usuarios</h2>
+        <button
+          onClick={() => { load(); loadPendingUsers() }}
+          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm"
+        >
+          🔄 Actualizar
+        </button>
+      </div>
       {error && <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded p-3 text-sm">{error}</div>}
+      
+      {/* Pending Users Section */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="px-4 py-2 border-b bg-yellow-50">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-medium text-gray-800">Usuarios Pendientes de Aprobación</div>
+              <div className="text-sm text-gray-600 mt-1">Usuarios que se han registrado y esperan aprobación del administrador</div>
+            </div>
+            {pendingUsers.length > 0 && (
+              <span className="bg-yellow-500 text-white rounded-full px-3 py-1 text-sm font-semibold">
+                {pendingUsers.length}
+              </span>
+            )}
+          </div>
+        </div>
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
               <th className="text-left px-4 py-2">Email</th>
               <th className="text-left px-4 py-2">Nombre</th>
+              <th className="text-left px-4 py-2">Fecha Registro</th>
+              <th className="text-left px-4 py-2">Rol a Asignar</th>
+              <th className="text-left px-4 py-2">Player ID (opcional)</th>
+              <th className="px-4 py-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {pendingUsers.map(u => (
+              <tr key={u.id} className="border-t">
+                <td className="px-4 py-2">{u.email}</td>
+                <td className="px-4 py-2">{u.name || '-'}</td>
+                <td className="px-4 py-2">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}</td>
+                <td className="px-4 py-2">
+                  <select
+                    className="border rounded px-2 py-1"
+                    value={approveRole[u.id] || 'guest'}
+                    onChange={(e) => setApproveRole(prev => ({ ...prev, [u.id]: e.target.value as 'guest' | 'player' | 'admin' }))}
+                  >
+                    <option value="guest">Guest</option>
+                    <option value="player">Player</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </td>
+                <td className="px-4 py-2">
+                  <input
+                    className="border rounded px-2 py-1 w-24"
+                    type="number"
+                    min="1"
+                    value={approvePlayerId[u.id] || ''}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val === '' || /^\d+$/.test(val)) {
+                        setApprovePlayerId(prev => ({ ...prev, [u.id]: val }))
+                      }
+                    }}
+                    placeholder="ID jugador"
+                  />
+                  {approvePlayerId[u.id] && approvePlayerId[u.id].trim() !== '' && (
+                    (isNaN(Number(approvePlayerId[u.id])) || Number(approvePlayerId[u.id]) <= 0) && (
+                      <p className="text-xs text-red-600 mt-1">ID debe ser un número mayor a 0</p>
+                    )
+                  )}
+                </td>
+                <td className="px-4 py-2 text-right space-x-2">
+                  <button
+                    className="px-3 py-1 bg-emerald-600 text-white rounded disabled:opacity-50"
+                    disabled={!!approving[u.id]}
+                    onClick={() => handleApproveUser(u.id)}
+                  >
+                    {approving[u.id] ? 'Aprobando…' : 'Aprobar'}
+                  </button>
+                  <button
+                    className="px-3 py-1 bg-rose-600 text-white rounded disabled:opacity-50"
+                    disabled={!!approving[u.id]}
+                    onClick={() => handleRejectUser(u.id)}
+                  >
+                    {approving[u.id] ? 'Rechazando…' : 'Rechazar'}
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {pendingLoading && (
+              <tr><td className="px-4 py-6 text-center text-gray-500" colSpan={6}>Cargando…</td></tr>
+            )}
+            {!pendingLoading && pendingUsers.length === 0 && (
+              <tr><td className="px-4 py-6 text-center text-gray-500" colSpan={6}>No hay usuarios pendientes</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="px-4 py-2 border-b bg-gray-50 flex items-center justify-between">
+          <div className="font-medium">Todos los Usuarios</div>
+          <select
+            className="border rounded px-2 py-1 text-sm"
+            value={userStatusFilter}
+            onChange={(e) => {
+              setUserStatusFilter(e.target.value as 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED')
+              load()
+            }}
+          >
+            <option value="ALL">Todos los estados</option>
+            <option value="PENDING">Pendientes</option>
+            <option value="APPROVED">Aprobados</option>
+            <option value="REJECTED">Rechazados</option>
+          </select>
+        </div>
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left px-4 py-2">Email</th>
+              <th className="text-left px-4 py-2">Nombre</th>
+              <th className="text-left px-4 py-2">Estado</th>
               <th className="text-left px-4 py-2">Roles</th>
               <th className="text-left px-4 py-2">PlayerId</th>
               <th className="px-4 py-2"></th>
@@ -113,6 +304,16 @@ export default function AdminUsers() {
               <tr key={u.id} className="border-t">
                 <td className="px-4 py-2">{u.email}</td>
                 <td className="px-4 py-2">{u.name || ''}</td>
+                <td className="px-4 py-2">
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    u.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                    u.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                    u.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {u.status || 'APPROVED'}
+                  </span>
+                </td>
                 <td className="px-4 py-2">
                   <label className="mr-3">
                     <input type="checkbox" checked={(roles[u.id]?.has('guest')) || false} onChange={() => toggleRole(u.id, 'guest')} /> guest

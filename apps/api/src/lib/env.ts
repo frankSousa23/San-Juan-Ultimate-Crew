@@ -45,5 +45,6 @@ export const env = {
   JWT_EXPIRES_IN: getEnv('JWT_EXPIRES_IN', '15m'),
   JWT_REFRESH_EXPIRES_IN: getEnv('JWT_REFRESH_EXPIRES_IN', '7d'),
   CORS_ORIGIN: getEnv('CORS_ORIGIN', 'http://localhost:5173'),
+  FRONTEND_URL: getEnv('FRONTEND_URL', 'http://localhost:5173'),
   LOG_LEVEL: getEnv('LOG_LEVEL', 'info'),
 };

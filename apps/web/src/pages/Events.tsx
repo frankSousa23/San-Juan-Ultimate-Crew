@@ -38,6 +38,7 @@ export default function Events() {
   const [editTarget, setEditTarget] = useState<EventItem | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [attEvent, setAttEvent] = useState<EventItem | null>(null)
+  const [selectedDateEvents, setSelectedDateEvents] = useState<{ date: Date; events: EventItem[] } | null>(null)
   
   const [confirmState, setConfirmState] = useState<{ title?: string; message: string; onYes: () => Promise<void> } | null>(null)
 
@@ -348,7 +349,25 @@ export default function Events() {
           )}
 
           {tab === 'calendar' && (
-            <CalendarGrid events={events} onSelectDay={() => {}} />
+            <CalendarGrid events={events} onSelectDay={(date) => {
+              // Filter events for the selected date
+              const dayEvents = events.filter(e => {
+                if (!e.startsAt) return false
+                const eventDate = new Date(e.startsAt)
+                return eventDate.toDateString() === date.toDateString()
+              })
+              
+              // If there are events, navigate to the first one or show a modal
+              if (dayEvents.length > 0) {
+                // If only one event, navigate directly
+                if (dayEvents.length === 1) {
+                  setEditTarget(dayEvents[0])
+                } else {
+                  // Multiple events - show selection modal
+                  setSelectedDateEvents({ date, events: dayEvents })
+                }
+              }
+            }} />
           )}
           {tab === 'tournaments' && (
             <div className="text-gray-600">Gestión de brackets y llaves próximamente.</div>
@@ -407,6 +426,55 @@ export default function Events() {
       {attEvent && (
         <AttendanceModal eventItem={attEvent} onClose={() => setAttEvent(null)} />
       )}
+      {selectedDateEvents && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setSelectedDateEvents(null)}>
+          <div className="bg-white rounded-xl max-w-lg w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-4">
+              <div className="text-lg font-bold">
+                Eventos del {selectedDateEvents.date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </div>
+            </div>
+            <div className="p-4 max-h-96 overflow-y-auto">
+              {selectedDateEvents.events.length === 0 ? (
+                <div className="text-gray-600 text-center py-4">No hay eventos en esta fecha</div>
+              ) : (
+                <div className="space-y-2">
+                  {selectedDateEvents.events.map(ev => (
+                    <div 
+                      key={ev.id} 
+                      className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => {
+                        setSelectedDateEvents(null)
+                        setEditTarget(ev)
+                      }}
+                    >
+                      <div className="font-semibold text-gray-800">{ev.title}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {new Date(ev.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {ev.endsAt && ` - ${new Date(ev.endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className={`text-xs px-2 py-1 rounded-full ${statusBadge[ev.status]}`}>
+                          {ev.status}
+                        </span>
+                        <span className="text-xs text-gray-600">{typeLabel[ev.type]}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="p-4 flex justify-end border-t">
+              <button 
+                onClick={() => setSelectedDateEvents(null)} 
+                className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
@@ -435,40 +503,100 @@ function CalendarGrid({ events, onSelectDay }: { events: EventItem[]; onSelectDa
   const eventsByDate = new Map<string, EventItem[]>()
   events.forEach(e => {
     if (!e.startsAt) return
-    const key = new Date(e.startsAt).toDateString()
+    const eventDate = new Date(e.startsAt)
+    const key = eventDate.toDateString()
     const arr = eventsByDate.get(key) || []
     arr.push(e)
     eventsByDate.set(key, arr)
   })
 
+  const getEventColor = (type: EventType) => {
+    switch (type) {
+      case 'TRAINING': return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'TOURNAMENT': return 'bg-purple-100 text-purple-800 border-purple-200'
+      case 'SOCIAL': return 'bg-green-100 text-green-800 border-green-200'
+      case 'WORKSHOP': return 'bg-orange-100 text-orange-800 border-orange-200'
+      default: return 'bg-amber-100 text-amber-800 border-amber-200'
+    }
+  }
+
+  const isToday = (date: Date) => {
+    const today = new Date()
+    return date.toDateString() === today.toDateString()
+  }
+
   return (
     <div className="bg-white rounded-xl shadow p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <button className="px-2 py-1" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}>←</button>
-        <div className="font-semibold">{cursor.toLocaleString(undefined, { month: 'long', year: 'numeric' })}</div>
-        <button className="px-2 py-1" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}>→</button>
+        <button 
+          className="px-3 py-1 rounded hover:bg-gray-100 transition-colors" 
+          onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
+        >
+          ← Anterior
+        </button>
+        <div className="font-semibold text-lg">{cursor.toLocaleString(undefined, { month: 'long', year: 'numeric' })}</div>
+        <button 
+          className="px-3 py-1 rounded hover:bg-gray-100 transition-colors" 
+          onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
+        >
+          Siguiente →
+        </button>
       </div>
       <div className="grid grid-cols-7 gap-2">
         {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(d => (
-          <div key={d} className="text-center text-xs font-medium text-gray-500">{d}</div>
+          <div key={d} className="text-center text-xs font-medium text-gray-500 py-2">{d}</div>
         ))}
       </div>
       <div className="grid grid-cols-7 gap-2">
-        {weeks.map((week, wi) => week.map((date, di) => (
-          <div key={`${wi}-${di}`} className={`border rounded-lg min-h-[90px] p-1 ${date ? 'bg-white' : 'bg-gray-50'}`}>
-            {date && (
-              <div>
-                <div className="text-xs text-gray-500 mb-1">{date.getDate()}</div>
-                <div className="space-y-1">
-                  {(eventsByDate.get(date.toDateString()) || []).slice(0,3).map(ev => (
-                    <div key={ev.id} className="text-[11px] px-1 py-0.5 rounded bg-amber-100 text-amber-800 truncate" title={ev.title}>{ev.title}</div>
-                  ))}
-                  {(eventsByDate.get(date.toDateString()) || []).length > 3 && <div className="text-[11px] text-gray-500">+{(eventsByDate.get(date.toDateString()) || []).length - 3} más</div>}
+        {weeks.map((week, wi) => week.map((date, di) => {
+          const dayEvents = date ? (eventsByDate.get(date.toDateString()) || []) : []
+          const hasEvents = dayEvents.length > 0
+          const isCurrentDay = date ? isToday(date) : false
+          
+          return (
+            <div 
+              key={`${wi}-${di}`} 
+              className={`border rounded-lg min-h-[100px] p-1.5 transition-all cursor-pointer ${
+                date 
+                  ? isCurrentDay 
+                    ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200' 
+                    : hasEvents 
+                      ? 'bg-white border-amber-300 hover:border-amber-400 hover:shadow-md' 
+                      : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  : 'bg-gray-50 border-gray-100'
+              }`}
+              onClick={() => date && onSelectDay(date)}
+            >
+              {date && (
+                <div className="h-full flex flex-col">
+                  <div className={`text-xs font-medium mb-1 ${isCurrentDay ? 'text-blue-700 font-bold' : 'text-gray-600'}`}>
+                    {date.getDate()}
+                  </div>
+                  <div className="flex-1 space-y-0.5 overflow-hidden">
+                    {dayEvents.slice(0, 3).map(ev => (
+                      <div 
+                        key={ev.id} 
+                        className={`text-[10px] px-1.5 py-0.5 rounded border truncate ${getEventColor(ev.type)}`}
+                        title={`${ev.title} - ${new Date(ev.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onSelectDay(date)
+                        }}
+                      >
+                        {ev.title}
+                      </div>
+                    ))}
+                    {dayEvents.length > 3 && (
+                      <div className="text-[10px] text-gray-500 font-medium px-1">
+                        +{dayEvents.length - 3} más
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )))}
+              )}
+            </div>
+          )
+        }))}
       </div>
     </div>
   )

@@ -20,6 +20,7 @@ interface User {
   name?: string;
   roles?: string[]; // Changed from Role[] to string[] to match authApi.me() response
   playerId?: number | null;
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 
 interface AuthContextType {
@@ -30,6 +31,7 @@ interface AuthContextType {
   logout: () => void;
   hasRole: (role: string) => boolean;
   hasPermission: (permission: string) => boolean;
+  refreshUser: () => Promise<User | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,28 +41,71 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] =  useState<boolean>(true);
   const { showSuccessToast, showErrorToast } = useToast();
 
-  // Check for existing session on mount
+  // Check for existing session on mount and periodically
   useEffect(() => {
-    const checkSession = async () => {
+    let mounted = true;
+    let isCheckingSession = false;
+    
+    const checkSession = async (silent = false) => {
+      // Prevent multiple simultaneous checks
+      if (isCheckingSession) return;
+      isCheckingSession = true;
+      
       try {
         const token = getAuthToken();
         if (token) {
           const result = await authApi.me();
-          if (result.user) {
-            setUser(result.user as User);
+          if (mounted) {
+            if (result.user) {
+              setUser(result.user as User);
+            } else {
+              // No user data returned - clear token
+              setAuthToken();
+              setUser(null);
+            }
+          }
+        } else {
+          if (mounted && !silent) {
+            setUser(null);
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         // Not logged in or session expired
-        setUser(null);
-        setAuthToken(); // Clear invalid token
+        if (mounted) {
+          setUser(null);
+          // Only clear token if it's a 401 (invalid/expired token)
+          if (error?.response?.status === 401) {
+            setAuthToken(); // Clear invalid token
+          }
+          // Only log errors if not silent and not a 401
+          if (!silent && error?.response?.status !== 401) {
+            console.error('Session check failed:', error);
+          }
+        }
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
+        isCheckingSession = false;
       }
     };
 
-    checkSession();
-  }, []);
+    // Initial check - silent to avoid errors on first load
+    checkSession(true);
+    
+    // Check session periodically (every 5 minutes) to refresh user data
+    const interval = setInterval(() => {
+      const token = getAuthToken();
+      if (token) {
+        checkSession(false);
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []); // Empty dependency array - only run on mount
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -68,14 +113,40 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { token, user: loggedInUser } = await authApi.login(email, password);
       setAuthToken(token);
       setUser(loggedInUser as User);
+      // Only show success toast, don't show errors from session check
       showSuccessToast(`Bienvenido, ${loggedInUser.name || loggedInUser.email}`);
     } catch (error: any) {
+      // Don't show error toast here if it's already handled by the login page
+      // The login page will handle displaying the error
       const message = error?.response?.data?.error || 'Error al iniciar sesión';
-      showErrorToast(message);
+      // Only show error if it's not a 401 (which is handled by interceptor)
+      if (error?.response?.status !== 401) {
+        showErrorToast(message);
+      }
       throw error;
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Function to refresh user data (useful after profile updates)
+  const refreshUser = async () => {
+    try {
+      const token = getAuthToken();
+      if (token) {
+        const result = await authApi.me();
+        if (result.user) {
+          setUser(result.user as User);
+          return result.user;
+        }
+      }
+    } catch (error: any) {
+      if (error?.response?.status === 401) {
+        setAuthToken();
+        setUser(null);
+      }
+    }
+    return null;
   };
 
   const logout = async () => {
@@ -111,7 +182,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     login,
     logout,
     hasRole,
-    hasPermission
+    hasPermission,
+    refreshUser
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

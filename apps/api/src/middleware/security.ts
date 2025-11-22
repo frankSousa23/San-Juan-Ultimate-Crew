@@ -13,7 +13,15 @@ export const generalLimiter = rateLimit({
   legacyHeaders: false,
   skip: (req: Request) => {
     // Skip rate limiting for health checks
-    return req.path === '/health' || req.path === '/'
+    if (req.path === '/health' || req.path === '/') return true
+    // Skip rate limiting in development for localhost
+    if (process.env.NODE_ENV !== 'production') {
+      const ip = req.ip || req.socket.remoteAddress || ''
+      if (ip === '::1' || ip === '127.0.0.1' || ip.includes('localhost') || ip.includes('::ffff:127.0.0.1')) {
+        return true
+      }
+    }
+    return false
   },
 })
 
@@ -27,6 +35,18 @@ export const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: false, // Count all requests, even successful ones
+})
+
+// Rate limiting - Password reset requests (very strict to prevent abuse)
+export const passwordResetLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3, // Only 3 password reset requests per hour per IP
+  message: {
+    error: 'Too many password reset requests. Please wait before trying again.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false,
 })
 
 // Rate limiting - File uploads (very strict)
@@ -51,7 +71,15 @@ export const writeLimiter = rateLimit({
   legacyHeaders: false,
   skip: (req: Request) => {
     // Only apply to write methods
-    return !['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)
+    if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return true
+    // Skip rate limiting in development for localhost
+    if (process.env.NODE_ENV !== 'production') {
+      const ip = req.ip || req.socket.remoteAddress || ''
+      if (ip === '::1' || ip === '127.0.0.1' || ip.includes('localhost') || ip.includes('::ffff:127.0.0.1')) {
+        return true
+      }
+    }
+    return false
   },
 })
 
@@ -66,7 +94,15 @@ export const readLimiter = rateLimit({
   legacyHeaders: false,
   skip: (req: Request) => {
     // Only apply to read methods
-    return req.method !== 'GET'
+    if (req.method !== 'GET') return true
+    // Skip rate limiting in development for localhost
+    if (process.env.NODE_ENV !== 'production') {
+      const ip = req.ip || req.socket.remoteAddress || ''
+      if (ip === '::1' || ip === '127.0.0.1' || ip.includes('localhost') || ip.includes('::ffff:127.0.0.1')) {
+        return true
+      }
+    }
+    return false
   },
 })
 
