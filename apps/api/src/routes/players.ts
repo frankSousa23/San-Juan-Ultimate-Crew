@@ -31,7 +31,6 @@ router.get('/', asyncHandler(async (_req: Request, res: Response) => {
   return success(res, players);
 }));
 
-// Schemas
 const createPlayerSchema = z.object({
   name: z.string().min(1),
   number: z.coerce.number().int().positive(),
@@ -103,8 +102,6 @@ router.post('/', requireRole(['admin']), validateBody(createPlayerSchema), async
   return created(res, player);
 }));
 
-// Update
-// Admin or the player themself can update
 const playerIdSchema = z.object({
   id: z.coerce.number().int().positive()
 });

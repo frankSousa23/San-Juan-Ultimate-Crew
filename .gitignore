@@ -50,21 +50,27 @@ logs/
 # Documentation (moved to local/)
 docs/*.md
 !docs/README.md
-DEVELOPMENT.md
 
 # Scripts de desarrollo (movidos a local/scripts/)
-scripts/*.ps1
-scripts/*.sh
-scripts/system-check.cjs
-!scripts/test-all.js
+scripts/
+apps/api/scripts/
 
-# Reportes generados (movidos a local/reports/)
+# Reportes y documentación de auditoría (movidos a local/)
 *-report.md
 *-check-*.md
-MEJORAS_IMPLEMENTADAS.md
-REPORTE_COMPLETO_SISTEMA.md
-FINAL_IMPLEMENTATION_REPORT.md
-IMPLEMENTATION_SUMMARY.md
+AUDITORIA_*.md
+PRUEBAS_*.md
+RESUMEN_*.md
+VERIFICACION_*.md
+RESULTADOS_*.md
+SOLUCION_*.md
+DEBUG_*.md
+WALKTHROUGH_*.md
+walkthrough.md
+implementation_plan.md
+PROJECT_STATUS.md
+GUIA_*.md
+DEVELOPMENT.md
 
 # Temporary files
 *.tmp

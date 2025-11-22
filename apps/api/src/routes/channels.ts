@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express'
 import { prisma } from '../lib/prisma.js'
+import { requireRole } from './auth.js'
 import { z } from 'zod'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import { success, created, notFound, validationError, conflict } from '../lib/response.js'
@@ -100,7 +101,6 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
   return success(res, ch)
 }))
 
-// POST /api/channels
 const createChannelSchema = z.object({
   name: z.string().min(1),
   eventId: z.coerce.number().int().positive().optional(),
@@ -138,7 +138,7 @@ const createChannelSchema = z.object({
  *       409:
  *         description: Channel for event already exists
  */
-router.post('/', asyncHandler(async (req: Request, res: Response) => {
+router.post('/', requireRole(['admin', 'player']), asyncHandler(async (req: Request, res: Response) => {
   try {
     const payload = createChannelSchema.parse(req.body)
     const channel = await prisma.channel.create({ data: payload })

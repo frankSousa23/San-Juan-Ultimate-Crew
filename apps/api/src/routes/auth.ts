@@ -47,12 +47,49 @@ export function requireRole(roles: string[]) {
         return res.status(401).json({ error: 'Invalid token' })
       }
     }
-  const user = await prisma.user.findUnique({
-      where: { id: Number(u.sub) },
-      include: { roles: { include: { role: true } } }
+    const userId = Number(u.sub)
+    if (!userId || isNaN(userId)) {
+      return res.status(401).json({ error: 'Invalid user ID' })
+    }
+    
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { 
+        roles: { 
+          include: { 
+            role: {
+              select: {
+                name: true,
+                id: true
+              }
+            }
+          } 
+        } 
+      }
     })
-  const has = user?.roles.some((ur: any) => roles.includes(ur.role.name))
-    if (!has) return res.status(403).json({ error: 'Forbidden' })
+    
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' })
+    }
+    
+    const userRoles: string[] = []
+    if (user.roles && Array.isArray(user.roles)) {
+      for (const userRole of user.roles) {
+        if (userRole && userRole.role && userRole.role.name) {
+          userRoles.push(userRole.role.name)
+        }
+      }
+    }
+    
+    const has = userRoles.some((roleName: string) => roles.includes(roleName))
+    
+    if (!has) {
+      return res.status(403).json({ 
+        error: 'Forbidden',
+        message: `Required roles: ${roles.join(', ')}, User roles: ${userRoles.join(', ') || 'none'}`
+      })
+    }
+    
     next()
   }
 }
@@ -166,41 +203,141 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
  *                   type: string
  *                 user:
  *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid input
  *       401:
- *         description: Invalid credentials
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *         description: Unauthorized
  */
 router.post('/login', asyncHandler(async (req: Request, res: Response) => {
   const { email, password } = req.body || {}
   if (!email || !password) return validationError(res, 'email and password required')
-  const user = await prisma.user.findUnique({ where: { email } })
-  if (!user) return unauthorized(res, 'invalid credentials')
-  const ok = await bcrypt.compare(password, user.passwordHash)
-  if (!ok) return unauthorized(res, 'invalid credentials')
-  const token = signToken({ sub: user.id, email: user.email })
-  const audit = createAuditHelper(req)
-  await audit.log('LOGIN', 'User', user.id, { email: user.email })
-  return success(res, { token, user: { id: user.id, email: user.email, name: user.name } })
-}))
-
-router.post('/logout', (_req: Request, res: Response) => {
-  return success(res, { ok: true })
-})
-
-router.get('/me', requireAuth, asyncHandler(async (req: Request, res: Response) => {
-  if (!AUTH_REQUIRED) return success(res, { authDisabled: true })
-  const u = (req as any).user
-  if (!u?.sub) return unauthorized(res, 'Unauthorized')
   const user = await prisma.user.findUnique({
-    where: { id: Number(u.sub) },
+    where: { email },
     include: { roles: { include: { role: true } } },
   })
   if (!user) return notFound(res, 'User')
+  const match = await bcrypt.compare(password, user.passwordHash)
+  if (!match) return unauthorized(res, 'Invalid credentials')
+  const token = signToken({ sub: user.id, email: user.email })
+  const audit = createAuditHelper(req)
+  await audit.log('LOGIN', 'User', user.id, { email: user.email })
   const roleNames = Array.isArray(user.roles) ? user.roles.map((ur: any) => ur.role?.name).filter(Boolean) : []
-  return success(res, { user: { id: user.id, email: user.email, name: user.name, roles: roleNames, playerId: user.playerId ?? null } })
+  return success(res, { token, user: { id: user.id, email: user.email, name: user.name, roles: roleNames, playerId: user.playerId ?? null } })
+}))
+
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Get current authenticated user
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *                 authDisabled:
+ *                   type: boolean
+ *                   description: Whether authentication is disabled
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/me', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  if (!AUTH_REQUIRED) {
+    return success(res, { authDisabled: true })
+  }
+  
+  const u = (req as any).user as any
+  if (!u?.sub) {
+    return unauthorized(res, 'Unauthorized')
+  }
+  
+  const userId = Number(u.sub)
+  if (!userId || isNaN(userId)) {
+    return unauthorized(res, 'Invalid user ID')
+  }
+  
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { 
+      roles: { 
+        include: { 
+          role: {
+            select: {
+              name: true,
+              id: true
+            }
+          }
+        } 
+      } 
+    }
+  })
+  
+  if (!user) {
+    return unauthorized(res, 'User not found')
+  }
+  
+  const roleNames = Array.isArray(user.roles) ? user.roles.map((ur: any) => ur.role?.name).filter(Boolean) : []
+  
+  return success(res, {
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      roles: roleNames,
+      playerId: user.playerId ?? null
+    },
+    authDisabled: false
+  })
+}))
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout current user
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/logout', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  if (!AUTH_REQUIRED) {
+    return success(res, { ok: true })
+  }
+  
+  const u = (req as any).user as any
+  if (!u?.sub) {
+    return unauthorized(res, 'Unauthorized')
+  }
+  
+  const userId = Number(u.sub)
+  if (!userId || isNaN(userId)) {
+    return unauthorized(res, 'Invalid user ID')
+  }
+  
+  const audit = createAuditHelper(req)
+  await audit.log('LOGOUT', 'User', userId, { email: u.email || 'unknown' })
+  
+  return success(res, { ok: true })
 }))
 
 export default router

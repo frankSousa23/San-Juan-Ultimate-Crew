@@ -1,6 +1,41 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import { useStats } from '../hooks/useData'
+import { transactionsApi } from '../lib/api'
+
+interface FinanceSummary {
+  income: number
+  expense: number
+  balance: number
+}
 
 export default function Dashboard() {
+  const { stats, loading: statsLoading } = useStats()
+  const [financeSummary, setFinanceSummary] = useState<FinanceSummary | null>(null)
+  const [financeLoading, setFinanceLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadFinanceSummary() {
+      try {
+        const summary = await transactionsApi.summary()
+        setFinanceSummary(summary)
+      } catch (error) {
+        console.error('Error loading finance summary:', error)
+      } finally {
+        setFinanceLoading(false)
+      }
+    }
+    loadFinanceSummary()
+  }, [])
+
+  const formatCurrency = (cents: number) => {
+    return new Intl.NumberFormat('es-PR', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(cents / 100)
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -11,28 +46,74 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900">Jugadores</h3>
-          <p className="text-3xl font-bold text-blue-600">25</p>
+          {statsLoading ? (
+            <p className="text-3xl font-bold text-gray-400">...</p>
+          ) : (
+            <p className="text-3xl font-bold text-blue-600">{stats?.players || 0}</p>
+          )}
           <p className="text-sm text-gray-500">Jugadores activos</p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900">Eventos</h3>
-          <p className="text-3xl font-bold text-green-600">12</p>
-          <p className="text-sm text-gray-500">Eventos este mes</p>
+          {statsLoading ? (
+            <p className="text-3xl font-bold text-gray-400">...</p>
+          ) : (
+            <p className="text-3xl font-bold text-green-600">{stats?.events || 0}</p>
+          )}
+          <p className="text-sm text-gray-500">Total de eventos</p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900">Finanzas</h3>
-          <p className="text-3xl font-bold text-purple-600">$2,500</p>
+          {financeLoading ? (
+            <p className="text-3xl font-bold text-gray-400">...</p>
+          ) : (
+            <p className={`text-3xl font-bold ${(financeSummary?.balance || 0) >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
+              {financeSummary ? formatCurrency(financeSummary.balance) : '$0'}
+            </p>
+          )}
           <p className="text-sm text-gray-500">Balance actual</p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900">Sistema</h3>
-          <p className="text-3xl font-bold text-green-600">Online</p>
-          <p className="text-sm text-gray-500">Estado del sistema</p>
+          <h3 className="text-lg font-medium text-gray-900">Mensajes</h3>
+          {statsLoading ? (
+            <p className="text-3xl font-bold text-gray-400">...</p>
+          ) : (
+            <p className="text-3xl font-bold text-indigo-600">{stats?.messages || 0}</p>
+          )}
+          <p className="text-sm text-gray-500">Total de mensajes</p>
         </div>
       </div>
+
+      {stats?.upcomingEvents && stats.upcomingEvents.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Próximos Eventos</h3>
+          <div className="space-y-2">
+            {stats.upcomingEvents.map((event: any) => (
+              <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <p className="font-medium text-gray-900">{event.title}</p>
+                  <p className="text-sm text-gray-500">
+                    {new Date(event.startsAt).toLocaleDateString('es-PR', {
+                      weekday: 'short',
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+                <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                  {event.type}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Accesos Rápidos</h3>

@@ -1,14 +1,85 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { http, getAuthToken } from '../lib/api'
+import { useApi } from '../hooks/useApi'
+import { useToast } from '../hooks/useToast'
+
+interface AuditLog {
+  id: number
+  action: string
+  entityType: string
+  entityId: number | null
+  userId: number | null
+  ipAddress: string | null
+  userAgent: string | null
+  details: any
+  createdAt: string
+  user: {
+    id: number
+    email: string
+    name: string | null
+  } | null
+}
+
+interface AuditResponse {
+  items: AuditLog[]
+  total: number
+  limit: number
+  offset: number
+}
 
 export default function SystemMonitoring() {
   const [activeTab, setActiveTab] = useState('overview')
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
+  const [auditTotal, setAuditTotal] = useState(0)
+  const [auditLimit] = useState(50)
+  const [auditOffset, setAuditOffset] = useState(0)
+  const [auditFilters, setAuditFilters] = useState({
+    action: '',
+    entityType: '',
+    from: '',
+    to: ''
+  })
+  const toasts = useToast()
+  const authed = !!getAuthToken()
 
   const tabs = [
     { id: 'overview', label: 'System Overview' },
     { id: 'performance', label: 'Performance' },
     { id: 'security', label: 'Security' },
+    { id: 'audit', label: 'Audit Logs' },
     { id: 'optimization', label: 'Optimization' },
   ]
+
+  const { execute: loadAuditLogs, loading: auditLoading } = useApi(
+    async (params?: any) => {
+      const queryParams = new URLSearchParams()
+      if (params?.action) queryParams.append('action', params.action)
+      if (params?.entityType) queryParams.append('entityType', params.entityType)
+      if (params?.from) queryParams.append('from', params.from)
+      if (params?.to) queryParams.append('to', params.to)
+      queryParams.append('limit', String(auditLimit))
+      queryParams.append('offset', String(auditOffset))
+      
+      const { data } = await http.get<AuditResponse>(`/api/audit?${queryParams.toString()}`)
+      return data
+    },
+    {
+      onSuccess: (data) => {
+        setAuditLogs(data.items)
+        setAuditTotal(data.total)
+      },
+      onError: () => {
+        toasts.showErrorToast('Error cargando logs de auditoría')
+      },
+      showErrorToast: false
+    }
+  )
+
+  useEffect(() => {
+    if (activeTab === 'audit' && authed) {
+      loadAuditLogs(auditFilters)
+    }
+  }, [activeTab, auditOffset, auditFilters, authed])
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -85,6 +156,179 @@ export default function SystemMonitoring() {
                 <strong>Security Status:</strong> All security measures are active and functioning properly.
               </p>
             </div>
+          </div>
+        )
+      case 'audit':
+        if (!authed) {
+          return (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <p className="text-yellow-800">Debes iniciar sesión para ver los logs de auditoría.</p>
+            </div>
+          )
+        }
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-900">Audit Logs</h3>
+              <div className="text-sm text-gray-600">
+                Total: {auditTotal} registros
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Acción</label>
+                  <select
+                    className="w-full border rounded px-3 py-2 text-sm"
+                    value={auditFilters.action}
+                    onChange={(e) => setAuditFilters({ ...auditFilters, action: e.target.value })}
+                  >
+                    <option value="">Todas</option>
+                    <option value="CREATE">CREATE</option>
+                    <option value="UPDATE">UPDATE</option>
+                    <option value="DELETE">DELETE</option>
+                    <option value="LOGIN">LOGIN</option>
+                    <option value="LOGOUT">LOGOUT</option>
+                    <option value="ROLE_CHANGE">ROLE_CHANGE</option>
+                    <option value="PERMISSION_CHANGE">PERMISSION_CHANGE</option>
+                    <option value="FILE_UPLOAD">FILE_UPLOAD</option>
+                    <option value="FILE_DELETE">FILE_DELETE</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Entidad</label>
+                  <input
+                    type="text"
+                    className="w-full border rounded px-3 py-2 text-sm"
+                    placeholder="User, Transaction, etc."
+                    value={auditFilters.entityType}
+                    onChange={(e) => setAuditFilters({ ...auditFilters, entityType: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Desde</label>
+                  <input
+                    type="datetime-local"
+                    className="w-full border rounded px-3 py-2 text-sm"
+                    value={auditFilters.from}
+                    onChange={(e) => setAuditFilters({ ...auditFilters, from: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
+                  <input
+                    type="datetime-local"
+                    className="w-full border rounded px-3 py-2 text-sm"
+                    value={auditFilters.to}
+                    onChange={(e) => setAuditFilters({ ...auditFilters, to: e.target.value })}
+                  />
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setAuditOffset(0)
+                  loadAuditLogs(auditFilters)
+                }}
+                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm"
+              >
+                Filtrar
+              </button>
+            </div>
+
+            {auditLoading ? (
+              <div className="bg-white rounded-lg shadow p-4">Cargando logs...</div>
+            ) : (
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acción</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Entidad</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {auditLogs.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
+                            No hay logs de auditoría
+                          </td>
+                        </tr>
+                      ) : (
+                        auditLogs.map((log) => (
+                          <tr key={log.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm text-gray-900">{log.id}</td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                log.action === 'LOGIN' || log.action === 'LOGOUT' ? 'bg-blue-100 text-blue-800' :
+                                log.action === 'CREATE' ? 'bg-green-100 text-green-800' :
+                                log.action === 'UPDATE' ? 'bg-yellow-100 text-yellow-800' :
+                                log.action === 'DELETE' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {log.action}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {log.entityType}
+                              {log.entityId && ` #${log.entityId}`}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {log.user ? (
+                                <div>
+                                  <div className="font-medium">{log.user.email}</div>
+                                  {log.user.name && <div className="text-xs text-gray-500">{log.user.name}</div>}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">N/A</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {new Date(log.createdAt).toLocaleString('es-PR')}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-500">{log.ipAddress || '-'}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                {auditTotal > auditLimit && (
+                  <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t">
+                    <div className="text-sm text-gray-700">
+                      Mostrando {auditOffset + 1} - {Math.min(auditOffset + auditLimit, auditTotal)} de {auditTotal}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const newOffset = Math.max(0, auditOffset - auditLimit)
+                          setAuditOffset(newOffset)
+                        }}
+                        disabled={auditOffset === 0}
+                        className="px-3 py-1 bg-white border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Anterior
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newOffset = auditOffset + auditLimit
+                          setAuditOffset(newOffset)
+                        }}
+                        disabled={auditOffset + auditLimit >= auditTotal}
+                        className="px-3 py-1 bg-white border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Siguiente
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )
       case 'optimization':

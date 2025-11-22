@@ -4,7 +4,6 @@ import { asyncHandler } from '../middleware/errorHandler.js';
 import { success } from '../lib/response.js';
 const router = Router();
 router.get('/', asyncHandler(async (_req, res) => {
-    // Ejecutar todas las queries en paralelo para mejor performance
     const [players, events, messages, upcomingEvents, attendanceTotals, eventsByType,] = await Promise.all([
         prisma.player.count(),
         prisma.event.count(),

@@ -1,13 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react'
-
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000/api',
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Allow sending cookies with CORS requests
 })
+
+// Add interceptor to include token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('sjuc.auth.token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
 
 // Types
 export interface Player {
@@ -151,6 +160,30 @@ export interface ApiResponse<T> {
   message?: string
 }
 
+export interface Permission {
+  id: number
+  name: string
+}
+
+export interface Role {
+  id: number
+  name: string
+  permissions: Permission[]
+}
+
+export interface User {
+  id: number
+  email: string
+  name?: string
+  roles: Role[]
+  playerId?: number
+}
+
+export interface AuthResponse {
+  user: User
+  token: string
+}
+
 export interface PaginatedResponse<T> {
   data: T[]
   total: number
@@ -161,6 +194,26 @@ export interface PaginatedResponse<T> {
 
 // Data Service Class
 export class DataService {
+  // Auth
+  static async login(email: string, password: string): Promise<AuthResponse> {
+    const response = await api.post<AuthResponse>('/auth/login', { email, password })
+    // Save token to localStorage
+    if (response.data.token) {
+      localStorage.setItem('sjuc.auth.token', response.data.token)
+    }
+    return response.data
+  }
+
+  static async logout(): Promise<void> {
+    await api.post('/auth/logout')
+    // Clear token from localStorage
+    localStorage.removeItem('sjuc.auth.token')
+  }
+
+  static async getCurrentUser(): Promise<User> {
+    const response = await api.get<User>('/auth/me')
+    return response.data
+  }
   // Players
   static async getPlayers(): Promise<Player[]> {
     const response = await api.get<Player[]>('/players')

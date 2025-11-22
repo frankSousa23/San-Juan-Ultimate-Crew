@@ -1,28 +1,24 @@
 import React, { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { authApi, setAuthToken } from '../lib/api'
+import { useAuth } from '../contexts/AuthContext'
 
-export default function Login() {
-  const [email, setEmail] = useState('admin@example.com')
-  const [password, setPassword] = useState('admin123')
-  const [loading, setLoading] = useState(false)
+export const Login: React.FC = () => {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const { login, isLoading } = useAuth()
   const navigate = useNavigate()
   const [params] = useSearchParams()
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    setLoading(true)
     try {
-      const { token } = await authApi.login(email, password)
-      setAuthToken(token)
+      await login(email, password)
       const next = params.get('next') || '/'
       navigate(next)
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Error al iniciar sesión')
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -53,10 +49,11 @@ export default function Login() {
           />
         </div>
         {error && <div className="text-red-600 text-sm">{error}</div>}
-        <button disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded py-2">
-          {loading ? 'Ingresando…' : 'Ingresar'}
+        <button disabled={isLoading} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded py-2">
+          {isLoading ? 'Ingresando…' : 'Ingresar'}
         </button>
       </form>
     </div>
   )
 }
+export default Login

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import toast from 'react-hot-toast'
 
 export interface Toast {
   id: string
@@ -9,67 +9,30 @@ export interface Toast {
 }
 
 export function useToast() {
-  const [toasts, setToasts] = useState<Toast[]>([])
+  const showSuccessToast = (message: string, title?: string) => {
+    toast.success(`${title ? title + ': ' : ''}${message}`)
+  }
 
-  const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
-    const id = Math.random().toString(36).substr(2, 9)
-    const newToast: Toast = {
-      id,
-      duration: 5000,
-      ...toast,
-    }
-    
-    setToasts(prev => [...prev, newToast])
-    
-    // Auto remove toast after duration
-    if (newToast.duration && newToast.duration > 0) {
-      setTimeout(() => {
-        removeToast(id)
-      }, newToast.duration)
-    }
-    
-    return id
-  }, [])
+  const showErrorToast = (message: string, title?: string) => {
+    toast.error(`${title ? title + ': ' : ''}${message}`)
+  }
 
-  const removeToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id))
-  }, [])
+  const showWarningToast = (message: string, title?: string) => {
+    toast(`${title ? title + ': ' : ''}${message}`, { icon: '⚠️' })
+  }
 
-  const showSuccessToast = useCallback((message: string, title = 'Éxito') => {
-    return addToast({
-      type: 'success',
-      title,
-      message,
-    })
-  }, [addToast])
+  const showInfoToast = (message: string, title?: string) => {
+    toast(`${title ? title + ': ' : ''}${message}`, { icon: 'ℹ️' })
+  }
 
-  const showErrorToast = useCallback((message: string, title = 'Error') => {
-    return addToast({
-      type: 'error',
-      title,
-      message,
-    })
-  }, [addToast])
+  const clearAllToasts = () => {
+    toast.dismiss()
+  }
 
-  const showWarningToast = useCallback((message: string, title = 'Advertencia') => {
-    return addToast({
-      type: 'warning',
-      title,
-      message,
-    })
-  }, [addToast])
-
-  const showInfoToast = useCallback((message: string, title = 'Información') => {
-    return addToast({
-      type: 'info',
-      title,
-      message,
-    })
-  }, [addToast])
-
-  const clearAllToasts = useCallback(() => {
-    setToasts([])
-  }, [])
+  // Legacy support stubs
+  const addToast = () => '0'
+  const removeToast = () => {}
+  const toasts: Toast[] = []
 
   return {
     toasts,

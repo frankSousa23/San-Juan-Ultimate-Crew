@@ -20,6 +20,8 @@ async function main() {
   const guestRole = await db.role.upsert({ where: { name: 'guest' }, update: {}, create: { name: 'guest' } })
   const playerRole = await db.role.upsert({ where: { name: 'player' }, update: {}, create: { name: 'player' } })
   const allPerms = await db.permission.findMany()
+  
+  // Admin gets all permissions
   for (const p of allPerms) {
     await db.rolePermission.upsert({
       where: { roleId_permissionId: { roleId: adminRole.id, permissionId: p.id } },
@@ -27,28 +29,45 @@ async function main() {
       create: { roleId: adminRole.id, permissionId: p.id }
     })
   }
+  
+  // Player gets read permissions for most resources, and can manage communications
+  const playerPerms = allPerms.filter(p => 
+    p.name === 'communications:manage' || 
+    p.name === 'events:manage' // Players can view events (read-only via events:manage for now)
+  )
+  for (const p of playerPerms) {
+    await db.rolePermission.upsert({
+      where: { roleId_permissionId: { roleId: playerRole.id, permissionId: p.id } },
+      update: {},
+      create: { roleId: playerRole.id, permissionId: p.id }
+    })
+  }
+  
+  // Guest has no permissions (read-only access to public data only)
   const email = 'admin@example.com'
   const passwordHash = await bcrypt.hash('admin123', 10)
   const adminUser = await db.user.upsert({
     where: { email },
-    update: {},
+    update: { passwordHash }, // Update password in case it changed
     create: { email, name: 'Admin', passwordHash }
   })
+  // Always ensure admin role is assigned (upsert will create or update)
   await db.userRole.upsert({
     where: { userId_roleId: { userId: adminUser.id, roleId: adminRole.id } },
-    update: {},
+    update: {}, // No update needed, just ensure it exists
     create: { userId: adminUser.id, roleId: adminRole.id }
   })
 
   // Sample guest and player users
   const guestUser = await db.user.upsert({
     where: { email: 'guest@example.com' },
-    update: {},
+    update: { passwordHash }, // Update password in case it changed
     create: { email: 'guest@example.com', name: 'Invitado', passwordHash }
   })
+  // Always ensure guest role is assigned
   await db.userRole.upsert({
     where: { userId_roleId: { userId: guestUser.id, roleId: guestRole.id } },
-    update: {},
+    update: {}, // No update needed, just ensure it exists
     create: { userId: guestUser.id, roleId: guestRole.id }
   })
   // Create a player-linked user for demonstration (links to player #7 if exists)
@@ -56,12 +75,26 @@ async function main() {
   if (p7) {
     const playerUser = await db.user.upsert({
       where: { email: 'player@example.com' },
-      update: {},
+      update: { passwordHash, playerId: p7.id }, // Update password and player link
       create: { email: 'player@example.com', name: p7.name, passwordHash, playerId: p7.id }
     })
+    // Always ensure player role is assigned
     await db.userRole.upsert({
       where: { userId_roleId: { userId: playerUser.id, roleId: playerRole.id } },
-      update: {},
+      update: {}, // No update needed, just ensure it exists
+      create: { userId: playerUser.id, roleId: playerRole.id }
+    })
+  } else {
+    // Create player user even if player #7 doesn't exist
+    const playerUser = await db.user.upsert({
+      where: { email: 'player@example.com' },
+      update: { passwordHash }, // Update password
+      create: { email: 'player@example.com', name: 'Player', passwordHash }
+    })
+    // Always ensure player role is assigned
+    await db.userRole.upsert({
+      where: { userId_roleId: { userId: playerUser.id, roleId: playerRole.id } },
+      update: {}, // No update needed, just ensure it exists
       create: { userId: playerUser.id, roleId: playerRole.id }
     })
   }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -8,94 +9,144 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, logout, hasRole } = useAuth()
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: '🏠' },
-    { name: 'Roster', href: '/roster', icon: '👥' },
-    { name: 'Eventos', href: '/eventos', icon: '📅' },
-    { name: 'Comunicación', href: '/comunicacion', icon: '💬' },
-    { name: 'Finanzas', href: '/finanzas', icon: '💰' },
-    { name: 'Estadísticas', href: '/estadisticas', icon: '📊' },
-    { name: 'Lesiones', href: '/lesiones', icon: '🏥' },
-    { name: 'Rivales', href: '/rivales', icon: '⚔️' },
-    { name: 'Jugadas', href: '/jugadas', icon: '🎯' },
-    { name: 'Roster Torneo', href: '/roster-torneo', icon: '🏆' },
-    { name: 'Recursos', href: '/recursos', icon: '📁' },
-    { name: 'Mi Perfil', href: '/perfil', icon: '👤' },
+    // Public/All authenticated users
+    { name: 'Dashboard', href: '/', icon: '🏠', roles: [] },
+    { name: 'Mi Perfil', href: '/perfil', icon: '👤', roles: [] },
+    
+    // Player & Admin
+    { name: 'Roster', href: '/roster', icon: '👥', roles: ['player', 'admin'] },
+    { name: 'Eventos', href: '/eventos', icon: '📅', roles: ['player', 'admin'] },
+    { name: 'Comunicación', href: '/comunicacion', icon: '💬', roles: ['player', 'admin'] },
+    { name: 'Estadísticas', href: '/estadisticas', icon: '📊', roles: ['player', 'admin'] },
+    { name: 'Lesiones', href: '/lesiones', icon: '🏥', roles: ['player', 'admin'] },
+    { name: 'Rivales', href: '/rivales', icon: '⚔️', roles: ['player', 'admin']},
+    { name: 'Jugadas', href: '/jugadas', icon: '🎯', roles: ['player', 'admin'] },
+    { name: 'Roster Torneo', href: '/roster-torneo', icon: '🏆', roles: ['player', 'admin'] },
+    { name: 'Recursos', href: '/recursos', icon: '📁', roles: ['player', 'admin'] },
+    
+    // Admin Only
+    { name: 'Finanzas', href: '/finanzas', icon: '💰', roles: ['admin'] },
+    { name: 'Admin Usuarios', href: '/admin/usuarios', icon: '🔧', roles: ['admin'] },
   ]
 
   const isActive = (href: string) => {
     return location.pathname === href
   }
 
+  const filteredNavigation = navigation.filter(item => {
+    // Public items (no role required)
+    if (item.roles.length === 0) return true
+    // Check if user has any of the required roles for this item
+    return item.roles.some(role => hasRole(role))
+  })
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 lg:static lg:inset-0`}>
-        <div className="flex items-center justify-between h-16 px-4 border-b">
-          <h1 className="text-xl font-bold text-gray-800">San Juan Ultimate</h1>
+      } lg:translate-x-0 lg:static lg:inset-0 flex flex-col`}>
+        <div className="flex items-center justify-between h-16 px-4 border-b bg-gray-900 text-white">
+          <h1 className="text-xl font-bold">San Juan Ultimate</h1>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-500 hover:text-gray-700"
+            className="lg:hidden text-gray-300 hover:text-white"
           >
             ✕
           </button>
         </div>
+
+        {/* Mobile Back Button */}
+        <div className="lg:hidden p-2 border-b bg-gray-100">
+          <button 
+            onClick={() => navigate(-1)}
+            className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 rounded-md"
+          >
+            <span className="mr-2">⬅</span> Volver
+          </button>
+        </div>
         
-        <nav className="mt-4 px-2">
-          {navigation.map((item) => (
+        <nav className="flex-1 mt-4 px-2 overflow-y-auto">
+          {filteredNavigation.map((item) => (
             <Link
               key={item.name}
               to={item.href}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md mb-1 ${
+              onClick={() => setSidebarOpen(false)}
+              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md mb-1 transition-colors ${
                 isActive(item.href)
-                  ? 'bg-blue-100 text-blue-700'
+                  ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               }`}
             >
-              <span className="mr-3">{item.icon}</span>
+              <span className="mr-3 text-lg">{item.icon}</span>
               {item.name}
             </Link>
           ))}
         </nav>
+
+        {/* User Profile / Logout Section */}
+        <div className="p-4 border-t bg-gray-50">
+          {user ? (
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-gray-900 truncate max-w-[120px]">{user.name || user.email}</span>
+                <span className="text-xs text-gray-500 capitalize">{user.roles?.[0] || 'Guest'}</span>
+              </div>
+              <button
+                onClick={logout}
+                className="text-sm text-red-600 hover:text-red-800 font-medium"
+              >
+                Salir
+              </button>
+            </div>
+          ) : (
+             <Link
+              to="/login"
+              className="block w-full text-center bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors"
+            >
+              Iniciar Sesión
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col lg:ml-0">
+      <div className="flex-1 flex flex-col min-w-0 lg:ml-0">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b h-16 flex items-center justify-between px-4 lg:px-6">
+        <header className="bg-white shadow-sm border-b h-16 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-40">
           <div className="flex items-center">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-gray-500 hover:text-gray-700 mr-4"
+              className="lg:hidden text-gray-500 hover:text-gray-700 mr-4 p-2 rounded-md hover:bg-gray-100"
             >
-              ☰
+              <span className="text-xl">☰</span>
             </button>
-            <span className="text-sm text-gray-500 hidden sm:block">Sistema funcionando correctamente</span>
+            <h2 className="text-lg font-semibold text-gray-800 truncate">
+              {navigation.find(n => isActive(n.href))?.name || 'San Juan Ultimate Crew'}
+            </h2>
           </div>
           
           <div className="flex items-center space-x-4">
-            <Link
-              to="/login"
-              className="bg-blue-500 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-600 transition-colors"
-            >
-              Login
-            </Link>
+             {/* Header actions can go here */}
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-6">
-          {children}
+        <main className="flex-1 p-4 lg:p-6 overflow-x-hidden">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </main>
       </div>
 
       {/* Overlay for mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden backdrop-blur-sm transition-opacity"
           onClick={() => setSidebarOpen(false)}
         />
       )}

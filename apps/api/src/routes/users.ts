@@ -82,6 +82,26 @@ const userIdFromTokenSchema = z.object({
   })
 })
 
+/**
+ * @swagger
+ * /api/users/me/role-requests:
+ *   get:
+ *     summary: Get current user's role requests
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of role requests for current user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/RoleRequest'
+ *       401:
+ *         description: Unauthorized
+ */
 router.get('/me/role-requests', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const u = (req as Request & { user?: { sub: string } }).user
   if (!u?.sub) return unauthorized(res, 'Unauthorized')
@@ -103,6 +123,61 @@ const userIdSchema = z.object({
   id: z.coerce.number().int().positive()
 })
 
+/**
+ * @swagger
+ * /api/users/{id}/roles:
+ *   put:
+ *     summary: Update user roles (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               roles:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   enum: [guest, player]
+ *                 default: []
+ *     responses:
+ *       200:
+ *         description: User roles updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 email:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                   nullable: true
+ *                 roles:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin role required
+ *       404:
+ *         description: User not found
+ */
 router.put('/:id/roles', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = userIdSchema.safeParse(req.params)
   if (!parsedId.success) {
@@ -160,6 +235,61 @@ router.put('/:id/roles', requireRole(['admin']), asyncHandler(async (req: Reques
 }))
 
 const linkPlayerSchema = z.object({ playerId: z.coerce.number().int().positive() })
+
+/**
+ * @swagger
+ * /api/users/{id}/link-player:
+ *   put:
+ *     summary: Link a user to a player (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - playerId
+ *             properties:
+ *               playerId:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: User linked to player
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 email:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                   nullable: true
+ *                 playerId:
+ *                   type: integer
+ *                   nullable: true
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin role required
+ *       404:
+ *         description: User or player not found
+ *       409:
+ *         description: Player already linked to another user
+ */
 router.put('/:id/link-player', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = userIdSchema.safeParse(req.params)
   if (!parsedId.success) {
@@ -189,6 +319,35 @@ const roleRequestsQuerySchema = z.object({
   status: z.enum(['PENDING', 'APPROVED', 'DENIED']).optional(),
 })
 
+/**
+ * @swagger
+ * /api/users/role-requests:
+ *   get:
+ *     summary: Get all role requests (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PENDING, APPROVED, DENIED]
+ *         description: Filter by status
+ *     responses:
+ *       200:
+ *         description: List of role requests
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/RoleRequest'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin role required
+ */
 router.get('/role-requests', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsed = roleRequestsQuerySchema.safeParse(req.query)
   if (!parsed.success) {
@@ -213,6 +372,48 @@ const createRoleRequestSchema = z.object({
   note: z.string().max(500).optional(),
 })
 
+/**
+ * @swagger
+ * /api/users/role-requests:
+ *   post:
+ *     summary: Create a new role request
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - role
+ *             properties:
+ *               role:
+ *                 type: string
+ *                 enum: [player]
+ *               playerId:
+ *                 type: integer
+ *                 description: Optional player ID to link
+ *               note:
+ *                 type: string
+ *                 maxLength: 500
+ *     responses:
+ *       201:
+ *         description: Role request created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RoleRequest'
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Player not found
+ *       409:
+ *         description: Player already linked to another user
+ */
 router.post('/role-requests', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const u = (req as Request & { user?: { sub: string } }).user
   if (!u?.sub) return unauthorized(res, 'Unauthorized')
@@ -252,6 +453,52 @@ const roleRequestIdSchema = z.object({
   id: z.coerce.number().int().positive()
 })
 
+/**
+ * @swagger
+ * /api/users/role-requests/{id}:
+ *   put:
+ *     summary: Update a role request (admin only, PENDING only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               playerId:
+ *                 type: integer
+ *                 nullable: true
+ *               note:
+ *                 type: string
+ *                 maxLength: 500
+ *                 nullable: true
+ *     responses:
+ *       200:
+ *         description: Role request updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RoleRequest'
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin role required
+ *       404:
+ *         description: Role request or player not found
+ *       409:
+ *         description: Request already decided or player already linked
+ */
 router.put('/role-requests/:id', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = roleRequestIdSchema.safeParse(req.params)
   if (!parsedId.success) {
@@ -287,6 +534,36 @@ router.put('/role-requests/:id', requireRole(['admin']), asyncHandler(async (req
   return updated(res, roleRequest)
 }))
 
+/**
+ * @swagger
+ * /api/users/role-requests/{id}/approve:
+ *   post:
+ *     summary: Approve a role request (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Role request approved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RoleRequest'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin role required
+ *       404:
+ *         description: Role request not found
+ *       409:
+ *         description: Request already decided or player already linked
+ */
 router.post('/role-requests/:id/approve', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = roleRequestIdSchema.safeParse(req.params)
   if (!parsedId.success) {
@@ -344,6 +621,36 @@ router.post('/role-requests/:id/approve', requireRole(['admin']), asyncHandler(a
   }
 }))
 
+/**
+ * @swagger
+ * /api/users/role-requests/{id}/deny:
+ *   post:
+ *     summary: Deny a role request (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Role request denied
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RoleRequest'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin role required
+ *       404:
+ *         description: Role request not found
+ *       409:
+ *         description: Request already decided
+ */
 router.post('/role-requests/:id/deny', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = roleRequestIdSchema.safeParse(req.params)
   if (!parsedId.success) {

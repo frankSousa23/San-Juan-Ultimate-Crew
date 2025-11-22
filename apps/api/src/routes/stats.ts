@@ -69,7 +69,6 @@ interface EventTypeGroup {
 }
 
 router.get('/', asyncHandler(async (_req: Request, res: Response) => {
-  // Ejecutar todas las queries en paralelo para mejor performance
   const [
     players,
     events,
