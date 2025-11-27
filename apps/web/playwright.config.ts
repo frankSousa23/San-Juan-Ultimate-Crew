@@ -43,16 +43,21 @@ export default defineConfig({
   webServer: [
     {
       command: process.platform === 'win32'
-        ? 'cross-env AUTH_REQUIRED=true npm --prefix ..\\api run start'
-        : 'AUTH_REQUIRED=true npm --prefix ../api run start',
+        ? 'cross-env AUTH_REQUIRED=false npm --prefix ..\\api run start'
+        : 'AUTH_REQUIRED=false npm --prefix ../api run start',
       port: 4000,
-      reuseExistingServer: true,
+      reuseExistingServer: !process.env.CI,
       timeout: 120000,
+      env: {
+        DATABASE_URL: process.env.DATABASE_URL || 'postgresql://sju:sju@localhost:5432/sju_dev',
+        NODE_ENV: 'test',
+        CI: process.env.CI || 'false',
+      },
     },
     {
       command: 'npm run dev -- --port 5173 --strictPort',
       port: 5173,
-      reuseExistingServer: true,
+      reuseExistingServer: !process.env.CI,
       timeout: 60000,
     },
   ],

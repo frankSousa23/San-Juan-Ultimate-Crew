@@ -39,18 +39,18 @@ beforeAll(async () => {
   }
   
   try {
-    execSync('npx prisma migrate deploy', { 
+    execSync('npx prisma db push --skip-generate --accept-data-loss', { 
       stdio: 'inherit',
       env: { ...process.env }
     })
   } catch (error) {
-    console.warn('migrate deploy failed, trying db push instead')
+    console.warn('db push failed, trying migrate deploy instead')
     try {
-      execSync('npx prisma db push --skip-generate --accept-data-loss', { 
+      execSync('npx prisma migrate deploy', { 
         stdio: 'inherit',
         env: { ...process.env }
       })
-    } catch (pushError) {
+    } catch (deployError) {
       throw new Error('Failed to setup database schema')
     }
   }

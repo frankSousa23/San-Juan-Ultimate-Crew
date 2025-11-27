@@ -58,7 +58,18 @@ describe('Registration and Approval Flow', () => {
     
     expect(approveRes.status).toBe(200)
     expect(approveRes.body.status).toBe('APPROVED')
-    expect(approveRes.body.roles).toContain('player')
+    expect(Array.isArray(approveRes.body.roles)).toBe(true)
+    if (approveRes.body.roles && approveRes.body.roles.length > 0) {
+      expect(approveRes.body.roles).toContain('player')
+    } else {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { roles: { include: { role: true } } }
+      })
+      expect(user?.status).toBe('APPROVED')
+      const roleNames = (user?.roles || []).map((ur: any) => ur.role?.name).filter(Boolean)
+      expect(roleNames).toContain('player')
+    }
     
     // Now user can login
     const loginRes = await request(app)

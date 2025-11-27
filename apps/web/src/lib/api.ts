@@ -38,15 +38,28 @@ http.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid - clear it and redirect to login
+      // Token expired or invalid - clear it
       setAuthToken()
       // Only redirect if we're not already on login/register/forgot-password/reset-password pages
+      // AND if the request was not from AuthContext (which handles its own errors)
       const currentPath = window.location.pathname
-      if (!currentPath.includes('/login') && 
-          !currentPath.includes('/register') && 
-          !currentPath.includes('/forgot-password') && 
-          !currentPath.includes('/reset-password')) {
-        window.location.href = '/login'
+      const isAuthPage = currentPath.includes('/login') || 
+                        currentPath.includes('/register') || 
+                        currentPath.includes('/forgot-password') || 
+                        currentPath.includes('/reset-password')
+      
+      // Don't redirect if:
+      // 1. Already on auth pages
+      // 2. The error is from /api/auth/me (AuthContext handles this)
+      // 3. The error is from a login attempt (Login page handles this)
+      const isAuthEndpoint = error.config?.url?.includes('/api/auth/me') || 
+                            error.config?.url?.includes('/api/auth/login')
+      
+      if (!isAuthPage && !isAuthEndpoint) {
+        // Use setTimeout to avoid navigation during render
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, 100)
       }
     }
     return Promise.reject(error)
