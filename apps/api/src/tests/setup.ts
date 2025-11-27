@@ -1,6 +1,8 @@
 import { beforeAll, afterAll, beforeEach } from 'vitest'
 import { PrismaClient } from '@prisma/client'
 import { execSync } from 'child_process'
+import fs from 'fs'
+import path from 'path'
 
 const prisma = new PrismaClient()
 
@@ -178,8 +180,41 @@ async function cleanupTestData() {
   }
 }
 
+async function cleanupTestFiles() {
+  const uploadsDir = path.resolve(process.cwd(), 'apps', 'api', 'uploads')
+  if (fs.existsSync(uploadsDir)) {
+    try {
+      const files = fs.readdirSync(uploadsDir)
+      const now = Date.now()
+      for (const file of files) {
+        const filePath = path.join(uploadsDir, file)
+        try {
+          const stats = fs.statSync(filePath)
+          const isOld = (now - stats.mtimeMs) > 3600000
+          if (file.startsWith('tmp-test-') || (file.endsWith('.txt') && file.includes('tmp-test') && isOld)) {
+            fs.unlinkSync(filePath)
+          }
+        } catch (e) {
+          // Ignore errors deleting files
+        }
+      }
+    } catch (e) {
+      // Ignore errors if directory doesn't exist or can't be read
+    }
+  }
+  const duplicateDir = path.resolve(process.cwd(), 'apps', 'api', 'apps')
+  if (fs.existsSync(duplicateDir)) {
+    try {
+      fs.rmSync(duplicateDir, { recursive: true, force: true })
+    } catch (e) {
+      // Ignore errors removing duplicate directory
+    }
+  }
+}
+
 beforeEach(async () => {
   await cleanupTestData()
+  await cleanupTestFiles()
 })
 
 export async function createTestPlayer(name?: string, number?: number) {

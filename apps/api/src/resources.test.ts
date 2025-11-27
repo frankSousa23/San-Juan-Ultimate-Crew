@@ -45,14 +45,33 @@ describe('Resources API', () => {
   })
 
   it('should upload a file as a resource', async () => {
-    const tmp = path.resolve(process.cwd(), 'apps', 'api', 'uploads', 'tmp-test.txt')
-    fs.writeFileSync(tmp, 'hello qa')
-    let req = request(app).post('/api/resources/upload')
-    if (authHeader) req = req.set('Authorization', authHeader)
-    const r = await req.attach('file', tmp).field('category', 'TEST').expect(201)
-    expect(r.body?.id).toBeTruthy()
-    // cleanup file: API creates a copy under uploads/, tmp can be removed
-    fs.unlinkSync(tmp)
+    const tmpDir = path.resolve(process.cwd(), 'apps', 'api', 'uploads')
+    const tmpFile = path.join(tmpDir, `tmp-test-${Date.now()}.txt`)
+    let uploadedResourceId: number | null = null
+    try {
+      if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
+      fs.writeFileSync(tmpFile, 'hello qa')
+      let req = request(app).post('/api/resources/upload')
+      if (authHeader) req = req.set('Authorization', authHeader)
+      const r = await req.attach('file', tmpFile).field('category', 'TEST').expect(201)
+      expect(r.body?.id).toBeTruthy()
+      uploadedResourceId = r.body.id
+      const uploadedFile = r.body?.storagePath ? path.resolve(process.cwd(), r.body.storagePath.replace(/^\//, '')) : null
+      if (uploadedFile && fs.existsSync(uploadedFile)) {
+        fs.unlinkSync(uploadedFile)
+      }
+    } finally {
+      if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile)
+      if (uploadedResourceId && authHeader) {
+        try {
+          await request(app)
+            .delete(`/api/resources/${uploadedResourceId}`)
+            .set('Authorization', authHeader)
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      }
+    }
   })
 
   it('should delete the created resource', async () => {
