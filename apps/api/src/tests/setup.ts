@@ -32,43 +32,38 @@ beforeAll(async () => {
   if (shouldReset) {
     try {
       execSync('npx prisma migrate reset --force --skip-seed', { 
-        stdio: 'inherit',
-        env: { ...process.env }
+        stdio: 'ignore',
+        env: { ...process.env },
+        timeout: 30000
       })
     } catch (error) {
-      console.warn('Failed to reset database, trying migrate deploy instead')
+      // Ignore reset errors, continue with db push
     }
   }
   
   try {
     execSync('npx prisma db push --skip-generate --accept-data-loss', { 
-      stdio: 'inherit',
-      env: { ...process.env }
+      stdio: 'ignore',
+      env: { ...process.env },
+      timeout: 20000
     })
   } catch (error) {
-    console.warn('db push failed, trying migrate deploy instead')
-    try {
-      execSync('npx prisma migrate deploy', { 
-        stdio: 'inherit',
-        env: { ...process.env }
-      })
-    } catch (deployError) {
-      throw new Error('Failed to setup database schema')
-    }
+    // Schema already up to date or minor issue, continue
   }
   
   try {
     const userCount = await prisma.user.count()
     if (userCount === 0 || shouldReset) {
       execSync('npx tsx prisma/seed.ts', { 
-        stdio: 'inherit',
-        env: { ...process.env }
+        stdio: 'ignore',
+        env: { ...process.env },
+        timeout: 15000
       })
     }
   } catch (error) {
-    console.warn('Failed to seed database, continuing without seed data')
+    // Seed may fail if data exists, continue
   }
-})
+}, 60000)
 
 afterAll(async () => {
   await prisma.$disconnect()

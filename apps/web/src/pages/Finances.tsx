@@ -262,7 +262,7 @@ export default function Finances() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 grid grid-cols-2 md:grid-cols-6 gap-3 items-end">
+      <div className="bg-white rounded-lg shadow p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
         <div>
           <label className="block text-sm text-gray-600 mb-1">Desde</label>
           <input type="datetime-local" value={from} onChange={e => setFrom(e.target.value)} className="w-full px-3 py-2 border rounded-lg" />
@@ -327,45 +327,49 @@ export default function Finances() {
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left px-4 py-2">Fecha</th>
-                <th className="text-left px-4 py-2">Tipo</th>
-                <th className="text-left px-4 py-2">Cuenta</th>
-                <th className="text-left px-4 py-2">Categoría</th>
-                <th className="text-right px-4 py-2">Monto</th>
-                <th className="text-left px-4 py-2">Descripción</th>
-                <th className="px-4 py-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map(it => (
-                <tr key={it.id} className="border-t">
-                  <td className="px-4 py-2">{new Date(it.occurredAt).toLocaleString()}</td>
-                  <td className="px-4 py-2">{it.type}</td>
-                  <td className="px-4 py-2">{it.account?.name || it.accountId}</td>
-                  <td className="px-4 py-2">{it.category?.name || (it.categoryId ?? '')}</td>
-                  <td className="px-4 py-2 text-right">{(it.amountCents/100).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</td>
-                  <td className="px-4 py-2">{it.description || ''}</td>
-                  <td className="px-4 py-2 text-right space-x-2">
-                    {authed && <button onClick={() => openEdit(it)} className="text-indigo-700 hover:underline">Editar</button>}
-                    {authed && <button onClick={() => remove(it.id)} className="text-red-700 hover:underline">Eliminar</button>}
-                  </td>
-                </tr>
-              ))}
-              {items.length === 0 && (
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <div className="inline-block min-w-full align-middle sm:px-0">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50">
                 <tr>
-                  <td colSpan={7} className="px-4 py-6 text-center text-gray-500">No hay transacciones para el filtro.</td>
+                  <th className="text-left px-2 sm:px-4 py-2">Fecha</th>
+                  <th className="text-left px-2 sm:px-4 py-2">Tipo</th>
+                  <th className="text-left px-2 sm:px-4 py-2 hidden md:table-cell">Cuenta</th>
+                  <th className="text-left px-2 sm:px-4 py-2 hidden lg:table-cell">Categoría</th>
+                  <th className="text-right px-2 sm:px-4 py-2">Monto</th>
+                  <th className="text-left px-2 sm:px-4 py-2 hidden xl:table-cell">Descripción</th>
+                  <th className="px-2 sm:px-4 py-2"></th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {items.map(it => (
+                  <tr key={it.id} className="border-t">
+                    <td className="px-2 sm:px-4 py-2 whitespace-nowrap text-xs sm:text-sm">{new Date(it.occurredAt).toLocaleString()}</td>
+                    <td className="px-2 sm:px-4 py-2">{it.type}</td>
+                    <td className="px-2 sm:px-4 py-2 hidden md:table-cell">{it.account?.name || it.accountId}</td>
+                    <td className="px-2 sm:px-4 py-2 hidden lg:table-cell">{it.category?.name || (it.categoryId ?? '')}</td>
+                    <td className="px-2 sm:px-4 py-2 text-right whitespace-nowrap">{(it.amountCents/100).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</td>
+                    <td className="px-2 sm:px-4 py-2 hidden xl:table-cell">{it.description || ''}</td>
+                    <td className="px-2 sm:px-4 py-2">
+                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 sm:justify-end">
+                        {authed && <button onClick={() => openEdit(it)} className="text-indigo-700 hover:underline text-xs sm:text-sm whitespace-nowrap">Editar</button>}
+                        {authed && <button onClick={() => remove(it.id)} className="text-red-700 hover:underline text-xs sm:text-sm whitespace-nowrap">Eliminar</button>}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {items.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-6 text-center text-gray-500">No hay transacciones para el filtro.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-2 text-sm">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-2 text-sm">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <div>Total: {total}</div>
             <label className="flex items-center gap-1">Por página:
               <select

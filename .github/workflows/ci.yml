@@ -145,6 +145,7 @@ jobs:
         BASE_URL: "http://localhost:5173"
         PW_AUTH_PROJECTS: "0"
         NODE_ENV: "test"
+        RESET_DB: "false"
 
   security:
     runs-on: ubuntu-latest

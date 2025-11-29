@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, Link, useNavigate } from 'react-router-dom'
 import { authApi, getAuthToken, myRoleRequestsApi, usersApi, eventsApi, attendanceApi, eventParticipantsApi, playersApi } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../hooks/useToast'
@@ -8,6 +8,7 @@ import { useApi } from '../hooks/useApi'
 export default function Profile() {
   const { user: authUser, isAuthenticated, isLoading: authLoading, hasRole, refreshUser } = useAuth()
   const toasts = useToast()
+  const navigate = useNavigate()
   const [authDisabled, setAuthDisabled] = useState<boolean>(false)
   const [user, setUser] = useState<{ id: number; email: string; name?: string; roles?: string[]; playerId?: number | null; status?: string } | null>(null)
   const [myRequests, setMyRequests] = useState<any[]>([])
@@ -96,8 +97,13 @@ export default function Profile() {
               setMyRequests(mine)
             }
           } catch (e: any) {
-            if (!cancelled && e?.response?.status !== 401) {
+            // Only log non-auth errors (404, 500, etc.) but don't show toasts
+            if (!cancelled && e?.response?.status !== 401 && e?.response?.status !== 404) {
               console.error('Error loading role requests:', e)
+            }
+            // Silently handle 404 - endpoint might not be available
+            if (!cancelled) {
+              setMyRequests([])
             }
           }
         }
@@ -129,6 +135,10 @@ export default function Profile() {
         if (!cancelled) {
           if (e?.response?.status === 401) {
             setError(null) // 401 is handled by interceptor
+          } else if (e?.response?.status === 404) {
+            // 404 means endpoint doesn't exist, set empty array
+            setMyRequests([])
+            setError(null) // Don't show error for missing endpoints
           } else {
             setError('No se pudo cargar el perfil')
           }
@@ -162,8 +172,12 @@ export default function Profile() {
     if (isAuthenticated) {
       myRoleRequestsApi.listMine().then(requests => {
         setMyRequests(requests)
-      }).catch(() => {
+      }).catch((e: any) => {
+        // Silently handle errors (404, 401, etc.)
         setMyRequests([])
+        if (e?.response?.status !== 401 && e?.response?.status !== 404) {
+          console.error('Error loading role requests:', e)
+        }
       })
     }
   }, [isAuthenticated, activeTab])
@@ -174,8 +188,12 @@ export default function Profile() {
       setLoadingActivity(true)
       usersApi.getActivity(50).then(logs => {
         setActivityLogs(logs)
-      }).catch(() => {
+      }).catch((e: any) => {
+        // Silently handle errors (404, 401, etc.)
         setActivityLogs([])
+        if (e?.response?.status !== 401 && e?.response?.status !== 404) {
+          console.error('Error loading activity logs:', e)
+        }
       }).finally(() => {
         setLoadingActivity(false)
       })
@@ -304,7 +322,7 @@ export default function Profile() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h2 className="text-2xl font-bold text-gray-800">Mi Perfil</h2>
         {user && (
           <div className="flex items-center gap-2">
@@ -340,7 +358,7 @@ export default function Profile() {
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           {/* Tabs */}
           <div className="border-b border-gray-200">
-            <nav className="flex gap-1 px-4">
+            <nav className="flex gap-1 px-2 sm:px-4 overflow-x-auto">
               {[
                 { id: 'overview', label: 'Resumen', icon: '👤' },
                 { id: 'edit', label: 'Editar Perfil', icon: '✏️' },
@@ -666,20 +684,22 @@ export default function Profile() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-800">Mis Eventos</h3>
-                  <button
-                    onClick={() => window.location.href = '/eventos'}
+                  <Link
+                    to="/eventos"
                     className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                   >
                     Ver todos los eventos →
-                  </button>
+                  </Link>
                 </div>
                 {loadingEvents ? (
                   <div className="text-gray-500">Cargando eventos...</div>
                 ) : userEvents.length > 0 ? (
                   <div className="space-y-3">
                     {userEvents.map((event: any) => (
-                      <div key={event.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                        onClick={() => window.location.href = `/eventos?eventId=${event.id}`}
+                      <Link
+                        key={event.id}
+                        to={`/eventos?eventId=${event.id}`}
+                        className="block border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
@@ -722,18 +742,18 @@ export default function Profile() {
                             </div>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 ) : (
                   <div className="text-center py-8 bg-gray-50 rounded-lg">
                     <div className="text-gray-500 mb-2">No has participado en ningún evento aún</div>
-                    <button
-                      onClick={() => window.location.href = '/eventos'}
+                    <Link
+                      to="/eventos"
                       className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                     >
                       Ver eventos disponibles →
-                    </button>
+                    </Link>
                   </div>
                 )}
               </div>
@@ -905,12 +925,12 @@ export default function Profile() {
                   <p className="text-sm text-gray-600 mb-3">
                     Si olvidas tu contraseña, puedes usar el enlace de recuperación por email.
                   </p>
-                  <button
-                    onClick={() => window.location.href = '/forgot-password'}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                  <Link
+                    to="/forgot-password"
+                    className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
                   >
                     Recuperar Contraseña →
-                  </button>
+                  </Link>
                 </div>
 
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">

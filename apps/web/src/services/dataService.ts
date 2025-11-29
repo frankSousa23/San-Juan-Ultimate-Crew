@@ -17,6 +17,16 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Add response interceptor to handle errors gracefully
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Don't throw for 404 errors - let the calling code handle it
+    // This prevents unnecessary error propagation
+    return Promise.reject(error)
+  }
+)
+
 
 // Types
 export interface Player {

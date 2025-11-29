@@ -146,15 +146,15 @@ export default function Events() {
           </div>
         </div>
       )}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h2 className="text-2xl font-bold text-gray-800">Sistema de Eventos</h2>
-        <button onClick={() => setCreateOpen(true)} className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600">+ Crear Evento</button>
+        <button onClick={() => setCreateOpen(true)} className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 whitespace-nowrap">+ Crear Evento</button>
       </div>
 
       {/* Tabs */}
       <div className="bg-white rounded-xl shadow">
         <div className="border-b border-gray-200">
-          <nav className="flex gap-4 px-4">
+          <nav className="flex gap-2 sm:gap-4 px-2 sm:px-4 overflow-x-auto">
             {[
               { k: 'events', label: 'Eventos' },
               { k: 'calendar', label: 'Calendario' },
@@ -653,35 +653,37 @@ function AttendanceModal({ eventItem, onClose }: { eventItem: EventItem; onClose
           {loading && <div className="text-gray-600">Cargando…</div>}
           {error && <div className="text-sm text-red-600">{error}</div>}
           {!loading && (
-            <div className="overflow-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left px-4 py-2">#</th>
-                    <th className="text-left px-4 py-2">Jugador</th>
-                    <th className="text-left px-4 py-2">Estado</th>
-                    <th className="px-4 py-2 text-right"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {players.map(p => (
-                    <tr key={p.id} className="border-t">
-                      <td className="px-4 py-2">{p.number}</td>
-                      <td className="px-4 py-2">{p.name}</td>
-                      <td className="px-4 py-2">
-                        <div className="flex gap-2">
-                          {(['present','absent','late'] as const).map(st => (
-                            <button key={st} onClick={() => setStatus(p.id, st)} className={`px-2 py-1 rounded border text-xs ${statusOf(p.id)===st ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-gray-700'}`}>{st}</button>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-4 py-2 text-right">
-                        {statusOf(p.id) && <button onClick={() => clearStatus(p.id)} className="text-red-600 hover:underline">Limpiar</button>}
-                      </td>
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle sm:px-0">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left px-2 sm:px-4 py-2">#</th>
+                      <th className="text-left px-2 sm:px-4 py-2">Jugador</th>
+                      <th className="text-left px-2 sm:px-4 py-2">Estado</th>
+                      <th className="px-2 sm:px-4 py-2 text-right"></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {players.map(p => (
+                      <tr key={p.id} className="border-t">
+                        <td className="px-2 sm:px-4 py-2">{p.number}</td>
+                        <td className="px-2 sm:px-4 py-2">{p.name}</td>
+                        <td className="px-2 sm:px-4 py-2">
+                          <div className="flex flex-wrap gap-1 sm:gap-2">
+                            {(['present','absent','late'] as const).map(st => (
+                              <button key={st} onClick={() => setStatus(p.id, st)} className={`px-2 py-1 rounded border text-xs whitespace-nowrap ${statusOf(p.id)===st ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-gray-700'}`}>{st}</button>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-2 sm:px-4 py-2 text-right">
+                          {statusOf(p.id) && <button onClick={() => clearStatus(p.id)} className="text-red-600 hover:underline text-xs sm:text-sm">Limpiar</button>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

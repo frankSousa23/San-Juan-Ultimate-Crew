@@ -48,13 +48,15 @@ export function useApi<T = any>(
       return result
     } catch (error: any) {
       const errorMessage = error?.response?.data?.error || error?.message || 'Error desconocido'
+      const status = error?.response?.status
       setState({ data: null, loading: false, error: errorMessage })
       
       if (options.onError) {
         options.onError(errorMessage)
       }
       
-      if (options.showErrorToast) {
+      // Don't show toast for 404 (endpoint doesn't exist) or 401 (auth handled by interceptor)
+      if (options.showErrorToast && status !== 404 && status !== 401) {
         toasts.error(errorMessage)
       }
       

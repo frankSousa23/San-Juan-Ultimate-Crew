@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useStats } from '../hooks/useData'
 import { transactionsApi } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
@@ -26,9 +27,14 @@ export default function Dashboard() {
         const summary = await transactionsApi.summary()
         setFinanceSummary(summary)
       } catch (error: any) {
-        // Don't show error if it's 401 (handled by interceptor) or 403 (no permission)
-        if (error?.response?.status !== 401 && error?.response?.status !== 403) {
+        const status = error?.response?.status
+        // Silently handle 401 (handled by interceptor), 403 (no permission), or 404 (endpoint doesn't exist)
+        if (status !== 401 && status !== 403 && status !== 404) {
           console.error('Error loading finance summary:', error)
+        }
+        // Set default values for 404/401/403 to prevent UI issues
+        if (status === 404 || status === 401 || status === 403) {
+          setFinanceSummary({ income: 0, expense: 0, balance: 0 })
         }
       } finally {
         setFinanceLoading(false)
@@ -141,34 +147,34 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {(hasRole('player') || hasRole('admin')) && (
             <>
-              <a href="/roster" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
+              <Link to="/roster" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
                 <div className="text-2xl mb-2">👥</div>
                 <div className="text-sm font-medium">Roster</div>
-              </a>
-              <a href="/eventos" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
+              </Link>
+              <Link to="/eventos" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
                 <div className="text-2xl mb-2">📅</div>
                 <div className="text-sm font-medium">Eventos</div>
-              </a>
+              </Link>
             </>
           )}
           {hasRole('admin') && (
             <>
-              <a href="/finanzas" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
+              <Link to="/finanzas" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
                 <div className="text-2xl mb-2">💰</div>
                 <div className="text-sm font-medium">Finanzas</div>
-              </a>
-              <a href="/admin/monitoring" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
+              </Link>
+              <Link to="/admin/monitoring" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
                 <div className="text-2xl mb-2">📊</div>
                 <div className="text-sm font-medium">Monitoreo</div>
-              </a>
+              </Link>
             </>
           )}
           {!hasRole('player') && !hasRole('admin') && (
             <>
-              <a href="/perfil" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
+              <Link to="/perfil" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
                 <div className="text-2xl mb-2">👤</div>
                 <div className="text-sm font-medium">Mi Perfil</div>
-              </a>
+              </Link>
               <div className="p-4 border rounded-lg bg-gray-50 text-center opacity-60">
                 <div className="text-2xl mb-2">👥</div>
                 <div className="text-sm font-medium text-gray-500">Roster</div>

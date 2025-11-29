@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import { channelsApi, messagesApi } from '../lib/api'
 import { Channel, Message } from '../types/communications'
 import { useToast } from '../hooks/useToast'
@@ -203,7 +203,7 @@ export default function Communications() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
         <h2 className="text-2xl font-bold text-gray-800">Comunicaciones</h2>
         {isGuest && (
           <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded px-3 py-2 text-sm">
@@ -229,9 +229,9 @@ export default function Communications() {
         </div>
       )}
       
-      <div className="flex-1 grid grid-cols-12 gap-4 min-h-[600px]">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 min-h-[600px]">
         {/* Channels list */}
-        <div className="col-span-12 md:col-span-3 bg-white rounded-lg shadow p-3 flex flex-col">
+        <div className="col-span-1 md:col-span-3 bg-white rounded-lg shadow p-3 flex flex-col">
           <div className="flex items-center justify-between mb-2">
             <div className="font-semibold text-gray-700">Canales</div>
             <div className="flex items-center gap-3">
@@ -282,7 +282,7 @@ export default function Communications() {
         </div>
 
         {/* Messages */}
-        <div className="col-span-12 md:col-span-9 bg-white rounded-lg shadow flex flex-col">
+        <div className="col-span-1 md:col-span-9 bg-white rounded-lg shadow flex flex-col">
           <div className="border-b px-4 py-2 flex items-center justify-between bg-gray-50">
             <div className="font-semibold text-gray-800">
               {activeChannel?.name || 'Selecciona un canal'}
@@ -391,7 +391,7 @@ export default function Communications() {
               <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded px-3 py-2 text-sm text-center">
                 <span className="font-medium">Solo lectura:</span> Necesitas ser jugador o administrador para enviar mensajes.
                 <div className="mt-1">
-                  <a href="/perfil" className="text-blue-600 hover:underline">Solicita acceso de jugador en tu perfil</a>
+                  <Link to="/perfil" className="text-blue-600 hover:underline">Solicita acceso de jugador en tu perfil</Link>
                 </div>
               </div>
             </div>

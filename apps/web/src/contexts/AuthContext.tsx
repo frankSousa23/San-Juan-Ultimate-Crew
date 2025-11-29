@@ -74,11 +74,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (mounted) {
           setUser(null);
           // Only clear token if it's a 401 (invalid/expired token)
+          // Don't clear token for 404 (endpoint doesn't exist) or other errors
           if (error?.response?.status === 401) {
             setAuthToken(); // Clear invalid token
           }
-          // Only log errors if not silent and not a 401
-          if (!silent && error?.response?.status !== 401) {
+          // Only log errors if not silent and not a 401 or 404
+          if (!silent && error?.response?.status !== 401 && error?.response?.status !== 404) {
             console.error('Session check failed:', error);
           }
         }

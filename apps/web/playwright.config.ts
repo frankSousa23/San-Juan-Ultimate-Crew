@@ -52,6 +52,7 @@ export default defineConfig({
         DATABASE_URL: process.env.DATABASE_URL || 'postgresql://sju:sju@localhost:5432/sju_dev',
         NODE_ENV: 'test',
         CI: process.env.CI || 'false',
+        RESET_DB: 'false',
       },
     },
     {

@@ -7,6 +7,7 @@ import { createAuditHelper } from '../lib/audit.js'
 import { success, updated, created, validationError, notFound, conflict, serverError, unauthorized } from '../lib/response.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import bcrypt from 'bcryptjs'
+import { env } from '../lib/env.js'
 
 const router = Router()
 
@@ -115,10 +116,20 @@ const userIdFromTokenSchema = z.object({
  */
 router.get('/me/role-requests', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const u = (req as Request & { user?: { sub: string } }).user
-  if (!u?.sub) return unauthorized(res, 'Unauthorized')
+  if (!u?.sub) {
+    // If AUTH_REQUIRED is false, return empty array instead of error
+    if (!env.AUTH_REQUIRED) {
+      return success(res, [])
+    }
+    return unauthorized(res, 'Unauthorized')
+  }
   
   const parsed = userIdFromTokenSchema.safeParse({ sub: u.sub })
   if (!parsed.success) {
+    // If AUTH_REQUIRED is false, return empty array instead of error
+    if (!env.AUTH_REQUIRED) {
+      return success(res, [])
+    }
     return unauthorized(res, 'Invalid user token')
   }
   
@@ -938,10 +949,18 @@ const updateProfileSchema = z.object({
  */
 router.put('/me', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const u = (req as Request & { user?: { sub: string } }).user
-  if (!u?.sub) return unauthorized(res, 'Unauthorized')
+  if (!u?.sub) {
+    if (!env.AUTH_REQUIRED) {
+      return validationError(res, 'Cannot update profile when authentication is disabled')
+    }
+    return unauthorized(res, 'Unauthorized')
+  }
   
   const userParsed = userIdFromTokenSchema.safeParse({ sub: u.sub })
   if (!userParsed.success) {
+    if (!env.AUTH_REQUIRED) {
+      return validationError(res, 'Cannot update profile when authentication is disabled')
+    }
     return unauthorized(res, 'Invalid user token')
   }
   const userId = userParsed.data.sub
@@ -1018,10 +1037,18 @@ const changePasswordSchema = z.object({
  */
 router.put('/me/password', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const u = (req as Request & { user?: { sub: string } }).user
-  if (!u?.sub) return unauthorized(res, 'Unauthorized')
+  if (!u?.sub) {
+    if (!env.AUTH_REQUIRED) {
+      return validationError(res, 'Cannot change password when authentication is disabled')
+    }
+    return unauthorized(res, 'Unauthorized')
+  }
   
   const userParsed = userIdFromTokenSchema.safeParse({ sub: u.sub })
   if (!userParsed.success) {
+    if (!env.AUTH_REQUIRED) {
+      return validationError(res, 'Cannot change password when authentication is disabled')
+    }
     return unauthorized(res, 'Invalid user token')
   }
   const userId = userParsed.data.sub
@@ -1078,10 +1105,20 @@ router.put('/me/password', requireAuth, asyncHandler(async (req: Request, res: R
  */
 router.get('/me/activity', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const u = (req as Request & { user?: { sub: string } }).user
-  if (!u?.sub) return unauthorized(res, 'Unauthorized')
+  if (!u?.sub) {
+    // If AUTH_REQUIRED is false, return empty array instead of error
+    if (!env.AUTH_REQUIRED) {
+      return success(res, [])
+    }
+    return unauthorized(res, 'Unauthorized')
+  }
   
   const userParsed = userIdFromTokenSchema.safeParse({ sub: u.sub })
   if (!userParsed.success) {
+    // If AUTH_REQUIRED is false, return empty array instead of error
+    if (!env.AUTH_REQUIRED) {
+      return success(res, [])
+    }
     return unauthorized(res, 'Invalid user token')
   }
   const userId = userParsed.data.sub

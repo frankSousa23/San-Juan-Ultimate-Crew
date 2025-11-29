@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useToast } from './useToast'
 import DataService, { 
   Player, 
@@ -32,14 +32,23 @@ export function useData<T>(
       setError(null)
       const result = await fetchFn()
       setData(result)
-    } catch (err) {
+    } catch (err: any) {
       const errorMessage = err instanceof Error ? err.message : 'Error al cargar datos'
-      setError(errorMessage)
-      showErrorToast(errorMessage)
+      const status = err?.response?.status
+      
+      // Only set error state and show toast for non-404/401 errors
+      if (status !== 404 && status !== 401) {
+        setError(errorMessage)
+        showErrorToast(errorMessage)
+      } else {
+        // For 404/401, set empty data but don't show error
+        setData([])
+        setError(null)
+      }
     } finally {
       setLoading(false)
     }
-  }, dependencies)
+  }, [fetchFn, showErrorToast, ...dependencies])
 
   useEffect(() => {
     fetchData()
@@ -603,25 +612,51 @@ export function useStats() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { showErrorToast } = useToast()
+  const showErrorToastRef = useRef(showErrorToast)
+  const isFetchingRef = useRef(false)
+
+  // Keep ref updated
+  useEffect(() => {
+    showErrorToastRef.current = showErrorToast
+  }, [showErrorToast])
 
   const fetchStats = useCallback(async () => {
+    // Prevent multiple simultaneous fetches
+    if (isFetchingRef.current) {
+      return
+    }
+    
+    isFetchingRef.current = true
     try {
       setLoading(true)
       setError(null)
       const result = await DataService.getStats()
       setStats(result)
-    } catch (err) {
+    } catch (err: any) {
       const errorMessage = err instanceof Error ? err.message : 'Error al cargar estadísticas'
-      setError(errorMessage)
-      showErrorToast(errorMessage)
+      const status = err?.response?.status
+      const isNetworkError = !err?.response && (err?.message?.includes('Network Error') || err?.code === 'ERR_NETWORK' || err?.code === 'ECONNABORTED')
+      
+      // Handle network errors and HTTP errors silently
+      if (isNetworkError || status === 404 || status === 401) {
+        // For network errors, 404/401, set empty stats but don't show error
+        setStats({ players: 0, events: 0, messages: 0, upcomingEvents: [], attendance: [], eventsByType: [] })
+        setError(null)
+      } else {
+        // Only show error for other HTTP errors (500, etc.)
+        setError(errorMessage)
+        showErrorToastRef.current(errorMessage)
+      }
     } finally {
       setLoading(false)
+      isFetchingRef.current = false
     }
-  }, [])
+  }, []) // Empty dependencies - use refs for functions
 
   useEffect(() => {
     fetchStats()
-  }, [fetchStats])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run once on mount
 
   return { stats, loading, error, refetch: fetchStats }
 }

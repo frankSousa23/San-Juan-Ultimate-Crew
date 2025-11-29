@@ -37,6 +37,7 @@ http.interceptors.request.use((config) => {
 http.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Only handle 401 (Unauthorized), not 404 (Not Found)
     if (error.response?.status === 401) {
       // Token expired or invalid - clear it
       setAuthToken()
@@ -62,6 +63,8 @@ http.interceptors.response.use(
         }, 100)
       }
     }
+    // For 404 errors, just reject without clearing token or redirecting
+    // 404 means endpoint doesn't exist, not that auth failed
     return Promise.reject(error)
   }
 )

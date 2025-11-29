@@ -195,80 +195,86 @@ export default function AdminUsers() {
             )}
           </div>
         </div>
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="text-left px-4 py-2">Email</th>
-              <th className="text-left px-4 py-2">Nombre</th>
-              <th className="text-left px-4 py-2">Fecha Registro</th>
-              <th className="text-left px-4 py-2">Rol a Asignar</th>
-              <th className="text-left px-4 py-2">Player ID (opcional)</th>
-              <th className="px-4 py-2"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {pendingUsers.map(u => (
-              <tr key={u.id} className="border-t">
-                <td className="px-4 py-2">{u.email}</td>
-                <td className="px-4 py-2">{u.name || '-'}</td>
-                <td className="px-4 py-2">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}</td>
-                <td className="px-4 py-2">
-                  <select
-                    className="border rounded px-2 py-1"
-                    value={approveRole[u.id] || 'guest'}
-                    onChange={(e) => setApproveRole(prev => ({ ...prev, [u.id]: e.target.value as 'guest' | 'player' | 'admin' }))}
-                  >
-                    <option value="guest">Guest</option>
-                    <option value="player">Player</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </td>
-                <td className="px-4 py-2">
-                  <input
-                    className="border rounded px-2 py-1 w-24"
-                    type="number"
-                    min="1"
-                    value={approvePlayerId[u.id] || ''}
-                    onChange={(e) => {
-                      const val = e.target.value
-                      if (val === '' || /^\d+$/.test(val)) {
-                        setApprovePlayerId(prev => ({ ...prev, [u.id]: val }))
-                      }
-                    }}
-                    placeholder="ID jugador"
-                  />
-                  {approvePlayerId[u.id] && approvePlayerId[u.id].trim() !== '' && (
-                    (isNaN(Number(approvePlayerId[u.id])) || Number(approvePlayerId[u.id]) <= 0) && (
-                      <p className="text-xs text-red-600 mt-1">ID debe ser un número mayor a 0</p>
-                    )
-                  )}
-                </td>
-                <td className="px-4 py-2 text-right space-x-2">
-                  <button
-                    className="px-3 py-1 bg-emerald-600 text-white rounded disabled:opacity-50"
-                    disabled={!!approving[u.id]}
-                    onClick={() => handleApproveUser(u.id)}
-                  >
-                    {approving[u.id] ? 'Aprobando…' : 'Aprobar'}
-                  </button>
-                  <button
-                    className="px-3 py-1 bg-rose-600 text-white rounded disabled:opacity-50"
-                    disabled={!!approving[u.id]}
-                    onClick={() => handleRejectUser(u.id)}
-                  >
-                    {approving[u.id] ? 'Rechazando…' : 'Rechazar'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {pendingLoading && (
-              <tr><td className="px-4 py-6 text-center text-gray-500" colSpan={6}>Cargando…</td></tr>
-            )}
-            {!pendingLoading && pendingUsers.length === 0 && (
-              <tr><td className="px-4 py-6 text-center text-gray-500" colSpan={6}>No hay usuarios pendientes</td></tr>
-            )}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <div className="inline-block min-w-full align-middle sm:px-0">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left px-2 sm:px-4 py-2">Email</th>
+                  <th className="text-left px-2 sm:px-4 py-2">Nombre</th>
+                  <th className="text-left px-2 sm:px-4 py-2 hidden md:table-cell">Fecha Registro</th>
+                  <th className="text-left px-2 sm:px-4 py-2">Rol</th>
+                  <th className="text-left px-2 sm:px-4 py-2 hidden lg:table-cell">Player ID</th>
+                  <th className="px-2 sm:px-4 py-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingUsers.map(u => (
+                  <tr key={u.id} className="border-t">
+                    <td className="px-2 sm:px-4 py-2 break-words">{u.email}</td>
+                    <td className="px-2 sm:px-4 py-2">{u.name || '-'}</td>
+                    <td className="px-2 sm:px-4 py-2 hidden md:table-cell">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}</td>
+                    <td className="px-2 sm:px-4 py-2">
+                      <select
+                        className="border rounded px-2 py-1 w-full sm:w-auto text-xs sm:text-sm"
+                        value={approveRole[u.id] || 'guest'}
+                        onChange={(e) => setApproveRole(prev => ({ ...prev, [u.id]: e.target.value as 'guest' | 'player' | 'admin' }))}
+                      >
+                        <option value="guest">Guest</option>
+                        <option value="player">Player</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </td>
+                    <td className="px-2 sm:px-4 py-2 hidden lg:table-cell">
+                      <input
+                        className="border rounded px-2 py-1 w-20 sm:w-24 text-xs sm:text-sm"
+                        type="number"
+                        min="1"
+                        value={approvePlayerId[u.id] || ''}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          if (val === '' || /^\d+$/.test(val)) {
+                            setApprovePlayerId(prev => ({ ...prev, [u.id]: val }))
+                          }
+                        }}
+                        placeholder="ID"
+                      />
+                      {approvePlayerId[u.id] && approvePlayerId[u.id].trim() !== '' && (
+                        (isNaN(Number(approvePlayerId[u.id])) || Number(approvePlayerId[u.id]) <= 0) && (
+                          <p className="text-xs text-red-600 mt-1">ID debe ser un número mayor a 0</p>
+                        )
+                      )}
+                    </td>
+                    <td className="px-2 sm:px-4 py-2">
+                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 sm:justify-end">
+                        <button
+                          className="px-2 sm:px-3 py-1 bg-emerald-600 text-white rounded disabled:opacity-50 text-xs sm:text-sm whitespace-nowrap"
+                          disabled={!!approving[u.id]}
+                          onClick={() => handleApproveUser(u.id)}
+                        >
+                          {approving[u.id] ? 'Aprobando…' : 'Aprobar'}
+                        </button>
+                        <button
+                          className="px-2 sm:px-3 py-1 bg-rose-600 text-white rounded disabled:opacity-50 text-xs sm:text-sm whitespace-nowrap"
+                          disabled={!!approving[u.id]}
+                          onClick={() => handleRejectUser(u.id)}
+                        >
+                          {approving[u.id] ? 'Rechazando…' : 'Rechazar'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {pendingLoading && (
+                  <tr><td className="px-4 py-6 text-center text-gray-500" colSpan={6}>Cargando…</td></tr>
+                )}
+                {!pendingLoading && pendingUsers.length === 0 && (
+                  <tr><td className="px-4 py-6 text-center text-gray-500" colSpan={6}>No hay usuarios pendientes</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
