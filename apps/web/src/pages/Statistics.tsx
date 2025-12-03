@@ -45,9 +45,9 @@ export default function Statistics() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
             {isAdmin ? 'Estadísticas del Equipo (Admin)' : 
              isPlayer ? 'Mis Estadísticas' : 
              'Estadísticas del Equipo'}
@@ -60,7 +60,7 @@ export default function Statistics() {
         </div>
         <button 
           onClick={() => loadStats()}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors whitespace-nowrap"
         >
           🔄 Actualizar
         </button>

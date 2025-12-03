@@ -6,6 +6,7 @@ import { EventItem, EventType, EventStatus } from '../types/event'
 import ConfirmModal from '../components/ConfirmModal'
 import { useToast } from '../hooks/useToast'
 import { useApi } from '../hooks/useApi'
+import { useAuth } from '../contexts/AuthContext'
 import { AttendanceRecord } from '../types/attendance'
 import { Player } from '../types/player'
 
@@ -147,8 +148,10 @@ export default function Events() {
         </div>
       )}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h2 className="text-2xl font-bold text-gray-800">Sistema de Eventos</h2>
-        <button onClick={() => setCreateOpen(true)} className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 whitespace-nowrap">+ Crear Evento</button>
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Sistema de Eventos</h2>
+        {hasPermission('events:manage') && (
+          <button onClick={() => setCreateOpen(true)} className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 whitespace-nowrap text-sm sm:text-base">+ Crear Evento</button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -178,7 +181,7 @@ export default function Events() {
           {tab === 'events' && (
             <div className="space-y-4">
               {/* Filters */}
-              <div className="flex gap-2 items-center flex-wrap">
+              <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center flex-wrap">
                 <input
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
@@ -200,7 +203,7 @@ export default function Events() {
                     }
                   }}
                   placeholder="Buscar por título…"
-                  className="px-3 py-2 border rounded-lg text-sm min-w-[220px]"
+                  className="px-3 py-2 border rounded-lg text-sm w-full sm:min-w-[220px] sm:w-auto"
                 />
                 <select value={typeFilter} onChange={e => {
                   const val = e.target.value as 'all' | EventType
@@ -270,15 +273,15 @@ export default function Events() {
 
               <div className="space-y-3">
                 {paged.map(e => (
-                  <div key={e.id} className="bg-white border rounded-lg p-4 flex items-center justify-between">
-                    <div>
-                      <div className="font-semibold text-gray-800">{e.title}</div>
+                  <div key={e.id} className="bg-white border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-800 truncate">{e.title}</div>
                       <div className="text-xs text-gray-500">{typeLabel[e.type]}</div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`text-xs px-2 py-1 rounded-full ${statusBadge[e.status]}`}>{e.status}</span>
-                      <div className="text-sm text-gray-600">{e.startsAt ? new Date(e.startsAt).toLocaleString() : ''}</div>
-                      <button className="text-purple-700 hover:underline" onClick={async () => {
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                      <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${statusBadge[e.status]}`}>{e.status}</span>
+                      <div className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">{e.startsAt ? new Date(e.startsAt).toLocaleString() : ''}</div>
+                      <button className="text-purple-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={async () => {
                         try {
                           // try find or create channel for this event
                           const list = await channelsApi.list(e.id)
@@ -289,17 +292,21 @@ export default function Events() {
                           toasts.info('No se pudo abrir el canal')
                         }
                       }}>Abrir canal</button>
-                      <button className="text-teal-700 hover:underline" onClick={() => setAttEvent(e)}>Asistencia</button>
-                      <button className="text-amber-700 hover:underline" onClick={() => setEditTarget(e)}>Editar</button>
-                      <button className="text-red-600 hover:underline" onClick={() => {
-                        setConfirmState({
-                          title: 'Confirmar eliminación',
-                          message: `¿Eliminar evento "${e.title}"? Esta acción no se puede deshacer.`,
-                          onYes: async () => {
-                            await deleteEvent(e.id)
-                          }
-                        })
-                      }}>Eliminar</button>
+                      {hasPermission('events:manage') && (
+                        <>
+                          <button className="text-teal-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => setAttEvent(e)}>Asistencia</button>
+                          <button className="text-amber-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => setEditTarget(e)}>Editar</button>
+                          <button className="text-red-600 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => {
+                            setConfirmState({
+                              title: 'Confirmar eliminación',
+                              message: `¿Eliminar evento "${e.title}"? Esta acción no se puede deshacer.`,
+                              onYes: async () => {
+                                await deleteEvent(e.id)
+                              }
+                            })
+                          }}>Eliminar</button>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -390,8 +397,8 @@ export default function Events() {
       />
     )}
       {createOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setCreateOpen(false)}>
-          <div className="bg-white rounded-xl max-w-lg w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setCreateOpen(false)}>
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-gradient-to-r from-amber-600 to-rose-600 text-white p-4">
               <div className="text-lg font-bold">Crear Evento</div>
             </div>
@@ -407,8 +414,8 @@ export default function Events() {
         </div>
       )}
       {editTarget && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setEditTarget(null)}>
-          <div className="bg-white rounded-xl max-w-lg w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setEditTarget(null)}>
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-gradient-to-r from-indigo-600 to-amber-600 text-white p-4">
               <div className="text-lg font-bold">Editar Evento</div>
             </div>
@@ -427,8 +434,8 @@ export default function Events() {
         <AttendanceModal eventItem={attEvent} onClose={() => setAttEvent(null)} />
       )}
       {selectedDateEvents && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setSelectedDateEvents(null)}>
-          <div className="bg-white rounded-xl max-w-lg w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedDateEvents(null)}>
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-4">
               <div className="text-lg font-bold">
                 Eventos del {selectedDateEvents.date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -526,28 +533,28 @@ function CalendarGrid({ events, onSelectDay }: { events: EventItem[]; onSelectDa
   }
 
   return (
-    <div className="bg-white rounded-xl shadow p-4 space-y-3">
+    <div className="bg-white rounded-xl shadow p-3 sm:p-4 space-y-3">
       <div className="flex items-center justify-between">
         <button 
-          className="px-3 py-1 rounded hover:bg-gray-100 transition-colors" 
+          className="px-2 sm:px-3 py-1 rounded hover:bg-gray-100 transition-colors text-xs sm:text-sm whitespace-nowrap" 
           onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
         >
           ← Anterior
         </button>
-        <div className="font-semibold text-lg">{cursor.toLocaleString(undefined, { month: 'long', year: 'numeric' })}</div>
+        <div className="font-semibold text-sm sm:text-lg px-2 text-center">{cursor.toLocaleString(undefined, { month: 'long', year: 'numeric' })}</div>
         <button 
-          className="px-3 py-1 rounded hover:bg-gray-100 transition-colors" 
+          className="px-2 sm:px-3 py-1 rounded hover:bg-gray-100 transition-colors text-xs sm:text-sm whitespace-nowrap" 
           onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
         >
           Siguiente →
         </button>
       </div>
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1 sm:gap-2">
         {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(d => (
-          <div key={d} className="text-center text-xs font-medium text-gray-500 py-2">{d}</div>
+          <div key={d} className="text-center text-xs font-medium text-gray-500 py-1 sm:py-2">{d}</div>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1 sm:gap-2">
         {weeks.map((week, wi) => week.map((date, di) => {
           const dayEvents = date ? (eventsByDate.get(date.toDateString()) || []) : []
           const hasEvents = dayEvents.length > 0
@@ -556,10 +563,10 @@ function CalendarGrid({ events, onSelectDay }: { events: EventItem[]; onSelectDa
           return (
             <div 
               key={`${wi}-${di}`} 
-              className={`border rounded-lg min-h-[100px] p-1.5 transition-all cursor-pointer ${
+              className={`border rounded-lg min-h-[60px] sm:min-h-[100px] p-1 sm:p-1.5 transition-all cursor-pointer ${
                 date 
                   ? isCurrentDay 
-                    ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200' 
+                    ? 'bg-blue-50 border-blue-300 ring-1 sm:ring-2 ring-blue-200' 
                     : hasEvents 
                       ? 'bg-white border-amber-300 hover:border-amber-400 hover:shadow-md' 
                       : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50'
@@ -569,14 +576,14 @@ function CalendarGrid({ events, onSelectDay }: { events: EventItem[]; onSelectDa
             >
               {date && (
                 <div className="h-full flex flex-col">
-                  <div className={`text-xs font-medium mb-1 ${isCurrentDay ? 'text-blue-700 font-bold' : 'text-gray-600'}`}>
+                  <div className={`text-xs sm:text-sm font-medium mb-0.5 sm:mb-1 ${isCurrentDay ? 'text-blue-700 font-bold' : 'text-gray-600'}`}>
                     {date.getDate()}
                   </div>
                   <div className="flex-1 space-y-0.5 overflow-hidden">
-                    {dayEvents.slice(0, 3).map(ev => (
+                    {dayEvents.slice(0, 2).map(ev => (
                       <div 
                         key={ev.id} 
-                        className={`text-[10px] px-1.5 py-0.5 rounded border truncate ${getEventColor(ev.type)}`}
+                        className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded border truncate ${getEventColor(ev.type)}`}
                         title={`${ev.title} - ${new Date(ev.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
                         onClick={(e) => {
                           e.stopPropagation()
@@ -586,9 +593,9 @@ function CalendarGrid({ events, onSelectDay }: { events: EventItem[]; onSelectDa
                         {ev.title}
                       </div>
                     ))}
-                    {dayEvents.length > 3 && (
-                      <div className="text-[10px] text-gray-500 font-medium px-1">
-                        +{dayEvents.length - 3} más
+                    {dayEvents.length > 2 && (
+                      <div className="text-[9px] sm:text-[10px] text-gray-500 font-medium px-1">
+                        +{dayEvents.length - 2} más
                       </div>
                     )}
                   </div>
@@ -644,8 +651,8 @@ function AttendanceModal({ eventItem, onClose }: { eventItem: EventItem; onClose
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className="bg-white rounded-xl max-w-3xl w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="bg-gradient-to-r from-teal-600 to-indigo-600 text-white p-4">
           <div className="text-lg font-bold">Asistencia — {eventItem.title}</div>
         </div>

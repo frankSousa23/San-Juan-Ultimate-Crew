@@ -4,7 +4,7 @@ import { z } from 'zod'
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
-import { requireRole } from './auth.js'
+import { requireRole, requirePermission } from './auth.js'
 import type { Prisma } from '@prisma/client'
 import { createAuditHelper } from '../lib/audit.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
@@ -336,7 +336,7 @@ const resourceIdSchema = z.object({
  *       403:
  *         description: Forbidden - Admin role required
  */
-router.post('/', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+router.post('/', requirePermission('resources:manage'), asyncHandler(async (req: Request, res: Response) => {
   try {
     const data = createSchema.parse(req.body)
     if (!data.url) {
@@ -400,7 +400,7 @@ router.post('/', requireRole(['admin']), asyncHandler(async (req: Request, res: 
  *       404:
  *         description: Resource not found
  */
-router.put('/:id', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+router.put('/:id', requirePermission('resources:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = resourceIdSchema.safeParse(req.params)
   if (!parsedId.success) {
     return validationError(res, 'Invalid id', parsedId.error.errors)
@@ -421,7 +421,7 @@ router.put('/:id', requireRole(['admin']), asyncHandler(async (req: Request, res
   }
 }))
 
-router.delete('/:id', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+router.delete('/:id', requirePermission('resources:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = resourceIdSchema.safeParse(req.params)
   if (!parsedId.success) {
     return validationError(res, 'Invalid id', parsedId.error.errors)
@@ -494,7 +494,7 @@ router.delete('/:id', requireRole(['admin']), asyncHandler(async (req: Request, 
  *       403:
  *         description: Forbidden - Admin role required
  */
-router.post('/bulk-delete', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+router.post('/bulk-delete', requirePermission('resources:manage'), asyncHandler(async (req: Request, res: Response) => {
   const ids = Array.isArray(req.body?.ids) 
     ? req.body.ids.map((n: unknown) => Number(n)).filter((n: number) => Number.isInteger(n))
     : []
@@ -613,7 +613,7 @@ const upload = multer({
  *       500:
  *         description: Failed to upload file
  */
-router.post('/upload', requireRole(['admin']), (req: Request, res: Response, next: NextFunction) => {
+router.post('/upload', requirePermission('resources:manage'), (req: Request, res: Response, next: NextFunction) => {
   const multerHandler = upload.single('file')
   multerHandler(req, res, (err?: unknown) => {
     if (err) {

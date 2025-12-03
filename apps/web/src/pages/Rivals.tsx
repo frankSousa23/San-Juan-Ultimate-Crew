@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { http, rivalsApi, exportRivalsCsv } from '../lib/api'
 import { useToast } from '../hooks/useToast'
 import { useApi } from '../hooks/useApi'
+import { useAuth } from '../contexts/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
 
 interface RivalItem {
@@ -17,6 +18,7 @@ interface RivalItem {
 
 export default function Rivals() {
   const toasts = useToast()
+  const { hasPermission } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [items, setItems] = useState<RivalItem[]>([])
   const [q, setQ] = useState(() => localStorage.getItem('rivals.q') || '')
@@ -145,9 +147,9 @@ export default function Rivals() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h2 className="text-2xl font-bold text-gray-800">Rivales</h2>
-        <button onClick={openCreate} className="bg-emerald-600 text-white px-4 py-2 rounded-lg">+ Nuevo Rival</button>
+        <button onClick={openCreate} className="bg-emerald-600 text-white px-4 py-2 rounded-lg whitespace-nowrap">+ Nuevo Rival</button>
       </div>
 
       {error && (
@@ -212,42 +214,50 @@ export default function Rivals() {
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left px-4 py-2">Nombre</th>
-                <th className="text-left px-4 py-2">Fortalezas</th>
-                <th className="text-left px-4 py-2">Debilidades</th>
-                <th className="text-left px-4 py-2">Último encuentro</th>
-                <th className="text-left px-4 py-2">Notas</th>
-                <th className="px-4 py-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(it => (
-                <tr key={it.id} className="border-t">
-                  <td className="px-4 py-2">{it.name}</td>
-                  <td className="px-4 py-2">{it.strengths || ''}</td>
-                  <td className="px-4 py-2">{it.weaknesses || ''}</td>
-                  <td className="px-4 py-2">{it.lastPlayedAt ? new Date(it.lastPlayedAt).toLocaleDateString() : ''}</td>
-                  <td className="px-4 py-2">{it.notes || ''}</td>
-                  <td className="px-4 py-2 text-right space-x-2">
-                    <button className="text-indigo-700 hover:underline" onClick={() => openEdit(it)}>Editar</button>
-                    <button className="text-red-700 hover:underline" onClick={() => remove(it.id)}>Eliminar</button>
-                  </td>
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <div className="inline-block min-w-full align-middle sm:px-0">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left px-2 sm:px-4 py-2">Nombre</th>
+                  <th className="text-left px-2 sm:px-4 py-2 hidden md:table-cell">Fortalezas</th>
+                  <th className="text-left px-2 sm:px-4 py-2 hidden md:table-cell">Debilidades</th>
+                  <th className="text-left px-2 sm:px-4 py-2">Último encuentro</th>
+                  <th className="text-left px-2 sm:px-4 py-2 hidden lg:table-cell">Notas</th>
+                  <th className="px-2 sm:px-4 py-2"></th>
                 </tr>
-              ))}
+              </thead>
+              <tbody>
+                {filtered.map(it => (
+                  <tr key={it.id} className="border-t">
+                    <td className="px-2 sm:px-4 py-2 font-medium">{it.name}</td>
+                    <td className="px-2 sm:px-4 py-2 hidden md:table-cell">{it.strengths || ''}</td>
+                    <td className="px-2 sm:px-4 py-2 hidden md:table-cell">{it.weaknesses || ''}</td>
+                    <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{it.lastPlayedAt ? new Date(it.lastPlayedAt).toLocaleDateString() : ''}</td>
+                    <td className="px-2 sm:px-4 py-2 hidden lg:table-cell">{it.notes || ''}</td>
+                    <td className="px-2 sm:px-4 py-2 text-right">
+                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 sm:justify-end">
+                        {hasPermission('rivals:manage') && (
+                          <>
+                            <button className="text-indigo-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => openEdit(it)}>Editar</button>
+                            <button className="text-red-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => remove(it.id)}>Eliminar</button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               {filtered.length === 0 && (
                 <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-500">Sin rivales.</td></tr>
               )}
             </tbody>
           </table>
+          </div>
         </div>
-        <div className="p-3 flex items-center justify-between text-sm">
+        <div className="p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
           <div>
             {total > 0 && (
-              <span className="text-gray-600">Mostrando {Math.min(total, offset + 1)}–{Math.min(total, offset + items.length)} de {total}</span>
+              <span className="text-gray-600 whitespace-nowrap">Mostrando {Math.min(total, offset + 1)}–{Math.min(total, offset + items.length)} de {total}</span>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -260,7 +270,7 @@ export default function Rivals() {
               params.set('page', '1')
               if (q.trim()) params.set('q', q.trim()); else params.delete('q')
               setSearchParams(params)
-            }} className="px-2 py-1 border rounded">
+            }} className="px-2 py-1 border rounded text-sm">
               {[10,20,50,100,200].map(n => <option key={n} value={n}>{n}/página</option>)}
             </select>
             <button disabled={offset === 0} onClick={() => {
@@ -272,7 +282,7 @@ export default function Rivals() {
               params.set('limit', String(limit))
               if (q.trim()) params.set('q', q.trim()); else params.delete('q')
               setSearchParams(params)
-            }} className="px-2 py-1 border rounded disabled:opacity-50">Anterior</button>
+            }} className="px-2 py-1 border rounded disabled:opacity-50 whitespace-nowrap text-sm">Anterior</button>
             <button disabled={offset + items.length >= total} onClick={() => {
               const newOffset = offset + limit
               const newPage = Math.floor(newOffset/limit)+1
@@ -282,14 +292,14 @@ export default function Rivals() {
               params.set('limit', String(limit))
               if (q.trim()) params.set('q', q.trim()); else params.delete('q')
               setSearchParams(params)
-            }} className="px-2 py-1 border rounded disabled:opacity-50">Siguiente</button>
+            }} className="px-2 py-1 border rounded disabled:opacity-50 whitespace-nowrap text-sm">Siguiente</button>
           </div>
         </div>
       </div>
 
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setModalOpen(false)}>
-          <div className="bg-white rounded-xl max-w-lg w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setModalOpen(false)}>
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-gradient-to-r from-emerald-600 to-indigo-600 text-white p-4">
               <div className="text-lg font-bold">{edit ? 'Editar' : 'Nuevo'} Rival</div>
             </div>

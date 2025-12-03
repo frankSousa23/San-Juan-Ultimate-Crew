@@ -24,11 +24,16 @@ import AdminUsers from './pages/AdminUsers'
 import SystemMonitoring from './pages/SystemMonitoring'
 
 // Protected Route Component
-const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole?: string }> = ({ 
+const ProtectedRoute: React.FC<{ 
+  children: React.ReactNode; 
+  requiredRole?: string | string[];
+  requiredPermission?: string;
+}> = ({ 
   children, 
-  requiredRole 
+  requiredRole,
+  requiredPermission
 }) => {
-  const { isAuthenticated, isLoading, hasRole } = useAuth()
+  const { isAuthenticated, isLoading, hasRole, hasPermission } = useAuth()
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-screen">Cargando...</div>
@@ -38,7 +43,22 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredRole?: strin
     return <Navigate to="/login" />
   }
 
-  if (requiredRole && !hasRole(requiredRole) && !hasRole('admin')) {
+  // Admin always has access
+  if (hasRole('admin')) {
+    return <>{children}</>
+  }
+
+  // Check role requirement
+  if (requiredRole) {
+    const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole]
+    const hasRequiredRole = roles.some(role => hasRole(role))
+    if (!hasRequiredRole) {
+      return <Navigate to="/" />
+    }
+  }
+
+  // Check permission requirement
+  if (requiredPermission && !hasPermission(requiredPermission)) {
     return <Navigate to="/" />
   }
 
@@ -58,20 +78,20 @@ function AppRoutes() {
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         
-        {/* Player & Admin Routes */}
-        <Route path="/roster" element={<ProtectedRoute requiredRole="player"><Roster /></ProtectedRoute>} />
-        <Route path="/eventos" element={<ProtectedRoute requiredRole="player"><Events /></ProtectedRoute>} />
+        {/* Player, Captain, Coach & Admin Routes */}
+        <Route path="/roster" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach']}><Roster /></ProtectedRoute>} />
+        <Route path="/eventos" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach']}><Events /></ProtectedRoute>} />
         {/* Communications: accessible to all authenticated users, but with different permissions */}
         <Route path="/comunicacion" element={<ProtectedRoute><Communications /></ProtectedRoute>} />
-        <Route path="/estadisticas" element={<ProtectedRoute requiredRole="player"><Statistics /></ProtectedRoute>} />
-        <Route path="/lesiones" element={<ProtectedRoute requiredRole="player"><Injuries /></ProtectedRoute>} />
-        <Route path="/rivales" element={<ProtectedRoute requiredRole="player"><Rivals /></ProtectedRoute>} />
-        <Route path="/jugadas" element={<ProtectedRoute requiredRole="player"><Plays /></ProtectedRoute>} />
-        <Route path="/roster-torneo" element={<ProtectedRoute requiredRole="player"><RosterTorneo /></ProtectedRoute>} />
-        <Route path="/recursos" element={<ProtectedRoute requiredRole="player"><Resources /></ProtectedRoute>} />
+        <Route path="/estadisticas" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'treasurer']}><Statistics /></ProtectedRoute>} />
+        <Route path="/lesiones" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach']}><Injuries /></ProtectedRoute>} />
+        <Route path="/rivales" element={<ProtectedRoute requiredRole={['player', 'captain']}><Rivals /></ProtectedRoute>} />
+        <Route path="/jugadas" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach']}><Plays /></ProtectedRoute>} />
+        <Route path="/roster-torneo" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach']}><RosterTorneo /></ProtectedRoute>} />
+        <Route path="/recursos" element={<ProtectedRoute requiredRole={['player', 'coach']}><Resources /></ProtectedRoute>} />
 
-        {/* Admin Only Routes */}
-        <Route path="/finanzas" element={<ProtectedRoute requiredRole="admin"><Finances /></ProtectedRoute>} />
+        {/* Treasurer & Admin Routes */}
+        <Route path="/finanzas" element={<ProtectedRoute requiredRole={['treasurer', 'admin']}><Finances /></ProtectedRoute>} />
         <Route path="/admin/usuarios" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
         <Route path="/admin/monitoring" element={<ProtectedRoute requiredRole="admin"><SystemMonitoring /></ProtectedRoute>} />
       </Routes>

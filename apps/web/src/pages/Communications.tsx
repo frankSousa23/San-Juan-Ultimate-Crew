@@ -7,10 +7,8 @@ import { useApi } from '../hooks/useApi'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function Communications() {
-  const { user, hasRole } = useAuth()
-  const isAdmin = hasRole('admin')
-  const isPlayer = hasRole('player')
-  const isGuest = !isAdmin && !isPlayer
+  const { user, hasPermission } = useAuth()
+  const canManage = hasPermission('communications:manage')
   
   const [channels, setChannels] = useState<Channel[]>([])
   const [activeId, setActiveId] = useState<number | null>(null)
@@ -198,15 +196,15 @@ export default function Communications() {
   }
 
   // Guest users can only view, not interact
-  const canCreateChannel = isAdmin || isPlayer
-  const canSendMessages = isAdmin || isPlayer
+  const canCreateChannel = canManage
+  const canSendMessages = canManage
 
   return (
     <div className="h-full flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-        <h2 className="text-2xl font-bold text-gray-800">Comunicaciones</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Comunicaciones</h2>
         {isGuest && (
-          <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded px-3 py-2 text-sm">
+          <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded px-3 py-2 text-xs sm:text-sm">
             <span className="font-medium">Modo de solo lectura:</span> Puedes ver los canales y mensajes, pero necesitas ser jugador o administrador para participar.
           </div>
         )}
@@ -229,9 +227,9 @@ export default function Communications() {
         </div>
       )}
       
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 min-h-[600px]">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 min-h-[400px] sm:min-h-[600px]">
         {/* Channels list */}
-        <div className="col-span-1 md:col-span-3 bg-white rounded-lg shadow p-3 flex flex-col">
+        <div className="col-span-1 md:col-span-3 bg-white rounded-lg shadow p-3 flex flex-col min-h-[300px] sm:min-h-0">
           <div className="flex items-center justify-between mb-2">
             <div className="font-semibold text-gray-700">Canales</div>
             <div className="flex items-center gap-3">
@@ -360,7 +358,7 @@ export default function Communications() {
           {/* Message composer - only visible if user can send messages */}
           {canSendMessages && (
             <div className="border-t p-3 bg-white">
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   value={composer}
                   onChange={e => setComposer(e.target.value)}
@@ -372,12 +370,12 @@ export default function Communications() {
                   }}
                   disabled={!activeId || sending}
                   placeholder={activeId ? 'Escribe un mensaje... (Enter para enviar)' : 'Selecciona un canal para escribir'}
-                  className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm sm:text-base"
                 />
                 <button 
                   onClick={send} 
                   disabled={!activeId || sending || !composer.trim()} 
-                  className="bg-purple-600 text-white px-4 py-2 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed hover:bg-purple-700 transition-colors"
+                  className="bg-purple-600 text-white px-4 py-2 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed hover:bg-purple-700 transition-colors whitespace-nowrap text-sm sm:text-base"
                 >
                   {sending ? 'Enviando...' : 'Enviar'}
                 </button>
@@ -401,8 +399,8 @@ export default function Communications() {
 
       {/* Create Channel Modal - only for admin and player */}
       {canCreateChannel && newChannelOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setNewChannelOpen(false)}>
-          <div className="bg-white rounded-xl max-w-sm w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setNewChannelOpen(false)}>
+          <div className="bg-white rounded-xl max-w-sm w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4">
               <div className="text-lg font-bold">Crear Canal</div>
             </div>

@@ -41,7 +41,7 @@ export const Login: React.FC = () => {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-md shadow p-6 mt-10">
+    <div className="max-w-md mx-auto bg-white rounded-md shadow p-4 sm:p-6 mt-4 sm:mt-10">
       <h2 className="text-xl font-semibold mb-4">Iniciar sesión</h2>
       <form onSubmit={onSubmit} className="space-y-3">
         <div>

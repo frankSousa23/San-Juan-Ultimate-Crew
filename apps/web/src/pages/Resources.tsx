@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { resourcesApi, exportResourcesCsvServer, http, getAuthToken } from '../lib/api'
 import { useToast } from '../hooks/useToast'
 import { useApi } from '../hooks/useApi'
+import { useAuth } from '../contexts/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
 import type { ResourceItem } from '../types/resource'
 
@@ -33,6 +34,7 @@ export default function Resources() {
   const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
   const [debounceTimer, setDebounceTimer] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const { hasPermission } = useAuth()
   const authed = !!getAuthToken()
 
   // API hooks
@@ -209,9 +211,9 @@ export default function Resources() {
           </div>
         </div>
       )}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-wrap">
         <input
-          className="border rounded px-2 py-1"
+          className="border rounded px-2 py-1 flex-1 sm:flex-initial min-w-[150px]"
           placeholder="Buscar"
           value={q}
           onChange={e => {
@@ -235,7 +237,7 @@ export default function Resources() {
         />
         <input
           list="resource-categories"
-          className="border rounded px-2 py-1"
+          className="border rounded px-2 py-1 flex-1 sm:flex-initial min-w-[150px]"
           placeholder="Categoría"
           value={category}
           onChange={e => {
@@ -258,7 +260,7 @@ export default function Resources() {
           }}
         />
         <select
-          className="border rounded px-2 py-1"
+          className="border rounded px-2 py-1 flex-1 sm:flex-initial"
           value={sortMode}
           onChange={e => {
             const nextOrder = (e.target.value as 'createdAtDesc'|'titleAsc')
@@ -275,11 +277,11 @@ export default function Resources() {
           <option value="titleAsc">Título (A→Z)</option>
         </select>
         <button
-          className="px-2 py-1 rounded bg-indigo-600 text-white disabled:opacity-50"
+          className="px-2 py-1 rounded bg-indigo-600 text-white disabled:opacity-50 whitespace-nowrap"
           disabled={isLoading}
           onClick={applyFilters}
         >Aplicar</button>
-        <button className="px-2 py-1 rounded bg-slate-700 text-white" onClick={async () => {
+        <button className="px-2 py-1 rounded bg-slate-700 text-white whitespace-nowrap" onClick={async () => {
           try {
             const blob = await exportResourcesCsvServer({ q, category: category || undefined, order: sortMode })
             const url = URL.createObjectURL(blob)
@@ -293,11 +295,11 @@ export default function Resources() {
           }
         }}>Exportar CSV</button>
         <button
-          className="px-2 py-1 rounded bg-gray-200 text-gray-800"
+          className="px-2 py-1 rounded bg-gray-200 text-gray-800 whitespace-nowrap"
           onClick={clearFilters}
         >Limpiar filtros</button>
         <button
-          className="px-2 py-1 rounded bg-rose-600 text-white disabled:opacity-50"
+          className="px-2 py-1 rounded bg-rose-600 text-white disabled:opacity-50 whitespace-nowrap"
           disabled={selected.length === 0}
           onClick={async () => {
             const ids = [...selected]
@@ -308,16 +310,16 @@ export default function Resources() {
           }}
         >Eliminar seleccionados ({selected.length})</button>
         <button
-          className="px-2 py-1 rounded bg-gray-200 text-gray-800"
+          className="px-2 py-1 rounded bg-gray-200 text-gray-800 whitespace-nowrap"
           onClick={() => setSelected(sortedItems.map(i => i.id))}
         >Seleccionar todos</button>
         <button
-          className="px-2 py-1 rounded bg-gray-200 text-gray-800"
+          className="px-2 py-1 rounded bg-gray-200 text-gray-800 whitespace-nowrap"
           onClick={() => setSelected([])}
         >Limpiar selección</button>
       </div>
 
-      {authed ? (
+      {hasPermission('resources:manage') ? (
       <div className="bg-white rounded shadow p-4">
         <h3 className="font-medium mb-2">Nuevo recurso</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
@@ -339,7 +341,7 @@ export default function Resources() {
         </div>
       )}
 
-      {authed && (
+      {hasPermission('resources:manage') && (
       <div className="bg-white rounded shadow p-4">
         <h3 className="font-medium mb-2">Subir archivo</h3>
         <form className="grid grid-cols-1 md:grid-cols-4 gap-2" onSubmit={async (e) => {
@@ -493,7 +495,7 @@ export default function Resources() {
                       toasts.info('Enlace copiado al portapapeles')
                     } catch {}
                   }}>Copiar enlace</button>
-                  {authed && (
+                  {hasPermission('resources:manage') && (
                   <>
                   <button className="px-2 py-1 rounded bg-gray-200" onClick={() => startEdit(it)}>Editar</button>
                   <button className="px-2 py-1 rounded bg-rose-600 text-white" onClick={() => {
@@ -545,7 +547,7 @@ export default function Resources() {
       )}
 
       {preview && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setPreview(null)}>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setPreview(null)}>
           <div className="bg-white rounded shadow max-w-4xl w-full max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-3 py-2 border-b">
               <div className="font-medium truncate pr-2">{preview.title}</div>

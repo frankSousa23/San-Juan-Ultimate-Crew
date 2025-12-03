@@ -168,7 +168,7 @@ export default function SystemMonitoring() {
         }
         return (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <h3 className="text-lg font-medium text-gray-900">Audit Logs</h3>
               <div className="text-sm text-gray-600">
                 Total: {auditTotal} registros
@@ -176,7 +176,7 @@ export default function SystemMonitoring() {
             </div>
 
             <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Acción</label>
                   <select
@@ -230,7 +230,7 @@ export default function SystemMonitoring() {
                   setAuditOffset(0)
                   loadAuditLogs(auditFilters)
                 }}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm"
+                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm whitespace-nowrap w-full sm:w-auto"
               >
                 Filtrar
               </button>
@@ -240,66 +240,66 @@ export default function SystemMonitoring() {
               <div className="bg-white rounded-lg shadow p-4">Cargando logs...</div>
             ) : (
               <div className="bg-white rounded-lg shadow overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acción</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Entidad</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {auditLogs.length === 0 ? (
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle sm:px-0">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
                         <tr>
-                          <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
-                            No hay logs de auditoría
-                          </td>
+                          <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[50px]">ID</th>
+                          <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[100px]">Acción</th>
+                          <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[120px]">Entidad</th>
+                          <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[150px] hidden md:table-cell">Usuario</th>
+                          <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[150px]">Fecha</th>
+                          <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase min-w-[120px] hidden lg:table-cell">IP</th>
                         </tr>
-                      ) : (
-                        auditLogs.map((log) => (
-                          <tr key={log.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 text-sm text-gray-900">{log.id}</td>
-                            <td className="px-4 py-3 text-sm">
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                log.action === 'LOGIN' || log.action === 'LOGOUT' ? 'bg-blue-100 text-blue-800' :
-                                log.action === 'CREATE' ? 'bg-green-100 text-green-800' :
-                                log.action === 'UPDATE' ? 'bg-yellow-100 text-yellow-800' :
-                                log.action === 'DELETE' ? 'bg-red-100 text-red-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {log.action}
-                              </span>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {auditLogs.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="px-2 sm:px-4 py-6 text-center text-gray-500">
+                              No hay logs de auditoría
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-900">
-                              {log.entityType}
-                              {log.entityId && ` #${log.entityId}`}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-900">
-                              {log.user ? (
-                                <div>
-                                  <div className="font-medium">{log.user.email}</div>
-                                  {log.user.name && <div className="text-xs text-gray-500">{log.user.name}</div>}
-                                </div>
-                              ) : (
-                                <span className="text-gray-400">N/A</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-900">
-                              {new Date(log.createdAt).toLocaleString('es-PR')}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-500">{log.ipAddress || '-'}</td>
                           </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                        ) : (
+                          auditLogs.map((log) => (
+                            <tr key={log.id} className="hover:bg-gray-50">
+                              <td className="px-2 sm:px-4 py-3 text-sm text-gray-900">{log.id}</td>
+                              <td className="px-2 sm:px-4 py-3 text-sm">
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                  log.action === 'LOGIN' || log.action === 'LOGOUT' ? 'bg-blue-100 text-blue-800' :
+                                  log.action === 'CREATE' ? 'bg-green-100 text-green-800' :
+                                  log.action === 'UPDATE' ? 'bg-yellow-100 text-yellow-800' :
+                                  log.action === 'DELETE' ? 'bg-red-100 text-red-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {log.action}
+                                </span>
+                              </td>
+                              <td className="px-2 sm:px-4 py-3 text-sm text-gray-900">
+                                {log.entityType}
+                                {log.entityId && ` #${log.entityId}`}
+                              </td>
+                              <td className="px-2 sm:px-4 py-3 text-sm text-gray-900 hidden md:table-cell">
+                                {log.user ? (
+                                  <div>
+                                    <div className="font-medium">{log.user.email}</div>
+                                    {log.user.name && <div className="text-xs text-gray-500">{log.user.name}</div>}
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400">N/A</span>
+                                )}
+                              </td>
+                              <td className="px-2 sm:px-4 py-3 text-sm text-gray-900 whitespace-nowrap">{new Date(log.createdAt).toLocaleString('es-PR')}</td>
+                              <td className="px-2 sm:px-4 py-3 text-sm text-gray-500 hidden lg:table-cell">{log.ipAddress || '-'}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
                 {auditTotal > auditLimit && (
-                  <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t">
+                  <div className="bg-gray-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t">
                     <div className="text-sm text-gray-700">
                       Mostrando {auditOffset + 1} - {Math.min(auditOffset + auditLimit, auditTotal)} de {auditTotal}
                     </div>
@@ -310,7 +310,7 @@ export default function SystemMonitoring() {
                           setAuditOffset(newOffset)
                         }}
                         disabled={auditOffset === 0}
-                        className="px-3 py-1 bg-white border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-1 bg-white border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                       >
                         Anterior
                       </button>
@@ -320,7 +320,7 @@ export default function SystemMonitoring() {
                           setAuditOffset(newOffset)
                         }}
                         disabled={auditOffset + auditLimit >= auditTotal}
-                        className="px-3 py-1 bg-white border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-1 bg-white border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                       >
                         Siguiente
                       </button>
@@ -370,12 +370,12 @@ export default function SystemMonitoring() {
 
         <div className="bg-white rounded-lg shadow">
           <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+            <nav className="-mb-px flex space-x-2 sm:space-x-8 px-2 sm:px-6 overflow-x-auto" aria-label="Tabs">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  className={`py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'border-blue-500 text-blue-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'

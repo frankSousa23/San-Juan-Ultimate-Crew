@@ -7,6 +7,7 @@ import type { PlayItem, PlayCategory } from '../types/plays'
 
 export default function Plays() {
   const toasts = useToast()
+  const { hasPermission } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [items, setItems] = useState<PlayItem[]>([])
   const [q, setQ] = useState('')
@@ -105,9 +106,11 @@ export default function Plays() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h2 className="text-2xl font-bold text-gray-800">Jugadas</h2>
-        <button onClick={openCreate} className="bg-indigo-600 text-white px-4 py-2 rounded-lg">+ Nueva Jugada</button>
+        {hasPermission('plays:manage') && (
+          <button onClick={openCreate} className="bg-indigo-600 text-white px-4 py-2 rounded-lg whitespace-nowrap">+ Nueva Jugada</button>
+        )}
       </div>
 
       {error && (
@@ -158,48 +161,56 @@ export default function Plays() {
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left px-4 py-2">Nombre</th>
-                <th className="text-left px-4 py-2">Categoría</th>
-                <th className="text-left px-4 py-2">Descripción</th>
-                <th className="text-left px-4 py-2">Diagrama</th>
-                <th className="px-4 py-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(it => (
-                <tr key={it.id} className="border-t">
-                  <td className="px-4 py-2">{it.name}</td>
-                  <td className="px-4 py-2">{it.category}</td>
-                  <td className="px-4 py-2">{it.description || ''}</td>
-                  <td className="px-4 py-2">
-                    {it.diagramUrl ? (
-                      /\.(png|jpe?g|gif|svg)$/i.test(it.diagramUrl) ? (
-                        <a href={it.diagramUrl} target="_blank" rel="noreferrer">
-                          <img src={it.diagramUrl} alt={it.name + ' diagrama'} className="h-10 w-auto rounded border" />
-                        </a>
-                      ) : (
-                        <a className="text-indigo-600 underline" href={it.diagramUrl} target="_blank" rel="noreferrer">Ver</a>
-                      )
-                    ) : ''}
-                  </td>
-                  <td className="px-4 py-2 text-right space-x-2">
-                    <button className="text-indigo-700 hover:underline" onClick={() => openEdit(it)}>Editar</button>
-                    <button className="text-red-700 hover:underline" onClick={() => remove(it.id)}>Eliminar</button>
-                  </td>
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <div className="inline-block min-w-full align-middle sm:px-0">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left px-2 sm:px-4 py-2">Nombre</th>
+                  <th className="text-left px-2 sm:px-4 py-2">Categoría</th>
+                  <th className="text-left px-2 sm:px-4 py-2 hidden md:table-cell">Descripción</th>
+                  <th className="text-left px-2 sm:px-4 py-2 hidden lg:table-cell">Diagrama</th>
+                  <th className="px-2 sm:px-4 py-2"></th>
                 </tr>
-              ))}
+              </thead>
+              <tbody>
+                {filtered.map(it => (
+                  <tr key={it.id} className="border-t">
+                    <td className="px-2 sm:px-4 py-2 font-medium">{it.name}</td>
+                    <td className="px-2 sm:px-4 py-2">{it.category}</td>
+                    <td className="px-2 sm:px-4 py-2 hidden md:table-cell">{it.description || ''}</td>
+                    <td className="px-2 sm:px-4 py-2 hidden lg:table-cell">
+                      {it.diagramUrl ? (
+                        /\.(png|jpe?g|gif|svg)$/i.test(it.diagramUrl) ? (
+                          <a href={it.diagramUrl} target="_blank" rel="noreferrer">
+                            <img src={it.diagramUrl} alt={it.name + ' diagrama'} className="h-10 w-auto rounded border" />
+                          </a>
+                        ) : (
+                          <a className="text-indigo-600 underline" href={it.diagramUrl} target="_blank" rel="noreferrer">Ver</a>
+                        )
+                      ) : ''}
+                    </td>
+                    <td className="px-2 sm:px-4 py-2 text-right">
+                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 sm:justify-end">
+                        {hasPermission('plays:manage') && (
+                          <>
+                            <button className="text-indigo-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => openEdit(it)}>Editar</button>
+                            <button className="text-red-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => remove(it.id)}>Eliminar</button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               {filtered.length === 0 && <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-500">Sin jugadas.</td></tr>}
             </tbody>
           </table>
+          </div>
         </div>
-        <div className="p-3 flex items-center justify-between text-sm">
+        <div className="p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
           <div>
             {total > 0 && (
-              <span className="text-gray-600">Mostrando {Math.min(total, offset + 1)}–{Math.min(total, offset + items.length)} de {total}</span>
+              <span className="text-gray-600 whitespace-nowrap">Mostrando {Math.min(total, offset + 1)}–{Math.min(total, offset + items.length)} de {total}</span>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -212,18 +223,18 @@ export default function Plays() {
               params.limit = String(newLim)
               setSearchParams(params)
               try { localStorage.setItem('plays.limit', String(newLim)) } catch {}
-            }} className="px-2 py-1 border rounded">
+            }} className="px-2 py-1 border rounded text-sm">
               {[10,20,50,100,200].map(n => <option key={n} value={n}>{n}/página</option>)}
             </select>
-            <button disabled={offset === 0} onClick={() => setOffset(o => Math.max(0, o - limit))} className="px-2 py-1 border rounded disabled:opacity-50">Anterior</button>
-            <button disabled={offset + items.length >= total} onClick={() => setOffset(o => o + limit)} className="px-2 py-1 border rounded disabled:opacity-50">Siguiente</button>
+            <button disabled={offset === 0} onClick={() => setOffset(o => Math.max(0, o - limit))} className="px-2 py-1 border rounded disabled:opacity-50 whitespace-nowrap text-sm">Anterior</button>
+            <button disabled={offset + items.length >= total} onClick={() => setOffset(o => o + limit)} className="px-2 py-1 border rounded disabled:opacity-50 whitespace-nowrap text-sm">Siguiente</button>
           </div>
         </div>
       </div>
 
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setModalOpen(false)}>
-          <div className="bg-white rounded-xl max-w-lg w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setModalOpen(false)}>
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-gradient-to-r from-indigo-600 to-emerald-600 text-white p-4">
               <div className="text-lg font-bold">{edit ? 'Editar' : 'Nueva'} Jugada</div>
             </div>

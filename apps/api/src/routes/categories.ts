@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { z } from 'zod'
-import { requireRole } from './auth.js'
+import { requireRole, requirePermission } from './auth.js'
 import { createAuditHelper } from '../lib/audit.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import { success, created, deleted, validationError, notFound } from '../lib/response.js'
@@ -77,7 +77,7 @@ const categoryIdSchema = z.object({
  *       403:
  *         description: Forbidden - Admin role required
  */
-router.post('/', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+router.post('/', requirePermission('finance:manage'), asyncHandler(async (req: Request, res: Response) => {
   try {
     const payload = createCategorySchema.parse(req.body)
     const category = await prisma.category.create({ data: payload })
@@ -122,7 +122,7 @@ router.post('/', requireRole(['admin']), asyncHandler(async (req: Request, res: 
  *       404:
  *         description: Category not found
  */
-router.delete('/:id', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+router.delete('/:id', requirePermission('finance:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = categoryIdSchema.safeParse(req.params)
   if (!parsedId.success) {
     return validationError(res, 'Invalid id', parsedId.error.errors)

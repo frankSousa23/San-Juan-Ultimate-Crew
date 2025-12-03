@@ -205,19 +205,19 @@ export default function RosterTorneo() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h2 className="text-xl font-semibold">Roster de Torneo por Evento</h2>
-        <div className="flex gap-2 items-center">
-          <label className="text-sm">Evento:</label>
-          <select className="border rounded px-2 py-1" value={eventId ?? ''} onChange={e => setEventId(Number(e.target.value))}>
+        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+          <label className="text-sm flex items-center">Evento:</label>
+          <select className="border rounded px-2 py-1 flex-1 sm:flex-initial" value={eventId ?? ''} onChange={e => setEventId(Number(e.target.value))}>
             {events.map(ev => (
               <option key={ev.id} value={ev.id}>{ev.title} — {new Date(ev.startsAt).toLocaleString()}</option>
             ))}
           </select>
-          <button className="px-3 py-1 rounded bg-emerald-600 text-white" onClick={exportCsv} disabled={!eventId || loading}>Exportar CSV</button>
+          <button className="px-3 py-1 rounded bg-emerald-600 text-white whitespace-nowrap" onClick={exportCsv} disabled={!eventId || loading}>Exportar CSV</button>
           {eventId && (
             <button
-              className="px-3 py-1 rounded bg-gray-100 text-gray-800"
+              className="px-3 py-1 rounded bg-gray-100 text-gray-800 whitespace-nowrap"
               onClick={() => {
                 try {
                   const url = new URL(window.location.href)
@@ -243,10 +243,10 @@ export default function RosterTorneo() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded shadow p-4">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-col gap-2 mb-2">
             <h3 className="font-medium">Jugadores disponibles</h3>
-            <div className="flex gap-2 items-center text-sm">
-              <input className="border rounded px-2 py-1" placeholder="Buscar nombre o #"
+            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center text-sm">
+              <input className="border rounded px-2 py-1 flex-1" placeholder="Buscar nombre o #"
                      value={q} onChange={e => setQ(e.target.value)} />
               <select className="border rounded px-2 py-1" value={pos} onChange={e => setPos(e.target.value)}>
                 <option value="">Posición</option>
@@ -264,8 +264,8 @@ export default function RosterTorneo() {
                 <option value="number">Orden: número</option>
                 <option value="name">Orden: nombre</option>
               </select>
-              <span className="text-gray-500">Disponibles: {availablePlayers.length}</span>
-              <button className="ml-2 px-2 py-1 rounded bg-gray-200" onClick={() => {
+              <span className="text-gray-500 whitespace-nowrap">Disponibles: {availablePlayers.length}</span>
+              <button className="px-2 py-1 rounded bg-gray-200 whitespace-nowrap" onClick={() => {
                 setQ(''); setPos(''); setPstatus('')
                 const params = new URLSearchParams()
                 if (eventId) params.set('eventId', String(eventId))
@@ -273,7 +273,7 @@ export default function RosterTorneo() {
                 setSearchParams(params)
               }}>Limpiar filtros</button>
         {authed && (
-    <button className="ml-2 px-2 py-1 rounded bg-indigo-600 text-white disabled:opacity-50"
+    <button className="px-2 py-1 rounded bg-indigo-600 text-white disabled:opacity-50 whitespace-nowrap"
       onClick={() => setConfirmState({ message: `¿Agregar ${availablePlayers.length} jugadores filtrados?`, onYes: addAllFiltered })}
       disabled={loading || availablePlayers.length === 0}>Agregar todos</button>
         )}
@@ -294,13 +294,15 @@ export default function RosterTorneo() {
         </div>
 
         <div className="bg-white rounded shadow p-4">
-          <div className="flex items-center justify-between mb-2">
-      <h3 className="font-medium">Seleccionados para este evento</h3>
-            <span className="inline-flex items-center justify-center text-xs bg-purple-600 text-white rounded-full px-2 py-0.5">
-              {participants.length}
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+      <div className="flex items-center gap-2">
+        <h3 className="font-medium">Seleccionados para este evento</h3>
+        <span className="inline-flex items-center justify-center text-xs bg-purple-600 text-white rounded-full px-2 py-0.5">
+          {participants.length}
+        </span>
+      </div>
       {authed && (
-        <button className="ml-auto px-2 py-1 rounded bg-rose-600 text-white disabled:opacity-50"
+        <button className="px-2 py-1 rounded bg-rose-600 text-white disabled:opacity-50 whitespace-nowrap"
           onClick={() => setConfirmState({ message: `¿Quitar ${participants.length} seleccionados de este evento?`, onYes: removeAllSelected })}
           disabled={loading || participants.length === 0}>Quitar todos</button>
       )}

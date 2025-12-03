@@ -86,7 +86,7 @@ export const ResetPassword: React.FC = () => {
 
   if (success) {
     return (
-      <div className="max-w-md mx-auto bg-white rounded-md shadow p-6 mt-10">
+      <div className="max-w-md mx-auto bg-white rounded-md shadow p-4 sm:p-6 mt-4 sm:mt-10">
         <h2 className="text-xl font-semibold mb-4 text-green-600">¡Contraseña Restablecida!</h2>
         <p className="text-gray-700 mb-4">
           Tu contraseña ha sido restablecida exitosamente. Ahora puedes iniciar sesión con tu nueva contraseña.
@@ -100,7 +100,7 @@ export const ResetPassword: React.FC = () => {
 
   if (!token) {
     return (
-      <div className="max-w-md mx-auto bg-white rounded-md shadow p-6 mt-10">
+      <div className="max-w-md mx-auto bg-white rounded-md shadow p-4 sm:p-6 mt-4 sm:mt-10">
         <h2 className="text-xl font-semibold mb-4 text-red-600">Error</h2>
         <p className="text-gray-700 mb-4">
           Token de recuperación no válido o faltante.
@@ -113,7 +113,7 @@ export const ResetPassword: React.FC = () => {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-md shadow p-6 mt-10">
+    <div className="max-w-md mx-auto bg-white rounded-md shadow p-4 sm:p-6 mt-4 sm:mt-10">
       <h2 className="text-xl font-semibold mb-4">Restablecer Contraseña</h2>
       <form onSubmit={onSubmit} className="space-y-3">
         <div>

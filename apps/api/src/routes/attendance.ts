@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express'
 import { prisma } from '../lib/prisma.js'
-import { requireRole } from './auth.js'
+import { requireRole, requirePermission } from './auth.js'
 import { z } from 'zod'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import { success, updated, deleted, validationError, notFound } from '../lib/response.js'
@@ -95,7 +95,7 @@ const upsertSchema = z.object({
  *       400:
  *         description: Invalid input
  */
-router.put('/', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+router.put('/', requirePermission('events:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsed = upsertSchema.safeParse(req.body)
   if (!parsed.success) return validationError(res, 'Invalid input', parsed.error.errors)
   const { eventId, playerId, status, note } = parsed.data
@@ -140,7 +140,7 @@ const deleteQuerySchema = z.object({
   playerId: z.coerce.number().int().positive(),
 })
 
-router.delete('/', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+router.delete('/', requirePermission('events:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsed = deleteQuerySchema.safeParse(req.query)
   if (!parsed.success) {
     return validationError(res, 'Invalid query parameters', parsed.error.errors)

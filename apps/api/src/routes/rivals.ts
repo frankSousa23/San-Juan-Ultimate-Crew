@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express'
 import { prisma } from '../lib/prisma.js'
-import { requireRole } from './auth.js'
+import { requireRole, requirePermission } from './auth.js'
 import { z } from 'zod'
 import type { Prisma } from '@prisma/client'
 import { asyncHandler } from '../middleware/errorHandler.js'
@@ -154,7 +154,7 @@ router.get('/paged', asyncHandler(async (req: Request, res: Response) => {
  *       400:
  *         description: Invalid input
  */
-router.post('/', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+router.post('/', requirePermission('rivals:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsed = createSchema.safeParse(req.body)
   if (!parsed.success) {
     return validationError(res, 'Invalid input', parsed.error.errors)
@@ -212,7 +212,7 @@ router.post('/', requireRole(['admin']), asyncHandler(async (req: Request, res: 
  *       404:
  *         description: Rival not found
  */
-router.put('/:id', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+router.put('/:id', requirePermission('rivals:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = rivalIdSchema.safeParse(req.params)
   if (!parsedId.success) {
     return validationError(res, 'Invalid id', parsedId.error.errors)
@@ -257,7 +257,7 @@ router.put('/:id', requireRole(['admin']), asyncHandler(async (req: Request, res
  *       404:
  *         description: Rival not found
  */
-router.delete('/:id', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+router.delete('/:id', requirePermission('rivals:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = rivalIdSchema.safeParse(req.params)
   if (!parsedId.success) {
     return validationError(res, 'Invalid id', parsedId.error.errors)

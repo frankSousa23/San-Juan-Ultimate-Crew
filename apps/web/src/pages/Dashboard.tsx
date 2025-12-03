@@ -55,8 +55,8 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600">Bienvenido al sistema de gestión de San Juan Ultimate</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-sm sm:text-base text-gray-600">Bienvenido al sistema de gestión de San Juan Ultimate</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -142,42 +142,42 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Accesos Rápidos</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-4">Accesos Rápidos</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
           {(hasRole('player') || hasRole('admin')) && (
             <>
-              <Link to="/roster" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
-                <div className="text-2xl mb-2">👥</div>
-                <div className="text-sm font-medium">Roster</div>
+              <Link to="/roster" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+                <div className="text-xl sm:text-2xl mb-1 sm:mb-2">👥</div>
+                <div className="text-xs sm:text-sm font-medium">Roster</div>
               </Link>
-              <Link to="/eventos" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
-                <div className="text-2xl mb-2">📅</div>
-                <div className="text-sm font-medium">Eventos</div>
+              <Link to="/eventos" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+                <div className="text-xl sm:text-2xl mb-1 sm:mb-2">📅</div>
+                <div className="text-xs sm:text-sm font-medium">Eventos</div>
               </Link>
             </>
           )}
           {hasRole('admin') && (
             <>
-              <Link to="/finanzas" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
-                <div className="text-2xl mb-2">💰</div>
-                <div className="text-sm font-medium">Finanzas</div>
+              <Link to="/finanzas" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+                <div className="text-xl sm:text-2xl mb-1 sm:mb-2">💰</div>
+                <div className="text-xs sm:text-sm font-medium">Finanzas</div>
               </Link>
-              <Link to="/admin/monitoring" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
-                <div className="text-2xl mb-2">📊</div>
-                <div className="text-sm font-medium">Monitoreo</div>
+              <Link to="/admin/monitoring" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+                <div className="text-xl sm:text-2xl mb-1 sm:mb-2">📊</div>
+                <div className="text-xs sm:text-sm font-medium">Monitoreo</div>
               </Link>
             </>
           )}
           {!hasRole('player') && !hasRole('admin') && (
             <>
-              <Link to="/perfil" className="p-4 border rounded-lg hover:bg-gray-50 text-center">
-                <div className="text-2xl mb-2">👤</div>
-                <div className="text-sm font-medium">Mi Perfil</div>
+              <Link to="/perfil" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+                <div className="text-xl sm:text-2xl mb-1 sm:mb-2">👤</div>
+                <div className="text-xs sm:text-sm font-medium">Mi Perfil</div>
               </Link>
-              <div className="p-4 border rounded-lg bg-gray-50 text-center opacity-60">
-                <div className="text-2xl mb-2">👥</div>
-                <div className="text-sm font-medium text-gray-500">Roster</div>
+              <div className="p-3 sm:p-4 border rounded-lg bg-gray-50 text-center opacity-60">
+                <div className="text-xl sm:text-2xl mb-1 sm:mb-2">👥</div>
+                <div className="text-xs sm:text-sm font-medium text-gray-500">Roster</div>
                 <div className="text-xs text-gray-400 mt-1">Solicita acceso</div>
               </div>
             </>

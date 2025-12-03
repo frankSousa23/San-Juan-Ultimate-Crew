@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { z } from 'zod'
-import { requireRole } from './auth.js'
+import { requireRole, requirePermission } from './auth.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import type { Prisma } from '@prisma/client'
 import { success, updated, deleted, validationError, notFound } from '../lib/response.js'
@@ -105,7 +105,7 @@ const deleteQuerySchema = z.object({
  *       403:
  *         description: Forbidden - Admin role required
  */
-router.put('/', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+router.put('/', requirePermission('roster:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsed = upsertSchema.safeParse(req.body)
   if (!parsed.success) return validationError(res, 'Invalid input', parsed.error.errors)
   const { eventId, playerId, role, status } = parsed.data
@@ -150,7 +150,7 @@ router.put('/', requireRole(['admin']), asyncHandler(async (req: Request, res: R
  *       404:
  *         description: Event participant not found
  */
-router.delete('/', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+router.delete('/', requirePermission('roster:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsed = deleteQuerySchema.safeParse(req.query)
   if (!parsed.success) {
     return validationError(res, 'eventId y playerId requeridos (números enteros positivos)', parsed.error.errors)

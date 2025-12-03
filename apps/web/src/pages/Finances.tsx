@@ -4,6 +4,7 @@ import { accountsApi, categoriesApi, transactionsApi, getAuthToken } from '../li
 import { Account, Category, TransactionItem, TransactionType } from '../types/finance'
 import { useToast } from '../hooks/useToast'
 import { useApi } from '../hooks/useApi'
+import { useAuth } from '../contexts/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
 
 export default function Finances() {
@@ -28,8 +29,9 @@ export default function Finances() {
   const [catModal, setCatModal] = useState(false)
   const [catForm, setCatForm] = useState<any>({ name: '', kind: 'INCOME' })
   const toasts = useToast()
+  const { hasPermission } = useAuth()
   const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
-  const authed = !!getAuthToken()
+  const authed = !!getAuthToken() && hasPermission('finance:manage')
 
   // API hooks
   const { execute: loadTransactions, loading, error } = useApi(transactionsApi.list, {
@@ -231,7 +233,9 @@ export default function Finances() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-gray-800">Finanzas</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h2 className="text-2xl font-bold text-gray-800">Finanzas</h2>
+      </div>
       {!authed && (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded p-3 text-sm">Inicia sesión para crear, editar o eliminar transacciones, cuentas y categorías.</div>
       )}
@@ -370,10 +374,10 @@ export default function Finances() {
         {/* Pagination */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-2 text-sm">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-            <div>Total: {total}</div>
-            <label className="flex items-center gap-1">Por página:
+            <div className="whitespace-nowrap">Total: {total}</div>
+            <label className="flex items-center gap-1 whitespace-nowrap">Por página:
               <select
-                className="border rounded px-2 py-1"
+                className="border rounded px-2 py-1 text-sm"
                 value={limit}
                 onChange={e => {
                   const n = Number(e.target.value)
@@ -399,6 +403,7 @@ export default function Finances() {
           <div className="flex items-center gap-2">
             <button
               disabled={offset===0}
+              className="whitespace-nowrap text-sm"
               onClick={() => {
                 const newOffset = Math.max(0, offset - limit)
                 const newPage = Math.floor(newOffset/limit)+1
@@ -415,9 +420,10 @@ export default function Finances() {
               }}
               className="px-2 py-1 border rounded disabled:opacity-50"
             >Prev</button>
-            <div>Página {Math.floor(offset/limit)+1} de {Math.max(1, pages)}</div>
+            <div className="whitespace-nowrap text-sm">Página {Math.floor(offset/limit)+1} de {Math.max(1, pages)}</div>
             <button
               disabled={(offset+limit)>=total}
+              className="whitespace-nowrap text-sm"
               onClick={() => {
                 const newOffset = offset + limit
                 const newPage = Math.floor(newOffset/limit)+1
@@ -440,8 +446,8 @@ export default function Finances() {
 
       {/* Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setModalOpen(false)}>
-          <div className="bg-white rounded-xl max-w-lg w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setModalOpen(false)}>
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-gradient-to-r from-indigo-600 to-emerald-600 text-white p-4">
               <div className="text-lg font-bold">{editing ? 'Editar' : 'Nueva'} Transacción</div>
             </div>
@@ -491,8 +497,8 @@ export default function Finances() {
 
       {/* New Account Modal */}
       {acctModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setAcctModal(false)}>
-          <div className="bg-white rounded-xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setAcctModal(false)}>
+          <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-indigo-600 text-white p-3 font-semibold">Nueva Cuenta</div>
             <div className="p-4 grid gap-3">
               <div>
@@ -521,8 +527,8 @@ export default function Finances() {
 
       {/* New Category Modal */}
       {catModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setCatModal(false)}>
-          <div className="bg-white rounded-xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setCatModal(false)}>
+          <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-indigo-600 text-white p-3 font-semibold">Nueva Categoría</div>
             <div className="p-4 grid gap-3">
               <div>

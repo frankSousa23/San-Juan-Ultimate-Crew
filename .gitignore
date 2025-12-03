@@ -72,10 +72,21 @@ PROJECT_STATUS.md
 GUIA_*.md
 DEVELOPMENT.md
 
+# Documentación temporal de desarrollo (no subir al repo)
+ROLES_*.md
+IMPLEMENTATION_*.md
+TESTING_*.md
+FINAL_*.md
+*_ANALYSIS.md
+*_SUMMARY.md
+*_PLAN.md
+*_RECOMMENDATIONS.md
+
+# Nota: local/ ya está ignorado arriba en la línea 45
+
 # Temporary files
 *.tmp
 *.temp
-process.exit(1))
 
 # OS files
 .DS_Store

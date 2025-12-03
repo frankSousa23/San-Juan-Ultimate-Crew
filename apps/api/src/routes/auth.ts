@@ -40,6 +40,53 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+// Helper function to get user with roles and permissions
+async function getUserWithPermissions(userId: number) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { 
+      roles: { 
+        include: { 
+          role: {
+            include: {
+              permissions: {
+                include: {
+                  permission: true
+                }
+              }
+            }
+          }
+        } 
+      } 
+    }
+  })
+  
+  if (!user) return null
+  
+  const userRoles: string[] = []
+  const userPermissions: string[] = []
+  
+  if (user.roles && Array.isArray(user.roles)) {
+    for (const userRole of user.roles) {
+      if (userRole && userRole.role && userRole.role.name) {
+        userRoles.push(userRole.role.name)
+        // Get permissions for this role
+        if (userRole.role.permissions && Array.isArray(userRole.role.permissions)) {
+          for (const rolePerm of userRole.role.permissions) {
+            if (rolePerm && rolePerm.permission && rolePerm.permission.name) {
+              if (!userPermissions.includes(rolePerm.permission.name)) {
+                userPermissions.push(rolePerm.permission.name)
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  return { user, roles: userRoles, permissions: userPermissions }
+}
+
 export function requireRole(roles: string[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (!AUTH_REQUIRED) return next()
@@ -66,43 +113,82 @@ export function requireRole(roles: string[]) {
       return res.status(401).json({ error: 'Invalid user ID' })
     }
     
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { 
-        roles: { 
-          include: { 
-            role: {
-              select: {
-                name: true,
-                id: true
-              }
-            }
-          } 
-        } 
-      }
-    })
+    const userData = await getUserWithPermissions(userId)
     
-    if (!user) {
+    if (!userData) {
       return res.status(401).json({ error: 'User not found' })
     }
     
-    const userRoles: string[] = []
-    if (user.roles && Array.isArray(user.roles)) {
-      for (const userRole of user.roles) {
-        if (userRole && userRole.role && userRole.role.name) {
-          userRoles.push(userRole.role.name)
-        }
-      }
-    }
-    
-    const has = userRoles.some((roleName: string) => roles.includes(roleName))
+    const has = userData.roles.some((roleName: string) => roles.includes(roleName))
     
     if (!has) {
       return res.status(403).json({ 
         error: 'Forbidden',
-        message: `Required roles: ${roles.join(', ')}, User roles: ${userRoles.join(', ') || 'none'}`
+        message: `Required roles: ${roles.join(', ')}, User roles: ${userData.roles.join(', ') || 'none'}`
       })
     }
+    
+    // Store user data in request for use in route handlers
+    ;(req as any).userRoles = userData.roles
+    ;(req as any).userPermissions = userData.permissions
+    
+    next()
+  }
+}
+
+// New function to require specific permission
+export function requirePermission(permission: string) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    if (!AUTH_REQUIRED) return next()
+    let u = (req as any).user as any
+    if (!u?.sub) {
+      const auth = req.headers.authorization || ''
+      const [, token] = auth.split(' ')
+      if (!token) return res.status(401).json({ error: 'Unauthorized' })
+      try {
+        u = jwt.verify(token, JWT_SECRET) as any
+        ;(req as any).user = u
+      } catch (err: any) {
+        if (err.name === 'TokenExpiredError') {
+          return res.status(401).json({ error: 'Token expired. Please log in again.' })
+        }
+        if (err.name === 'JsonWebTokenError') {
+          return res.status(401).json({ error: 'Invalid token' })
+        }
+        return res.status(401).json({ error: 'Authentication failed' })
+      }
+    }
+    const userId = Number(u.sub)
+    if (!userId || isNaN(userId)) {
+      return res.status(401).json({ error: 'Invalid user ID' })
+    }
+    
+    const userData = await getUserWithPermissions(userId)
+    
+    if (!userData) {
+      return res.status(401).json({ error: 'User not found' })
+    }
+    
+    // Admin always has all permissions
+    if (userData.roles.includes('admin')) {
+      ;(req as any).userRoles = userData.roles
+      ;(req as any).userPermissions = userData.permissions
+      return next()
+    }
+    
+    // Check if user has the required permission
+    const hasPermission = userData.permissions.includes(permission)
+    
+    if (!hasPermission) {
+      return res.status(403).json({ 
+        error: 'Forbidden',
+        message: `Required permission: ${permission}, User permissions: ${userData.permissions.join(', ') || 'none'}`
+      })
+    }
+    
+    // Store user data in request for use in route handlers
+    ;(req as any).userRoles = userData.roles
+    ;(req as any).userPermissions = userData.permissions
     
     next()
   }
@@ -434,35 +520,21 @@ router.get('/me', requireAuth, asyncHandler(async (req: Request, res: Response) 
     return unauthorized(res, 'Invalid user ID')
   }
   
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: { 
-      roles: { 
-        include: { 
-          role: {
-            select: {
-              name: true,
-              id: true
-            }
-          }
-        } 
-      } 
-    }
-  })
+  const userData = await getUserWithPermissions(userId)
   
-  if (!user) {
+  if (!userData) {
     return unauthorized(res, 'User not found')
   }
   
-  const roleNames = Array.isArray(user.roles) ? user.roles.map((ur: any) => ur.role?.name).filter(Boolean) : []
-  
   return success(res, {
     user: {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      roles: roleNames,
-      playerId: user.playerId ?? null
+      id: userData.user.id,
+      email: userData.user.email,
+      name: userData.user.name,
+      roles: userData.roles,
+      permissions: userData.permissions,
+      playerId: userData.user.playerId ?? null,
+      status: userData.user.status
     },
     authDisabled: false
   })

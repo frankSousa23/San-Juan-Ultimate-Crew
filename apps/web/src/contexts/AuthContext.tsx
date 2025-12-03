@@ -19,6 +19,7 @@ interface User {
   email: string;
   name?: string;
   roles?: string[]; // Changed from Role[] to string[] to match authApi.me() response
+  permissions?: string[]; // Permissions from roles
   playerId?: number | null;
   status?: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
@@ -171,9 +172,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const hasPermission = (permissionName: string): boolean => {
-    // Since roles are now strings, we can't check permissions
-    // For now, admins have all permissions
-    return hasRole('admin');
+    // Admin always has all permissions
+    if (hasRole('admin')) return true;
+    // Check if user has the specific permission
+    if (user?.permissions && Array.isArray(user.permissions)) {
+      return user.permissions.includes(permissionName);
+    }
+    return false;
   };
 
   const value = {

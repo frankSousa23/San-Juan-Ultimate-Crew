@@ -18,19 +18,41 @@ async function main() {
   console.log('🌱 Starting seed...')
 
   // 1) Auth: permissions, roles, admin users
-  const perms = [
+  // Permisos de gestión (manage)
+  const managePerms = [
     'finance:manage',
     'resources:manage',
     'roster:manage',
     'events:manage',
     'communications:manage',
+    'injuries:manage',
+    'rivals:manage',
+    'plays:manage',
   ]
-  for (const name of perms) {
+  // Permisos de visualización (view)
+  const viewPerms = [
+    'roster:view',
+    'events:view',
+    'injuries:view',
+    'rivals:view',
+    'plays:view',
+    'resources:view',
+    'finance:view',
+    'statistics:view',
+  ]
+  const allPermNames = [...managePerms, ...viewPerms]
+  for (const name of allPermNames) {
     await db.permission.upsert({ where: { name }, update: {}, create: { name } })
   }
+  
+  // Crear roles
   const adminRole = await db.role.upsert({ where: { name: 'admin' }, update: {}, create: { name: 'admin' } })
   const guestRole = await db.role.upsert({ where: { name: 'guest' }, update: {}, create: { name: 'guest' } })
   const playerRole = await db.role.upsert({ where: { name: 'player' }, update: {}, create: { name: 'player' } })
+  const captainRole = await db.role.upsert({ where: { name: 'captain' }, update: {}, create: { name: 'captain' } })
+  const coachRole = await db.role.upsert({ where: { name: 'coach' }, update: {}, create: { name: 'coach' } })
+  const treasurerRole = await db.role.upsert({ where: { name: 'treasurer' }, update: {}, create: { name: 'treasurer' } })
+  
   const allPerms = await db.permission.findMany()
   
   // Admin gets all permissions
@@ -42,16 +64,87 @@ async function main() {
     })
   }
   
-  // Player gets read permissions for most resources, and can manage communications
-  const playerPerms = allPerms.filter((p: any) => 
-    p.name === 'communications:manage' || 
-    p.name === 'events:manage'
-  )
+  // Player: communications and events management, view permissions for most resources
+  const playerPermNames = [
+    'communications:manage',
+    'events:manage',
+    'roster:view',
+    'injuries:view',
+    'rivals:view',
+    'plays:view',
+    'resources:view',
+    'statistics:view',
+  ]
+  const playerPerms = allPerms.filter((p: any) => playerPermNames.includes(p.name))
   for (const p of playerPerms) {
     await db.rolePermission.upsert({
       where: { roleId_permissionId: { roleId: playerRole.id, permissionId: p.id } },
       update: {},
       create: { roleId: playerRole.id, permissionId: p.id }
+    })
+  }
+  
+  // Captain: manage roster (for tournaments), events, injuries, rivals, plays; view statistics
+  const captainPermNames = [
+    'roster:manage',
+    'events:manage',
+    'communications:manage',
+    'injuries:manage',
+    'rivals:manage',
+    'plays:manage',
+    'roster:view',
+    'injuries:view',
+    'rivals:view',
+    'plays:view',
+    'resources:view',
+    'statistics:view',
+  ]
+  const captainPerms = allPerms.filter((p: any) => captainPermNames.includes(p.name))
+  for (const p of captainPerms) {
+    await db.rolePermission.upsert({
+      where: { roleId_permissionId: { roleId: captainRole.id, permissionId: p.id } },
+      update: {},
+      create: { roleId: captainRole.id, permissionId: p.id }
+    })
+  }
+  
+  // Coach: manage events, injuries, plays, resources; view roster, statistics
+  const coachPermNames = [
+    'events:manage',
+    'communications:manage',
+    'injuries:manage',
+    'plays:manage',
+    'resources:manage',
+    'roster:view',
+    'roster:manage', // Can manage tournament rosters
+    'injuries:view',
+    'plays:view',
+    'resources:view',
+    'statistics:view',
+  ]
+  const coachPerms = allPerms.filter((p: any) => coachPermNames.includes(p.name))
+  for (const p of coachPerms) {
+    await db.rolePermission.upsert({
+      where: { roleId_permissionId: { roleId: coachRole.id, permissionId: p.id } },
+      update: {},
+      create: { roleId: coachRole.id, permissionId: p.id }
+    })
+  }
+  
+  // Treasurer: manage finances; view roster, events, statistics
+  const treasurerPermNames = [
+    'finance:manage',
+    'finance:view',
+    'roster:view',
+    'events:view',
+    'statistics:view',
+  ]
+  const treasurerPerms = allPerms.filter((p: any) => treasurerPermNames.includes(p.name))
+  for (const p of treasurerPerms) {
+    await db.rolePermission.upsert({
+      where: { roleId_permissionId: { roleId: treasurerRole.id, permissionId: p.id } },
+      update: {},
+      create: { roleId: treasurerRole.id, permissionId: p.id }
     })
   }
   
@@ -160,6 +253,67 @@ async function main() {
       create: { userId: playerUser.id, roleId: playerRole.id }
     })
   }
+
+  // Create sample users for new roles (captain, coach, treasurer)
+  console.log('👑 Creating captain, coach, and treasurer users...')
+  
+  // Captain user (linked to a player without user)
+  // Find a player that doesn't have a user linked
+  const playersWithUsers = await db.user.findMany({
+    where: { playerId: { not: null } },
+    select: { playerId: true }
+  })
+  const playerIdsWithUsers = new Set(playersWithUsers.map((u: any) => u.playerId).filter(Boolean))
+  const availablePlayer = players.find((p: any) => !playerIdsWithUsers.has(p.id))
+  
+  if (availablePlayer) {
+    const captainUser = await db.user.upsert({
+      where: { email: 'captain@example.com' },
+      update: { passwordHash, playerId: availablePlayer.id, status: 'APPROVED' },
+      create: { email: 'captain@example.com', name: 'Capitán del Equipo', passwordHash, playerId: availablePlayer.id, status: 'APPROVED' }
+    })
+    await db.userRole.upsert({
+      where: { userId_roleId: { userId: captainUser.id, roleId: captainRole.id } },
+      update: {},
+      create: { userId: captainUser.id, roleId: captainRole.id }
+    })
+  } else {
+    // If no available player, create captain without player link
+    const captainUser = await db.user.upsert({
+      where: { email: 'captain@example.com' },
+      update: { passwordHash, status: 'APPROVED' },
+      create: { email: 'captain@example.com', name: 'Capitán del Equipo', passwordHash, status: 'APPROVED' }
+    })
+    await db.userRole.upsert({
+      where: { userId_roleId: { userId: captainUser.id, roleId: captainRole.id } },
+      update: {},
+      create: { userId: captainUser.id, roleId: captainRole.id }
+    })
+  }
+  
+  // Coach user (not linked to a player)
+  const coachUser = await db.user.upsert({
+    where: { email: 'coach@example.com' },
+    update: { passwordHash, status: 'APPROVED' },
+    create: { email: 'coach@example.com', name: 'Entrenador Principal', passwordHash, status: 'APPROVED' }
+  })
+  await db.userRole.upsert({
+    where: { userId_roleId: { userId: coachUser.id, roleId: coachRole.id } },
+    update: {},
+    create: { userId: coachUser.id, roleId: coachRole.id }
+  })
+  
+  // Treasurer user (not linked to a player)
+  const treasurerUser = await db.user.upsert({
+    where: { email: 'treasurer@example.com' },
+    update: { passwordHash, status: 'APPROVED' },
+    create: { email: 'treasurer@example.com', name: 'Tesorero del Equipo', passwordHash, status: 'APPROVED' }
+  })
+  await db.userRole.upsert({
+    where: { userId_roleId: { userId: treasurerUser.id, roleId: treasurerRole.id } },
+    update: {},
+    create: { userId: treasurerUser.id, roleId: treasurerRole.id }
+  })
 
   // 4) Create pending users (will be approved by admins later)
   console.log('⏳ Creating pending users...')
@@ -545,6 +699,11 @@ async function main() {
   console.log('\n✅ Seed completed successfully!')
   console.log('\n📊 Summary:')
   console.log(`- ${adminUsers.length} admin users`)
+  console.log(`- 1 guest user`)
+  console.log(`- 5 player users`)
+  console.log(`- 1 captain user`)
+  console.log(`- 1 coach user`)
+  console.log(`- 1 treasurer user`)
   console.log(`- ${players.length} players`)
   console.log(`- ${events.length} events`)
   console.log(`- ${channels.length} channels`)
@@ -553,7 +712,12 @@ async function main() {
   console.log(`- 15 resources`)
   console.log(`- 30 transactions`)
   console.log('\n🔑 Login credentials:')
-  console.log('- Admin:  admin@example.com / admin123')
+  console.log('- Admin:    admin@example.com / admin123')
+  console.log('- Guest:    guest@example.com / admin123')
+  console.log('- Player:   player@example.com / admin123')
+  console.log('- Captain:  captain@example.com / admin123')
+  console.log('- Coach:    coach@example.com / admin123')
+  console.log('- Treasurer: treasurer@example.com / admin123')
   console.log('- Admin:  admin1@example.com / admin123')
   console.log('- Admin:  admin2@example.com / admin123')
   console.log('- Guest:  guest@example.com / admin123')

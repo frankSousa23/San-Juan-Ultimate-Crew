@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { playersApi, authApi, getAuthToken, attendanceApi, eventParticipantsApi, eventsApi } from '../lib/api'
 import { useApi } from '../hooks/useApi'
 import { useToast } from '../hooks/useToast'
+import { useAuth } from '../contexts/AuthContext'
 import PlayerForm from '../components/PlayerForm'
 import { Player, Position, Status } from '../types/player'
 
@@ -13,6 +14,7 @@ const badgeColor: Record<Status, string> = {
 }
 
 export default function Roster() {
+  const { user: authUser, hasPermission } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [players, setPlayers] = useState<Player[]>([])
   const [q, setQ] = useState('')
@@ -183,16 +185,16 @@ export default function Roster() {
   return (
     <div className="space-y-6">
       {/* Header & Actions */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h2 className="text-2xl font-bold text-gray-800">Roster Principal</h2>
-        {(user?.roles?.includes('admin')) && (
-          <button onClick={() => setCreateOpen(true)} className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">+ Agregar Jugador</button>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Roster Principal</h2>
+        {hasPermission('roster:manage') && (
+          <button onClick={() => setCreateOpen(true)} className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 whitespace-nowrap text-sm sm:text-base">+ Agregar Jugador</button>
         )}
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex flex-col md:flex-row items-stretch gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch gap-3">
           <input
             value={q}
             onChange={e => setQ(e.target.value)}
@@ -212,15 +214,15 @@ export default function Roster() {
               }
             }}
             placeholder="Buscar jugador..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm sm:text-base"
           />
-          <select value={pos} onChange={e => setPos(e.target.value as '' | Position)} className="px-4 py-2 border rounded-lg">
+          <select value={pos} onChange={e => setPos(e.target.value as '' | Position)} className="px-3 sm:px-4 py-2 border rounded-lg text-sm sm:text-base">
             <option value=''>Todas las posiciones</option>
             <option value='HANDLER'>Handler</option>
             <option value='CUTTER'>Cutter</option>
             <option value='HYBRID'>Hybrid</option>
           </select>
-          <select value={st} onChange={e => setSt(e.target.value as '' | Status)} className="px-4 py-2 border rounded-lg">
+          <select value={st} onChange={e => setSt(e.target.value as '' | Status)} className="px-3 sm:px-4 py-2 border rounded-lg text-sm sm:text-base">
             <option value=''>Todos los estados</option>
             <option value='ACTIVE'>Activo</option>
             <option value='INJURED'>Lesionado</option>
@@ -255,8 +257,8 @@ export default function Roster() {
 
       {/* Modal (placeholder) */}
       {selected && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setSelected(null)}>
-          <div className="bg-white rounded-xl max-w-md w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
+          <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4">
               <div className="text-lg font-bold">{selected.name} #{selected.number}</div>
               <div className="text-sm opacity-90">{selected.position}</div>
@@ -324,8 +326,8 @@ export default function Roster() {
 
       {/* Create Modal */}
       {createOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setCreateOpen(false)}>
-          <div className="bg-white rounded-xl max-w-lg w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setCreateOpen(false)}>
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white p-4">
               <div className="text-lg font-bold">Agregar Jugador</div>
             </div>
@@ -343,8 +345,8 @@ export default function Roster() {
 
       {/* Edit Modal */}
       {editOpen && selected && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setEditOpen(false)}>
-          <div className="bg-white rounded-xl max-w-lg w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setEditOpen(false)}>
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4">
               <div className="text-lg font-bold">Editar Jugador</div>
             </div>

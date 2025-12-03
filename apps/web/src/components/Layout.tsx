@@ -17,21 +17,24 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Dashboard', href: '/', icon: '🏠', roles: [] },
     { name: 'Mi Perfil', href: '/perfil', icon: '👤', roles: [] },
     
-    // Player & Admin
-    { name: 'Roster', href: '/roster', icon: '👥', roles: ['player', 'admin'] },
-    { name: 'Eventos', href: '/eventos', icon: '📅', roles: ['player', 'admin'] },
+    // Player, Captain, Coach & Admin
+    { name: 'Roster', href: '/roster', icon: '👥', roles: ['player', 'captain', 'coach', 'admin'] },
+    { name: 'Eventos', href: '/eventos', icon: '📅', roles: ['player', 'captain', 'coach', 'admin'] },
     // Communications: accessible to all authenticated users (guest can view)
     { name: 'Comunicación', href: '/comunicacion', icon: '💬', roles: [] },
-    { name: 'Estadísticas', href: '/estadisticas', icon: '📊', roles: ['player', 'admin'] },
-    { name: 'Lesiones', href: '/lesiones', icon: '🏥', roles: ['player', 'admin'] },
-    { name: 'Rivales', href: '/rivales', icon: '⚔️', roles: ['player', 'admin']},
-    { name: 'Jugadas', href: '/jugadas', icon: '🎯', roles: ['player', 'admin'] },
-    { name: 'Roster Torneo', href: '/roster-torneo', icon: '🏆', roles: ['player', 'admin'] },
-    { name: 'Recursos', href: '/recursos', icon: '📁', roles: ['player', 'admin'] },
+    { name: 'Estadísticas', href: '/estadisticas', icon: '📊', roles: ['player', 'captain', 'coach', 'treasurer', 'admin'] },
+    { name: 'Lesiones', href: '/lesiones', icon: '🏥', roles: ['player', 'captain', 'coach', 'admin'] },
+    { name: 'Rivales', href: '/rivales', icon: '⚔️', roles: ['player', 'captain', 'admin']},
+    { name: 'Jugadas', href: '/jugadas', icon: '🎯', roles: ['player', 'captain', 'coach', 'admin'] },
+    { name: 'Roster Torneo', href: '/roster-torneo', icon: '🏆', roles: ['player', 'captain', 'coach', 'admin'] },
+    { name: 'Recursos', href: '/recursos', icon: '📁', roles: ['player', 'coach', 'admin'] },
+    
+    // Treasurer & Admin
+    { name: 'Finanzas', href: '/finanzas', icon: '💰', roles: ['treasurer', 'admin'] },
     
     // Admin Only
-    { name: 'Finanzas', href: '/finanzas', icon: '💰', roles: ['admin'] },
     { name: 'Admin Usuarios', href: '/admin/usuarios', icon: '🔧', roles: ['admin'] },
+    { name: 'Monitoreo', href: '/admin/monitoring', icon: '💻', roles: ['admin'] },
   ]
 
   const isActive = (href: string) => {
@@ -137,8 +140,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 lg:p-6 overflow-x-hidden">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 p-4 sm:p-4 lg:p-6 overflow-x-hidden">
+          <div className="max-w-7xl mx-auto w-full">
             {children}
           </div>
         </main>

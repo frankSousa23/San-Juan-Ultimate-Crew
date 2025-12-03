@@ -169,11 +169,11 @@ export default function AdminUsers() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h2 className="text-2xl font-bold text-gray-800">Admin: Usuarios</h2>
         <button
           onClick={() => { load(); loadPendingUsers() }}
-          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm"
+          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm whitespace-nowrap"
         >
           🔄 Actualizar
         </button>
@@ -331,9 +331,11 @@ export default function AdminUsers() {
                 <td className="px-4 py-2">
                   <input className="border rounded px-2 py-1 w-24" value={playerId[u.id] || ''} onChange={(e) => setPlayerId(prev => ({ ...prev, [u.id]: e.target.value }))} placeholder="id" />
                 </td>
-                <td className="px-4 py-2 text-right space-x-2">
-                  <button className="px-2 py-1 bg-indigo-600 text-white rounded" onClick={() => saveRoles(u.id)}>Guardar roles</button>
-                  <button className="px-2 py-1 bg-emerald-600 text-white rounded" onClick={() => saveLink(u.id)}>Vincular</button>
+                <td className="px-4 py-2 text-right">
+                  <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 sm:justify-end">
+                    <button className="px-2 py-1 bg-indigo-600 text-white rounded text-xs sm:text-sm whitespace-nowrap" onClick={() => saveRoles(u.id)}>Guardar roles</button>
+                    <button className="px-2 py-1 bg-emerald-600 text-white rounded text-xs sm:text-sm whitespace-nowrap" onClick={() => saveLink(u.id)}>Vincular</button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -405,10 +407,10 @@ export default function AdminUsers() {
                     r.note ?? ''
                   )}
                 </td>
-                <td className="px-4 py-2 text-right space-x-2">
+                <td className="px-4 py-2 text-right">
                   {r.status === 'PENDING' && (
                     <>
-                      <div className="flex flex-col items-start gap-1">
+                      <div className="flex flex-col items-end gap-1 mb-1">
                         {requestError[r.id] && (
                           <div className="text-rose-600 text-xs">{requestError[r.id]}</div>
                         )}
@@ -416,9 +418,10 @@ export default function AdminUsers() {
                           <div className="text-emerald-700 text-xs">Guardado</div>
                         )}
                       </div>
+                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 sm:justify-end">
                       <button
                         data-testid={`role-req-save-${r.id}`}
-                        className={`px-2 py-1 rounded ${requestSaving[r.id] ? 'bg-gray-300 text-gray-500' : 'bg-gray-200 text-gray-800'}`}
+                        className={`px-2 py-1 rounded text-xs sm:text-sm whitespace-nowrap ${requestSaving[r.id] ? 'bg-gray-300 text-gray-500' : 'bg-gray-200 text-gray-800'}`}
                         disabled={!!requestSaving[r.id]}
                         onClick={async () => {
                         const raw = requestPlayerId[r.id]
@@ -449,8 +452,9 @@ export default function AdminUsers() {
                       }}>
                         {requestSaving[r.id] ? 'Guardando…' : 'Guardar'}
                       </button>
-                      <button className="px-2 py-1 bg-emerald-600 text-white rounded" onClick={async () => { await adminUsersApi.approveRoleRequest(r.id); toast.showSuccessToast('Solicitud aprobada'); await loadRequests() }}>Aprobar</button>
-                      <button className="px-2 py-1 bg-rose-600 text-white rounded" onClick={async () => { await adminUsersApi.denyRoleRequest(r.id); toast.showInfoToast('Solicitud denegada'); await loadRequests() }}>Denegar</button>
+                      <button className="px-2 py-1 bg-emerald-600 text-white rounded text-xs sm:text-sm whitespace-nowrap" onClick={async () => { await adminUsersApi.approveRoleRequest(r.id); toast.showSuccessToast('Solicitud aprobada'); await loadRequests() }}>Aprobar</button>
+                      <button className="px-2 py-1 bg-rose-600 text-white rounded text-xs sm:text-sm whitespace-nowrap" onClick={async () => { await adminUsersApi.denyRoleRequest(r.id); toast.showInfoToast('Solicitud denegada'); await loadRequests() }}>Denegar</button>
+                      </div>
                     </>
                   )}
                 </td>
