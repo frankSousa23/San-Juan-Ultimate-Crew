@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { requireRole } from './auth.js';
+import { requirePermission } from './auth.js';
 import { z } from 'zod';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { success, created, updated, deleted, paginated, validationError, notFound } from '../lib/response.js';
@@ -187,7 +187,7 @@ router.get('/paged', asyncHandler(async (req, res) => {
  *       400:
  *         description: Invalid input
  */
-router.post('/', requireRole(['admin']), asyncHandler(async (req, res) => {
+router.post('/', requirePermission('plays:manage'), asyncHandler(async (req, res) => {
     const parsed = createSchema.safeParse(req.body);
     if (!parsed.success) {
         return validationError(res, 'Invalid input', parsed.error.errors);
@@ -242,7 +242,7 @@ router.post('/', requireRole(['admin']), asyncHandler(async (req, res) => {
  *       404:
  *         description: Play not found
  */
-router.put('/:id', requireRole(['admin']), asyncHandler(async (req, res) => {
+router.put('/:id', requirePermission('plays:manage'), asyncHandler(async (req, res) => {
     const parsedId = playIdSchema.safeParse(req.params);
     if (!parsedId.success) {
         return validationError(res, 'Invalid id', parsedId.error.errors);
@@ -284,7 +284,7 @@ router.put('/:id', requireRole(['admin']), asyncHandler(async (req, res) => {
  *       404:
  *         description: Play not found
  */
-router.delete('/:id', requireRole(['admin']), asyncHandler(async (req, res) => {
+router.delete('/:id', requirePermission('plays:manage'), asyncHandler(async (req, res) => {
     const parsedId = playIdSchema.safeParse(req.params);
     if (!parsedId.success) {
         return validationError(res, 'Invalid id', parsedId.error.errors);

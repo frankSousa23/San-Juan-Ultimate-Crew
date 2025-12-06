@@ -45,6 +45,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const filteredNavigation = navigation.filter(item => {
     // Public items (no role required)
     if (item.roles.length === 0) return true
+    // If user is not authenticated, only show public items
+    if (!user) return false
     // Check if user has any of the required roles for this item
     return item.roles.some(role => hasRole(role))
   })

@@ -417,7 +417,15 @@ async function main() {
   // 5) Create events
   console.log('📅 Creating events...')
   const now = new Date()
-  const eventTypes: EventType[] = [EventType.TRAINING, EventType.TOURNAMENT, EventType.SOCIAL, EventType.WORKSHOP]
+  const eventTypes: EventType[] = [
+    EventType.TRAINING, 
+    EventType.TOURNAMENT, 
+    EventType.SOCIAL, 
+    EventType.WORKSHOP,
+    EventType.FULL_DAY_OPEN,
+    EventType.FULL_DAY_MIXTO,
+    EventType.AMISTOSO
+  ]
   // Create more completed events for statistics
   const eventStatuses: EventStatus[] = [
     EventStatus.COMPLETED, EventStatus.COMPLETED, EventStatus.COMPLETED, // More completed events
@@ -444,6 +452,9 @@ async function main() {
       [EventType.TOURNAMENT]: ['Torneo Regional', 'Copa Nacional', 'Campeonato Local', 'Torneo de Verano'],
       [EventType.SOCIAL]: ['Reunión de Equipo', 'Asado del Equipo', 'Celebración', 'Evento Social'],
       [EventType.WORKSHOP]: ['Taller de Estrategia', 'Workshop de Lanzamientos', 'Seminario de Defensa', 'Clínica de Ultimate'],
+      [EventType.FULL_DAY_OPEN]: ['Full Day Abierto - Verano', 'Full Day Abierto - Primavera', 'Full Day Abierto - Regional'],
+      [EventType.FULL_DAY_MIXTO]: ['Full Day Mixto - Verano', 'Full Day Mixto - Primavera', 'Full Day Mixto - Regional'],
+      [EventType.AMISTOSO]: ['Partido Amistoso Local', 'Amistoso Interregional', 'Amistoso de Preparación'],
     }
     
     const title = randomElement(titles[type])
@@ -551,6 +562,9 @@ async function main() {
         [EventType.TOURNAMENT]: ['Torneo Regional', 'Copa Nacional', 'Campeonato Local'],
         [EventType.SOCIAL]: ['Reunión de Equipo', 'Asado del Equipo', 'Celebración'],
         [EventType.WORKSHOP]: ['Taller de Estrategia', 'Workshop de Lanzamientos', 'Seminario de Defensa'],
+        [EventType.FULL_DAY_OPEN]: ['Full Day Abierto - Verano', 'Full Day Abierto - Primavera'],
+        [EventType.FULL_DAY_MIXTO]: ['Full Day Mixto - Verano', 'Full Day Mixto - Primavera'],
+        [EventType.AMISTOSO]: ['Partido Amistoso Local', 'Amistoso Interregional'],
       }
       
       const event = await prisma.event.create({
@@ -1071,6 +1085,213 @@ async function main() {
   }
   console.log('✅ Created role requests')
 
+  // 15) Create news posts with files
+  console.log('📰 Creating news posts...')
+  const newsCategories = ['Anuncios', 'Eventos', 'General', 'Torneos', 'Entrenamientos', 'Importante']
+  const newsTitles = [
+    'Bienvenida al Nuevo Año Deportivo',
+    'Próximo Torneo Regional - Confirmar Asistencia',
+    'Cambios en el Horario de Entrenamientos',
+    'Resultados del Último Partido',
+    'Reunión de Equipo - Próxima Semana',
+    'Nuevo Material de Entrenamiento Disponible',
+    'Recordatorio: Pago de Cuotas',
+    'Celebración del Aniversario del Equipo',
+    'Actualización de Reglas del Torneo',
+    'Invitación a Torneo de Verano',
+    'Taller de Estrategia - Próximo Mes',
+    'Logros del Equipo este Mes',
+    'Información sobre Próximo Amistoso',
+    'Actualización de Uniformes',
+    'Reunión de Padres y Jugadores',
+  ]
+
+  const newsContents = [
+    `# Bienvenida al Nuevo Año Deportivo
+
+¡Bienvenidos al nuevo año deportivo! Estamos emocionados de comenzar esta temporada con todos ustedes.
+
+## Objetivos de la Temporada
+- Mejorar nuestro ranking regional
+- Participar en al menos 3 torneos importantes
+- Fortalecer el trabajo en equipo
+
+¡Vamos equipo! 💪`,
+    `# Próximo Torneo Regional
+
+Tenemos el honor de participar en el Torneo Regional que se llevará a cabo el próximo mes.
+
+## Detalles Importantes
+- **Fecha**: Por confirmar
+- **Ubicación**: Estadio Central
+- **Formato**: Round-robin seguido de playoffs
+
+Por favor confirmen su asistencia antes del 15 de este mes.`,
+    `# Cambios en el Horario de Entrenamientos
+
+A partir de la próxima semana, los entrenamientos se realizarán:
+
+- **Lunes y Miércoles**: 6:00 PM - 8:00 PM
+- **Sábados**: 9:00 AM - 11:00 AM
+
+Estos cambios son para optimizar nuestros horarios y mejorar la asistencia.`,
+    `# Resultados del Último Partido
+
+¡Excelente trabajo en el último partido! Logramos una victoria importante contra nuestro rival.
+
+## Resumen del Partido
+- **Resultado**: 15-12 a nuestro favor
+- **MVP**: Por determinar
+- **Próximo Partido**: Próxima semana
+
+¡Sigan así! 🎉`,
+    `# Reunión de Equipo - Próxima Semana
+
+Invitamos a todos los miembros del equipo a la reunión general que se realizará:
+
+**Fecha**: Próximo sábado
+**Hora**: 2:00 PM
+**Lugar**: Sede del equipo
+
+Agenda:
+- Revisión de objetivos
+- Planificación de eventos
+- Discusión de mejoras`,
+  ]
+
+  // Get users who can create posts (players, captains, coaches, admins with playerId)
+  const usersWhoCanCreatePosts = [
+    ...playerUsers.slice(0, 8),
+    ...captainUsers,
+    ...coachUsers,
+    ...adminUsers.filter((u: any) => u.playerId),
+  ]
+
+  const newsPosts = []
+  for (let i = 0; i < 15; i++) {
+    const author = randomElement(usersWhoCanCreatePosts)
+    const authorPlayer = author.playerId ? await prisma.player.findUnique({ where: { id: author.playerId } }) : null
+    
+    if (!authorPlayer) continue
+
+    const isPinned = i < 3 // First 3 posts are pinned
+    const isPublished = i < 12 // First 12 are published, last 3 are drafts
+    const category = randomElement(newsCategories)
+    const title = newsTitles[i] || `Noticia ${i + 1}`
+    const content = newsContents[i % newsContents.length] || `Contenido de la noticia ${i + 1}`
+    
+    const createdAt = randomDate(
+      new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+      now
+    )
+    const publishedAt = isPublished ? createdAt : null
+
+    const post = await prisma.newsPost.create({
+      data: {
+        title,
+        content,
+        authorId: authorPlayer.id,
+        isPinned,
+        isPublished,
+        category,
+        views: Math.floor(Math.random() * 500) + 10, // 10-510 views
+        createdAt,
+        publishedAt,
+      }
+    })
+    newsPosts.push(post)
+  }
+  console.log(`✅ Created ${newsPosts.length} news posts`)
+
+  // 15.5) Create files for some news posts
+  console.log('📎 Creating news post files...')
+  const fileTypes = [
+    { name: 'Reglamento_Torneo.pdf', mimeType: 'application/pdf', size: 245760 },
+    { name: 'Calendario_2024.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', size: 153600 },
+    { name: 'Foto_Equipo.jpg', mimeType: 'image/jpeg', size: 2048000 },
+    { name: 'Video_Entrenamiento.mp4', mimeType: 'video/mp4', size: 15728640 },
+    { name: 'Manual_Reglas.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: 512000 },
+    { name: 'Presentacion_Reunion.pptx', mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', size: 3072000 },
+    { name: 'Lista_Asistencia.pdf', mimeType: 'application/pdf', size: 102400 },
+    { name: 'Resultados_Partidos.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', size: 81920 },
+  ]
+
+  // Add files to first 8 posts
+  for (let i = 0; i < Math.min(8, newsPosts.length); i++) {
+    const post = newsPosts[i]
+    const numFiles = Math.floor(Math.random() * 3) + 1 // 1-3 files per post
+    
+    for (let j = 0; j < numFiles; j++) {
+      const fileType = randomElement(fileTypes)
+      const fileName = `${Date.now()}-${i}-${j}-${fileType.name.split('.')[0]}.${fileType.name.split('.').pop()}`
+      const storagePath = `uploads/news/${fileName}`
+      
+      await prisma.newsPostFile.create({
+        data: {
+          postId: post.id,
+          fileName,
+          originalName: fileType.name,
+          mimeType: fileType.mimeType,
+          size: fileType.size,
+          storagePath,
+          description: j === 0 ? 'Documento principal' : `Archivo adjunto ${j + 1}`,
+        }
+      })
+    }
+  }
+  console.log('✅ Created news post files')
+
+  // 16) Create event annotations for some events
+  console.log('📝 Creating event annotations...')
+  const annotationTypes = ['GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER', 'DROP', 'FOUL', 'TIMEOUT', 'SUBSTITUTION', 'GENERAL', 'STRATEGY', 'PERFORMANCE']
+  
+  // Get events that can have annotations (completed or ongoing)
+  // Also include new event types
+  const eventsForAnnotations = events.filter(e => 
+    e.status === EventStatus.COMPLETED || 
+    e.status === EventStatus.ONGOING
+  )
+
+  // Get players with accounts for annotations
+  const playersForAnnotations = playersWithAccounts.slice(0, 25)
+
+  for (let i = 0; i < Math.min(10, eventsForAnnotations.length); i++) {
+    const event = eventsForAnnotations[i]
+    const isFullDay = event.type === EventType.FULL_DAY_OPEN || event.type === EventType.FULL_DAY_MIXTO
+    const numAnnotations = Math.floor(Math.random() * 15) + 5 // 5-20 annotations per event
+    
+    for (let j = 0; j < numAnnotations && j < playersForAnnotations.length; j++) {
+      const player = playersForAnnotations[j]
+      const annotationType = randomElement(annotationTypes)
+      const timestamp = randomDate(
+        event.startsAt,
+        event.endsAt || new Date(event.startsAt.getTime() + 4 * 60 * 60 * 1000)
+      )
+      
+      const notes = [
+        `Anotación durante el evento ${event.title}`,
+        `Momento importante del partido`,
+        `Jugada destacada`,
+        `Estrategia ejecutada correctamente`,
+        `Punto clave del encuentro`,
+      ]
+
+      const category = isFullDay ? randomElement(['OPEN', 'MIXTO']) : null
+
+      await prisma.eventAnnotation.create({
+        data: {
+          eventId: event.id,
+          playerId: player.id,
+          type: annotationType,
+          note: randomElement(notes),
+          timestamp,
+          category,
+        }
+      })
+    }
+  }
+  console.log('✅ Created event annotations')
+
   console.log('\n✅ Seed completed successfully!')
   console.log('\n📊 Summary:')
   console.log(`- ${adminUsers.length} admin users (all with player role)`)
@@ -1086,6 +1307,8 @@ async function main() {
   console.log(`- ${rivalNames.length} rivals`)
   console.log(`- 15 resources`)
   console.log(`- 30 transactions`)
+  console.log(`- ${newsPosts.length} news posts`)
+  console.log(`- Event annotations created`)
   console.log('\n🔑 Login credentials (all passwords: admin123):')
   console.log('\n👑 Admins (7):')
   for (const admin of adminUsers) {

@@ -28,6 +28,8 @@ import resourcesRouter from './routes/resources.js';
 import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
 import auditRouter from './routes/audit.js';
+import annotationsRouter from './routes/annotations.js';
+import newsRouter from './routes/news.js';
 import path from 'path';
 
 export const app = express();
@@ -81,6 +83,8 @@ app.use('/api/rivals', rivalsRouter);
 app.use('/api/plays', playsRouter);
 app.use('/api/event-participants', eventParticipantsRouter);
 app.use('/api/resources', resourcesRouter);
+app.use('/api/annotations', annotationsRouter);
+app.use('/api/news', newsRouter);
 // Apply specific rate limiting to auth routes
 app.use('/api/auth', authLimiter);
 // Apply stricter rate limiting to password reset endpoints

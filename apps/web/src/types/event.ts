@@ -1,4 +1,4 @@
-export type EventType = 'TRAINING' | 'TOURNAMENT' | 'SOCIAL' | 'WORKSHOP'
+export type EventType = 'TRAINING' | 'TOURNAMENT' | 'SOCIAL' | 'WORKSHOP' | 'FULL_DAY_OPEN' | 'FULL_DAY_MIXTO' | 'AMISTOSO'
 export type EventStatus = 'UPCOMING' | 'ONGOING' | 'COMPLETED' | 'CANCELLED'
 
 export interface EventItem {

@@ -10,7 +10,7 @@ interface Props {
   onSubmit: (data: CreateEventInput | UpdateEventInput) => Promise<void>
 }
 
-const typeOptions: EventType[] = ['TRAINING', 'TOURNAMENT', 'SOCIAL', 'WORKSHOP']
+const typeOptions: EventType[] = ['TRAINING', 'TOURNAMENT', 'SOCIAL', 'WORKSHOP', 'FULL_DAY_OPEN', 'FULL_DAY_MIXTO', 'AMISTOSO']
 const statusOptions: EventStatus[] = ['UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED']
 
 export default function EventForm({ mode, initial, onCancel, onSubmit }: Props) {
@@ -82,7 +82,17 @@ export default function EventForm({ mode, initial, onCancel, onSubmit }: Props) 
         <div>
           <label className="block text-sm text-gray-600 mb-1">Tipo</label>
           <select value={form.type} onChange={e => handleChange('type', e.target.value as EventType)} className="w-full px-3 py-2 border rounded-lg">
-            {typeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+            {typeOptions.map(t => (
+              <option key={t} value={t}>
+                {t === 'TRAINING' ? 'Entrenamiento' :
+                 t === 'TOURNAMENT' ? 'Torneo' :
+                 t === 'SOCIAL' ? 'Social' :
+                 t === 'WORKSHOP' ? 'Taller' :
+                 t === 'FULL_DAY_OPEN' ? 'Full Day Open' :
+                 t === 'FULL_DAY_MIXTO' ? 'Full Day Mixto' :
+                 t === 'AMISTOSO' ? 'Amistoso' : t}
+              </option>
+            ))}
           </select>
         </div>
         <div>

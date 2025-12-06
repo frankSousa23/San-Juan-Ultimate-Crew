@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { requireRole } from './auth.js';
+import { requirePermission } from './auth.js';
 import { z } from 'zod';
 import { validateBody, validateParams } from '../middleware/validation.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
@@ -83,7 +83,7 @@ const updateEventSchema = createEventSchema.partial();
  *       400:
  *         description: Invalid input
  */
-router.post('/', requireRole(['admin']), validateBody(createEventSchema), asyncHandler(async (req, res) => {
+router.post('/', requirePermission('events:manage'), validateBody(createEventSchema), asyncHandler(async (req, res) => {
     const payload = req.body;
     const event = await prisma.event.create({
         data: {
@@ -151,7 +151,7 @@ const eventIdSchema = z.object({
  *       404:
  *         description: Event not found
  */
-router.put('/:id', requireRole(['admin']), validateParams(eventIdSchema), validateBody(updateEventSchema), asyncHandler(async (req, res) => {
+router.put('/:id', requirePermission('events:manage'), validateParams(eventIdSchema), validateBody(updateEventSchema), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const payload = req.body;
     const event = await prisma.event.update({
@@ -186,7 +186,7 @@ router.put('/:id', requireRole(['admin']), validateParams(eventIdSchema), valida
  *       404:
  *         description: Event not found
  */
-router.delete('/:id', requireRole(['admin']), validateParams(eventIdSchema), asyncHandler(async (req, res) => {
+router.delete('/:id', requirePermission('events:manage'), validateParams(eventIdSchema), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const existing = await prisma.event.findUnique({ where: { id } });
     if (!existing)

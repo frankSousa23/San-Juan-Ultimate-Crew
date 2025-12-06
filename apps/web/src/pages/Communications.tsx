@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import { channelsApi, messagesApi } from '../lib/api'
+import { channelsApi, messagesApi, newsApi } from '../lib/api'
 import { Channel, Message } from '../types/communications'
+import { NewsPost, NewsPostFile } from '../types/news'
 import { useToast } from '../hooks/useToast'
 import { useApi } from '../hooks/useApi'
 import { useAuth } from '../contexts/AuthContext'
@@ -10,6 +11,9 @@ export default function Communications() {
   const { user, hasPermission } = useAuth()
   const canManage = hasPermission('communications:manage')
   
+  const [tab, setTab] = useState<'channels' | 'news'>('channels')
+  
+  // Channels state
   const [channels, setChannels] = useState<Channel[]>([])
   const [activeId, setActiveId] = useState<number | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -26,6 +30,18 @@ export default function Communications() {
   const [loadingOlder, setLoadingOlder] = useState(false)
   const [atBottom, setAtBottom] = useState(true)
   const latestAtRef = useRef<string | undefined>(undefined)
+  
+  // News state
+  const [newsPosts, setNewsPosts] = useState<NewsPost[]>([])
+  const [selectedPost, setSelectedPost] = useState<NewsPost | null>(null)
+  const [newsLoading, setNewsLoading] = useState(true)
+  const [newsError, setNewsError] = useState<string | null>(null)
+  const [showNewsForm, setShowNewsForm] = useState(false)
+  const [editingPost, setEditingPost] = useState<NewsPost | null>(null)
+  const [newsCategory, setNewsCategory] = useState<string>('all')
+  const [newsPage, setNewsPage] = useState(1)
+  const [newsTotal, setNewsTotal] = useState(0)
+  
   const toasts = useToast()
 
   // API hooks
@@ -198,6 +214,76 @@ export default function Communications() {
   // Guest users can only view, not interact
   const canCreateChannel = canManage
   const canSendMessages = canManage
+  const isGuest = !canManage && !user?.roles?.includes('player')
+
+  // News API hooks
+  const { execute: loadNews } = useApi(
+    () => newsApi.list({ published: true, limit: 20, offset: (newsPage - 1) * 20 }),
+    {
+      onSuccess: (data) => {
+        setNewsPosts(data.items)
+        setNewsTotal(data.total)
+        setNewsLoading(false)
+      },
+      onError: () => {
+        setNewsError('No se pudo cargar las noticias')
+        setNewsLoading(false)
+      },
+      showErrorToast: true
+    }
+  )
+
+  const { execute: createNewsPost } = useApi(newsApi.create, {
+    onSuccess: () => {
+      loadNews()
+      setShowNewsForm(false)
+      toasts.success('Noticia publicada exitosamente')
+    },
+    showErrorToast: true
+  })
+
+  const { execute: updateNewsPost } = useApi(
+    (id: number, data: any) => newsApi.update(id, data),
+    {
+      onSuccess: () => {
+        loadNews()
+        setEditingPost(null)
+        toasts.success('Noticia actualizada exitosamente')
+      },
+      showErrorToast: true
+    }
+  )
+
+  const { execute: deleteNewsPost } = useApi(
+    (id: number) => newsApi.remove(id),
+    {
+      onSuccess: () => {
+        loadNews()
+        setSelectedPost(null)
+        toasts.success('Noticia eliminada exitosamente')
+      },
+      showErrorToast: true
+    }
+  )
+
+  useEffect(() => {
+    if (tab === 'news') {
+      loadNews()
+    }
+  }, [tab, newsPage, newsCategory])
+
+  useEffect(() => {
+    const tabParam = params.get('tab')
+    if (tabParam === 'news' || tabParam === 'channels') {
+      setTab(tabParam)
+    }
+  }, [params])
+
+  useEffect(() => {
+    const next = new URLSearchParams(params)
+    next.set('tab', tab)
+    setSearchParams(next)
+  }, [tab])
 
   return (
     <div className="h-full flex flex-col">
@@ -209,8 +295,32 @@ export default function Communications() {
           </div>
         )}
       </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2 mb-4 border-b">
+        <button
+          onClick={() => setTab('channels')}
+          className={`px-4 py-2 font-medium transition-colors ${
+            tab === 'channels'
+              ? 'border-b-2 border-purple-600 text-purple-600'
+              : 'text-gray-600 hover:text-gray-800'
+          }`}
+        >
+          💬 Canales
+        </button>
+        <button
+          onClick={() => setTab('news')}
+          className={`px-4 py-2 font-medium transition-colors ${
+            tab === 'news'
+              ? 'border-b-2 border-purple-600 text-purple-600'
+              : 'text-gray-600 hover:text-gray-800'
+          }`}
+        >
+          📰 Noticias
+        </button>
+      </div>
       
-      {error && (
+      {error && tab === 'channels' && (
         <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded p-3 mb-3 flex items-start justify-between">
           <div className="pr-3">{error}</div>
           <div className="flex gap-2 shrink-0">
@@ -226,8 +336,22 @@ export default function Communications() {
           </div>
         </div>
       )}
+
+      {newsError && tab === 'news' && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded p-3 mb-3 flex items-start justify-between">
+          <div className="pr-3">{newsError}</div>
+          <div className="flex gap-2 shrink-0">
+            <button className="px-2 py-1 bg-rose-100 rounded" onClick={() => { 
+              setNewsError(null)
+              loadNews()
+            }}>Reintentar</button>
+            <button className="px-2 py-1 bg-gray-100 rounded" onClick={() => setNewsError(null)}>Ocultar</button>
+          </div>
+        </div>
+      )}
       
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 min-h-[400px] sm:min-h-[600px]">
+      {tab === 'channels' && (
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 min-h-[400px] sm:min-h-[600px]">
         {/* Channels list */}
         <div className="col-span-1 md:col-span-3 bg-white rounded-lg shadow p-3 flex flex-col min-h-[300px] sm:min-h-0">
           <div className="flex items-center justify-between mb-2">
@@ -396,6 +520,68 @@ export default function Communications() {
           )}
         </div>
       </div>
+      )}
+
+      {tab === 'news' && (
+        <NewsSection
+          posts={newsPosts}
+          loading={newsLoading}
+          error={newsError}
+          canManage={canManage}
+          selectedPost={selectedPost}
+          onSelectPost={setSelectedPost}
+          onRefresh={loadNews}
+          onCreate={() => setShowNewsForm(true)}
+          onEdit={setEditingPost}
+          onDelete={(id) => {
+            if (confirm('¿Eliminar esta noticia?')) {
+              deleteNewsPost(id)
+            }
+          }}
+          category={newsCategory}
+          onCategoryChange={setNewsCategory}
+          page={newsPage}
+          total={newsTotal}
+          onPageChange={setNewsPage}
+        />
+      )}
+
+      {/* News Form Modal */}
+      {(showNewsForm || editingPost) && canManage && (
+        <NewsPostForm
+          post={editingPost}
+          onSave={(data) => {
+            if (editingPost) {
+              updateNewsPost(editingPost.id, data)
+            } else {
+              createNewsPost(data)
+            }
+          }}
+          onCancel={() => {
+            setShowNewsForm(false)
+            setEditingPost(null)
+          }}
+        />
+      )}
+
+      {/* News Post Detail Modal */}
+      {selectedPost && (
+        <NewsPostDetail
+          post={selectedPost}
+          canManage={canManage}
+          onClose={() => setSelectedPost(null)}
+          onEdit={() => {
+            setSelectedPost(null)
+            setEditingPost(selectedPost)
+          }}
+          onDelete={() => {
+            if (confirm('¿Eliminar esta noticia?')) {
+              deleteNewsPost(selectedPost.id)
+              setSelectedPost(null)
+            }
+          }}
+        />
+      )}
 
       {/* Create Channel Modal - only for admin and player */}
       {canCreateChannel && newChannelOpen && (
@@ -436,6 +622,459 @@ export default function Communications() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// News Section Component
+function NewsSection({
+  posts,
+  loading,
+  error,
+  canManage,
+  selectedPost,
+  onSelectPost,
+  onRefresh,
+  onCreate,
+  onEdit,
+  onDelete,
+  category,
+  onCategoryChange,
+  page,
+  total,
+  onPageChange,
+}: {
+  posts: NewsPost[]
+  loading: boolean
+  error: string | null
+  canManage: boolean
+  selectedPost: NewsPost | null
+  onSelectPost: (post: NewsPost | null) => void
+  onRefresh: () => void
+  onCreate: () => void
+  onEdit: (post: NewsPost) => void
+  onDelete: (id: number) => void
+  category: string
+  onCategoryChange: (cat: string) => void
+  page: number
+  total: number
+  onPageChange: (page: number) => void
+}) {
+  const categories = useMemo(() => {
+    const cats = new Set<string>()
+    posts.forEach(p => {
+      if (p.category) cats.add(p.category)
+    })
+    return Array.from(cats).sort()
+  }, [posts])
+
+  const filteredPosts = useMemo(() => {
+    if (category === 'all') return posts
+    return posts.filter(p => p.category === category)
+  }, [posts, category])
+
+  const totalPages = Math.ceil(total / 20)
+
+  return (
+    <div className="flex-1 flex flex-col min-h-[400px] sm:min-h-[600px]">
+      <div className="bg-white rounded-lg shadow flex flex-col flex-1">
+        <div className="border-b px-4 py-3 bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="font-semibold text-gray-800">Noticias y Anuncios</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={category}
+              onChange={(e) => onCategoryChange(e.target.value)}
+              className="px-3 py-1 border rounded-lg text-sm"
+            >
+              <option value="all">Todas las categorías</option>
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            {canManage && (
+              <button
+                onClick={onCreate}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+              >
+                + Nueva Noticia
+              </button>
+            )}
+            <button
+              onClick={onRefresh}
+              className="px-3 py-1 border rounded-lg hover:bg-gray-50 transition-colors text-sm"
+            >
+              🔄 Actualizar
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4">
+          {loading && <div className="text-gray-500 text-center py-8">Cargando noticias...</div>}
+          {error && <div className="text-red-600 text-center py-4">{error}</div>}
+          {!loading && !error && filteredPosts.length === 0 && (
+            <div className="text-gray-500 text-center py-8">
+              {category === 'all' ? 'No hay noticias publicadas' : `No hay noticias en la categoría "${category}"`}
+            </div>
+          )}
+          {!loading && !error && filteredPosts.length > 0 && (
+            <div className="space-y-4">
+              {filteredPosts.map(post => (
+                <div
+                  key={post.id}
+                  className={`border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
+                    post.isPinned ? 'bg-yellow-50 border-yellow-300' : ''
+                  }`}
+                  onClick={() => onSelectPost(post)}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        {post.isPinned && (
+                          <span className="text-yellow-600 text-sm">📌</span>
+                        )}
+                        <h3 className="font-semibold text-gray-900">{post.title}</h3>
+                        {post.category && (
+                          <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
+                            {post.category}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-700 line-clamp-2 mb-2">
+                        {post.content}
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                        {post.author && (
+                          <span>Por #{post.author.number} {post.author.name}</span>
+                        )}
+                        <span>{new Date(post.createdAt).toLocaleDateString('es-ES')}</span>
+                        <span>{post.views} vistas</span>
+                        {post.files && post.files.length > 0 && (
+                          <span>📎 {post.files.length} archivo{post.files.length > 1 ? 's' : ''}</span>
+                        )}
+                      </div>
+                    </div>
+                    {canManage && (
+                      <div className="flex gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => onEdit(post)}
+                          className="text-blue-600 hover:underline text-sm"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => onDelete(post.id)}
+                          className="text-red-600 hover:underline text-sm"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <button
+                onClick={() => onPageChange(page - 1)}
+                disabled={page <= 1}
+                className="px-3 py-1 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                Anterior
+              </button>
+              <span className="text-sm text-gray-600">
+                Página {page} de {totalPages}
+              </span>
+              <button
+                onClick={() => onPageChange(page + 1)}
+                disabled={page >= totalPages}
+                className="px-3 py-1 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                Siguiente
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// News Post Form Component
+function NewsPostForm({
+  post,
+  onSave,
+  onCancel,
+}: {
+  post: NewsPost | null
+  onSave: (data: { title: string; content: string; category?: string; isPinned?: boolean; isPublished?: boolean }) => void
+  onCancel: () => void
+}) {
+  const [title, setTitle] = useState(post?.title || '')
+  const [content, setContent] = useState(post?.content || '')
+  const [category, setCategory] = useState(post?.category || '')
+  const [isPinned, setIsPinned] = useState(post?.isPinned || false)
+  const [isPublished, setIsPublished] = useState(post?.isPublished !== false)
+  const [uploadingFiles, setUploadingFiles] = useState<File[]>([])
+  const [uploadedFiles, setUploadedFiles] = useState<NewsPostFile[]>(post?.files || [])
+  const toasts = useToast()
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim() || !content.trim()) {
+      toasts.error('Título y contenido son requeridos')
+      return
+    }
+    onSave({ title: title.trim(), content: content.trim(), category: category.trim() || undefined, isPinned, isPublished })
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (!post?.id) {
+      setUploadingFiles(prev => [...prev, ...files])
+      return
+    }
+
+    for (const file of files) {
+      try {
+        const uploaded = await newsApi.uploadFile(post.id, file)
+        setUploadedFiles(prev => [...prev, uploaded])
+        toasts.success(`Archivo "${file.name}" subido exitosamente`)
+      } catch (error: any) {
+        toasts.error(`Error al subir "${file.name}": ${error?.response?.data?.error || 'Error desconocido'}`)
+      }
+    }
+  }
+
+  const handleFileDelete = async (fileId: number) => {
+    if (!post?.id) return
+    if (!confirm('¿Eliminar este archivo?')) return
+    try {
+      await newsApi.deleteFile(post.id, fileId)
+      setUploadedFiles(prev => prev.filter(f => f.id !== fileId))
+      toasts.success('Archivo eliminado exitosamente')
+    } catch (error: any) {
+      toasts.error(error?.response?.data?.error || 'Error al eliminar archivo')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onCancel}>
+      <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4">
+          <div className="text-lg font-bold">{post ? 'Editar' : 'Nueva'} Noticia</div>
+        </div>
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg"
+              required
+              placeholder="Título de la noticia"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Contenido *</label>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg"
+              rows={10}
+              required
+              placeholder="Contenido de la noticia (puedes usar Markdown)"
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+              <input
+                type="text"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg"
+                placeholder="Ej: Anuncios, Eventos, General"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={isPinned}
+                  onChange={(e) => setIsPinned(e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-sm text-gray-700">Fijar en la parte superior</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={isPublished}
+                  onChange={(e) => setIsPublished(e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-sm text-gray-700">Publicar inmediatamente</span>
+              </label>
+            </div>
+          </div>
+          {post && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Archivos Adjuntos</label>
+              <div className="space-y-2">
+                {uploadedFiles.map(file => (
+                  <div key={file.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <span className="text-sm text-gray-700">{file.originalName}</span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => newsApi.downloadFile(post.id, file.id, file.originalName)}
+                        className="text-blue-600 hover:underline text-sm"
+                      >
+                        Descargar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleFileDelete(file.id)}
+                        className="text-red-600 hover:underline text-sm"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <input
+                  type="file"
+                  onChange={handleFileUpload}
+                  multiple
+                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                />
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+            >
+              {post ? 'Actualizar' : 'Publicar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// News Post Detail Component
+function NewsPostDetail({
+  post,
+  canManage,
+  onClose,
+  onEdit,
+  onDelete,
+}: {
+  post: NewsPost
+  canManage: boolean
+  onClose: () => void
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex items-center justify-between">
+          <div>
+            <div className="text-lg font-bold flex items-center gap-2">
+              {post.isPinned && <span>📌</span>}
+              {post.title}
+            </div>
+            <div className="text-sm opacity-90 mt-1">
+              {post.author && `Por #${post.author.number} ${post.author.name}`} • {new Date(post.createdAt).toLocaleDateString('es-ES', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </div>
+          </div>
+          {canManage && (
+            <div className="flex gap-2">
+              <button
+                onClick={onEdit}
+                className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded text-sm"
+              >
+                Editar
+              </button>
+              <button
+                onClick={onDelete}
+                className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded text-sm"
+              >
+                Eliminar
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="flex-1 overflow-y-auto p-6">
+          {post.category && (
+            <div className="mb-4">
+              <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
+                {post.category}
+              </span>
+            </div>
+          )}
+          <div className="prose max-w-none mb-6">
+            <div className="whitespace-pre-wrap text-gray-700">{post.content}</div>
+          </div>
+          {post.files && post.files.length > 0 && (
+            <div className="mt-6 border-t pt-4">
+              <h4 className="font-semibold text-gray-800 mb-3">Archivos Adjuntos</h4>
+              <div className="space-y-2">
+                {post.files.map(file => (
+                  <div key={file.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">📎</span>
+                      <div>
+                        <div className="font-medium text-gray-800">{file.originalName}</div>
+                        <div className="text-xs text-gray-500">
+                          {(file.size / 1024).toFixed(1)} KB • {file.mimeType}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => newsApi.downloadFile(post.id, file.id, file.originalName)}
+                      className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
+                    >
+                      Descargar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="mt-6 text-sm text-gray-500">
+            {post.views} vista{post.views !== 1 ? 's' : ''}
+          </div>
+        </div>
+        <div className="p-4 flex justify-end border-t">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

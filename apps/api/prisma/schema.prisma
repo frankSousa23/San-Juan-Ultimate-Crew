@@ -24,6 +24,9 @@ enum EventType {
   TOURNAMENT
   SOCIAL
   WORKSHOP
+  FULL_DAY_OPEN
+  FULL_DAY_MIXTO
+  AMISTOSO
 }
 
 enum EventStatus {
@@ -51,6 +54,22 @@ enum PlayCategory {
   OFFENSE
   DEFENSE
   DRILL
+}
+
+// Event Annotations
+enum AnnotationType {
+  GOAL
+  ASSIST
+  DEFENSE
+  TURNOVER
+  DROP
+  FOUL
+  TIMEOUT
+  SUBSTITUTION
+  INJURY
+  GENERAL
+  STRATEGY
+  PERFORMANCE
 }
 
 // Finance
@@ -95,6 +114,8 @@ model Player {
   attendances       Attendance[]
   eventParticipants EventParticipant[]
   injuries          Injury[]
+  annotations       EventAnnotation[]
+  newsPosts         NewsPost[]
 
   // Reverse relation to User (one-to-one)
   user User? @relation("PlayerUser")
@@ -121,6 +142,7 @@ model Event {
 
   participants EventParticipant[]
   attendances  Attendance[]
+  annotations  EventAnnotation[]
   channel      Channel?
 
   @@index([startsAt])
@@ -176,6 +198,28 @@ model Attendance {
   @@unique([playerId, eventId])
   @@index([eventId])
   @@index([playerId])
+}
+
+model EventAnnotation {
+  id          Int            @id @default(autoincrement())
+  event       Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId     Int
+  player      Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId    Int
+  type        AnnotationType
+  note        String?        // Descripción detallada de la anotación
+  timestamp   DateTime       @default(now()) // Momento en que ocurrió durante el evento
+  category    String?        // Para FULL_DAY: "OPEN" o "MIXTO", null para otros tipos
+  createdBy   Int?           // Usuario que creó la anotación (opcional, para auditoría)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([eventId])
+  @@index([playerId])
+  @@index([eventId, playerId])
+  @@index([type])
+  @@index([timestamp])
+  @@index([eventId, timestamp])
 }
 
 model Account {
@@ -276,6 +320,48 @@ model Resource {
   @@index([title])
   @@index([createdAt])
   @@index([category, createdAt])
+}
+
+// News Posts (Noticias/Foro)
+model NewsPost {
+  id          Int            @id @default(autoincrement())
+  title       String
+  content     String         // Contenido del post (Markdown o texto)
+  author      Player?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  authorId    Int?
+  isPinned    Boolean        @default(false) // Post fijado
+  isPublished Boolean        @default(true)   // Publicado o borrador
+  category    String?        // Categoría del post (ej: "Anuncios", "Eventos", "General")
+  views       Int            @default(0)     // Contador de vistas
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  publishedAt DateTime?      // Fecha de publicación (si es borrador)
+
+  files       NewsPostFile[]
+
+  @@index([authorId])
+  @@index([isPublished])
+  @@index([isPinned])
+  @@index([category])
+  @@index([createdAt])
+  @@index([isPublished, createdAt])
+  @@index([isPinned, createdAt])
+}
+
+model NewsPostFile {
+  id          Int       @id @default(autoincrement())
+  post        NewsPost  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId      Int
+  fileName    String
+  originalName String   // Nombre original del archivo
+  mimeType    String
+  size        Int       // Tamaño en bytes
+  storagePath String    // Ruta de almacenamiento
+  description String?   // Descripción opcional del archivo
+  createdAt   DateTime  @default(now())
+
+  @@index([postId])
+  @@index([createdAt])
 }
 
 // Auth & RBAC

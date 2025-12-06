@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { z } from 'zod';
-import { requireRole } from './auth.js';
+import { requirePermission } from './auth.js';
 import { createAuditHelper } from '../lib/audit.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { paginated, created, updated, deleted, success, validationError, notFound } from '../lib/response.js';
@@ -164,7 +164,7 @@ const createSchema = z.object({
  *       403:
  *         description: Forbidden - Admin role required
  */
-router.post('/', requireRole(['admin']), asyncHandler(async (req, res) => {
+router.post('/', requirePermission('finance:manage'), asyncHandler(async (req, res) => {
     const parsed = createSchema.safeParse(req.body);
     if (!parsed.success) {
         return validationError(res, 'Invalid payload', parsed.error.errors);
@@ -181,7 +181,7 @@ router.post('/', requireRole(['admin']), asyncHandler(async (req, res) => {
 const transactionIdSchema = z.object({
     id: z.coerce.number().int().positive()
 });
-router.put('/:id', requireRole(['admin']), asyncHandler(async (req, res) => {
+router.put('/:id', requirePermission('finance:manage'), asyncHandler(async (req, res) => {
     const parsedId = transactionIdSchema.safeParse(req.params);
     if (!parsedId.success) {
         return validationError(res, 'Invalid id', parsedId.error.errors);
@@ -204,7 +204,7 @@ router.put('/:id', requireRole(['admin']), asyncHandler(async (req, res) => {
     });
     return updated(res, transaction);
 }));
-router.delete('/:id', requireRole(['admin']), asyncHandler(async (req, res) => {
+router.delete('/:id', requirePermission('finance:manage'), asyncHandler(async (req, res) => {
     const parsedId = transactionIdSchema.safeParse(req.params);
     if (!parsedId.success) {
         return validationError(res, 'Invalid id', parsedId.error.errors);

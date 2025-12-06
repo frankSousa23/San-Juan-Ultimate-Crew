@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { requireRole } from './auth.js';
+import { requirePermission } from './auth.js';
 import { z } from 'zod';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { success, created, validationError } from '../lib/response.js';
@@ -122,7 +122,7 @@ const createMessageSchema = z.object({
  *       400:
  *         description: Invalid input
  */
-router.post('/', requireRole(['admin', 'player']), asyncHandler(async (req, res) => {
+router.post('/', requirePermission('communications:manage'), asyncHandler(async (req, res) => {
     try {
         const payload = createMessageSchema.parse(req.body);
         const message = await prisma.message.create({ data: payload });

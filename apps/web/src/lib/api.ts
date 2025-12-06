@@ -7,6 +7,8 @@ import { Account, Category, TransactionItem, TransactionList, FinanceSummary, Cr
 import { PlayItem, CreatePlayInput, UpdatePlayInput } from '../types/plays'
 import { EventParticipant } from '../types/event'
 import { ResourceItem, CreateResourceInput, UpdateResourceInput } from '../types/resource'
+import { EventAnnotation, CreateAnnotationInput, UpdateAnnotationInput, AnnotationStats } from '../types/annotation'
+import { NewsPost, NewsPostFile, CreateNewsPostInput, UpdateNewsPostInput, NewsPostListResponse } from '../types/news'
 
 const baseURL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000'
 
@@ -418,4 +420,70 @@ export const usersApi = {
   getActivity: async (limit?: number): Promise<any[]> => (
     await http.get('/api/users/me/activity', { params: { limit } })
   ).data,
+}
+
+// Annotations API
+export const annotationsApi = {
+  list: async (params?: { eventId?: number; playerId?: number }): Promise<EventAnnotation[]> => (
+    await http.get<EventAnnotation[]>('/api/annotations', { params })
+  ).data,
+  get: async (id: number): Promise<EventAnnotation> => (
+    await http.get<EventAnnotation>(`/api/annotations/${id}`)
+  ).data,
+  create: async (payload: CreateAnnotationInput): Promise<EventAnnotation> => (
+    await http.post<EventAnnotation>('/api/annotations', payload)
+  ).data,
+  update: async (id: number, payload: UpdateAnnotationInput): Promise<EventAnnotation> => (
+    await http.put<EventAnnotation>(`/api/annotations/${id}`, payload)
+  ).data,
+  remove: async (id: number): Promise<void> => {
+    await http.delete(`/api/annotations/${id}`)
+  },
+  getEventStats: async (eventId: number): Promise<AnnotationStats> => (
+    await http.get<AnnotationStats>(`/api/annotations/event/${eventId}/stats`)
+  ).data,
+}
+
+// News API
+export const newsApi = {
+  list: async (params?: { published?: boolean; category?: string; limit?: number; offset?: number }): Promise<NewsPostListResponse> => (
+    await http.get<NewsPostListResponse>('/api/news', { params })
+  ).data,
+  get: async (id: number): Promise<NewsPost> => (
+    await http.get<NewsPost>(`/api/news/${id}`)
+  ).data,
+  create: async (payload: CreateNewsPostInput): Promise<NewsPost> => (
+    await http.post<NewsPost>('/api/news', payload)
+  ).data,
+  update: async (id: number, payload: UpdateNewsPostInput): Promise<NewsPost> => (
+    await http.put<NewsPost>(`/api/news/${id}`, payload)
+  ).data,
+  remove: async (id: number): Promise<void> => {
+    await http.delete(`/api/news/${id}`)
+  },
+  uploadFile: async (postId: number, file: File, description?: string): Promise<NewsPostFile> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    if (description) formData.append('description', description)
+    const { data } = await http.post<NewsPostFile>(`/api/news/${postId}/files`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    return data
+  },
+  deleteFile: async (postId: number, fileId: number): Promise<void> => {
+    await http.delete(`/api/news/${postId}/files/${fileId}`)
+  },
+  downloadFile: async (postId: number, fileId: number, originalName: string): Promise<void> => {
+    const response = await http.get(`/api/news/${postId}/files/${fileId}/download`, {
+      responseType: 'blob'
+    })
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', originalName)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  },
 }

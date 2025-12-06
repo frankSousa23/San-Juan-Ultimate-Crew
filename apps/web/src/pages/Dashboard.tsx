@@ -11,15 +11,15 @@ interface FinanceSummary {
 }
 
 export default function Dashboard() {
-  const { user, isAuthenticated, hasRole } = useAuth()
+  const { user, isAuthenticated, hasRole, hasPermission } = useAuth()
   const { stats, loading: statsLoading } = useStats()
   const [financeSummary, setFinanceSummary] = useState<FinanceSummary | null>(null)
   const [financeLoading, setFinanceLoading] = useState(true)
 
   useEffect(() => {
     async function loadFinanceSummary() {
-      // Only load finance summary if user is admin
-      if (!hasRole('admin')) {
+      // Only load finance summary if user has finance permission
+      if (!hasPermission('finance:view') && !hasRole('admin')) {
         setFinanceLoading(false)
         return
       }
@@ -41,7 +41,7 @@ export default function Dashboard() {
       }
     }
     loadFinanceSummary()
-  }, [hasRole])
+  }, [hasRole, hasPermission])
 
   const formatCurrency = (cents: number) => {
     return new Intl.NumberFormat('es-PR', {
@@ -52,35 +52,69 @@ export default function Dashboard() {
     }).format(cents / 100)
   }
 
+  const isAdmin = hasRole('admin')
+  const isPlayer = hasRole('player') || !!user?.playerId
+  const isGuest = !isAdmin && !isPlayer
+  const isCaptain = hasRole('captain')
+  const isCoach = hasRole('coach')
+  const isTreasurer = hasRole('treasurer')
+  const canViewFinance = hasPermission('finance:view') || isAdmin
+  const canViewMessages = hasPermission('communications:view') || isAdmin || isPlayer
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm sm:text-base text-gray-600">Bienvenido al sistema de gestión de San Juan Ultimate</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+          {isAdmin ? 'Dashboard Administrativo' :
+           isCaptain ? 'Dashboard de Capitán' :
+           isCoach ? 'Dashboard de Entrenador' :
+           isTreasurer ? 'Dashboard de Tesorero' :
+           isPlayer ? 'Mi Dashboard' :
+           'Dashboard'}
+        </h1>
+        <p className="text-sm sm:text-base text-gray-600">
+          {isAdmin ? 'Vista general del sistema completo' :
+           isCaptain ? 'Gestión del equipo y eventos' :
+           isCoach ? 'Gestión de entrenamientos y recursos' :
+           isTreasurer ? 'Gestión financiera del equipo' :
+           isPlayer ? 'Bienvenido al sistema de gestión de San Juan Ultimate' :
+           'Vista pública del sistema'}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900">Jugadores</h3>
-          {statsLoading ? (
-            <p className="text-3xl font-bold text-gray-400">...</p>
-          ) : (
-            <p className="text-3xl font-bold text-blue-600">{stats?.players || 0}</p>
-          )}
-          <p className="text-sm text-gray-500">Jugadores activos</p>
-        </div>
+        {/* Jugadores - Visible para todos excepto guest sin permisos */}
+        {(hasPermission('roster:view') || isAdmin || isPlayer || isGuest) && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-medium text-gray-900">Jugadores</h3>
+            {statsLoading ? (
+              <p className="text-3xl font-bold text-gray-400">...</p>
+            ) : (
+              <p className="text-3xl font-bold text-blue-600">{stats?.players || stats?.activePlayers || 0}</p>
+            )}
+            <p className="text-sm text-gray-500">
+              {isAdmin ? 'Total de jugadores' : 'Jugadores activos'}
+            </p>
+          </div>
+        )}
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900">Eventos</h3>
-          {statsLoading ? (
-            <p className="text-3xl font-bold text-gray-400">...</p>
-          ) : (
-            <p className="text-3xl font-bold text-green-600">{stats?.events || 0}</p>
-          )}
-          <p className="text-sm text-gray-500">Total de eventos</p>
-        </div>
+        {/* Eventos - Visible para todos */}
+        {(hasPermission('events:view') || isAdmin || isPlayer || isGuest) && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-medium text-gray-900">Eventos</h3>
+            {statsLoading ? (
+              <p className="text-3xl font-bold text-gray-400">...</p>
+            ) : (
+              <p className="text-3xl font-bold text-green-600">{stats?.events || 0}</p>
+            )}
+            <p className="text-sm text-gray-500">
+              {isAdmin ? 'Total de eventos' : 'Eventos programados'}
+            </p>
+          </div>
+        )}
 
-        {hasRole('admin') && (
+        {/* Finanzas - Solo para admin y treasurer */}
+        {canViewFinance && (
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-medium text-gray-900">Finanzas</h3>
             {financeLoading ? (
@@ -93,25 +127,43 @@ export default function Dashboard() {
             <p className="text-sm text-gray-500">Balance actual</p>
           </div>
         )}
-        {!hasRole('admin') && (
+
+        {/* Mensajes - Solo para usuarios con permisos de comunicación */}
+        {canViewMessages && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-medium text-gray-900">Mensajes</h3>
+            {statsLoading ? (
+              <p className="text-3xl font-bold text-gray-400">...</p>
+            ) : (
+              <p className="text-3xl font-bold text-indigo-600">{stats?.messages || 0}</p>
+            )}
+            <p className="text-sm text-gray-500">Total de mensajes</p>
+          </div>
+        )}
+
+        {/* Estadísticas personales para players */}
+        {isPlayer && stats?.personalStats && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-medium text-gray-900">Mi Asistencia</h3>
+            <p className="text-3xl font-bold text-amber-600">{stats.personalStats.attendanceRate || 0}%</p>
+            <p className="text-sm text-gray-500">Tasa de asistencia</p>
+          </div>
+        )}
+
+        {/* Estado del rol para usuarios sin métricas específicas */}
+        {!isAdmin && !canViewFinance && !canViewMessages && (
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-medium text-gray-900">Mi Estado</h3>
             <p className="text-3xl font-bold text-indigo-600">
-              {user?.roles?.includes('player') ? 'Jugador' : 'Invitado'}
+              {isPlayer ? 'Jugador' : 
+               isCaptain ? 'Capitán' :
+               isCoach ? 'Entrenador' :
+               isTreasurer ? 'Tesorero' :
+               'Invitado'}
             </p>
             <p className="text-sm text-gray-500">Rol actual</p>
           </div>
         )}
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900">Mensajes</h3>
-          {statsLoading ? (
-            <p className="text-3xl font-bold text-gray-400">...</p>
-          ) : (
-            <p className="text-3xl font-bold text-indigo-600">{stats?.messages || 0}</p>
-          )}
-          <p className="text-sm text-gray-500">Total de mensajes</p>
-        </div>
       </div>
 
       {stats?.upcomingEvents && stats.upcomingEvents.length > 0 && (
@@ -145,43 +197,97 @@ export default function Dashboard() {
       <div className="bg-white rounded-lg shadow p-4 sm:p-6">
         <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-4">Accesos Rápidos</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-          {(hasRole('player') || hasRole('admin')) && (
-            <>
-              <Link to="/roster" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
-                <div className="text-xl sm:text-2xl mb-1 sm:mb-2">👥</div>
-                <div className="text-xs sm:text-sm font-medium">Roster</div>
-              </Link>
-              <Link to="/eventos" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
-                <div className="text-xl sm:text-2xl mb-1 sm:mb-2">📅</div>
-                <div className="text-xs sm:text-sm font-medium">Eventos</div>
-              </Link>
-            </>
+          {/* Roster - Visible para players, captains, coaches, admin */}
+          {(hasPermission('roster:view') || isAdmin || isPlayer) && (
+            <Link to="/roster" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+              <div className="text-xl sm:text-2xl mb-1 sm:mb-2">👥</div>
+              <div className="text-xs sm:text-sm font-medium">Roster</div>
+            </Link>
           )}
-          {hasRole('admin') && (
+
+          {/* Eventos - Visible para todos con permisos */}
+          {(hasPermission('events:view') || isAdmin || isPlayer || isGuest) && (
+            <Link to="/eventos" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+              <div className="text-xl sm:text-2xl mb-1 sm:mb-2">📅</div>
+              <div className="text-xs sm:text-sm font-medium">Eventos</div>
+            </Link>
+          )}
+
+          {/* Comunicación - Visible para players, captains, coaches, admin */}
+          {(hasPermission('communications:view') || isAdmin || isPlayer) && (
+            <Link to="/comunicacion" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+              <div className="text-xl sm:text-2xl mb-1 sm:mb-2">💬</div>
+              <div className="text-xs sm:text-sm font-medium">Comunicación</div>
+            </Link>
+          )}
+
+          {/* Estadísticas - Visible para todos */}
+          {(hasPermission('statistics:view') || isAdmin || isPlayer || isGuest) && (
+            <Link to="/estadisticas" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+              <div className="text-xl sm:text-2xl mb-1 sm:mb-2">📊</div>
+              <div className="text-xs sm:text-sm font-medium">Estadísticas</div>
+            </Link>
+          )}
+
+          {/* Finanzas - Solo para admin y treasurer */}
+          {canViewFinance && (
+            <Link to="/finanzas" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+              <div className="text-xl sm:text-2xl mb-1 sm:mb-2">💰</div>
+              <div className="text-xs sm:text-sm font-medium">Finanzas</div>
+            </Link>
+          )}
+
+          {/* Lesiones - Visible para players, captains, coaches, admin */}
+          {(hasPermission('injuries:view') || isAdmin || isPlayer) && (
+            <Link to="/lesiones" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+              <div className="text-xl sm:text-2xl mb-1 sm:mb-2">🏥</div>
+              <div className="text-xs sm:text-sm font-medium">Lesiones</div>
+            </Link>
+          )}
+
+          {/* Rivales - Visible para players, captains, admin (coach NO tiene acceso) */}
+          {(hasPermission('rivals:view') || isAdmin || isPlayer) && !isCoach && (
+            <Link to="/rivales" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+              <div className="text-xl sm:text-2xl mb-1 sm:mb-2">⚔️</div>
+              <div className="text-xs sm:text-sm font-medium">Rivales</div>
+            </Link>
+          )}
+
+          {/* Jugadas - Visible para players, captains, coaches, admin */}
+          {(hasPermission('plays:view') || isAdmin || isPlayer) && (
+            <Link to="/jugadas" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+              <div className="text-xl sm:text-2xl mb-1 sm:mb-2">🎯</div>
+              <div className="text-xs sm:text-sm font-medium">Jugadas</div>
+            </Link>
+          )}
+
+          {/* Recursos - Visible para players, coaches, admin */}
+          {(hasPermission('resources:view') || isAdmin || isPlayer) && (
+            <Link to="/recursos" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+              <div className="text-xl sm:text-2xl mb-1 sm:mb-2">📁</div>
+              <div className="text-xs sm:text-sm font-medium">Recursos</div>
+            </Link>
+          )}
+
+          {/* Admin Only */}
+          {isAdmin && (
             <>
-              <Link to="/finanzas" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
-                <div className="text-xl sm:text-2xl mb-1 sm:mb-2">💰</div>
-                <div className="text-xs sm:text-sm font-medium">Finanzas</div>
+              <Link to="/admin/usuarios" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+                <div className="text-xl sm:text-2xl mb-1 sm:mb-2">🔧</div>
+                <div className="text-xs sm:text-sm font-medium">Usuarios</div>
               </Link>
               <Link to="/admin/monitoring" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
-                <div className="text-xl sm:text-2xl mb-1 sm:mb-2">📊</div>
+                <div className="text-xl sm:text-2xl mb-1 sm:mb-2">💻</div>
                 <div className="text-xs sm:text-sm font-medium">Monitoreo</div>
               </Link>
             </>
           )}
-          {!hasRole('player') && !hasRole('admin') && (
-            <>
-              <Link to="/perfil" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
-                <div className="text-xl sm:text-2xl mb-1 sm:mb-2">👤</div>
-                <div className="text-xs sm:text-sm font-medium">Mi Perfil</div>
-              </Link>
-              <div className="p-3 sm:p-4 border rounded-lg bg-gray-50 text-center opacity-60">
-                <div className="text-xl sm:text-2xl mb-1 sm:mb-2">👥</div>
-                <div className="text-xs sm:text-sm font-medium text-gray-500">Roster</div>
-                <div className="text-xs text-gray-400 mt-1">Solicita acceso</div>
-              </div>
-            </>
-          )}
+
+          {/* Perfil - Visible para todos */}
+          <Link to="/perfil" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
+            <div className="text-xl sm:text-2xl mb-1 sm:mb-2">👤</div>
+            <div className="text-xs sm:text-sm font-medium">Mi Perfil</div>
+          </Link>
         </div>
       </div>
     </div>

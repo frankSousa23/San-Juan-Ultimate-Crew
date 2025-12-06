@@ -291,6 +291,8 @@ const options: swaggerJsdoc.Options = {
       { name: 'Rivals', description: 'Rival teams management' },
       { name: 'Messages', description: 'Channel messages' },
       { name: 'Stats', description: 'Dashboard statistics' },
+      { name: 'Annotations', description: 'Event annotations management' },
+      { name: 'News', description: 'News posts and announcements' },
       { name: 'Health', description: 'Health check endpoints' },
     ],
   },

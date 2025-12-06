@@ -41,7 +41,10 @@ export default function Statistics() {
 
   const isAdmin = hasRole('admin')
   const isPlayer = hasRole('player') || !!user?.playerId
-  const isGuest = !isAdmin && !isPlayer
+  const isGuest = !isAdmin && !isPlayer && !hasRole('captain') && !hasRole('coach') && !hasRole('treasurer')
+  const isCaptain = hasRole('captain')
+  const isCoach = hasRole('coach')
+  const isTreasurer = hasRole('treasurer')
 
   return (
     <div className="space-y-6">
@@ -49,12 +52,25 @@ export default function Statistics() {
         <div>
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
             {isAdmin ? 'Estadísticas del Equipo (Admin)' : 
+             isCaptain ? 'Estadísticas del Equipo (Capitán)' :
+             isCoach ? 'Estadísticas del Equipo (Entrenador)' :
+             isTreasurer ? 'Estadísticas del Equipo (Tesorero)' :
              isPlayer ? 'Mis Estadísticas' : 
              'Estadísticas del Equipo'}
           </h2>
           {isGuest && (
             <p className="text-sm text-gray-600 mt-1">
               Vista pública del sistema - Únete como jugador para ver tus estadísticas personales
+            </p>
+          )}
+          {(isCaptain || isCoach) && (
+            <p className="text-sm text-gray-600 mt-1">
+              Estadísticas generales del equipo y tus actividades
+            </p>
+          )}
+          {isTreasurer && (
+            <p className="text-sm text-gray-600 mt-1">
+              Estadísticas generales del equipo y gestión financiera
             </p>
           )}
         </div>
@@ -81,22 +97,43 @@ export default function Statistics() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow p-6">
                 <div className="text-blue-100 text-sm">Jugadores Totales</div>
-                <div className="text-3xl font-bold">{stats.players}</div>
+                <div className="text-3xl font-bold">{stats.players || stats.activePlayers || 0}</div>
                 <div className="text-blue-100 text-xs mt-1">Miembros del equipo</div>
               </div>
               <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg shadow p-6">
                 <div className="text-green-100 text-sm">Eventos Totales</div>
-                <div className="text-3xl font-bold">{stats.events}</div>
+                <div className="text-3xl font-bold">{stats.events || 0}</div>
                 <div className="text-green-100 text-xs mt-1">Entrenamientos y torneos</div>
               </div>
               <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg shadow p-6">
                 <div className="text-purple-100 text-sm">Mensajes</div>
-                <div className="text-3xl font-bold">{stats.messages}</div>
+                <div className="text-3xl font-bold">{stats.messages || 0}</div>
                 <div className="text-purple-100 text-xs mt-1">Comunicaciones</div>
               </div>
               <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg shadow p-6">
                 <div className="text-orange-100 text-sm">Próximos Eventos</div>
-                <div className="text-3xl font-bold">{stats.upcomingEvents.length}</div>
+                <div className="text-3xl font-bold">{stats.upcomingEvents?.length || 0}</div>
+                <div className="text-orange-100 text-xs mt-1">Programados</div>
+              </div>
+            </div>
+          )}
+
+          {/* Captain/Coach/Treasurer KPIs */}
+          {(isCaptain || isCoach || isTreasurer) && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow p-6">
+                <div className="text-blue-100 text-sm">Jugadores Activos</div>
+                <div className="text-3xl font-bold">{stats.players || stats.activePlayers || 0}</div>
+                <div className="text-blue-100 text-xs mt-1">Miembros del equipo</div>
+              </div>
+              <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg shadow p-6">
+                <div className="text-green-100 text-sm">Eventos Totales</div>
+                <div className="text-3xl font-bold">{stats.events || 0}</div>
+                <div className="text-green-100 text-xs mt-1">Entrenamientos y torneos</div>
+              </div>
+              <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg shadow p-6">
+                <div className="text-orange-100 text-sm">Próximos Eventos</div>
+                <div className="text-3xl font-bold">{stats.upcomingEvents?.length || 0}</div>
                 <div className="text-orange-100 text-xs mt-1">Programados</div>
               </div>
             </div>
@@ -122,21 +159,21 @@ export default function Statistics() {
             </div>
           )}
 
-          {(isGuest || isPlayer) && (
+          {isGuest && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow p-6">
                 <div className="text-blue-100 text-sm">Jugadores Activos</div>
-                <div className="text-3xl font-bold">{stats.players}</div>
+                <div className="text-3xl font-bold">{stats.players || stats.activePlayers || 0}</div>
                 <div className="text-blue-100 text-xs mt-1">Miembros del equipo</div>
               </div>
               <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg shadow p-6">
                 <div className="text-green-100 text-sm">Eventos Totales</div>
-                <div className="text-3xl font-bold">{stats.events}</div>
+                <div className="text-3xl font-bold">{stats.events || 0}</div>
                 <div className="text-green-100 text-xs mt-1">Entrenamientos y torneos</div>
               </div>
               <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg shadow p-6">
                 <div className="text-orange-100 text-sm">Próximos Eventos</div>
-                <div className="text-3xl font-bold">{stats.upcomingEvents.length}</div>
+                <div className="text-3xl font-bold">{stats.upcomingEvents?.length || 0}</div>
                 <div className="text-orange-100 text-xs mt-1">Programados</div>
               </div>
             </div>
@@ -169,7 +206,7 @@ export default function Statistics() {
 
           {/* Attendance and events by type */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {(isAdmin || isPlayer) && stats.attendance.length > 0 && (
+            {(isAdmin || isPlayer) && stats.attendance && stats.attendance.length > 0 && (
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -178,7 +215,7 @@ export default function Statistics() {
                   </h3>
                 </div>
                 <div className="space-y-3">
-                  {stats.attendance.map(a => (
+                  {stats.attendance.map((a: any) => (
                     <div key={a.status} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <span className="text-gray-700 capitalize font-medium">
                         {a.status === 'present' ? 'Presente' : 
@@ -197,13 +234,14 @@ export default function Statistics() {
                 <h3 className="font-semibold text-lg">Eventos por Tipo</h3>
               </div>
               <div className="space-y-3">
-                {stats.eventsByType.map(e => (
-                  <div key={e.type} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span className="text-gray-700 capitalize font-medium">{e.type.toLowerCase()}</span>
-                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">{e.count}</span>
-                  </div>
-                ))}
-                {stats.eventsByType.length === 0 && (
+                {stats.eventsByType && stats.eventsByType.length > 0 ? (
+                  stats.eventsByType.map((e: any) => (
+                    <div key={e.type} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-700 capitalize font-medium">{e.type.toLowerCase()}</span>
+                      <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">{e.count}</span>
+                    </div>
+                  ))
+                ) : (
                   <div className="text-center text-gray-500 py-8">
                     <div className="text-4xl mb-2">📅</div>
                     <div>Sin eventos registrados</div>
@@ -222,9 +260,9 @@ export default function Statistics() {
               </div>
             </div>
             <div className="overflow-auto">
-              {stats.upcomingEvents.length > 0 ? (
+              {stats.upcomingEvents && stats.upcomingEvents.length > 0 ? (
                 <div className="divide-y">
-                  {stats.upcomingEvents.map(ev => (
+                  {stats.upcomingEvents.map((ev: any) => (
                     <div key={ev.id} className="p-4 hover:bg-gray-50 transition-colors">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">

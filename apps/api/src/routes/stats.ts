@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express'
+import jwt from 'jsonwebtoken'
 import { prisma } from '../lib/prisma.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import { success, unauthorized } from '../lib/response.js'
-import { requireAuth } from './auth.js'
 
 const router = Router()
 
@@ -69,8 +69,25 @@ interface EventTypeGroup {
   _count: { _all: number }
 }
 
-router.get('/', requireAuth, asyncHandler(async (req: Request, res: Response) => {
-  const u = (req as Request & { user?: { sub: string } }).user
+router.get('/', asyncHandler(async (req: Request, res: Response) => {
+  // Try to get user from token if present (optional auth)
+  let u = (req as Request & { user?: { sub: string } }).user
+  if (!u?.sub) {
+    // Try to extract token from header if not already set
+    const auth = req.headers.authorization || ''
+    const [, token] = auth.split(' ')
+    if (token) {
+      try {
+        const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+        u = jwt.verify(token, JWT_SECRET) as any
+        ;(req as any).user = u
+      } catch (err) {
+        // Invalid token, treat as guest
+        u = undefined
+      }
+    }
+  }
+  
   if (!u?.sub) {
     // For unauthenticated requests, return basic public stats (guest view)
     try {
