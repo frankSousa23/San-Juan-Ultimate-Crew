@@ -148,14 +148,30 @@ async function main() {
     })
   }
   
-  // Guest has no permissions (read-only access to public data only)
+  // Guest has limited permissions (only statistics and public events view - for demo/showcase purposes)
+  const guestPermNames = [
+    'statistics:view',
+    'events:view', // Can view public events info
+  ]
+  const guestPerms = allPerms.filter((p: any) => guestPermNames.includes(p.name))
+  for (const p of guestPerms) {
+    await db.rolePermission.upsert({
+      where: { roleId_permissionId: { roleId: guestRole.id, permissionId: p.id } },
+      update: {},
+      create: { roleId: guestRole.id, permissionId: p.id }
+    })
+  }
   const passwordHash = await bcrypt.hash('admin123', 10)
   
-  // Create multiple admin users
+  // Create multiple admin users (all admins are also players) - 7 admins for testing
   const adminEmails = [
     'admin@example.com',
     'admin1@example.com',
     'admin2@example.com',
+    'admin3@example.com',
+    'admin4@example.com',
+    'admin5@example.com',
+    'admin6@example.com',
   ]
   const adminUsers = []
   for (const email of adminEmails) {
@@ -164,10 +180,17 @@ async function main() {
       update: { passwordHash, status: 'APPROVED' },
       create: { email, name: `Admin ${email.split('@')[0]}`, passwordHash, status: 'APPROVED' }
     })
+    // Admin has admin role
     await db.userRole.upsert({
       where: { userId_roleId: { userId: adminUser.id, roleId: adminRole.id } },
       update: {},
       create: { userId: adminUser.id, roleId: adminRole.id }
+    })
+    // Admin also has player role
+    await db.userRole.upsert({
+      where: { userId_roleId: { userId: adminUser.id, roleId: playerRole.id } },
+      update: {},
+      create: { userId: adminUser.id, roleId: playerRole.id }
     })
     adminUsers.push(adminUser)
   }
@@ -220,7 +243,7 @@ async function main() {
   
   console.log(`✅ Created ${players.length} players`)
 
-  // 3) Create player users (some players will have user accounts)
+  // 3) Create player users (20 players with user accounts for testing)
   console.log('👤 Creating player users...')
   const playerUserEmails = [
     'player@example.com',
@@ -228,6 +251,21 @@ async function main() {
     'player2@example.com',
     'player3@example.com',
     'player4@example.com',
+    'player5@example.com',
+    'player6@example.com',
+    'player7@example.com',
+    'player8@example.com',
+    'player9@example.com',
+    'player10@example.com',
+    'player11@example.com',
+    'player12@example.com',
+    'player13@example.com',
+    'player14@example.com',
+    'player15@example.com',
+    'player16@example.com',
+    'player17@example.com',
+    'player18@example.com',
+    'player19@example.com',
   ]
   
   // Get players that don't have users yet
@@ -239,6 +277,7 @@ async function main() {
     }
   }
   
+  const playerUsers = []
   for (let i = 0; i < playerUserEmails.length && i < playersWithoutUsers.length; i++) {
     const email = playerUserEmails[i]
     const player = playersWithoutUsers[i]
@@ -252,68 +291,113 @@ async function main() {
       update: {},
       create: { userId: playerUser.id, roleId: playerRole.id }
     })
+    playerUsers.push(playerUser)
   }
 
-  // Create sample users for new roles (captain, coach, treasurer)
+  // Create multiple users for new roles (captain, coach, treasurer) - 3 of each for testing
   console.log('👑 Creating captain, coach, and treasurer users...')
   
-  // Captain user (linked to a player without user)
-  // Find a player that doesn't have a user linked
+  // Find players that don't have users yet
   const playersWithUsers = await db.user.findMany({
     where: { playerId: { not: null } },
     select: { playerId: true }
   })
   const playerIdsWithUsers = new Set(playersWithUsers.map((u: any) => u.playerId).filter(Boolean))
-  const availablePlayer = players.find((p: any) => !playerIdsWithUsers.has(p.id))
+  const availablePlayers = players.filter((p: any) => !playerIdsWithUsers.has(p.id))
   
-  if (availablePlayer) {
+  // Create 3 captain users (linked to players)
+  const captainEmails = ['captain@example.com', 'captain1@example.com', 'captain2@example.com']
+  const captainUsers = []
+  for (let i = 0; i < captainEmails.length && i < availablePlayers.length; i++) {
+    const email = captainEmails[i]
+    const player = availablePlayers[i]
     const captainUser = await db.user.upsert({
-      where: { email: 'captain@example.com' },
-      update: { passwordHash, playerId: availablePlayer.id, status: 'APPROVED' },
-      create: { email: 'captain@example.com', name: 'Capitán del Equipo', passwordHash, playerId: availablePlayer.id, status: 'APPROVED' }
+      where: { email },
+      update: { passwordHash, playerId: player.id, status: 'APPROVED' },
+      create: { email, name: `Capitán ${i + 1}`, passwordHash, playerId: player.id, status: 'APPROVED' }
     })
+    // Captain has captain role
     await db.userRole.upsert({
       where: { userId_roleId: { userId: captainUser.id, roleId: captainRole.id } },
       update: {},
       create: { userId: captainUser.id, roleId: captainRole.id }
     })
-  } else {
-    // If no available player, create captain without player link
-    const captainUser = await db.user.upsert({
-      where: { email: 'captain@example.com' },
-      update: { passwordHash, status: 'APPROVED' },
-      create: { email: 'captain@example.com', name: 'Capitán del Equipo', passwordHash, status: 'APPROVED' }
-    })
+    // Captain also has player role
     await db.userRole.upsert({
-      where: { userId_roleId: { userId: captainUser.id, roleId: captainRole.id } },
+      where: { userId_roleId: { userId: captainUser.id, roleId: playerRole.id } },
       update: {},
-      create: { userId: captainUser.id, roleId: captainRole.id }
+      create: { userId: captainUser.id, roleId: playerRole.id }
     })
+    captainUsers.push(captainUser)
   }
   
-  // Coach user (not linked to a player)
-  const coachUser = await db.user.upsert({
-    where: { email: 'coach@example.com' },
-    update: { passwordHash, status: 'APPROVED' },
-    create: { email: 'coach@example.com', name: 'Entrenador Principal', passwordHash, status: 'APPROVED' }
-  })
-  await db.userRole.upsert({
-    where: { userId_roleId: { userId: coachUser.id, roleId: coachRole.id } },
-    update: {},
-    create: { userId: coachUser.id, roleId: coachRole.id }
-  })
+  // Create 3 coach users (not linked to players, but have player role)
+  const coachEmails = ['coach@example.com', 'coach1@example.com', 'coach2@example.com']
+  const coachUsers = []
+  for (let i = 0; i < coachEmails.length; i++) {
+    const email = coachEmails[i]
+    const coachUser = await db.user.upsert({
+      where: { email },
+      update: { passwordHash, status: 'APPROVED' },
+      create: { email, name: `Entrenador ${i + 1}`, passwordHash, status: 'APPROVED' }
+    })
+    // Coach has coach role
+    await db.userRole.upsert({
+      where: { userId_roleId: { userId: coachUser.id, roleId: coachRole.id } },
+      update: {},
+      create: { userId: coachUser.id, roleId: coachRole.id }
+    })
+    // Coach also has player role
+    await db.userRole.upsert({
+      where: { userId_roleId: { userId: coachUser.id, roleId: playerRole.id } },
+      update: {},
+      create: { userId: coachUser.id, roleId: playerRole.id }
+    })
+    coachUsers.push(coachUser)
+  }
   
-  // Treasurer user (not linked to a player)
-  const treasurerUser = await db.user.upsert({
-    where: { email: 'treasurer@example.com' },
-    update: { passwordHash, status: 'APPROVED' },
-    create: { email: 'treasurer@example.com', name: 'Tesorero del Equipo', passwordHash, status: 'APPROVED' }
-  })
-  await db.userRole.upsert({
-    where: { userId_roleId: { userId: treasurerUser.id, roleId: treasurerRole.id } },
-    update: {},
-    create: { userId: treasurerUser.id, roleId: treasurerRole.id }
-  })
+  // Create 3 treasurer users (not linked to players, but have player role)
+  const treasurerEmails = ['treasurer@example.com', 'treasurer1@example.com', 'treasurer2@example.com']
+  const treasurerUsers = []
+  for (let i = 0; i < treasurerEmails.length; i++) {
+    const email = treasurerEmails[i]
+    const treasurerUser = await db.user.upsert({
+      where: { email },
+      update: { passwordHash, status: 'APPROVED' },
+      create: { email, name: `Tesorero ${i + 1}`, passwordHash, status: 'APPROVED' }
+    })
+    // Treasurer has treasurer role
+    await db.userRole.upsert({
+      where: { userId_roleId: { userId: treasurerUser.id, roleId: treasurerRole.id } },
+      update: {},
+      create: { userId: treasurerUser.id, roleId: treasurerRole.id }
+    })
+    // Treasurer also has player role
+    await db.userRole.upsert({
+      where: { userId_roleId: { userId: treasurerUser.id, roleId: playerRole.id } },
+      update: {},
+      create: { userId: treasurerUser.id, roleId: playerRole.id }
+    })
+    treasurerUsers.push(treasurerUser)
+  }
+  
+  // Create 3 guest users for testing
+  const guestEmails = ['guest@example.com', 'guest1@example.com', 'guest2@example.com']
+  const guestUsers = []
+  for (let i = 0; i < guestEmails.length; i++) {
+    const email = guestEmails[i]
+    const guestUser = await db.user.upsert({
+      where: { email },
+      update: { passwordHash, status: 'APPROVED' },
+      create: { email, name: `Invitado ${i + 1}`, passwordHash, status: 'APPROVED' }
+    })
+    await db.userRole.upsert({
+      where: { userId_roleId: { userId: guestUser.id, roleId: guestRole.id } },
+      update: {},
+      create: { userId: guestUser.id, roleId: guestRole.id }
+    })
+    guestUsers.push(guestUser)
+  }
 
   // 4) Create pending users (will be approved by admins later)
   console.log('⏳ Creating pending users...')
@@ -381,11 +465,24 @@ async function main() {
   }
   console.log(`✅ Created ${events.length} events`)
 
-  // 6) Create event participants
+  // 6) Create event participants - prioritize players with user accounts
   console.log('👥 Creating event participants...')
-  for (const event of events.slice(0, 15)) { // Add participants to first 15 events
-    const numParticipants = Math.floor(Math.random() * 15) + 5 // 5-20 participants
-    const selectedPlayers = players.slice(0, Math.min(numParticipants, players.length))
+  // Get players that have user accounts (for better testing)
+  const playersWithUsersForEvents = await db.user.findMany({
+    where: { playerId: { not: null } },
+    select: { playerId: true }
+  })
+  const playerIdsWithUsersForEvents = new Set(playersWithUsersForEvents.map((u: any) => u.playerId).filter(Boolean))
+  const playersWithAccounts = players.filter((p: any) => playerIdsWithUsersForEvents.has(p.id))
+  const playersWithoutAccounts = players.filter((p: any) => !playerIdsWithUsersForEvents.has(p.id))
+  
+  for (const event of events.slice(0, 18)) { // Add participants to first 18 events
+    const numParticipants = Math.floor(Math.random() * 20) + 10 // 10-30 participants
+    // Prioritize players with accounts, then add others
+    const selectedPlayers = [
+      ...playersWithAccounts.slice(0, Math.min(numParticipants, playersWithAccounts.length)),
+      ...playersWithoutAccounts.slice(0, Math.max(0, numParticipants - playersWithAccounts.length))
+    ]
     const roles = ['player', 'captain', 'substitute', null]
     
     for (const player of selectedPlayers) {
@@ -401,13 +498,17 @@ async function main() {
       })
     }
   }
-  console.log('✅ Created event participants')
+  console.log('✅ Created event participants (prioritizing users with accounts)')
 
-  // 7) Create attendance records
+  // 7) Create attendance records - prioritize players with user accounts
   console.log('📋 Creating attendance records...')
-  for (const event of events.slice(0, 10)) { // Add attendance to first 10 events
-    const numAttendees = Math.floor(Math.random() * 20) + 10 // 10-30 attendees
-    const selectedPlayers = players.slice(0, Math.min(numAttendees, players.length))
+  for (const event of events.slice(0, 15)) { // Add attendance to first 15 events
+    const numAttendees = Math.floor(Math.random() * 25) + 15 // 15-40 attendees
+    // Prioritize players with accounts for attendance
+    const selectedPlayers = [
+      ...playersWithAccounts.slice(0, Math.min(numAttendees, playersWithAccounts.length)),
+      ...playersWithoutAccounts.slice(0, Math.max(0, numAttendees - playersWithAccounts.length))
+    ]
     const statuses = ['present', 'absent', 'late']
     
     for (const player of selectedPlayers) {
@@ -423,15 +524,75 @@ async function main() {
       })
     }
   }
-  console.log('✅ Created attendance records')
+  console.log('✅ Created attendance records (prioritizing users with accounts)')
 
-  // 8) Create injuries
+  // 7.5) Create specific events created by specific users (captains, coaches, players)
+  console.log('📅 Creating user-specific events...')
+  const usersWhoCanCreateEvents = [
+    ...playerUsers.slice(0, 5), // First 5 players
+    ...captainUsers,
+    ...coachUsers,
+  ]
+  
+  // Create 10 additional events created by specific users
+  for (let i = 0; i < 10 && i < usersWhoCanCreateEvents.length; i++) {
+    const creator = usersWhoCanCreateEvents[i]
+    const creatorPlayer = creator.playerId ? await prisma.player.findUnique({ where: { id: creator.playerId } }) : null
+    
+    if (creatorPlayer) {
+      const eventType = randomElement(eventTypes)
+      const startsAt = randomDate(
+        new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+        new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days ahead
+      )
+      
+      const titles = {
+        [EventType.TRAINING]: ['Entrenamiento Regular', 'Práctica Técnica', 'Entrenamiento Físico'],
+        [EventType.TOURNAMENT]: ['Torneo Regional', 'Copa Nacional', 'Campeonato Local'],
+        [EventType.SOCIAL]: ['Reunión de Equipo', 'Asado del Equipo', 'Celebración'],
+        [EventType.WORKSHOP]: ['Taller de Estrategia', 'Workshop de Lanzamientos', 'Seminario de Defensa'],
+      }
+      
+      const event = await prisma.event.create({
+        data: {
+          title: `${randomElement(titles[eventType])} - Creado por ${creator.name}`,
+          description: `Evento creado por ${creator.name} (${creator.email})`,
+          type: eventType,
+          status: startsAt > now ? EventStatus.UPCOMING : EventStatus.COMPLETED,
+          location: randomElement(locations),
+          startsAt,
+          endsAt: startsAt > now ? null : new Date(startsAt.getTime() + (2 + Math.random() * 4) * 60 * 60 * 1000),
+        }
+      })
+      events.push(event)
+      
+      // Add creator as participant
+      await prisma.eventParticipant.create({
+        data: {
+          eventId: event.id,
+          playerId: creatorPlayer.id,
+          role: captainUsers.includes(creator) ? 'captain' : 'player',
+          status: 'confirmed'
+        }
+      })
+    }
+  }
+  console.log('✅ Created user-specific events')
+
+  // 8) Create injuries - prioritize players with user accounts
   console.log('🏥 Creating injuries...')
   const injuryTypes = ['Ankle sprain', 'Knee injury', 'Shoulder strain', 'Hamstring pull', 'Wrist fracture', 'Concussion', 'Back strain']
   const severities: InjurySeverity[] = [InjurySeverity.MILD, InjurySeverity.MODERATE, InjurySeverity.SEVERE]
   const injuryStatuses: InjuryStatus[] = [InjuryStatus.ACTIVE, InjuryStatus.RECOVERING, InjuryStatus.RESOLVED]
   
-  const injuredPlayers = players.filter(p => p.status === PlayerStatus.INJURED).slice(0, 10)
+  // Get injured players, prioritizing those with user accounts
+  const injuredPlayersWithAccounts = playersWithAccounts.filter(p => p.status === PlayerStatus.INJURED)
+  const injuredPlayersWithoutAccounts = playersWithoutAccounts.filter(p => p.status === PlayerStatus.INJURED)
+  const injuredPlayers = [
+    ...injuredPlayersWithAccounts.slice(0, 8),
+    ...injuredPlayersWithoutAccounts.slice(0, 7)
+  ].slice(0, 15)
+  
   for (const player of injuredPlayers) {
     const startDate = randomDate(
       new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000), // 60 days ago
@@ -454,7 +615,35 @@ async function main() {
       }
     })
   }
-  console.log(`✅ Created injuries for ${injuredPlayers.length} players`)
+  console.log(`✅ Created injuries for ${injuredPlayers.length} players (prioritizing users with accounts)`)
+
+  // 8.5) Create specific injuries created by captains/coaches for specific players
+  console.log('🏥 Creating user-managed injuries...')
+  const usersWhoCanManageInjuries = [...captainUsers, ...coachUsers]
+  const playersForInjuries = playersWithAccounts.slice(0, 10) // First 10 players with accounts
+  
+  for (let i = 0; i < 8 && i < playersForInjuries.length; i++) {
+    const player = playersForInjuries[i]
+    const manager = randomElement(usersWhoCanManageInjuries)
+    
+    const startDate = randomDate(
+      new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000), // 45 days ago
+      new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000) // 3 days ago
+    )
+    
+    await prisma.injury.create({
+      data: {
+        playerId: player.id,
+        type: randomElement(injuryTypes),
+        severity: randomElement(severities),
+        status: randomElement([InjuryStatus.ACTIVE, InjuryStatus.RECOVERING]),
+        startDate,
+        endDate: null,
+        description: `Lesión registrada por ${manager.name} (${manager.email})`
+      }
+    })
+  }
+  console.log('✅ Created user-managed injuries')
 
   // 9) Create channels and messages
   console.log('💬 Creating channels and messages...')
@@ -476,7 +665,7 @@ async function main() {
     channels.push(channel)
   }
   
-  // Create messages in channels
+  // Create messages in channels - interconect users (players, captains, coaches, admins)
   const messageContents = [
     '¡Hola equipo!',
     'Recordatorio: entrenamiento mañana a las 6pm',
@@ -486,29 +675,101 @@ async function main() {
     'Buen trabajo hoy',
     'Nos vemos en el próximo torneo',
     'Gracias por venir',
+    'Recordatorio importante para todos',
+    'Revisen el calendario de eventos',
+    'Gran esfuerzo en el entrenamiento',
+    'Próximo torneo: confirmen asistencia',
+    'Material de entrenamiento disponible',
+    'Reunión de estrategia esta semana',
   ]
   
+  // Get players linked to users for messages (prioritize players with accounts)
+  const playersForMessages = playersWithAccounts.length > 0 
+    ? playersWithAccounts 
+    : players.slice(0, 30) // Fallback if no players with accounts
+  
   for (const channel of channels) {
-    const numMessages = Math.floor(Math.random() * 20) + 5 // 5-25 messages
-    const selectedPlayers = players.slice(0, Math.min(numMessages, players.length))
+    const numMessages = Math.floor(Math.random() * 30) + 10 // 10-40 messages
+    const shuffledPlayers = [...playersForMessages].sort(() => Math.random() - 0.5)
     
-    for (let i = 0; i < numMessages && i < selectedPlayers.length; i++) {
+    for (let i = 0; i < numMessages && i < shuffledPlayers.length; i++) {
       const createdAt = randomDate(
-        new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+        new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
         now
       )
       
       await prisma.message.create({
         data: {
           channelId: channel.id,
-          authorId: selectedPlayers[i].id,
+          authorId: shuffledPlayers[i].id,
           content: randomElement(messageContents),
           createdAt
         }
       })
     }
   }
-  console.log(`✅ Created ${channels.length} channels with messages`)
+  console.log(`✅ Created ${channels.length} channels with messages from users`)
+
+  // 9.5) Create specific channels created by specific users
+  console.log('💬 Creating user-created channels...')
+  const usersWhoCanCreateChannels = [
+    ...playerUsers.slice(0, 3),
+    ...captainUsers,
+    ...coachUsers.slice(0, 2),
+  ]
+  
+  // Get all users that can send messages
+  const usersWhoCanMessage = [
+    ...playerUsers,
+    ...captainUsers,
+    ...coachUsers,
+    ...adminUsers,
+  ]
+  
+  // Create 5 additional channels by specific users
+  for (let i = 0; i < 5 && i < usersWhoCanCreateChannels.length; i++) {
+    const creator = usersWhoCanCreateChannels[i]
+    const creatorPlayer = creator.playerId ? await prisma.player.findUnique({ where: { id: creator.playerId } }) : null
+    
+    if (creatorPlayer) {
+      const channel = await prisma.channel.create({
+        data: {
+          name: `Canal de ${creator.name}`,
+        }
+      })
+      channels.push(channel)
+      
+      // Creator sends first message
+      await prisma.message.create({
+        data: {
+          channelId: channel.id,
+          authorId: creatorPlayer.id,
+          content: `Canal creado por ${creator.name}. ¡Bienvenidos!`,
+          createdAt: new Date(now.getTime() - (5 - i) * 24 * 60 * 60 * 1000) // Different dates
+        }
+      })
+      
+      // Add more messages from other users
+      const otherUsers = usersWhoCanMessage.filter((u: any) => u.id !== creator.id).slice(0, 5)
+      for (const otherUser of otherUsers) {
+        const otherPlayer = otherUser.playerId ? await prisma.player.findUnique({ where: { id: otherUser.playerId } }) : null
+        if (otherPlayer) {
+          await prisma.message.create({
+            data: {
+              channelId: channel.id,
+              authorId: otherPlayer.id,
+              content: randomElement(messageContents),
+              createdAt: randomDate(
+                new Date(now.getTime() - (5 - i) * 24 * 60 * 60 * 1000),
+                now
+              )
+            }
+          })
+        }
+      }
+    }
+  }
+  console.log('✅ Created user-created channels with messages')
 
   // 10) Create plays
   console.log('🎯 Creating plays...')
@@ -553,6 +814,32 @@ async function main() {
   }
   console.log(`✅ Created ${allPlays.length} plays`)
 
+  // 10.5) Create specific plays created by captains/coaches
+  console.log('🎯 Creating user-created plays...')
+  const usersWhoCanCreatePlays = [...captainUsers, ...coachUsers]
+  
+  const customPlays = [
+    { name: 'Estrategia Ofensiva Personalizada', category: PlayCategory.OFFENSE, creator: captainUsers[0] },
+    { name: 'Defensa Adaptativa', category: PlayCategory.DEFENSE, creator: coachUsers[0] },
+    { name: 'Drill de Coordinación', category: PlayCategory.DRILL, creator: captainUsers[1] },
+    { name: 'Ataque Rápido', category: PlayCategory.OFFENSE, creator: coachUsers[1] },
+    { name: 'Zona de Presión', category: PlayCategory.DEFENSE, creator: captainUsers[0] },
+  ]
+  
+  for (const playData of customPlays) {
+    if (playData.creator) {
+      await prisma.play.create({
+        data: {
+          name: playData.name,
+          category: playData.category,
+          description: `Jugada creada por ${playData.creator.name} (${playData.creator.email})`,
+          content: `# ${playData.name}\n\nJugada diseñada por ${playData.creator.name}.\n\nContenido detallado de la estrategia.`
+        }
+      })
+    }
+  }
+  console.log('✅ Created user-created plays')
+
   // 11) Create rivals
   console.log('⚔️ Creating rivals...')
   const rivalNames = [
@@ -584,6 +871,33 @@ async function main() {
   }
   console.log(`✅ Created ${rivalNames.length} rivals`)
 
+  // 11.5) Create specific rivals created by captains
+  console.log('⚔️ Creating user-created rivals...')
+  const usersWhoCanCreateRivals = captainUsers
+  
+  const customRivals = [
+    { name: 'Equipo Elite', strengths: 'Velocidad y precisión', weaknesses: 'Poca resistencia', creator: captainUsers[0] },
+    { name: 'Storm Riders', strengths: 'Estrategia táctica', weaknesses: 'Falta de agresividad', creator: captainUsers[1] },
+  ]
+  
+  for (const rivalData of customRivals) {
+    if (rivalData.creator) {
+      await prisma.rival.create({
+        data: {
+          name: rivalData.name,
+          strengths: rivalData.strengths,
+          weaknesses: rivalData.weaknesses,
+          notes: `Información recopilada por ${rivalData.creator.name} (${rivalData.creator.email})`,
+          lastPlayedAt: randomDate(
+            new Date(now.getTime() - 120 * 24 * 60 * 60 * 1000), // 120 days ago
+            new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000) // 10 days ago
+          )
+        }
+      })
+    }
+  }
+  console.log('✅ Created user-created rivals')
+
   // 12) Create resources
   console.log('📚 Creating resources...')
   const resourceCategories = ['Manual', 'Video', 'Imagen', 'Documento', 'Enlace']
@@ -606,6 +920,31 @@ async function main() {
     })
   }
   console.log(`✅ Created 15 resources`)
+
+  // 12.5) Create specific resources uploaded by coaches
+  console.log('📚 Creating user-uploaded resources...')
+  const usersWhoCanUploadResources = coachUsers
+  
+  const customResources = [
+    { title: 'Manual de Entrenamiento Avanzado', category: 'Manual', creator: coachUsers[0] },
+    { title: 'Video de Técnicas de Lanzamiento', category: 'Video', creator: coachUsers[1] },
+    { title: 'Plan de Acondicionamiento Físico', category: 'Documento', creator: coachUsers[0] },
+    { title: 'Guía de Estrategias Defensivas', category: 'Manual', creator: coachUsers[2] },
+  ]
+  
+  for (const resourceData of customResources) {
+    if (resourceData.creator) {
+      await prisma.resource.create({
+        data: {
+          title: resourceData.title,
+          description: `Recurso subido por ${resourceData.creator.name} (${resourceData.creator.email})`,
+          category: resourceData.category,
+          url: `https://example.com/resources/${resourceData.title.toLowerCase().replace(/\s+/g, '-')}`,
+        }
+      })
+    }
+  }
+  console.log('✅ Created user-uploaded resources')
 
   // 13) Finance defaults
   console.log('💰 Creating finance data...')
@@ -668,6 +1007,42 @@ async function main() {
   }
   console.log('✅ Created finance data')
 
+  // 13.5) Create specific transactions created by treasurers
+  console.log('💰 Creating user-created transactions...')
+  const usersWhoCanCreateTransactions = treasurerUsers
+  
+  const customTransactions = [
+    { type: TransactionType.INCOME, amountCents: 50000, description: 'Cuota mensual - Enero', creator: treasurerUsers[0] },
+    { type: TransactionType.INCOME, amountCents: 30000, description: 'Donación de patrocinador', creator: treasurerUsers[1] },
+    { type: TransactionType.EXPENSE, amountCents: 15000, description: 'Compra de equipamiento', creator: treasurerUsers[0] },
+    { type: TransactionType.EXPENSE, amountCents: 8000, description: 'Transporte a torneo', creator: treasurerUsers[2] },
+    { type: TransactionType.INCOME, amountCents: 25000, description: 'Cuota mensual - Febrero', creator: treasurerUsers[1] },
+  ]
+  
+  for (const transData of customTransactions) {
+    if (transData.creator && mainAccount && bankAccount) {
+      const category = transData.type === TransactionType.INCOME 
+        ? randomElement(categories.filter((c: any) => c.kind === TransactionType.INCOME))
+        : randomElement(categories.filter((c: any) => c.kind === TransactionType.EXPENSE))
+      const account = randomElement([mainAccount, bankAccount])
+      
+      await prisma.transaction.create({
+        data: {
+          accountId: account.id,
+          categoryId: category.id,
+          type: transData.type,
+          amountCents: transData.amountCents,
+          description: `${transData.description} - Registrado por ${transData.creator.name}`,
+          occurredAt: randomDate(
+            new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+            now
+          )
+        }
+      })
+    }
+  }
+  console.log('✅ Created user-created transactions')
+
   // 14) Create role requests
   console.log('📝 Creating role requests...')
   const pendingUsers = await prisma.user.findMany({ where: { status: 'PENDING' } })
@@ -698,34 +1073,45 @@ async function main() {
 
   console.log('\n✅ Seed completed successfully!')
   console.log('\n📊 Summary:')
-  console.log(`- ${adminUsers.length} admin users`)
-  console.log(`- 1 guest user`)
-  console.log(`- 5 player users`)
-  console.log(`- 1 captain user`)
-  console.log(`- 1 coach user`)
-  console.log(`- 1 treasurer user`)
-  console.log(`- ${players.length} players`)
+  console.log(`- ${adminUsers.length} admin users (all with player role)`)
+  console.log(`- ${guestUsers.length} guest users`)
+  console.log(`- ${playerUsers.length} player users`)
+  console.log(`- ${captainUsers.length} captain users (all with player role)`)
+  console.log(`- ${coachUsers.length} coach users (all with player role)`)
+  console.log(`- ${treasurerUsers.length} treasurer users (all with player role)`)
+  console.log(`- ${players.length} players in roster`)
   console.log(`- ${events.length} events`)
   console.log(`- ${channels.length} channels`)
   console.log(`- ${allPlays.length} plays`)
   console.log(`- ${rivalNames.length} rivals`)
   console.log(`- 15 resources`)
   console.log(`- 30 transactions`)
-  console.log('\n🔑 Login credentials:')
-  console.log('- Admin:    admin@example.com / admin123')
-  console.log('- Guest:    guest@example.com / admin123')
-  console.log('- Player:   player@example.com / admin123')
-  console.log('- Captain:  captain@example.com / admin123')
-  console.log('- Coach:    coach@example.com / admin123')
-  console.log('- Treasurer: treasurer@example.com / admin123')
-  console.log('- Admin:  admin1@example.com / admin123')
-  console.log('- Admin:  admin2@example.com / admin123')
-  console.log('- Guest:  guest@example.com / admin123')
-  console.log('- Player: player@example.com / admin123')
-  console.log('- Player: player1@example.com / admin123')
-  console.log('- Player: player2@example.com / admin123')
-  console.log('- Player: player3@example.com / admin123')
-  console.log('- Player: player4@example.com / admin123')
+  console.log('\n🔑 Login credentials (all passwords: admin123):')
+  console.log('\n👑 Admins (7):')
+  for (const admin of adminUsers) {
+    console.log(`   - ${admin.email}`)
+  }
+  console.log('\n👤 Players (20):')
+  for (let i = 0; i < Math.min(10, playerUsers.length); i++) {
+    console.log(`   - ${playerUsers[i].email}`)
+  }
+  console.log(`   ... and ${playerUsers.length - 10} more (player10@example.com to player19@example.com)`)
+  console.log('\n🎖️ Captains (3):')
+  for (const captain of captainUsers) {
+    console.log(`   - ${captain.email}`)
+  }
+  console.log('\n🏃 Coaches (3):')
+  for (const coach of coachUsers) {
+    console.log(`   - ${coach.email}`)
+  }
+  console.log('\n💰 Treasurers (3):')
+  for (const treasurer of treasurerUsers) {
+    console.log(`   - ${treasurer.email}`)
+  }
+  console.log('\n👁️ Guests (3):')
+  for (const guest of guestUsers) {
+    console.log(`   - ${guest.email}`)
+  }
   console.log('\n⏳ Pending users (need admin approval):')
   for (const email of pendingEmails) {
     console.log(`- ${email} / admin123`)

@@ -22,7 +22,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Eventos', href: '/eventos', icon: '📅', roles: ['player', 'captain', 'coach', 'admin'] },
     // Communications: accessible to all authenticated users (guest can view)
     { name: 'Comunicación', href: '/comunicacion', icon: '💬', roles: [] },
-    { name: 'Estadísticas', href: '/estadisticas', icon: '📊', roles: ['player', 'captain', 'coach', 'treasurer', 'admin'] },
+    // Statistics: accessible to all authenticated users (including guest for demo/showcase)
+    { name: 'Estadísticas', href: '/estadisticas', icon: '📊', roles: [] },
     { name: 'Lesiones', href: '/lesiones', icon: '🏥', roles: ['player', 'captain', 'coach', 'admin'] },
     { name: 'Rivales', href: '/rivales', icon: '⚔️', roles: ['player', 'captain', 'admin']},
     { name: 'Jugadas', href: '/jugadas', icon: '🎯', roles: ['player', 'captain', 'coach', 'admin'] },
