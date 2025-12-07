@@ -48,6 +48,12 @@ export function validationError(
   return res.status(400).json(response)
 }
 
+export function badRequest(res: Response, message: string = 'Bad request'): Response {
+  return res.status(400).json({
+    error: message,
+  })
+}
+
 export function notFound(res: Response, resource: string = 'Resource'): Response {
   return res.status(404).json({
     error: `${resource} not found`,

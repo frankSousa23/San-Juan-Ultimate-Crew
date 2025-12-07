@@ -174,11 +174,12 @@ async function main() {
     'admin6@example.com',
   ]
   const adminUsers = []
-  for (const email of adminEmails) {
+  for (let i = 0; i < adminEmails.length; i++) {
+    const email = adminEmails[i]
     const adminUser = await db.user.upsert({
       where: { email },
       update: { passwordHash, status: 'APPROVED' },
-      create: { email, name: `Admin ${email.split('@')[0]}`, passwordHash, status: 'APPROVED' }
+      create: { email, name: `Administrador ${i === 0 ? '' : i}`, passwordHash, status: 'APPROVED' }
     })
     // Admin has admin role
     await db.userRole.upsert({
@@ -406,11 +407,12 @@ async function main() {
     'pending2@example.com',
     'pending3@example.com',
   ]
-  for (const email of pendingEmails) {
+  for (let i = 0; i < pendingEmails.length; i++) {
+    const email = pendingEmails[i]
     await db.user.upsert({
       where: { email },
       update: { passwordHash, status: 'PENDING' },
-      create: { email, name: `Pending ${email.split('@')[0]}`, passwordHash, status: 'PENDING' }
+      create: { email, name: `Pendiente ${i + 1}`, passwordHash, status: 'PENDING' }
     })
   }
 
@@ -451,7 +453,7 @@ async function main() {
       [EventType.TRAINING]: ['Entrenamiento Regular', 'Práctica Técnica', 'Entrenamiento Físico', 'Sesión de Lanzamientos'],
       [EventType.TOURNAMENT]: ['Torneo Regional', 'Copa Nacional', 'Campeonato Local', 'Torneo de Verano'],
       [EventType.SOCIAL]: ['Reunión de Equipo', 'Asado del Equipo', 'Celebración', 'Evento Social'],
-      [EventType.WORKSHOP]: ['Taller de Estrategia', 'Workshop de Lanzamientos', 'Seminario de Defensa', 'Clínica de Ultimate'],
+      [EventType.WORKSHOP]: ['Taller de Estrategia', 'Taller de Lanzamientos', 'Seminario de Defensa', 'Clínica de Ultimate'],
       [EventType.FULL_DAY_OPEN]: ['Full Day Abierto - Verano', 'Full Day Abierto - Primavera', 'Full Day Abierto - Regional'],
       [EventType.FULL_DAY_MIXTO]: ['Full Day Mixto - Verano', 'Full Day Mixto - Primavera', 'Full Day Mixto - Regional'],
       [EventType.AMISTOSO]: ['Partido Amistoso Local', 'Amistoso Interregional', 'Amistoso de Preparación'],
@@ -459,7 +461,16 @@ async function main() {
     
     const title = randomElement(titles[type])
     const location = randomElement(locations)
-    const description = `Evento ${type.toLowerCase()} del equipo`
+    const typeDescriptions: Record<EventType, string> = {
+      [EventType.TRAINING]: 'Entrenamiento',
+      [EventType.TOURNAMENT]: 'Torneo',
+      [EventType.SOCIAL]: 'Social',
+      [EventType.WORKSHOP]: 'Taller',
+      [EventType.FULL_DAY_OPEN]: 'Full Day Abierto',
+      [EventType.FULL_DAY_MIXTO]: 'Full Day Mixto',
+      [EventType.AMISTOSO]: 'Amistoso',
+    }
+    const description = `Evento de tipo ${typeDescriptions[type]} del equipo`
     
     const event = await prisma.event.create({
       data: {
@@ -561,7 +572,7 @@ async function main() {
         [EventType.TRAINING]: ['Entrenamiento Regular', 'Práctica Técnica', 'Entrenamiento Físico'],
         [EventType.TOURNAMENT]: ['Torneo Regional', 'Copa Nacional', 'Campeonato Local'],
         [EventType.SOCIAL]: ['Reunión de Equipo', 'Asado del Equipo', 'Celebración'],
-        [EventType.WORKSHOP]: ['Taller de Estrategia', 'Workshop de Lanzamientos', 'Seminario de Defensa'],
+        [EventType.WORKSHOP]: ['Taller de Estrategia', 'Taller de Lanzamientos', 'Seminario de Defensa'],
         [EventType.FULL_DAY_OPEN]: ['Full Day Abierto - Verano', 'Full Day Abierto - Primavera'],
         [EventType.FULL_DAY_MIXTO]: ['Full Day Mixto - Verano', 'Full Day Mixto - Primavera'],
         [EventType.AMISTOSO]: ['Partido Amistoso Local', 'Amistoso Interregional'],
@@ -595,7 +606,7 @@ async function main() {
 
   // 8) Create injuries - prioritize players with user accounts
   console.log('🏥 Creating injuries...')
-  const injuryTypes = ['Ankle sprain', 'Knee injury', 'Shoulder strain', 'Hamstring pull', 'Wrist fracture', 'Concussion', 'Back strain']
+  const injuryTypes = ['Esguince de tobillo', 'Lesión de rodilla', 'Distensión de hombro', 'Desgarro de isquiotibial', 'Fractura de muñeca', 'Conmoción cerebral', 'Distensión de espalda']
   const severities: InjurySeverity[] = [InjurySeverity.MILD, InjurySeverity.MODERATE, InjurySeverity.SEVERE]
   const injuryStatuses: InjuryStatus[] = [InjuryStatus.ACTIVE, InjuryStatus.RECOVERING, InjuryStatus.RESOLVED]
   
@@ -625,7 +636,7 @@ async function main() {
         status,
         startDate,
         endDate,
-        description: `Lesión de ${randomElement(injuryTypes).toLowerCase()}`
+        description: `Lesión: ${randomElement(injuryTypes)}`
       }
     })
   }
@@ -792,15 +803,15 @@ async function main() {
     'Vertical Stack Básico',
     'Horizontal Stack',
     'Side Stack',
-    'Spread Offense',
-    'Isolation Play',
+    'Ataque Disperso',
+    'Jugada de Aislamiento',
   ]
   const defensePlays = [
     'Zona 3-3-1',
     'Zona 2-3-2',
     'Persona a Persona',
-    'Force Backhand',
-    'Force Forehand',
+    'Forzar Backhand',
+    'Forzar Forehand',
   ]
   const drillPlays = [
     'Drill de Lanzamientos',
@@ -859,12 +870,12 @@ async function main() {
   const rivalNames = [
     'Boricuas Ultimate',
     'Isla Flyers',
-    'Caribbean Storm',
-    'Tropical Thunder',
-    'Island Warriors',
-    'Coastal Crushers',
-    'Beach Ultimate',
-    'Sunset Flyers',
+    'Tormenta Caribeña',
+    'Trueno Tropical',
+    'Guerreros de la Isla',
+    'Crushers Costeros',
+    'Ultimate Playa',
+    'Flyers del Atardecer',
   ]
   const strengths = ['Velocidad en cortes', 'Defensa física', 'Lanzamientos largos', 'Estrategia', 'Condicionamiento']
   const weaknesses = ['Zona débil', 'Pocas variantes ofensivas', 'Errores bajo presión', 'Falta de comunicación']
@@ -891,7 +902,7 @@ async function main() {
   
   const customRivals = [
     { name: 'Equipo Elite', strengths: 'Velocidad y precisión', weaknesses: 'Poca resistencia', creator: captainUsers[0] },
-    { name: 'Storm Riders', strengths: 'Estrategia táctica', weaknesses: 'Falta de agresividad', creator: captainUsers[1] },
+    { name: 'Jinetes de la Tormenta', strengths: 'Estrategia táctica', weaknesses: 'Falta de agresividad', creator: captainUsers[1] },
   ]
   
   for (const rivalData of customRivals) {
@@ -1278,6 +1289,7 @@ Agenda:
 
       const category = isFullDay ? randomElement(['OPEN', 'MIXTO']) : null
 
+      const creator = randomElement([...adminUsers, ...playerUsers, ...captainUsers, ...coachUsers])
       await prisma.eventAnnotation.create({
         data: {
           eventId: event.id,
@@ -1286,6 +1298,7 @@ Agenda:
           note: randomElement(notes),
           timestamp,
           category,
+          createdBy: creator.id,
         }
       })
     }

@@ -70,7 +70,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* Mobile Back Button */}
         <div className="lg:hidden p-2 border-b bg-gray-100">
           <button 
-            onClick={() => navigate(-1)}
+            onClick={() => {
+              if (window.history.length > 1) {
+                navigate(-1)
+              } else {
+                navigate('/')
+              }
+            }}
             className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 rounded-md"
           >
             <span className="mr-2">⬅</span> Volver

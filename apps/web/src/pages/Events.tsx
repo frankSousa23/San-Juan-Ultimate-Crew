@@ -81,7 +81,22 @@ export default function Events() {
   })
 
   useEffect(() => {
-    loadEvents()
+    let mounted = true
+    const load = async () => {
+      try {
+        await loadEvents()
+      } catch (err: any) {
+        if (mounted) {
+          setError(err?.response?.data?.error || 'Error al cargar eventos')
+          console.error('Error loading events:', err)
+        }
+      }
+    }
+    load()
+    return () => {
+      mounted = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   // Sync state from URL
   useEffect(() => {
@@ -139,6 +154,18 @@ export default function Events() {
     const start = (currentPage - 1) * limit
     return filtered.slice(start, start + limit)
   }, [filtered, currentPage, limit])
+
+  // Show loading state on initial load
+  if (loading && events.length === 0 && !error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando eventos...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
