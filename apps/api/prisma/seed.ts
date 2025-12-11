@@ -163,23 +163,22 @@ async function main() {
   }
   const passwordHash = await bcrypt.hash('admin123', 10)
   
-  // Create multiple admin users (all admins are also players) - 7 admins for testing
+  // Create admin users - 3 admins for testing (2 linked to players, 1 not linked)
   const adminEmails = [
     'admin@example.com',
     'admin1@example.com',
     'admin2@example.com',
-    'admin3@example.com',
-    'admin4@example.com',
-    'admin5@example.com',
-    'admin6@example.com',
   ]
   const adminUsers = []
+  
+  // First, create players that will be linked to admins (we'll create them later, but reserve some)
+  // For now, create admins without playerId, we'll link them after players are created
   for (let i = 0; i < adminEmails.length; i++) {
     const email = adminEmails[i]
     const adminUser = await db.user.upsert({
       where: { email },
       update: { passwordHash, status: 'APPROVED' },
-      create: { email, name: `Administrador ${i === 0 ? '' : i}`, passwordHash, status: 'APPROVED' }
+      create: { email, name: `Administrador ${i === 0 ? '' : i + 1}`, passwordHash, status: 'APPROVED' }
     })
     // Admin has admin role
     await db.userRole.upsert({
@@ -187,12 +186,15 @@ async function main() {
       update: {},
       create: { userId: adminUser.id, roleId: adminRole.id }
     })
-    // Admin also has player role
-    await db.userRole.upsert({
-      where: { userId_roleId: { userId: adminUser.id, roleId: playerRole.id } },
-      update: {},
-      create: { userId: adminUser.id, roleId: playerRole.id }
-    })
+    // Only first 2 admins have player role (for testing combined stats)
+    // Third admin will NOT have player role (for testing admin without player)
+    if (i < 2) {
+      await db.userRole.upsert({
+        where: { userId_roleId: { userId: adminUser.id, roleId: playerRole.id } },
+        update: {},
+        create: { userId: adminUser.id, roleId: playerRole.id }
+      })
+    }
     adminUsers.push(adminUser)
   }
 
@@ -208,8 +210,8 @@ async function main() {
     create: { userId: guestUser.id, roleId: guestRole.id }
   })
 
-  // 2) Create 50 players
-  console.log('👥 Creating 50 players...')
+  // 2) Create 25 players (reduced from 50 for better testing)
+  console.log('👥 Creating 25 players...')
   const positions: PlayerPosition[] = [PlayerPosition.HANDLER, PlayerPosition.CUTTER, PlayerPosition.HYBRID]
   const statuses: PlayerStatus[] = [PlayerStatus.ACTIVE, PlayerStatus.ACTIVE, PlayerStatus.ACTIVE, PlayerStatus.INJURED, PlayerStatus.INACTIVE]
   const firstNames = ['Juan', 'María', 'Carlos', 'Ana', 'Diego', 'Sofía', 'Roberto', 'Lucía', 'Miguel', 'Elena', 'José', 'Carmen', 'Luis', 'Patricia', 'Fernando', 'Laura', 'Ricardo', 'Andrea', 'Daniel', 'Mónica', 'Alejandro', 'Natalia', 'Andrés', 'Valentina', 'Sebastián', 'Isabella', 'Gabriel', 'Camila', 'Rodrigo', 'Mariana']
@@ -218,7 +220,7 @@ async function main() {
   const players = []
   const usedNumbers = new Set<number>()
   
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 25; i++) {
     let number: number
     do {
       number = Math.floor(Math.random() * 99) + 1
@@ -244,7 +246,11 @@ async function main() {
   
   console.log(`✅ Created ${players.length} players`)
 
-  // 3) Create player users (20 players with user accounts for testing)
+  // Link first 2 admins to players (for testing admin+player stats)
+  // We'll do this after players are created, but reserve first 2 players for admins
+  const adminPlayersReserved: number[] = []
+  
+  // 3) Create player users (10 players with user accounts for testing - reduced from 20)
   console.log('👤 Creating player users...')
   const playerUserEmails = [
     'player@example.com',
@@ -257,16 +263,6 @@ async function main() {
     'player7@example.com',
     'player8@example.com',
     'player9@example.com',
-    'player10@example.com',
-    'player11@example.com',
-    'player12@example.com',
-    'player13@example.com',
-    'player14@example.com',
-    'player15@example.com',
-    'player16@example.com',
-    'player17@example.com',
-    'player18@example.com',
-    'player19@example.com',
   ]
   
   // Get players that don't have users yet
@@ -293,6 +289,30 @@ async function main() {
       create: { userId: playerUser.id, roleId: playerRole.id }
     })
     playerUsers.push(playerUser)
+  }
+  
+  // Link first 2 admins to players (for testing admin+player stats combination)
+  console.log('🔗 Linking admins to players for combined stats...')
+  const remainingPlayersWithoutUsers = players.filter((p: any) => {
+    const hasUser = playerUsers.some((u: any) => u.playerId === p.id)
+    return !hasUser
+  })
+  
+  // Link admin[0] and admin[1] to first 2 available players (only if they don't already have a playerId)
+  if (remainingPlayersWithoutUsers.length >= 2 && adminUsers.length >= 2) {
+    for (let i = 0; i < 2; i++) {
+      const adminUser = adminUsers[i]
+      // Check if admin already has a playerId
+      const adminWithPlayer = await db.user.findUnique({ where: { id: adminUser.id }, select: { playerId: true } })
+      if (!adminWithPlayer?.playerId && remainingPlayersWithoutUsers[i]) {
+        const player = remainingPlayersWithoutUsers[i]
+        await db.user.update({
+          where: { id: adminUser.id },
+          data: { playerId: player.id }
+        })
+        console.log(`✅ Linked ${adminUser.email} to player ${player.name} (ID: ${player.id})`)
+      }
+    }
   }
 
   // Create multiple users for new roles (captain, coach, treasurer) - 3 of each for testing
@@ -323,16 +343,18 @@ async function main() {
       update: {},
       create: { userId: captainUser.id, roleId: captainRole.id }
     })
-    // Captain also has player role
-    await db.userRole.upsert({
-      where: { userId_roleId: { userId: captainUser.id, roleId: playerRole.id } },
-      update: {},
-      create: { userId: captainUser.id, roleId: playerRole.id }
-    })
+    // First 2 captains have player role, third doesn't (for testing)
+    if (i < 2) {
+      await db.userRole.upsert({
+        where: { userId_roleId: { userId: captainUser.id, roleId: playerRole.id } },
+        update: {},
+        create: { userId: captainUser.id, roleId: playerRole.id }
+      })
+    }
     captainUsers.push(captainUser)
   }
   
-  // Create 3 coach users (not linked to players, but have player role)
+  // Create 3 coach users (not linked to players)
   const coachEmails = ['coach@example.com', 'coach1@example.com', 'coach2@example.com']
   const coachUsers = []
   for (let i = 0; i < coachEmails.length; i++) {
@@ -348,16 +370,18 @@ async function main() {
       update: {},
       create: { userId: coachUser.id, roleId: coachRole.id }
     })
-    // Coach also has player role
-    await db.userRole.upsert({
-      where: { userId_roleId: { userId: coachUser.id, roleId: playerRole.id } },
-      update: {},
-      create: { userId: coachUser.id, roleId: playerRole.id }
-    })
+    // First 2 coaches have player role, third doesn't (for testing)
+    if (i < 2) {
+      await db.userRole.upsert({
+        where: { userId_roleId: { userId: coachUser.id, roleId: playerRole.id } },
+        update: {},
+        create: { userId: coachUser.id, roleId: playerRole.id }
+      })
+    }
     coachUsers.push(coachUser)
   }
   
-  // Create 3 treasurer users (not linked to players, but have player role)
+  // Create 3 treasurer users (not linked to players)
   const treasurerEmails = ['treasurer@example.com', 'treasurer1@example.com', 'treasurer2@example.com']
   const treasurerUsers = []
   for (let i = 0; i < treasurerEmails.length; i++) {
@@ -373,12 +397,14 @@ async function main() {
       update: {},
       create: { userId: treasurerUser.id, roleId: treasurerRole.id }
     })
-    // Treasurer also has player role
-    await db.userRole.upsert({
-      where: { userId_roleId: { userId: treasurerUser.id, roleId: playerRole.id } },
-      update: {},
-      create: { userId: treasurerUser.id, roleId: playerRole.id }
-    })
+    // First treasurer has player role, others don't (for testing)
+    if (i === 0) {
+      await db.userRole.upsert({
+        where: { userId_roleId: { userId: treasurerUser.id, roleId: playerRole.id } },
+        update: {},
+        create: { userId: treasurerUser.id, roleId: playerRole.id }
+      })
+    }
     treasurerUsers.push(treasurerUser)
   }
   
@@ -499,7 +525,7 @@ async function main() {
   const playersWithoutAccounts = players.filter((p: any) => !playerIdsWithUsersForEvents.has(p.id))
   
   for (const event of events.slice(0, 18)) { // Add participants to first 18 events
-    const numParticipants = Math.floor(Math.random() * 20) + 10 // 10-30 participants
+    const numParticipants = Math.floor(Math.random() * 15) + 8 // 8-23 participants (reduced for 25 players)
     // Prioritize players with accounts, then add others
     const selectedPlayers = [
       ...playersWithAccounts.slice(0, Math.min(numParticipants, playersWithAccounts.length)),
@@ -525,7 +551,7 @@ async function main() {
   // 7) Create attendance records - prioritize players with user accounts
   console.log('📋 Creating attendance records...')
   for (const event of events.slice(0, 15)) { // Add attendance to first 15 events
-    const numAttendees = Math.floor(Math.random() * 25) + 15 // 15-40 attendees
+    const numAttendees = Math.floor(Math.random() * 15) + 10 // 10-25 attendees (reduced for 25 players)
     // Prioritize players with accounts for attendance
     const selectedPlayers = [
       ...playersWithAccounts.slice(0, Math.min(numAttendees, playersWithAccounts.length)),
@@ -1307,12 +1333,12 @@ Agenda:
 
   console.log('\n✅ Seed completed successfully!')
   console.log('\n📊 Summary:')
-  console.log(`- ${adminUsers.length} admin users (all with player role)`)
+  console.log(`- ${adminUsers.length} admin users (2 with player role, 1 without)`)
   console.log(`- ${guestUsers.length} guest users`)
-  console.log(`- ${playerUsers.length} player users`)
-  console.log(`- ${captainUsers.length} captain users (all with player role)`)
-  console.log(`- ${coachUsers.length} coach users (all with player role)`)
-  console.log(`- ${treasurerUsers.length} treasurer users (all with player role)`)
+  console.log(`- ${playerUsers.length} player users (all with player role)`)
+  console.log(`- ${captainUsers.length} captain users (2 with player role, 1 without)`)
+  console.log(`- ${coachUsers.length} coach users (2 with player role, 1 without)`)
+  console.log(`- ${treasurerUsers.length} treasurer users (1 with player role, 2 without)`)
   console.log(`- ${players.length} players in roster`)
   console.log(`- ${events.length} events`)
   console.log(`- ${channels.length} channels`)
@@ -1323,15 +1349,14 @@ Agenda:
   console.log(`- ${newsPosts.length} news posts`)
   console.log(`- Event annotations created`)
   console.log('\n🔑 Login credentials (all passwords: admin123):')
-  console.log('\n👑 Admins (7):')
+  console.log('\n👑 Admins (3):')
   for (const admin of adminUsers) {
     console.log(`   - ${admin.email}`)
   }
-  console.log('\n👤 Players (20):')
+  console.log('\n👤 Players (10):')
   for (let i = 0; i < Math.min(10, playerUsers.length); i++) {
     console.log(`   - ${playerUsers[i].email}`)
   }
-  console.log(`   ... and ${playerUsers.length - 10} more (player10@example.com to player19@example.com)`)
   console.log('\n🎖️ Captains (3):')
   for (const captain of captainUsers) {
     console.log(`   - ${captain.email}`)

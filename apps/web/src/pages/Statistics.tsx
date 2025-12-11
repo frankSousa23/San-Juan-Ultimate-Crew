@@ -93,7 +93,7 @@ export default function Statistics() {
       {stats && (
         <>
           {/* Top KPIs - Different for each role */}
-          {isAdmin && (
+          {isAdmin && !isPlayer && (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow p-6">
                 <div className="text-blue-100 text-sm">Jugadores Totales</div>
@@ -116,6 +116,59 @@ export default function Statistics() {
                 <div className="text-orange-100 text-xs mt-1">Programados</div>
               </div>
             </div>
+          )}
+
+          {/* Admin who is also a player: Show both admin and player stats */}
+          {isAdmin && isPlayer && (
+            <>
+              <div className="bg-white rounded-lg shadow p-4 mb-4">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">📊 Estadísticas del Sistema (Admin)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow p-6">
+                    <div className="text-blue-100 text-sm">Jugadores Totales</div>
+                    <div className="text-3xl font-bold">{stats.players || stats.activePlayers || 0}</div>
+                    <div className="text-blue-100 text-xs mt-1">Miembros del equipo</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg shadow p-6">
+                    <div className="text-green-100 text-sm">Eventos Totales</div>
+                    <div className="text-3xl font-bold">{stats.events || 0}</div>
+                    <div className="text-green-100 text-xs mt-1">Entrenamientos y torneos</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg shadow p-6">
+                    <div className="text-purple-100 text-sm">Mensajes</div>
+                    <div className="text-3xl font-bold">{stats.messages || 0}</div>
+                    <div className="text-purple-100 text-xs mt-1">Comunicaciones</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg shadow p-6">
+                    <div className="text-orange-100 text-sm">Próximos Eventos</div>
+                    <div className="text-3xl font-bold">{stats.upcomingEvents?.length || 0}</div>
+                    <div className="text-orange-100 text-xs mt-1">Programados</div>
+                  </div>
+                </div>
+              </div>
+              {stats.personalStats && (
+                <div className="bg-white rounded-lg shadow p-4 mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">👤 Mis Estadísticas como Jugador</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow p-6">
+                      <div className="text-blue-100 text-sm">Eventos Asistidos</div>
+                      <div className="text-3xl font-bold">{stats.personalStats.eventsAttended}</div>
+                      <div className="text-blue-100 text-xs mt-1">Asistencias confirmadas</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg shadow p-6">
+                      <div className="text-green-100 text-sm">Tasa de Asistencia</div>
+                      <div className="text-3xl font-bold">{stats.personalStats.attendanceRate}%</div>
+                      <div className="text-green-100 text-xs mt-1">De eventos completados</div>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg shadow p-6">
+                      <div className="text-purple-100 text-sm">Eventos Participados</div>
+                      <div className="text-3xl font-bold">{stats.personalStats.eventsParticipated}</div>
+                      <div className="text-purple-100 text-xs mt-1">Total de participaciones</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Captain/Coach/Treasurer KPIs */}
@@ -206,12 +259,12 @@ export default function Statistics() {
 
           {/* Attendance and events by type */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {(isAdmin || isPlayer) && stats.attendance && stats.attendance.length > 0 && (
+            {((isAdmin && !isPlayer) || (isPlayer && !isAdmin)) && stats.attendance && stats.attendance.length > 0 && (
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                   <h3 className="font-semibold text-lg">
-                    {isAdmin ? 'Asistencias Globales' : 'Mis Asistencias'}
+                    {isAdmin && !isPlayer ? 'Asistencias Globales' : 'Mis Asistencias'}
                   </h3>
                 </div>
                 <div className="space-y-3">

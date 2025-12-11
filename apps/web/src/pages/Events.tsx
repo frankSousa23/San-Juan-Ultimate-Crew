@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { eventsApi, channelsApi, attendanceApi, playersApi, annotationsApi } from '../lib/api'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import EventForm from '../components/EventForm'
+import LiveAnnotationsTable from '../components/LiveAnnotationsTable'
 import { EventItem, EventType, EventStatus } from '../types/event'
 import ConfirmModal from '../components/ConfirmModal'
 import { useToast } from '../hooks/useToast'
@@ -31,6 +32,7 @@ const statusBadge: Record<EventStatus, string> = {
 export default function Events() {
   const toasts = useToast()
   const navigate = useNavigate()
+  const { hasPermission } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [events, setEvents] = useState<EventItem[]>([])
   const [tab, setTab] = useState<'events' | 'calendar' | 'tournaments' | 'stats'>('events')
@@ -46,7 +48,7 @@ export default function Events() {
   const [annotEvent, setAnnotEvent] = useState<EventItem | null>(null)
   const [selectedDateEvents, setSelectedDateEvents] = useState<{ date: Date; events: EventItem[] } | null>(null)
   
-  const [confirmState, setConfirmState] = useState<{ title?: string; message: string; onYes: () => Promise<void> } | null>(null)
+  const [confirmState, setConfirmState] = useState<{ eventId?: number; title?: string; message: string; onYes: () => Promise<void> } | null>(null)
 
   // API hooks
   const { execute: loadEvents, loading } = useApi(eventsApi.list, {
@@ -74,7 +76,9 @@ export default function Events() {
 
   const { execute: deleteEvent } = useApi(eventsApi.remove, {
     onSuccess: () => {
-      setEvents(prev => prev.filter(x => x.id !== confirmState?.onYes))
+      if (confirmState?.eventId) {
+        setEvents(prev => prev.filter(x => x.id !== confirmState.eventId))
+      }
       toasts.success('Evento eliminado exitosamente')
     },
     showErrorToast: true
@@ -109,7 +113,7 @@ export default function Events() {
     if (t && ['events','calendar','tournaments','stats'].includes(t) && tab !== t) {
       setTab(t as 'events' | 'calendar' | 'tournaments' | 'stats')
     }
-    if (type && (['TOURNAMENT','TRAINING','SOCIAL','WORKSHOP'].includes(type) || type === 'all') && typeFilter !== type) {
+    if (type && (['TOURNAMENT','TRAINING','SOCIAL','WORKSHOP','FULL_DAY_OPEN','FULL_DAY_MIXTO','AMISTOSO'].includes(type) || type === 'all') && typeFilter !== type) {
       setTypeFilter(type as 'all' | EventType)
     }
     if (status && (['UPCOMING','ONGOING','COMPLETED','CANCELLED'].includes(status) || status === 'all') && statusFilter !== status) {
@@ -334,6 +338,7 @@ export default function Events() {
                           <button className="text-amber-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => setEditTarget(e)}>Editar</button>
                           <button className="text-red-600 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => {
                             setConfirmState({
+                              eventId: e.id,
                               title: 'Confirmar eliminación',
                               message: `¿Eliminar evento "${e.title}"? Esta acción no se puede deshacer.`,
                               onYes: async () => {
@@ -749,6 +754,7 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingAnnotation, setEditingAnnotation] = useState<EventAnnotation | null>(null)
   const [stats, setStats] = useState<any>(null)
+  const [viewMode, setViewMode] = useState<'list' | 'table'>('list')
   const toasts = useToast()
   const { hasPermission } = useAuth()
 
@@ -849,45 +855,73 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
   const isFullDay = eventItem.type === 'FULL_DAY_OPEN' || eventItem.type === 'FULL_DAY_MIXTO'
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4">
-          <div className="text-lg font-bold">Anotaciones — {eventItem.title}</div>
-          <div className="text-sm opacity-90">{typeLabel[eventItem.type]}</div>
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <div className="text-base sm:text-lg font-bold">Anotaciones — {eventItem.title}</div>
+              <div className="text-xs sm:text-sm opacity-90">{typeLabel[eventItem.type]}</div>
+            </div>
+            {canManage && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-colors ${
+                    viewMode === 'list' ? 'bg-white text-purple-600' : 'bg-purple-500 text-white hover:bg-purple-400'
+                  }`}
+                >
+                  Lista
+                </button>
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-colors ${
+                    viewMode === 'table' ? 'bg-white text-purple-600' : 'bg-purple-500 text-white hover:bg-purple-400'
+                  }`}
+                >
+                  Tabla
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4">
-          {loading && <div className="text-gray-600">Cargando…</div>}
-          {error && <div className="text-sm text-red-600 mb-4">{error}</div>}
-          
-          {!loading && (
+        <div className="flex-1 overflow-y-auto p-2 sm:p-4">
+          {viewMode === 'table' && canManage ? (
+            <LiveAnnotationsTable event={eventItem} onClose={onClose} embedded={true} />
+          ) : (
             <>
+              {loading && <div className="text-gray-600 text-center py-8">Cargando…</div>}
+              {error && <div className="text-xs sm:text-sm text-red-600 mb-4 p-2 bg-red-50 rounded">{error}</div>}
+              
+              {!loading && (
+                <>
               {stats && (
-                <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <div className="text-sm text-gray-600">Total Anotaciones</div>
-                    <div className="text-2xl font-bold text-blue-700">{stats.total}</div>
+                <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="bg-blue-50 rounded-lg p-3 sm:p-4">
+                    <div className="text-xs sm:text-sm text-gray-600">Total Anotaciones</div>
+                    <div className="text-xl sm:text-2xl font-bold text-blue-700">{stats.total}</div>
                   </div>
-                  <div className="bg-green-50 rounded-lg p-4">
-                    <div className="text-sm text-gray-600">Por Tipo</div>
-                    <div className="text-sm mt-1">
+                  <div className="bg-green-50 rounded-lg p-3 sm:p-4">
+                    <div className="text-xs sm:text-sm text-gray-600">Por Tipo</div>
+                    <div className="text-xs sm:text-sm mt-1">
                       {Object.entries(stats.byType).slice(0, 3).map(([type, count]) => (
                         <div key={type}>{annotationTypeLabels[type as AnnotationType]}: {count as number}</div>
                       ))}
                     </div>
                   </div>
-                  <div className="bg-purple-50 rounded-lg p-4">
-                    <div className="text-sm text-gray-600">Jugadores con Anotaciones</div>
-                    <div className="text-2xl font-bold text-purple-700">{stats.byPlayer.length}</div>
+                  <div className="bg-purple-50 rounded-lg p-3 sm:p-4">
+                    <div className="text-xs sm:text-sm text-gray-600">Jugadores con Anotaciones</div>
+                    <div className="text-xl sm:text-2xl font-bold text-purple-700">{stats.byPlayer.length}</div>
                   </div>
                 </div>
               )}
 
               {canManage && !showCreateForm && !editingAnnotation && (
-                <div className="mb-4">
+                <div className="mb-3 sm:mb-4">
                   <button
                     onClick={() => setShowCreateForm(true)}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm sm:text-base"
                   >
                     + Nueva Anotación
                   </button>
@@ -915,20 +949,20 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
               )}
 
               <div className="space-y-3">
-                <h3 className="font-semibold text-gray-800">Anotaciones ({annotations.length})</h3>
+                <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Anotaciones ({annotations.length})</h3>
                 {annotations.length === 0 ? (
-                  <div className="text-gray-500 text-center py-8">No hay anotaciones registradas</div>
+                  <div className="text-gray-500 text-center py-6 sm:py-8 text-sm">No hay anotaciones registradas</div>
                 ) : (
                   <div className="space-y-2">
                     {annotations.map(ann => (
-                      <div key={ann.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
+                      <div key={ann.id} className="border rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
                               <span className={`px-2 py-1 rounded text-xs font-semibold ${annotationTypeColors[ann.type]}`}>
                                 {annotationTypeLabels[ann.type]}
                               </span>
-                              <span className="text-sm font-medium text-gray-800">
+                              <span className="text-xs sm:text-sm font-medium text-gray-800 truncate">
                                 #{ann.player?.number} {ann.player?.name}
                               </span>
                               {ann.category && (
@@ -938,7 +972,7 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
                               )}
                             </div>
                             {ann.note && (
-                              <div className="text-sm text-gray-700 mt-1">{ann.note}</div>
+                              <div className="text-xs sm:text-sm text-gray-700 mt-1 break-words">{ann.note}</div>
                             )}
                             <div className="text-xs text-gray-500 mt-2">
                               {new Date(ann.timestamp).toLocaleString('es-ES', {
@@ -951,16 +985,16 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
                             </div>
                           </div>
                           {canManage && (
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 sm:gap-2 shrink-0">
                               <button
                                 onClick={() => setEditingAnnotation(ann)}
-                                className="text-blue-600 hover:underline text-sm"
+                                className="text-blue-600 hover:underline text-xs sm:text-sm whitespace-nowrap px-2 py-1"
                               >
                                 Editar
                               </button>
                               <button
                                 onClick={() => handleDelete(ann.id)}
-                                className="text-red-600 hover:underline text-sm"
+                                className="text-red-600 hover:underline text-xs sm:text-sm whitespace-nowrap px-2 py-1"
                               >
                                 Eliminar
                               </button>
@@ -974,10 +1008,12 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
               </div>
             </>
           )}
+            </>
+          )}
         </div>
         
-        <div className="p-4 flex justify-end border-t">
-          <button onClick={onClose} className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200 transition-colors">
+        <div className="p-3 sm:p-4 flex justify-end border-t">
+          <button onClick={onClose} className="w-full sm:w-auto px-4 py-2 rounded bg-gray-100 hover:bg-gray-200 transition-colors text-sm sm:text-base">
             Cerrar
           </button>
         </div>
@@ -1028,15 +1064,15 @@ function AnnotationForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-gray-50 rounded-lg p-4 mb-4">
-      <h4 className="font-semibold mb-4">{initial ? 'Editar' : 'Nueva'} Anotación</h4>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
+      <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">{initial ? 'Editar' : 'Nueva'} Anotación</h4>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Jugador</label>
+          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Jugador</label>
           <select
             value={playerId}
             onChange={(e) => setPlayerId(Number(e.target.value))}
-            className="w-full px-3 py-2 border rounded-lg"
+            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg text-sm"
             required
           >
             {players.map(p => (
@@ -1045,11 +1081,11 @@ function AnnotationForm({
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Tipo</label>
           <select
             value={type}
             onChange={(e) => setType(e.target.value as AnnotationType)}
-            className="w-full px-3 py-2 border rounded-lg"
+            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg text-sm"
             required
           >
             {annotationTypes.map(t => (
@@ -1071,22 +1107,22 @@ function AnnotationForm({
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Momento</label>
+          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Momento</label>
           <input
             type="datetime-local"
             value={timestamp}
             onChange={(e) => setTimestamp(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg"
+            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg text-sm"
             required
           />
         </div>
         {isFullDay && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Categoría</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg"
+              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg text-sm"
             >
               <option value="">Sin categoría</option>
               <option value="OPEN">Open</option>
@@ -1095,27 +1131,27 @@ function AnnotationForm({
           </div>
         )}
         <div className={isFullDay ? 'md:col-span-2' : ''}>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Nota/Descripción</label>
+          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Nota/Descripción</label>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg"
+            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg text-sm"
             rows={3}
             placeholder="Descripción detallada de la anotación..."
           />
         </div>
       </div>
-      <div className="flex justify-end gap-2 mt-4">
+      <div className="flex flex-col sm:flex-row justify-end gap-2 mt-3 sm:mt-4">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 transition-colors"
+          className="w-full sm:w-auto px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 transition-colors text-sm"
         >
           Cancelar
         </button>
         <button
           type="submit"
-          className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+          className="w-full sm:w-auto px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700 transition-colors text-sm"
         >
           {initial ? 'Actualizar' : 'Crear'}
         </button>

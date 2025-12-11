@@ -14,6 +14,7 @@ import Injuries from './pages/Injuries'
 import Rivals from './pages/Rivals'
 import Plays from './pages/Plays'
 import RosterTorneo from './pages/RosterTorneo'
+import Annotations from './pages/Annotations'
 import Resources from './pages/Resources'
 import Profile from './pages/Profile'
 import Login from './pages/Login'
@@ -81,6 +82,7 @@ function AppRoutes() {
         {/* Player, Captain, Coach & Admin Routes */}
         <Route path="/roster" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin']}><Roster /></ProtectedRoute>} />
         <Route path="/eventos" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin']}><Events /></ProtectedRoute>} />
+        <Route path="/anotaciones" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin']}><Annotations /></ProtectedRoute>} />
         {/* Communications: accessible to all authenticated users, but with different permissions */}
         <Route path="/comunicacion" element={<ProtectedRoute><Communications /></ProtectedRoute>} />
         {/* Statistics: accessible to all authenticated users (including guest for demo/showcase) */}

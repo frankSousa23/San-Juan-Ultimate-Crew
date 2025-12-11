@@ -165,10 +165,101 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   }
 
   const isAdmin = userRoles.includes('admin')
-  const isPlayer = userRoles.includes('player') || !!user.playerId
+  const isPlayer = userRoles.includes('player') // Only check role, not playerId
+  const isAdminAndPlayer = isAdmin && isPlayer && !!user.playerId
 
-  if (isAdmin) {
-    // Admin: Full global statistics
+  if (isAdminAndPlayer) {
+    // Admin who is also a player: Global admin stats + Personal player stats
+    try {
+      const [
+        players,
+        events,
+        messages,
+        upcomingEvents,
+        attendanceTotals,
+        eventsByType,
+        activePlayers,
+        completedEvents,
+        playerAttendances,
+        playerEvents,
+      ] = await Promise.all([
+        prisma.player.count().catch(() => 0),
+        prisma.event.count().catch(() => 0),
+        prisma.message.count().catch(() => 0),
+        prisma.event.findMany({
+          where: { startsAt: { gte: new Date() } },
+          orderBy: { startsAt: 'asc' },
+          take: 5,
+          select: { id: true, title: true, startsAt: true, type: true }
+        }).catch(() => []),
+        prisma.attendance.groupBy({
+          by: ['status'],
+          _count: { _all: true },
+        }).catch(() => []),
+        prisma.event.groupBy({
+          by: ['type'],
+          _count: { _all: true },
+        }).catch(() => []),
+        prisma.player.count({ where: { status: 'ACTIVE' } }).catch(() => 0),
+        prisma.event.count({ where: { status: 'COMPLETED' } }).catch(() => 0),
+        prisma.attendance.findMany({
+          where: { playerId: user.playerId! },
+          select: { status: true }
+        }).catch(() => []),
+        prisma.eventParticipant.findMany({
+          where: { playerId: user.playerId! },
+          include: { event: { select: { status: true } } }
+        }).catch(() => []),
+      ])
+
+      const attendanceCounts = (playerAttendances || []).reduce((acc, a) => {
+        acc[a.status] = (acc[a.status] || 0) + 1
+        return acc
+      }, {} as Record<string, number>)
+
+      const eventsAttended = (playerAttendances || []).filter(a => a.status === 'present').length
+      const eventsParticipated = (playerEvents || []).length
+      const playerCompletedEvents = (playerEvents || []).filter(ep => ep.event?.status === 'COMPLETED').length
+      const attendanceRate = playerCompletedEvents > 0 ? Math.round((eventsAttended / playerCompletedEvents) * 100) : 0
+
+      return success(res, {
+        players: players || 0,
+        events: events || 0,
+        messages: messages || 0,
+        upcomingEvents: upcomingEvents || [],
+        attendance: (attendanceTotals || []).map((a: AttendanceGroup) => ({ status: a.status, count: a._count._all })),
+        eventsByType: (eventsByType || []).map((e: EventTypeGroup) => ({ type: e.type, count: e._count._all })),
+        activePlayers: activePlayers || 0,
+        completedEvents: completedEvents || 0,
+        viewType: 'admin' as const,
+        personalStats: {
+          eventsAttended,
+          eventsParticipated,
+          completedEvents: playerCompletedEvents,
+          attendanceRate,
+        },
+      })
+    } catch (error) {
+      return success(res, {
+        players: 0,
+        events: 0,
+        messages: 0,
+        upcomingEvents: [],
+        attendance: [],
+        eventsByType: [],
+        activePlayers: 0,
+        completedEvents: 0,
+        viewType: 'admin' as const,
+        personalStats: {
+          eventsAttended: 0,
+          eventsParticipated: 0,
+          completedEvents: 0,
+          attendanceRate: 0,
+        },
+      })
+    }
+  } else if (isAdmin) {
+    // Admin (not a player): Full global statistics only
     try {
       const [
         players,
@@ -213,7 +304,6 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
         viewType: 'admin' as const,
       })
     } catch (error) {
-      // If database is empty or has errors, return empty stats
       return success(res, {
         players: 0,
         events: 0,

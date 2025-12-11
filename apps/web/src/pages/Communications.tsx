@@ -91,6 +91,11 @@ export default function Communications() {
     showErrorToast: true
   })
 
+  // Guest users can only view, not interact
+  const canCreateChannel = canManage
+  const canSendMessages = canManage
+  const isGuest = !canManage && !user?.roles?.includes('player')
+
   useEffect(() => {
     loadChannels()
   }, [])
@@ -210,11 +215,6 @@ export default function Communications() {
     
     await sendMessage({ channelId: activeId, content: optimistic.content })
   }
-
-  // Guest users can only view, not interact
-  const canCreateChannel = canManage
-  const canSendMessages = canManage
-  const isGuest = !canManage && !user?.roles?.includes('player')
 
   // News API hooks
   const { execute: loadNews } = useApi(

@@ -33,7 +33,7 @@ router.get('/', asyncHandler(async (_req: Request, res: Response) => {
 const createEventSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
-  type: z.enum(['TRAINING', 'TOURNAMENT', 'SOCIAL', 'WORKSHOP']),
+  type: z.enum(['TRAINING', 'TOURNAMENT', 'SOCIAL', 'WORKSHOP', 'FULL_DAY_OPEN', 'FULL_DAY_MIXTO', 'AMISTOSO']),
   status: z.enum(['UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED']).optional().default('UPCOMING'),
   location: z.string().optional(),
   startsAt: z.string().datetime(),
@@ -65,7 +65,7 @@ const updateEventSchema = createEventSchema.partial();
  *                 type: string
  *               type:
  *                 type: string
- *                 enum: [TRAINING, TOURNAMENT, SOCIAL, WORKSHOP]
+ *                 enum: [TRAINING, TOURNAMENT, SOCIAL, WORKSHOP, FULL_DAY_OPEN, FULL_DAY_MIXTO, AMISTOSO]
  *               status:
  *                 type: string
  *                 enum: [UPCOMING, ONGOING, COMPLETED, CANCELLED]
@@ -134,7 +134,7 @@ const eventIdSchema = z.object({
  *                 type: string
  *               type:
  *                 type: string
- *                 enum: [TRAINING, TOURNAMENT, SOCIAL, WORKSHOP]
+ *                 enum: [TRAINING, TOURNAMENT, SOCIAL, WORKSHOP, FULL_DAY_OPEN, FULL_DAY_MIXTO, AMISTOSO]
  *               status:
  *                 type: string
  *                 enum: [UPCOMING, ONGOING, COMPLETED, CANCELLED]

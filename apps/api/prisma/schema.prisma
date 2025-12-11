@@ -204,8 +204,8 @@ model EventAnnotation {
   id          Int            @id @default(autoincrement())
   event       Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId     Int
-  player      Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  playerId    Int
+  player      Player?        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId    Int?           // Nullable para soportar jugadores oponentes
   type        AnnotationType
   note        String?        // Descripción detallada de la anotación
   timestamp   DateTime       @default(now()) // Momento en que ocurrió durante el evento
@@ -213,6 +213,18 @@ model EventAnnotation {
   createdBy   Int?           // Usuario que creó la anotación (opcional, para auditoría)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+  
+  // Campos para jugadores oponentes (versus)
+  rival       Rival?         @relation(fields: [rivalId], references: [id], onDelete: SetNull)
+  rivalId     Int?           // Relación directa con Rival
+  opponentTeamName String?    // Nombre del equipo oponente (puede ser diferente del nombre del rival)
+  opponentPlayerName String?  // Nombre del jugador oponente (si no está en nuestro roster)
+  opponentPlayerNumber Int?   // Número del jugador oponente
+  rivalPlayerId Int?         // Relación con RivalPlayer si existe
+  rivalPlayer RivalPlayer?   @relation(fields: [rivalPlayerId], references: [id], onDelete: SetNull)
+  teamSide String?           // "HOME" o "AWAY" - para identificar qué equipo
+  scoreHome Int?             // Puntos del equipo local en ese momento
+  scoreAway Int?             // Puntos del equipo visitante en ese momento
 
   @@index([eventId])
   @@index([playerId])
@@ -220,6 +232,9 @@ model EventAnnotation {
   @@index([type])
   @@index([timestamp])
   @@index([eventId, timestamp])
+  @@index([opponentTeamName])
+  @@index([rivalId])
+  @@index([rivalPlayerId])
 }
 
 model Account {
@@ -285,6 +300,30 @@ model Rival {
   notes        String?
   createdAt    DateTime  @default(now())
 
+  // Relación con jugadores del rival
+  players      RivalPlayer[]
+  // Relación con anotaciones (a través de opponentTeamName)
+  annotations  EventAnnotation[]
+
+  @@index([name])
+}
+
+model RivalPlayer {
+  id          Int      @id @default(autoincrement())
+  rival       Rival    @relation(fields: [rivalId], references: [id], onDelete: Cascade)
+  rivalId     Int
+  name        String
+  number      Int
+  position    String?  // Posición del jugador (opcional)
+  notes       String?  // Notas adicionales sobre el jugador
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relación con anotaciones
+  annotations EventAnnotation[]
+
+  @@unique([rivalId, number]) // Un número único por rival
+  @@index([rivalId])
   @@index([name])
 }
 

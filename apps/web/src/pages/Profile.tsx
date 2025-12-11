@@ -47,6 +47,9 @@ export default function Profile() {
   
   // Player info (if linked)
   const [playerInfo, setPlayerInfo] = useState<any>(null)
+  
+  // Player role toggle
+  const [togglingPlayerRole, setTogglingPlayerRole] = useState(false)
 
   const { execute: updateProfile } = useApi(usersApi.updateProfile, {
     onSuccess: async (data) => {
@@ -366,8 +369,8 @@ export default function Profile() {
                 { id: 'security', label: 'Seguridad', icon: '🛡️' },
                 { id: 'activity', label: 'Actividad', icon: '📋' },
                 { id: 'requests', label: 'Solicitudes', icon: '📝' },
-                ...(hasRole('player') || user.playerId ? [{ id: 'stats', label: 'Estadísticas', icon: '📊' }] : []),
-                ...(hasRole('player') || user.playerId ? [{ id: 'events', label: 'Mis Eventos', icon: '📅' }] : []),
+                ...(user.roles?.includes('player') ? [{ id: 'stats', label: 'Estadísticas', icon: '📊' }] : []),
+                ...(user.roles?.includes('player') ? [{ id: 'events', label: 'Mis Eventos', icon: '📅' }] : []),
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -425,12 +428,18 @@ export default function Profile() {
                           <div className="text-sm text-gray-600 mt-1">
                             {playerInfo.position} • {playerInfo.status}
                           </div>
+                          {!user.roles?.includes('player') && (
+                            <div className="text-xs text-amber-600 mt-1">
+                              ℹ️ Tienes un jugador vinculado pero el rol de jugador está inactivo. 
+                              Actívalo en la pestaña "Seguridad" para ver estadísticas.
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {hasRole('player') || user.playerId ? (
+                  {(hasRole('player') && user.roles?.includes('player')) || (user.playerId && user.roles?.includes('player')) ? (
                     <div>
                       <h3 className="text-lg font-semibold text-gray-800 mb-4">Resumen de Actividad</h3>
                       {loadingStats ? (
@@ -486,7 +495,7 @@ export default function Profile() {
                       <div className="font-medium text-gray-800">📋 Ver Actividad</div>
                       <div className="text-sm text-gray-500">Revisa tu historial de acciones</div>
                     </button>
-                    {(hasRole('player') || user.playerId) && (
+                    {user.roles?.includes('player') && (
                       <button
                         onClick={() => setActiveTab('stats')}
                         className="p-3 border rounded-lg hover:bg-gray-50 text-left transition-colors"
@@ -646,7 +655,7 @@ export default function Profile() {
             )}
 
             {/* Stats Tab */}
-            {activeTab === 'stats' && (hasRole('player') || user.playerId) && (
+            {activeTab === 'stats' && user.roles?.includes('player') && (
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-800">Estadísticas de Jugador</h3>
                 {loadingStats ? (
@@ -681,7 +690,7 @@ export default function Profile() {
             )}
 
             {/* Events Tab */}
-            {activeTab === 'events' && (hasRole('player') || user.playerId) && (
+            {activeTab === 'events' && user.roles?.includes('player') && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-800">Mis Eventos</h3>
@@ -882,6 +891,92 @@ export default function Profile() {
             {activeTab === 'security' && (
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-gray-800">Seguridad de la Cuenta</h3>
+                
+                {/* Player Role Management */}
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                  <h4 className="font-medium text-indigo-900 mb-2">👤 Gestión de Rol de Jugador</h4>
+                  {user.roles?.includes('guest') && !user.roles?.includes('player') && !user.roles?.includes('admin') && !user.roles?.includes('captain') && !user.roles?.includes('coach') && !user.roles?.includes('treasurer') ? (
+                    <div>
+                      <p className="text-sm text-indigo-700 mb-4">
+                        Como usuario guest, no puedes activar el rol de jugador por ti mismo. 
+                        Un administrador debe activarlo desde la sección de gestión de usuarios.
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-gray-800">
+                            Rol de Jugador: Inactivo
+                          </div>
+                          <div className="text-sm text-gray-600 mt-1">
+                            Contacta a un administrador para solicitar acceso como jugador.
+                          </div>
+                        </div>
+                        <Link
+                          to="/admin/usuarios"
+                          className="px-4 py-2 rounded-lg font-medium text-sm bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                        >
+                          Ir a Gestión de Usuarios
+                        </Link>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm text-indigo-700 mb-4">
+                        Puedes activar o desactivar tu rol de jugador en cualquier momento. 
+                        Si tienes un jugador vinculado (playerId), se mantendrá aunque desactives el rol.
+                        Al desactivar el rol, no verás estadísticas de jugador ni podrás participar en eventos como jugador.
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-gray-800">
+                            Rol de Jugador: {user.roles?.includes('player') ? 'Activo' : 'Inactivo'}
+                          </div>
+                          {user.playerId && (
+                            <div className="text-sm text-gray-600 mt-1">
+                              Jugador vinculado: #{playerInfo?.number || user.playerId} - {playerInfo?.name || 'Cargando...'}
+                            </div>
+                          )}
+                          {!user.playerId && user.roles?.includes('player') && (
+                            <div className="text-sm text-amber-600 mt-1">
+                              ⚠️ Tienes rol de jugador pero no estás vinculado a un jugador. Contacta a un administrador.
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={async () => {
+                            const newState = !user.roles?.includes('player')
+                            setTogglingPlayerRole(true)
+                            try {
+                              const updated = await usersApi.togglePlayerRole(newState)
+                              setUser(updated)
+                              await refreshUser()
+                              toasts.success(
+                                newState 
+                                  ? 'Rol de jugador activado. Ahora puedes ver estadísticas y participar en eventos como jugador.' 
+                                  : 'Rol de jugador desactivado. Ya no verás estadísticas de jugador.'
+                              )
+                            } catch (e: any) {
+                              toasts.error(e?.response?.data?.error || 'No se pudo cambiar el estado del rol de jugador')
+                            } finally {
+                              setTogglingPlayerRole(false)
+                            }
+                          }}
+                          disabled={togglingPlayerRole}
+                          className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                            user.roles?.includes('player')
+                              ? 'bg-red-600 text-white hover:bg-red-700'
+                              : 'bg-green-600 text-white hover:bg-green-700'
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                          {togglingPlayerRole 
+                            ? 'Procesando...' 
+                            : user.roles?.includes('player') 
+                              ? 'Desactivar Rol de Jugador' 
+                              : 'Activar Rol de Jugador'}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
                 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h4 className="font-medium text-blue-900 mb-2">🔐 Información de Seguridad</h4>

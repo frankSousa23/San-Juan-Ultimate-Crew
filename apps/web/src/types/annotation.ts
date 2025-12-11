@@ -15,7 +15,7 @@ export type AnnotationType =
 export interface EventAnnotation {
   id: number
   eventId: number
-  playerId: number
+  playerId: number | null
   type: AnnotationType
   note?: string
   timestamp: string
@@ -23,6 +23,13 @@ export interface EventAnnotation {
   createdBy?: number
   createdAt: string
   updatedAt: string
+  // Campos para versus
+  opponentTeamName?: string | null
+  opponentPlayerName?: string | null
+  opponentPlayerNumber?: number | null
+  teamSide?: 'HOME' | 'AWAY' | null
+  scoreHome?: number | null
+  scoreAway?: number | null
   event?: {
     id: number
     title: string
@@ -33,16 +40,23 @@ export interface EventAnnotation {
     id: number
     name: string
     number: number
-  }
+  } | null
 }
 
 export interface CreateAnnotationInput {
   eventId: number
-  playerId: number
+  playerId?: number | null
   type: AnnotationType
   note?: string
   timestamp?: string
   category?: string
+  // Campos para versus
+  opponentTeamName?: string
+  opponentPlayerName?: string
+  opponentPlayerNumber?: number
+  teamSide?: 'HOME' | 'AWAY'
+  scoreHome?: number
+  scoreAway?: number
 }
 
 export interface UpdateAnnotationInput {

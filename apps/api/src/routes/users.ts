@@ -4,7 +4,7 @@ import { requireAuth, requireRole } from './auth.js'
 import { z } from 'zod'
 import type { Prisma } from '@prisma/client'
 import { createAuditHelper } from '../lib/audit.js'
-import { success, updated, created, validationError, notFound, conflict, serverError, unauthorized } from '../lib/response.js'
+import { success, updated, created, validationError, notFound, conflict, serverError, unauthorized, forbidden } from '../lib/response.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import bcrypt from 'bcryptjs'
 import { env } from '../lib/env.js'
@@ -1137,6 +1137,122 @@ router.get('/me/activity', requireAuth, asyncHandler(async (req: Request, res: R
   })
   
   return success(res, logs)
+}))
+
+const togglePlayerRoleSchema = z.object({
+  active: z.boolean()
+})
+
+/**
+ * @swagger
+ * /api/users/me/player-role:
+ *   put:
+ *     summary: Toggle player role for current user (activate/deactivate)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - active
+ *             properties:
+ *               active:
+ *                 type: boolean
+ *                 description: true to activate player role, false to deactivate
+ *     responses:
+ *       200:
+ *         description: Player role toggled successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Player role not found
+ */
+router.put('/me/player-role', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const u = (req as Request & { user?: { sub: string } }).user
+  if (!u?.sub) {
+    if (!env.AUTH_REQUIRED) {
+      return validationError(res, 'Cannot toggle player role when authentication is disabled')
+    }
+    return unauthorized(res, 'Unauthorized')
+  }
+  
+  const userParsed = userIdFromTokenSchema.safeParse({ sub: u.sub })
+  if (!userParsed.success) {
+    if (!env.AUTH_REQUIRED) {
+      return validationError(res, 'Cannot toggle player role when authentication is disabled')
+    }
+    return unauthorized(res, 'Invalid user token')
+  }
+  const userId = userParsed.data.sub
+  
+  const parsed = togglePlayerRoleSchema.safeParse(req.body)
+  if (!parsed.success) {
+    return validationError(res, 'Invalid payload', parsed.error.errors)
+  }
+  const { active } = parsed.data
+  
+  const user = await prisma.user.findUnique({ 
+    where: { id: userId },
+    include: { roles: { include: { role: true } } }
+  })
+  if (!user) return notFound(res, 'User')
+  
+  // Check if user is guest - guests cannot activate player role themselves
+  const userRoles = user.roles.map(ur => ur.role?.name).filter(Boolean) as string[]
+  const isGuest = userRoles.includes('guest') && !userRoles.includes('player') && !userRoles.includes('admin') && !userRoles.includes('captain') && !userRoles.includes('coach') && !userRoles.includes('treasurer')
+  
+  if (isGuest && active) {
+    return forbidden(res, 'Los usuarios guest no pueden activar el rol de jugador. Contacta a un administrador para solicitar acceso.')
+  }
+  
+  const playerRole = await prisma.role.findUnique({ where: { name: 'player' } })
+  if (!playerRole) return serverError(res, 'Player role not found')
+  
+  const hasPlayerRole = user.roles.some(ur => ur.roleId === playerRole.id)
+  
+  if (active && !hasPlayerRole) {
+    // Activate player role
+    await prisma.userRole.create({
+      data: { userId, roleId: playerRole.id }
+    })
+    
+    const audit = createAuditHelper(req)
+    await audit.log('ROLE_CHANGE', 'User', userId, {
+      action: 'PLAYER_ROLE_ACTIVATED',
+      email: user.email
+    })
+  } else if (!active && hasPlayerRole) {
+    // Deactivate player role (but keep playerId if exists)
+    await prisma.userRole.deleteMany({
+      where: { userId, roleId: playerRole.id }
+    })
+    
+    const audit = createAuditHelper(req)
+    await audit.log('ROLE_CHANGE', 'User', userId, {
+      action: 'PLAYER_ROLE_DEACTIVATED',
+      email: user.email,
+      note: 'PlayerId preserved if exists'
+    })
+  }
+  
+  const updatedUser = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { roles: { include: { role: true } } }
+  })
+  
+  return updated(res, {
+    id: updatedUser!.id,
+    email: updatedUser!.email,
+    name: updatedUser!.name,
+    roles: (updatedUser!.roles || []).map((ur: any) => ur.role?.name).filter(Boolean),
+    playerId: updatedUser!.playerId
+  })
 }))
 
 export default router

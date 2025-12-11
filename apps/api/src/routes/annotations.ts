@@ -12,16 +12,25 @@ const router = Router()
 // Schemas de validación
 const createAnnotationSchema = z.object({
   eventId: z.number().int().positive(),
-  playerId: z.number().int().positive(),
+  playerId: z.number().int().positive().optional().nullable(), // Nullable para jugadores oponentes
   type: z.enum(['GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER', 'DROP', 'FOUL', 'TIMEOUT', 'SUBSTITUTION', 'INJURY', 'GENERAL', 'STRATEGY', 'PERFORMANCE']),
   note: z.string().optional(),
   timestamp: z.string().datetime().optional(), // Si no se proporciona, usa ahora
   category: z.string().optional(), // Para FULL_DAY: "OPEN" o "MIXTO"
+  // Campos para versus
+  rivalId: z.number().int().positive().optional(),
+  rivalPlayerId: z.number().int().positive().optional(),
+  opponentTeamName: z.string().optional(),
+  opponentPlayerName: z.string().optional(),
+  opponentPlayerNumber: z.number().int().positive().optional(),
+  teamSide: z.enum(['HOME', 'AWAY']).optional(),
+  scoreHome: z.number().int().min(0).optional(),
+  scoreAway: z.number().int().min(0).optional(),
 })
 
 const updateAnnotationSchema = createAnnotationSchema.partial().extend({
   eventId: z.number().int().positive().optional(),
-  playerId: z.number().int().positive().optional(),
+  playerId: z.number().int().positive().optional().nullable(),
   type: z.enum(['GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER', 'DROP', 'FOUL', 'TIMEOUT', 'SUBSTITUTION', 'INJURY', 'GENERAL', 'STRATEGY', 'PERFORMANCE']).optional(),
 })
 
@@ -53,10 +62,12 @@ const annotationIdSchema = z.object({
 router.get('/', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const eventId = req.query.eventId ? Number(req.query.eventId) : undefined
   const playerId = req.query.playerId ? Number(req.query.playerId) : undefined
+  const rivalId = req.query.rivalId ? Number(req.query.rivalId) : undefined
 
   const where: any = {}
   if (eventId) where.eventId = eventId
   if (playerId) where.playerId = playerId
+  if (rivalId) where.rivalId = rivalId
 
   const annotations = await prisma.eventAnnotation.findMany({
     where,
@@ -146,24 +157,39 @@ router.post('/', requireAuth, requirePermission('events:manage'), validateBody(c
     return notFound(res, 'Event not found')
   }
 
-  // Verificar que el jugador existe
-  const player = await prisma.player.findUnique({
-    where: { id: payload.playerId }
-  })
+  // Verificar que el jugador existe (solo si se proporciona playerId)
+  if (payload.playerId) {
+    const player = await prisma.player.findUnique({
+      where: { id: payload.playerId }
+    })
 
-  if (!player) {
-    return notFound(res, 'Player not found')
+    if (!player) {
+      return notFound(res, 'Player not found')
+    }
+  }
+
+  // Si no hay playerId pero hay opponentPlayerName, es un jugador oponente (válido)
+  if (!payload.playerId && !payload.opponentPlayerName) {
+    return badRequest(res, 'Either playerId or opponentPlayerName must be provided')
   }
 
   const annotation = await prisma.eventAnnotation.create({
     data: {
       eventId: payload.eventId,
-      playerId: payload.playerId,
+      playerId: payload.playerId ?? null,
       type: payload.type,
       note: payload.note,
       timestamp,
       category: payload.category,
       createdBy: userId,
+      rivalId: payload.rivalId ?? null,
+      rivalPlayerId: payload.rivalPlayerId ?? null,
+      opponentTeamName: payload.opponentTeamName ?? null,
+      opponentPlayerName: payload.opponentPlayerName ?? null,
+      opponentPlayerNumber: payload.opponentPlayerNumber ?? null,
+      teamSide: payload.teamSide ?? null,
+      scoreHome: payload.scoreHome ?? null,
+      scoreAway: payload.scoreAway ?? null,
     },
     include: {
       event: {
@@ -229,12 +255,22 @@ router.put('/:id', requireAuth, requirePermission('events:manage'), validatePara
   }
 
   if (payload.playerId !== undefined) {
-    const player = await prisma.player.findUnique({ where: { id: payload.playerId } })
-    if (!player) {
-      return notFound(res, 'Player not found')
+    if (payload.playerId !== null) {
+      const player = await prisma.player.findUnique({ where: { id: payload.playerId } })
+      if (!player) {
+        return notFound(res, 'Player not found')
+      }
     }
     updateData.playerId = payload.playerId
   }
+  
+  // Actualizar campos de versus si se proporcionan
+  if (payload.opponentTeamName !== undefined) updateData.opponentTeamName = payload.opponentTeamName
+  if (payload.opponentPlayerName !== undefined) updateData.opponentPlayerName = payload.opponentPlayerName
+  if (payload.opponentPlayerNumber !== undefined) updateData.opponentPlayerNumber = payload.opponentPlayerNumber
+  if (payload.teamSide !== undefined) updateData.teamSide = payload.teamSide
+  if (payload.scoreHome !== undefined) updateData.scoreHome = payload.scoreHome
+  if (payload.scoreAway !== undefined) updateData.scoreAway = payload.scoreAway
 
   const annotation = await prisma.eventAnnotation.update({
     where: { id: Number(id) },
@@ -336,20 +372,22 @@ router.get('/event/:eventId/stats', requireAuth, asyncHandler(async (req: Reques
     return acc
   }, {} as Record<string, number>)
 
-  // Estadísticas por jugador
-  const statsByPlayer = annotations.reduce((acc, ann) => {
-    const playerId = ann.playerId
-    if (!acc[playerId]) {
-      acc[playerId] = {
-        player: ann.player,
-        total: 0,
-        byType: {} as Record<string, number>
+  // Estadísticas por jugador (solo jugadores de nuestro equipo, no oponentes)
+  const statsByPlayer = annotations
+    .filter(ann => ann.playerId !== null)
+    .reduce((acc, ann) => {
+      const playerId = ann.playerId!
+      if (!acc[playerId]) {
+        acc[playerId] = {
+          player: ann.player,
+          total: 0,
+          byType: {} as Record<string, number>
+        }
       }
-    }
-    acc[playerId].total++
-    acc[playerId].byType[ann.type] = (acc[playerId].byType[ann.type] || 0) + 1
-    return acc
-  }, {} as Record<number, { player: any; total: number; byType: Record<string, number> }>)
+      acc[playerId].total++
+      acc[playerId].byType[ann.type] = (acc[playerId].byType[ann.type] || 0) + 1
+      return acc
+    }, {} as Record<number, { player: any; total: number; byType: Record<string, number> }>)
 
   // Estadísticas por categoría (si aplica)
   const statsByCategory = annotations.reduce((acc, ann) => {

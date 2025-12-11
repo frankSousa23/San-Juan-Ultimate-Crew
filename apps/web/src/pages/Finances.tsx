@@ -403,7 +403,6 @@ export default function Finances() {
           <div className="flex items-center gap-2">
             <button
               disabled={offset===0}
-              className="whitespace-nowrap text-sm"
               onClick={() => {
                 const newOffset = Math.max(0, offset - limit)
                 const newPage = Math.floor(newOffset/limit)+1
@@ -418,12 +417,11 @@ export default function Finances() {
                 if (categoryId) params.set('categoryId', String(categoryId)); else params.delete('categoryId')
                 setSearchParams(params)
               }}
-              className="px-2 py-1 border rounded disabled:opacity-50"
+              className="px-2 py-1 border rounded disabled:opacity-50 whitespace-nowrap text-sm"
             >Prev</button>
             <div className="whitespace-nowrap text-sm">Página {Math.floor(offset/limit)+1} de {Math.max(1, pages)}</div>
             <button
               disabled={(offset+limit)>=total}
-              className="whitespace-nowrap text-sm"
               onClick={() => {
                 const newOffset = offset + limit
                 const newPage = Math.floor(newOffset/limit)+1
@@ -438,7 +436,7 @@ export default function Finances() {
                 if (categoryId) params.set('categoryId', String(categoryId)); else params.delete('categoryId')
                 setSearchParams(params)
               }}
-              className="px-2 py-1 border rounded disabled:opacity-50"
+              className="px-2 py-1 border rounded disabled:opacity-50 whitespace-nowrap text-sm"
             >Next</button>
           </div>
         </div>

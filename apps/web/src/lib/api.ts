@@ -420,6 +420,9 @@ export const usersApi = {
   getActivity: async (limit?: number): Promise<any[]> => (
     await http.get('/api/users/me/activity', { params: { limit } })
   ).data,
+  togglePlayerRole: async (active: boolean): Promise<{ id: number; email: string; name?: string; roles: string[]; playerId?: number | null }> => (
+    await http.put('/api/users/me/player-role', { active })
+  ).data,
 }
 
 // Annotations API

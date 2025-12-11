@@ -162,7 +162,7 @@ export default function Rivals() {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow p-4 flex gap-3 items-center">
+      <div className="bg-white rounded-lg shadow p-3 sm:p-4 flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
         <input
           value={q}
           onChange={e => setQ(e.target.value)}
@@ -182,16 +182,16 @@ export default function Rivals() {
             }
           }}
           placeholder="Buscar por nombre"
-          className="flex-1 px-3 py-2 border rounded-lg"
+          className="flex-1 px-2 sm:px-3 py-2 border rounded-lg text-sm"
         />
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={() => {
             const params: Record<string, string> = { limit: String(limit), page: '1' }
             if (q.trim()) params.q = q.trim()
             setOffset(0)
             setSearchParams(params)
             load()
-          }} disabled={loading} className="px-3 py-2 rounded-lg bg-indigo-600 text-white">{loading ? 'Cargando…' : 'Aplicar'}</button>
+          }} disabled={loading} className="flex-1 sm:flex-none px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm whitespace-nowrap">{loading ? 'Cargando…' : 'Aplicar'}</button>
           <button onClick={async () => {
             try {
               const blob = await exportRivalsCsv({ q: q || undefined })
@@ -204,12 +204,12 @@ export default function Rivals() {
             } catch (e: any) {
               setError(e?.message || 'No se pudo exportar CSV')
             }
-          }} className="px-3 py-2 rounded-lg bg-gray-100 text-gray-800">Exportar CSV</button>
+          }} className="flex-1 sm:flex-none px-3 py-2 rounded-lg bg-gray-100 text-gray-800 text-sm whitespace-nowrap">Exportar CSV</button>
           <button onClick={() => {
             setQ(''); setOffset(0); const params: Record<string, string> = { page: '1', limit: '20' }
             setLimit(20); localStorage.removeItem('rivals.limit')
             setSearchParams(params); load()
-          }} className="px-3 py-2 rounded-lg bg-gray-100 text-gray-800">Limpiar</button>
+          }} className="flex-1 sm:flex-none px-3 py-2 rounded-lg bg-gray-100 text-gray-800 text-sm whitespace-nowrap">Limpiar</button>
         </div>
       </div>
 
@@ -298,36 +298,36 @@ export default function Rivals() {
       </div>
 
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setModalOpen(false)}>
-          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-emerald-600 to-indigo-600 text-white p-4">
-              <div className="text-lg font-bold">{edit ? 'Editar' : 'Nuevo'} Rival</div>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4" onClick={() => setModalOpen(false)}>
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-emerald-600 to-indigo-600 text-white p-3 sm:p-4">
+              <div className="text-base sm:text-lg font-bold">{edit ? 'Editar' : 'Nuevo'} Rival</div>
             </div>
-            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="p-3 sm:p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="md:col-span-2">
-                <label className="block text-sm text-gray-600 mb-1">Nombre</label>
-                <input value={form.name} onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
+                <label className="block text-xs sm:text-sm text-gray-600 mb-1">Nombre</label>
+                <input value={form.name} onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))} className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg text-sm" />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Fortalezas</label>
-                <input value={form.strengths} onChange={e => setForm((f: any) => ({ ...f, strengths: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
+                <label className="block text-xs sm:text-sm text-gray-600 mb-1">Fortalezas</label>
+                <input value={form.strengths} onChange={e => setForm((f: any) => ({ ...f, strengths: e.target.value }))} className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg text-sm" />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Debilidades</label>
-                <input value={form.weaknesses} onChange={e => setForm((f: any) => ({ ...f, weaknesses: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
+                <label className="block text-xs sm:text-sm text-gray-600 mb-1">Debilidades</label>
+                <input value={form.weaknesses} onChange={e => setForm((f: any) => ({ ...f, weaknesses: e.target.value }))} className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg text-sm" />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Último encuentro</label>
-                <input type="date" value={form.lastPlayedAt} onChange={e => setForm((f: any) => ({ ...f, lastPlayedAt: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
+                <label className="block text-xs sm:text-sm text-gray-600 mb-1">Último encuentro</label>
+                <input type="date" value={form.lastPlayedAt} onChange={e => setForm((f: any) => ({ ...f, lastPlayedAt: e.target.value }))} className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg text-sm" />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm text-gray-600 mb-1">Notas</label>
-                <input value={form.notes} onChange={e => setForm((f: any) => ({ ...f, notes: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
+                <label className="block text-xs sm:text-sm text-gray-600 mb-1">Notas</label>
+                <input value={form.notes} onChange={e => setForm((f: any) => ({ ...f, notes: e.target.value }))} className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg text-sm" />
               </div>
             </div>
-            <div className="p-4 flex gap-2">
-              <button onClick={save} className="flex-1 bg-emerald-600 text-white py-2 rounded-lg">Guardar</button>
-              <button onClick={() => setModalOpen(false)} className="flex-1 bg-gray-100 text-gray-800 py-2 rounded-lg">Cancelar</button>
+            <div className="p-3 sm:p-4 flex flex-col sm:flex-row gap-2">
+              <button onClick={save} className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm sm:text-base">Guardar</button>
+              <button onClick={() => setModalOpen(false)} className="flex-1 bg-gray-100 text-gray-800 py-2 rounded-lg text-sm sm:text-base">Cancelar</button>
             </div>
           </div>
         </div>
