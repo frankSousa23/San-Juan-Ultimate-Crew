@@ -258,4 +258,212 @@ router.delete('/:id', requirePermission('rivals:manage'), asyncHandler(async (re
         throw error;
     }
 }));
+// Rival Players endpoints
+const createRivalPlayerSchema = z.object({
+    name: z.string().min(1),
+    number: z.number().int().positive(),
+    position: z.string().optional().nullable(),
+    notes: z.string().optional().nullable(),
+});
+const updateRivalPlayerSchema = createRivalPlayerSchema.partial();
+/**
+ * @swagger
+ * /api/rivals/{rivalId}/players:
+ *   get:
+ *     summary: Get all players for a rival
+ *     tags: [Rivals]
+ */
+router.get('/:id/players', asyncHandler(async (req, res) => {
+    const parsedId = rivalIdSchema.safeParse(req.params);
+    if (!parsedId.success) {
+        return validationError(res, 'Invalid id', parsedId.error.errors);
+    }
+    const { id } = parsedId.data;
+    const players = await prisma.rivalPlayer.findMany({
+        where: { rivalId: id },
+        orderBy: { number: 'asc' }
+    });
+    return success(res, players);
+}));
+/**
+ * @swagger
+ * /api/rivals/{rivalId}/players:
+ *   post:
+ *     summary: Create a new player for a rival
+ *     tags: [Rivals]
+ */
+router.post('/:id/players', requirePermission('rivals:manage'), asyncHandler(async (req, res) => {
+    const parsedId = rivalIdSchema.safeParse(req.params);
+    if (!parsedId.success) {
+        return validationError(res, 'Invalid id', parsedId.error.errors);
+    }
+    const { id } = parsedId.data;
+    const parsed = createRivalPlayerSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return validationError(res, 'Invalid input', parsed.error.errors);
+    }
+    // Verificar que el rival existe
+    const rival = await prisma.rival.findUnique({ where: { id } });
+    if (!rival) {
+        return notFound(res, 'Rival');
+    }
+    const player = await prisma.rivalPlayer.create({
+        data: {
+            rivalId: id,
+            ...parsed.data
+        }
+    });
+    return created(res, player);
+}));
+/**
+ * @swagger
+ * /api/rivals/{rivalId}/players/{playerId}:
+ *   put:
+ *     summary: Update a rival player
+ *     tags: [Rivals]
+ */
+router.put('/:id/players/:playerId', requirePermission('rivals:manage'), asyncHandler(async (req, res) => {
+    const parsedId = rivalIdSchema.safeParse(req.params);
+    if (!parsedId.success) {
+        return validationError(res, 'Invalid id', parsedId.error.errors);
+    }
+    const { id } = parsedId.data;
+    const playerId = Number(req.params.playerId);
+    if (!playerId || playerId <= 0) {
+        return validationError(res, 'Invalid player id');
+    }
+    const parsed = updateRivalPlayerSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return validationError(res, 'Invalid input', parsed.error.errors);
+    }
+    try {
+        const player = await prisma.rivalPlayer.update({
+            where: { id: playerId, rivalId: id },
+            data: parsed.data
+        });
+        return updated(res, player);
+    }
+    catch (error) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
+            return notFound(res, 'Rival player');
+        }
+        throw error;
+    }
+}));
+/**
+ * @swagger
+ * /api/rivals/{rivalId}/players/{playerId}:
+ *   delete:
+ *     summary: Delete a rival player
+ *     tags: [Rivals]
+ */
+router.delete('/:id/players/:playerId', requirePermission('rivals:manage'), asyncHandler(async (req, res) => {
+    const parsedId = rivalIdSchema.safeParse(req.params);
+    if (!parsedId.success) {
+        return validationError(res, 'Invalid id', parsedId.error.errors);
+    }
+    const { id } = parsedId.data;
+    const playerId = Number(req.params.playerId);
+    if (!playerId || playerId <= 0) {
+        return validationError(res, 'Invalid player id');
+    }
+    try {
+        await prisma.rivalPlayer.delete({
+            where: { id: playerId, rivalId: id }
+        });
+        return deleted(res);
+    }
+    catch (error) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
+            return notFound(res, 'Rival player');
+        }
+        throw error;
+    }
+}));
+/**
+ * @swagger
+ * /api/rivals/{rivalId}/stats:
+ *   get:
+ *     summary: Get statistics for a rival (from annotations)
+ *     tags: [Rivals]
+ */
+router.get('/:id/stats', asyncHandler(async (req, res) => {
+    const parsedId = rivalIdSchema.safeParse(req.params);
+    if (!parsedId.success) {
+        return validationError(res, 'Invalid id', parsedId.error.errors);
+    }
+    const { id } = parsedId.data;
+    const rival = await prisma.rival.findUnique({ where: { id } });
+    if (!rival) {
+        return notFound(res, 'Rival');
+    }
+    // Obtener todas las anotaciones relacionadas con este rival
+    const annotations = await prisma.eventAnnotation.findMany({
+        where: { rivalId: id },
+        include: {
+            event: {
+                select: {
+                    id: true,
+                    title: true,
+                    type: true,
+                    startsAt: true,
+                }
+            },
+            rivalPlayer: {
+                select: {
+                    id: true,
+                    name: true,
+                    number: true,
+                }
+            }
+        }
+    });
+    // Estadísticas por jugador del rival
+    const playerStats = annotations
+        .filter(ann => ann.rivalPlayerId !== null)
+        .reduce((acc, ann) => {
+        const playerId = ann.rivalPlayerId;
+        if (!acc[playerId]) {
+            acc[playerId] = {
+                player: ann.rivalPlayer,
+                goals: 0,
+                assists: 0,
+                interceptions: 0,
+                total: 0,
+            };
+        }
+        acc[playerId].total++;
+        if (ann.type === 'GOAL')
+            acc[playerId].goals++;
+        if (ann.type === 'ASSIST')
+            acc[playerId].assists++;
+        if (ann.type === 'DEFENSE')
+            acc[playerId].interceptions++;
+        return acc;
+    }, {});
+    // Estadísticas por tipo
+    const statsByType = annotations.reduce((acc, ann) => {
+        acc[ann.type] = (acc[ann.type] || 0) + 1;
+        return acc;
+    }, {});
+    // Eventos donde se enfrentó este rival
+    const events = Array.from(new Set(annotations.map(a => a.eventId)));
+    return success(res, {
+        rival: {
+            id: rival.id,
+            name: rival.name,
+        },
+        totalAnnotations: annotations.length,
+        eventsCount: events.length,
+        statsByType,
+        playerStats: Object.values(playerStats),
+        recentEvents: annotations
+            .slice(0, 10)
+            .map(a => ({
+            event: a.event,
+            type: a.type,
+            timestamp: a.timestamp,
+        }))
+    });
+}));
 export default router;

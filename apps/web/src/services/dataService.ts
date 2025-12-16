@@ -481,7 +481,7 @@ export class DataService {
 
   // Statistics
   static async getStats(): Promise<any> {
-    const response = await api.get('/stats')
+    const response = await api.get('/api/stats')
     return response.data
   }
 

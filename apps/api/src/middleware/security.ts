@@ -35,6 +35,17 @@ export const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: false, // Count all requests, even successful ones
+  skip: (req: Request) => {
+    // Skip rate limiting in development/testing for localhost to allow automated tests
+    const nodeEnv = process.env.NODE_ENV || 'development'
+    if (nodeEnv !== 'production') {
+      const ip = req.ip || req.socket.remoteAddress || ''
+      if (ip === '::1' || ip === '127.0.0.1' || ip.includes('localhost') || ip.includes('::ffff:127.0.0.1')) {
+        return true
+      }
+    }
+    return false
+  },
 })
 
 // Rate limiting - Password reset requests (very strict to prevent abuse)
