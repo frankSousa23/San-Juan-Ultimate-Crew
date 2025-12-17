@@ -265,6 +265,26 @@ export const rivalsApi = {
   listPaged: async (params?: { q?: string; limit?: number; offset?: number }): Promise<{ items: any[]; total: number; limit: number; offset: number }> => (
     await http.get('/api/rivals/paged', { params })
   ).data,
+  getStats: async (id: number): Promise<{
+    rival: { id: number; name: string }
+    totalAnnotations: number
+    eventsCount: number
+    statsByType: Record<string, number>
+    playerStats: Array<{
+      player: { id: number; name: string; number: number }
+      goals: number
+      assists: number
+      interceptions: number
+      total: number
+    }>
+    recentEvents: Array<{
+      event: { id: number; title: string; type: string; startsAt: string | null }
+      type: string
+      timestamp: string
+    }>
+  }> => (
+    await http.get(`/api/rivals/${id}/stats`)
+  ).data,
 }
 
 export async function exportRivalsCsv(params?: { q?: string }): Promise<Blob> {

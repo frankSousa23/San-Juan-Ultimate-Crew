@@ -17,7 +17,7 @@ const createAnnotationSchema = z.object({
   note: z.string().optional(),
   timestamp: z.string().datetime().optional(), // Si no se proporciona, usa ahora
   category: z.string().optional(), // Para FULL_DAY: "OPEN" o "MIXTO"
-  // Campos para versus
+  // Campos para versus / rivales
   rivalId: z.number().int().positive().optional(),
   rivalPlayerId: z.number().int().positive().optional(),
   opponentTeamName: z.string().optional(),
@@ -145,7 +145,7 @@ router.post('/', requireAuth, requirePermission('events:manage'), validateBody(c
   const u = (req as any).user as any
   const userId = u?.sub ? Number(u.sub) : null
 
-  const payload = req.body
+  const payload = req.body as z.infer<typeof createAnnotationSchema>
   const timestamp = payload.timestamp ? new Date(payload.timestamp) : new Date()
 
   // Verificar que el evento existe
@@ -173,6 +173,57 @@ router.post('/', requireAuth, requirePermission('events:manage'), validateBody(c
     return badRequest(res, 'Either playerId or opponentPlayerName must be provided')
   }
 
+  // Integración automática con Rivales / RivalPlayer:
+  // - Si viene opponentTeamName y número/nombre de jugador oponente,
+  //   buscamos (o creamos) el Rival y RivalPlayer correspondientes
+  //   y rellenamos rivalId / rivalPlayerId en la anotación.
+  let rivalId: number | null = payload.rivalId ?? null
+  let rivalPlayerId: number | null = payload.rivalPlayerId ?? null
+
+  if (!payload.playerId && payload.opponentTeamName && payload.opponentPlayerNumber && payload.opponentPlayerName) {
+    // 1) Resolver o crear Rival por nombre (no es unique en el schema, así que usamos findFirst + create)
+    let rival = await prisma.rival.findFirst({
+      where: { name: payload.opponentTeamName },
+    })
+
+    if (!rival) {
+      rival = await prisma.rival.create({
+        data: {
+          name: payload.opponentTeamName,
+          notes: 'Creado automáticamente desde anotaciones de evento',
+        },
+      })
+    }
+
+    rivalId = rival.id
+
+    // 2) Resolver o crear RivalPlayer por (rivalId, number)
+    let rivalPlayer = await prisma.rivalPlayer.findFirst({
+      where: {
+        rivalId: rival.id,
+        number: payload.opponentPlayerNumber,
+      },
+    })
+
+    if (!rivalPlayer) {
+      rivalPlayer = await prisma.rivalPlayer.create({
+        data: {
+          rivalId: rival.id,
+          number: payload.opponentPlayerNumber,
+          name: payload.opponentPlayerName,
+        },
+      })
+    } else if (payload.opponentPlayerName && payload.opponentPlayerName !== rivalPlayer.name) {
+      // Opcional: mantener actualizado el nombre si cambia
+      rivalPlayer = await prisma.rivalPlayer.update({
+        where: { id: rivalPlayer.id },
+        data: { name: payload.opponentPlayerName },
+      })
+    }
+
+    rivalPlayerId = rivalPlayer.id
+  }
+
   const annotation = await prisma.eventAnnotation.create({
     data: {
       eventId: payload.eventId,
@@ -182,8 +233,8 @@ router.post('/', requireAuth, requirePermission('events:manage'), validateBody(c
       timestamp,
       category: payload.category,
       createdBy: userId,
-      rivalId: payload.rivalId ?? null,
-      rivalPlayerId: payload.rivalPlayerId ?? null,
+      rivalId,
+      rivalPlayerId,
       opponentTeamName: payload.opponentTeamName ?? null,
       opponentPlayerName: payload.opponentPlayerName ?? null,
       opponentPlayerNumber: payload.opponentPlayerNumber ?? null,
