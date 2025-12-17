@@ -302,13 +302,13 @@ export default function Roster() {
               </div>
             </div>
             <div className="p-4 flex gap-2">
-              {(user?.roles?.includes('admin') || user?.playerId === selected.id) && (
+              {(hasPermission('roster:manage') || user?.playerId === selected.id) && (
               <button
                 className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700"
                 onClick={() => { setEditOpen(true) }}
               >Editar</button>
               )}
-              {(user?.roles?.includes('admin')) && (
+              {hasPermission('roster:manage') && (
               <button
                 className="flex-1 bg-red-50 text-red-700 py-2 rounded-lg hover:bg-red-100"
                 onClick={() => {

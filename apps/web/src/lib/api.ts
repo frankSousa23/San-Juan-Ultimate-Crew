@@ -76,8 +76,8 @@ export const authApi = {
   login: async (email: string, password: string): Promise<{ token: string; user: { id: number; email: string; name?: string; roles?: string[]; playerId?: number | null; status?: 'PENDING' | 'APPROVED' | 'REJECTED' } }> => (
     await http.post('/api/auth/login', { email, password })
   ).data,
-  register: async (email: string, password: string, name?: string): Promise<{ message: string; user: { id: number; email: string; name?: string; status: string } }> => (
-    await http.post('/api/auth/register', { email, password, name })
+  register: async (email: string, password: string, name?: string, willBePlayer?: boolean, playerData?: { number: number; position: 'HANDLER' | 'CUTTER' | 'HYBRID'; status?: 'ACTIVE' | 'INJURED' | 'INACTIVE'; heightCm?: number; experience?: string }): Promise<{ message: string; user: { id: number; email: string; name?: string; status: string; playerId?: number | null } }> => (
+    await http.post('/api/auth/register', { email, password, name, willBePlayer, playerData })
   ).data,
   me: async (): Promise<{ user?: { id: number; email: string; name?: string; roles?: string[]; playerId?: number | null; status?: 'PENDING' | 'APPROVED' | 'REJECTED' }; authDisabled?: boolean }> => (
     await http.get('/api/auth/me')
@@ -413,7 +413,7 @@ export const adminUsersApi = {
 }
 
 export const myRoleRequestsApi = {
-  create: async (payload: { role: 'player'; playerId?: number; note?: string }): Promise<any> => (
+  create: async (payload: { role: 'player'; playerId?: number; note?: string; playerData?: { number: number; position: 'HANDLER' | 'CUTTER' | 'HYBRID'; status?: 'ACTIVE' | 'INJURED' | 'INACTIVE'; heightCm?: number; experience?: string } }): Promise<any> => (
     await http.post('/api/users/role-requests', payload)
   ).data,
   listMine: async (): Promise<any[]> => (
@@ -425,11 +425,17 @@ export const usersApi = {
   list: async (status?: 'PENDING' | 'APPROVED' | 'REJECTED'): Promise<any[]> => (
     await http.get('/api/users', { params: { status } })
   ).data,
-  approve: async (id: number, payload?: { role?: 'guest' | 'player' | 'admin'; playerId?: number }): Promise<any> => (
+  approve: async (
+    id: number,
+    payload?: { role?: 'guest' | 'player' | 'admin' | 'captain' | 'coach' | 'treasurer'; playerId?: number; playerData?: { number: number; position: 'HANDLER' | 'CUTTER' | 'HYBRID'; status?: 'ACTIVE' | 'INJURED' | 'INACTIVE'; heightCm?: number; experience?: string } }
+  ): Promise<any> => (
     await http.post(`/api/users/${id}/approve`, payload || {})
   ).data,
   reject: async (id: number): Promise<any> => (
     await http.post(`/api/users/${id}/reject`, {})
+  ).data,
+  delete: async (id: number): Promise<{ message: string }> => (
+    await http.delete(`/api/users/${id}`)
   ).data,
   updateProfile: async (payload: { name?: string }): Promise<{ id: number; email: string; name?: string; roles: string[]; playerId?: number | null }> => (
     await http.put('/api/users/me', payload)

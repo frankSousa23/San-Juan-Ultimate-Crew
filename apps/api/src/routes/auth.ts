@@ -270,8 +270,10 @@ export function requireSelfOrAdminForPlayer() {
  *         description: Email already exists
  */
 router.post('/register', asyncHandler(async (req: Request, res: Response) => {
-  const { email, password, name } = req.body || {}
-  if (!email || !password) return validationError(res, 'email and password required')
+  const { email, password, name, willBePlayer, playerData } = req.body || {}
+  if (!email || !password || !name || !String(name).trim()) {
+    return validationError(res, 'name, email and password are required')
+  }
   
   // Normalize email: trim whitespace and convert to lowercase
   const normalizedEmail = email.trim().toLowerCase()
@@ -287,10 +289,29 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
   // Additional password strength validation (optional but recommended)
   if (password.length > 128) return validationError(res, 'password is too long (maximum 128 characters)')
   
-  // Normalize and validate name if provided
-  const normalizedName = name ? name.trim() : null
-  if (normalizedName && normalizedName.length > 100) {
+  // Normalize and validate name (obligatorio)
+  const normalizedName = String(name).trim()
+  if (normalizedName.length > 100) {
     return validationError(res, 'name is too long (maximum 100 characters)')
+  }
+  
+  // Validate player data if willBePlayer is true
+  if (willBePlayer && playerData) {
+    if (!playerData.number || !playerData.position) {
+      return validationError(res, 'If registering as player, number and position are required')
+    }
+    if (!['HANDLER', 'CUTTER', 'HYBRID'].includes(playerData.position)) {
+      return validationError(res, 'Invalid position. Must be HANDLER, CUTTER, or HYBRID')
+    }
+    const num = Number(playerData.number)
+    if (!Number.isInteger(num) || num <= 0) {
+      return validationError(res, 'Player number must be a positive integer')
+    }
+    // Check if player number already exists
+    const existingPlayer = await prisma.player.findUnique({ where: { number: num } })
+    if (existingPlayer) {
+      return conflict(res, `Player number ${num} is already taken`)
+    }
   }
   
   const exists = await prisma.user.findUnique({ where: { email: normalizedEmail } })
@@ -325,29 +346,66 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
       })
     }
   }
+  
   const passwordHash = await bcrypt.hash(password, 10)
-  const user = await prisma.user.create({ 
-    data: { 
-      email: normalizedEmail, 
-      passwordHash, 
-      name: normalizedName,
-      status: 'PENDING' // New users start as PENDING, need admin approval
-    } 
+  
+  // Create user and optionally create player in a transaction
+  const result = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({ 
+      data: { 
+        email: normalizedEmail, 
+        passwordHash, 
+        name: normalizedName,
+        status: 'PENDING' // New users start as PENDING, need admin approval
+      } 
+    })
+    
+    let playerId = null
+    // If willBePlayer is true and playerData is provided, create the player
+    if (willBePlayer && playerData) {
+      const player = await tx.player.create({
+        data: {
+          name: normalizedName,
+          number: Number(playerData.number),
+          position: playerData.position,
+          status: playerData.status || 'ACTIVE',
+          heightCm: playerData.heightCm ? Number(playerData.heightCm) : null,
+          experience: playerData.experience || null,
+        }
+      })
+      playerId = player.id
+      
+      // Link player to user
+      await tx.user.update({
+        where: { id: user.id },
+        data: { playerId: player.id }
+      })
+    }
+    
+    return { user, playerId }
   })
   
   // Log user registration
   const audit = createAuditHelper(req)
-  await audit.log('CREATE', 'User', user.id, { 
-    email: user.email, 
-    name: user.name,
+  await audit.log('CREATE', 'User', result.user.id, { 
+    email: result.user.email, 
+    name: result.user.name,
     status: 'PENDING',
-    action: 'REGISTERED'
+    action: 'REGISTERED',
+    willBePlayer: !!willBePlayer,
+    playerId: result.playerId
   })
   
   // Don't return token - user needs to be approved first
   return success(res, { 
     message: 'Registration successful. Your account is pending admin approval.',
-    user: { id: user.id, email: user.email, name: user.name, status: 'PENDING' }
+    user: { 
+      id: result.user.id, 
+      email: result.user.email, 
+      name: result.user.name, 
+      status: 'PENDING',
+      playerId: result.playerId
+    }
   })
 }))
 

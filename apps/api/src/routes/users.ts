@@ -392,6 +392,13 @@ const createRoleRequestSchema = z.object({
   role: z.enum(['player']),
   playerId: z.coerce.number().int().positive().optional(),
   note: z.string().max(500).optional(),
+  playerData: z.object({
+    number: z.coerce.number().int().positive(),
+    position: z.enum(['HANDLER', 'CUTTER', 'HYBRID']),
+    status: z.enum(['ACTIVE', 'INJURED', 'INACTIVE']).optional().default('ACTIVE'),
+    heightCm: z.coerce.number().int().positive().optional(),
+    experience: z.string().optional(),
+  }).optional(),
 })
 
 /**
@@ -450,7 +457,16 @@ router.post('/role-requests', requireAuth, asyncHandler(async (req: Request, res
   if (!parsed.success) {
     return validationError(res, 'Invalid payload', parsed.error.errors)
   }
-  const { role, playerId, note } = parsed.data
+  const { role, playerId, note, playerData } = parsed.data
+  
+  // Validate playerData if provided
+  if (playerData) {
+    // Check if player number already exists
+    const existingPlayer = await prisma.player.findUnique({ where: { number: playerData.number } })
+    if (existingPlayer) {
+      return conflict(res, `Player number ${playerData.number} is already taken`)
+    }
+  }
   
   if (playerId) {
     const player = await prisma.player.findUnique({ where: { id: playerId } })
@@ -460,8 +476,28 @@ router.post('/role-requests', requireAuth, asyncHandler(async (req: Request, res
       return conflict(res, 'Player already linked to another user')
     }
   }
+  
+  // If playerData is provided, create the player first
+  let finalPlayerId = playerId ?? null
+  if (playerData) {
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user) return notFound(res, 'User')
+    
+    const newPlayer = await prisma.player.create({
+      data: {
+        name: user.name || user.email,
+        number: playerData.number,
+        position: playerData.position,
+        status: playerData.status || 'ACTIVE',
+        heightCm: playerData.heightCm || null,
+        experience: playerData.experience || null,
+      }
+    })
+    finalPlayerId = newPlayer.id
+  }
+  
   const roleRequest = await prisma.roleRequest.create({
-    data: { userId, role, playerId: playerId ?? null, note: note ?? null }
+    data: { userId, role, playerId: finalPlayerId, note: note ?? null }
   })
   return created(res, roleRequest)
 }))
@@ -586,12 +622,29 @@ router.put('/role-requests/:id', requireRole(['admin']), asyncHandler(async (req
  *       409:
  *         description: Request already decided or player already linked
  */
+const approveRoleRequestSchema = z.object({
+  playerData: z.object({
+    number: z.coerce.number().int().positive(),
+    position: z.enum(['HANDLER', 'CUTTER', 'HYBRID']),
+    status: z.enum(['ACTIVE', 'INJURED', 'INACTIVE']).optional().default('ACTIVE'),
+    heightCm: z.coerce.number().int().positive().optional(),
+    experience: z.string().optional(),
+  }).optional(),
+})
+
 router.post('/role-requests/:id/approve', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = roleRequestIdSchema.safeParse(req.params)
   if (!parsedId.success) {
     return validationError(res, 'Invalid id', parsedId.error.errors)
   }
   const { id } = parsedId.data
+  
+  const parsedBody = approveRoleRequestSchema.safeParse(req.body)
+  if (!parsedBody.success) {
+    return validationError(res, 'Invalid payload', parsedBody.error.errors)
+  }
+  const { playerData } = parsedBody.data
+  
   const admin = (req as Request & { user?: { sub: string } }).user
   if (!admin?.sub) return unauthorized(res, 'Unauthorized')
   try {
@@ -600,25 +653,66 @@ router.post('/role-requests/:id/approve', requireRole(['admin']), asyncHandler(a
     if (request.status !== 'PENDING') {
       return conflict(res, 'Request already decided')
     }
-    if (request.playerId) {
-      const linkedUser = await prisma.user.findFirst({ where: { playerId: request.playerId } })
+    
+    let finalPlayerId = request.playerId
+    
+    // If playerData is provided, create the player
+    if (playerData) {
+      // Check if player number already exists
+      const existingPlayer = await prisma.player.findUnique({ where: { number: playerData.number } })
+      if (existingPlayer) {
+        return conflict(res, `Player number ${playerData.number} is already taken`)
+      }
+      
+      const user = await prisma.user.findUnique({ where: { id: request.userId } })
+      if (!user) return notFound(res, 'User')
+      
+      const newPlayer = await prisma.player.create({
+        data: {
+          name: user.name || user.email,
+          number: playerData.number,
+          position: playerData.position,
+          status: playerData.status || 'ACTIVE',
+          heightCm: playerData.heightCm || null,
+          experience: playerData.experience || null,
+        }
+      })
+      finalPlayerId = newPlayer.id
+    }
+    
+    if (finalPlayerId) {
+      const linkedUser = await prisma.user.findFirst({ where: { playerId: finalPlayerId } })
       if (linkedUser && linkedUser.id !== request.userId) {
         return conflict(res, 'Player already linked to another user')
       }
     }
+    
     const role = await prisma.role.findUnique({ where: { name: request.role } })
     if (!role) return serverError(res, 'Role not found')
-    await prisma.userRole.upsert({
-      where: { userId_roleId: { userId: request.userId, roleId: role.id } },
-      create: { userId: request.userId, roleId: role.id },
-      update: {},
-    })
-    if (request.playerId) {
-      await prisma.user.update({
-        where: { id: request.userId },
-        data: { playerId: request.playerId }
+    
+    await prisma.$transaction(async (tx) => {
+      await tx.userRole.upsert({
+        where: { userId_roleId: { userId: request.userId, roleId: role.id } },
+        create: { userId: request.userId, roleId: role.id },
+        update: {},
       })
-    }
+      
+      if (finalPlayerId) {
+        await tx.user.update({
+          where: { id: request.userId },
+          data: { playerId: finalPlayerId }
+        })
+      }
+      
+      // Update role request with new playerId if created
+      if (playerData && finalPlayerId !== request.playerId) {
+        await tx.roleRequest.update({
+          where: { id },
+          data: { playerId: finalPlayerId }
+        })
+      }
+    })
+    
     const roleRequest = await prisma.roleRequest.update({
       where: { id },
       data: { 
@@ -631,7 +725,9 @@ router.post('/role-requests/:id/approve', requireRole(['admin']), asyncHandler(a
     await audit.log('ROLE_CHANGE', 'RoleRequest', id, { 
       action: 'APPROVED',
       role: request.role,
-      userId: request.userId
+      userId: request.userId,
+      playerCreated: !!playerData,
+      playerId: finalPlayerId
     })
     return updated(res, roleRequest)
   } catch (error) {
@@ -705,8 +801,15 @@ router.post('/role-requests/:id/deny', requireRole(['admin']), asyncHandler(asyn
 }))
 
 const approveUserSchema = z.object({
-  role: z.enum(['guest', 'player', 'admin']).optional(),
+  role: z.enum(['guest', 'player', 'admin', 'captain', 'coach', 'treasurer']).optional(),
   playerId: z.coerce.number().int().positive().optional(),
+  playerData: z.object({
+    number: z.coerce.number().int().positive(),
+    position: z.enum(['HANDLER', 'CUTTER', 'HYBRID']),
+    status: z.enum(['ACTIVE', 'INJURED', 'INACTIVE']).optional().default('ACTIVE'),
+    heightCm: z.coerce.number().int().positive().optional(),
+    experience: z.string().optional(),
+  }).optional(),
 })
 
 /**
@@ -732,8 +835,8 @@ const approveUserSchema = z.object({
  *             properties:
  *               role:
  *                 type: string
- *                 enum: [guest, player, admin]
- *                 description: Role to assign to the user (defaults to guest)
+ *                 enum: [guest, player, admin, captain, coach, treasurer]
+ *                 description: Rol principal a asignar al usuario (además de 'player' base)
  *               playerId:
  *                 type: integer
  *                 description: Optional player ID to link to the user
@@ -762,10 +865,11 @@ router.post('/:id/approve', requireRole(['admin']), asyncHandler(async (req: Req
   if (!parsed.success) {
     return validationError(res, 'Invalid payload', parsed.error.errors)
   }
-  const { role = 'guest', playerId } = parsed.data
+  const { role = 'guest', playerId, playerData } = parsed.data
   
   const admin = (req as Request & { user?: { sub: string } }).user
-  if (!admin?.sub) return unauthorized(res, 'Unauthorized')
+  // Cuando AUTH_REQUIRED está desactivado (modo abierto/demo), no forzamos tener admin en req.user
+  if (env.AUTH_REQUIRED && !admin?.sub) return unauthorized(res, 'Unauthorized')
   
   const user = await prisma.user.findUnique({ where: { id } })
   if (!user) return notFound(res, 'User')
@@ -778,8 +882,17 @@ router.post('/:id/approve', requireRole(['admin']), asyncHandler(async (req: Req
     return conflict(res, 'User is already rejected')
   }
   
-  // Check if playerId is already linked to another user
-  if (playerId) {
+  // Validate playerData if provided
+  if (playerData) {
+    // Check if player number already exists
+    const existingPlayer = await prisma.player.findUnique({ where: { number: playerData.number } })
+    if (existingPlayer) {
+      return conflict(res, `Player number ${playerData.number} is already taken`)
+    }
+  }
+  
+  // Check if playerId is already linked to another user (only if not creating new player)
+  if (playerId && !playerData) {
     const player = await prisma.player.findUnique({ where: { id: playerId } })
     if (!player) {
       return notFound(res, 'Player')
@@ -796,39 +909,70 @@ router.post('/:id/approve', requireRole(['admin']), asyncHandler(async (req: Req
     }
   }
   
-  // Get the role
-  const roleRecord = await prisma.role.findUnique({ where: { name: role } })
-  if (!roleRecord) {
+  // Get roles: base player role + requested role (if different)
+  const playerRole = await prisma.role.findUnique({ where: { name: 'player' } })
+  if (!playerRole) {
+    return serverError(res, 'Player role not found')
+  }
+  const primaryRole = await prisma.role.findUnique({ where: { name: role } })
+  if (!primaryRole) {
     return serverError(res, 'Role not found')
   }
   
-  // Update user status and assign role
+  // Update user status and assign roles:
+  // - Siempre tendrá rol 'player' como base.
+  // - Si el rol solicitado es distinto de 'player', se añade además.
+  let finalPlayerId = playerId ?? null
+  
   await prisma.$transaction(async (tx) => {
     // Remove any existing roles first (clean slate for new approval)
     await tx.userRole.deleteMany({
       where: { userId: id }
     })
     
+    // If playerData is provided, create the player
+    if (playerData) {
+      const newPlayer = await tx.player.create({
+        data: {
+          name: user.name || user.email,
+          number: playerData.number,
+          position: playerData.position,
+          status: playerData.status || 'ACTIVE',
+          heightCm: playerData.heightCm || null,
+          experience: playerData.experience || null,
+        }
+      })
+      finalPlayerId = newPlayer.id
+    }
+    
     await tx.user.update({
       where: { id },
       data: {
         status: 'APPROVED',
-        playerId: playerId ?? null,
+        playerId: finalPlayerId,
       }
     })
     
-    // Assign the new role
+    // Base: rol de jugador
     await tx.userRole.create({
-      data: { userId: id, roleId: roleRecord.id }
+      data: { userId: id, roleId: playerRole.id }
     })
+    
+    // Rol adicional solicitado (admin, captain, coach, etc.)
+    if (primaryRole.id !== playerRole.id) {
+      await tx.userRole.create({
+        data: { userId: id, roleId: primaryRole.id }
+      })
+    }
   })
   
   const audit = createAuditHelper(req)
   await audit.log('UPDATE', 'User', id, { 
     action: 'APPROVED',
     role,
-    playerId: playerId ?? null,
-    approvedBy: Number(admin.sub)
+    playerId: finalPlayerId,
+    playerCreated: !!playerData,
+    approvedBy: admin?.sub ? Number(admin.sub) : null
   })
   
   const updatedUser = await prisma.user.findUnique({
@@ -872,6 +1016,55 @@ router.post('/:id/approve', requireRole(['admin']), asyncHandler(async (req: Req
  *       409:
  *         description: User already approved/rejected
  */
+router.delete('/:id', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+  const parsedId = userIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid user ID', parsedId.error.errors)
+  }
+  const { id } = parsedId.data
+  
+  const admin = (req as Request & { user?: { sub: string } }).user
+  if (env.AUTH_REQUIRED && !admin?.sub) return unauthorized(res, 'Unauthorized')
+  
+  // Prevent deleting yourself
+  if (admin?.sub && Number(admin.sub) === id) {
+    return validationError(res, 'You cannot delete your own account')
+  }
+  
+  const user = await prisma.user.findUnique({ where: { id } })
+  if (!user) return notFound(res, 'User')
+  
+  // Delete user and related data in a transaction
+  await prisma.$transaction(async (tx) => {
+    // Delete role requests
+    await tx.roleRequest.deleteMany({ where: { userId: id } })
+    
+    // Delete user roles
+    await tx.userRole.deleteMany({ where: { userId: id } })
+    
+    // If user has a player linked, we keep the player but unlink it
+    // (player data might be needed for historical records)
+    if (user.playerId) {
+      await tx.user.update({
+        where: { id },
+        data: { playerId: null }
+      })
+    }
+    
+    // Delete the user
+    await tx.user.delete({ where: { id } })
+  })
+  
+  const audit = createAuditHelper(req)
+  await audit.log('DELETE', 'User', id, { 
+    action: 'DELETED',
+    email: user.email,
+    deletedBy: admin?.sub ? Number(admin.sub) : null
+  })
+  
+  return deleted(res, { message: 'User deleted successfully' })
+}))
+
 router.post('/:id/reject', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = userIdSchema.safeParse(req.params)
   if (!parsedId.success) {
@@ -880,7 +1073,7 @@ router.post('/:id/reject', requireRole(['admin']), asyncHandler(async (req: Requ
   const { id } = parsedId.data
   
   const admin = (req as Request & { user?: { sub: string } }).user
-  if (!admin?.sub) return unauthorized(res, 'Unauthorized')
+  if (env.AUTH_REQUIRED && !admin?.sub) return unauthorized(res, 'Unauthorized')
   
   const user = await prisma.user.findUnique({ where: { id } })
   if (!user) return notFound(res, 'User')
@@ -902,7 +1095,7 @@ router.post('/:id/reject', requireRole(['admin']), asyncHandler(async (req: Requ
   await audit.log('UPDATE', 'User', id, { 
     action: 'REJECTED',
     email: user.email,
-    rejectedBy: Number(admin.sub),
+    rejectedBy: admin?.sub ? Number(admin.sub) : null,
     previousStatus: user.status
   })
   

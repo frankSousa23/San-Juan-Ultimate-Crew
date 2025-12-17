@@ -14,6 +14,8 @@ export default function Profile() {
   const [myRequests, setMyRequests] = useState<any[]>([])
   const [requestNote, setRequestNote] = useState('')
   const [requestPlayerId, setRequestPlayerId] = useState('')
+  const [showPlayerDataForm, setShowPlayerDataForm] = useState(false)
+  const [playerData, setPlayerData] = useState({ number: '', position: 'CUTTER' as 'HANDLER' | 'CUTTER' | 'HYBRID', heightCm: '', experience: '' })
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'overview' | 'edit' | 'password' | 'activity' | 'stats' | 'events' | 'requests' | 'security'>('overview')
@@ -779,25 +781,115 @@ export default function Profile() {
                   <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-4">
                     <h4 className="font-medium text-indigo-900 mb-2">Solicitar Rol de Jugador</h4>
                     <p className="text-sm text-indigo-700 mb-4">
-                      Si eres parte del equipo, puedes solicitar acceso como jugador. Opcionalmente, indica tu ID de jugador si ya existes en el roster.
+                      Si eres parte del equipo, puedes solicitar acceso como jugador. Puedes vincular un jugador existente o crear uno nuevo.
                     </p>
                     <div className="space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">ID de Jugador (opcional)</label>
-                        <input
-                          type="number"
-                          className="w-full border rounded px-3 py-2 text-sm"
-                          value={requestPlayerId}
-                          onChange={e => {
-                            const val = e.target.value
-                            if (val === '' || (Number(val) > 0 && Number.isInteger(Number(val)))) {
-                              setRequestPlayerId(val)
-                            }
-                          }}
-                          placeholder="Ingresa tu número de jugador si ya estás en el roster"
-                          min="1"
-                        />
-                      </div>
+                      {!showPlayerDataForm && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">ID de Jugador (opcional)</label>
+                          <input
+                            type="number"
+                            className="w-full border rounded px-3 py-2 text-sm"
+                            value={requestPlayerId}
+                            onChange={e => {
+                              const val = e.target.value
+                              if (val === '' || (Number(val) > 0 && Number.isInteger(Number(val)))) {
+                                setRequestPlayerId(val)
+                              }
+                            }}
+                            placeholder="Ingresa tu número de jugador si ya estás en el roster"
+                            min="1"
+                          />
+                          <button
+                            type="button"
+                            className="mt-2 text-sm text-indigo-600 hover:underline"
+                            onClick={() => setShowPlayerDataForm(true)}
+                          >
+                            O crear un nuevo jugador
+                          </button>
+                        </div>
+                      )}
+                      
+                      {showPlayerDataForm && (
+                        <div className="bg-white border border-indigo-300 rounded-lg p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h5 className="font-medium text-indigo-900">Datos del Jugador</h5>
+                            <button
+                              type="button"
+                              className="text-sm text-gray-600 hover:text-gray-800"
+                              onClick={() => {
+                                setShowPlayerDataForm(false)
+                                setPlayerData({ number: '', position: 'CUTTER', heightCm: '', experience: '' })
+                              }}
+                            >
+                              Usar ID existente
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Número <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="number"
+                                min="1"
+                                required
+                                className="w-full border rounded px-3 py-2 text-sm"
+                                value={playerData.number}
+                                onChange={e => {
+                                  const val = e.target.value
+                                  if (val === '' || (Number(val) > 0 && Number.isInteger(Number(val)))) {
+                                    setPlayerData(prev => ({ ...prev, number: val }))
+                                  }
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Posición <span className="text-red-500">*</span>
+                              </label>
+                              <select
+                                className="w-full border rounded px-3 py-2 text-sm"
+                                value={playerData.position}
+                                onChange={e => setPlayerData(prev => ({ ...prev, position: e.target.value as any }))}
+                              >
+                                <option value="CUTTER">Cutter</option>
+                                <option value="HANDLER">Handler</option>
+                                <option value="HYBRID">Híbrido</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Altura (cm) <span className="text-gray-500 text-xs">(opcional)</span>
+                              </label>
+                              <input
+                                type="number"
+                                min="1"
+                                className="w-full border rounded px-3 py-2 text-sm"
+                                value={playerData.heightCm}
+                                onChange={e => {
+                                  const val = e.target.value
+                                  if (val === '' || (Number(val) > 0 && Number.isInteger(Number(val)))) {
+                                    setPlayerData(prev => ({ ...prev, heightCm: val }))
+                                  }
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Experiencia <span className="text-gray-500 text-xs">(opcional)</span>
+                              </label>
+                              <input
+                                type="text"
+                                className="w-full border rounded px-3 py-2 text-sm"
+                                value={playerData.experience}
+                                onChange={e => setPlayerData(prev => ({ ...prev, experience: e.target.value }))}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Nota (opcional)</label>
                         <textarea
@@ -814,13 +906,28 @@ export default function Profile() {
                         className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
                         onClick={async () => {
                           try {
-                            await myRoleRequestsApi.create({
+                            const payload: any = {
                               role: 'player',
                               note: requestNote.trim() || undefined,
-                              playerId: requestPlayerId ? Number(requestPlayerId) : undefined
-                            })
+                            }
+                            
+                            if (showPlayerDataForm && playerData.number && playerData.position) {
+                              payload.playerData = {
+                                number: Number(playerData.number),
+                                position: playerData.position,
+                                status: 'ACTIVE',
+                                heightCm: playerData.heightCm ? Number(playerData.heightCm) : undefined,
+                                experience: playerData.experience.trim() || undefined,
+                              }
+                            } else if (requestPlayerId) {
+                              payload.playerId = Number(requestPlayerId)
+                            }
+                            
+                            await myRoleRequestsApi.create(payload)
                             setRequestNote('')
                             setRequestPlayerId('')
+                            setShowPlayerDataForm(false)
+                            setPlayerData({ number: '', position: 'CUTTER', heightCm: '', experience: '' })
                             const mine = await myRoleRequestsApi.listMine()
                             setMyRequests(mine)
                             toasts.success('Solicitud enviada exitosamente')
@@ -828,7 +935,7 @@ export default function Profile() {
                             toasts.error(e?.response?.data?.error || 'No se pudo enviar la solicitud')
                           }
                         }}
-                        disabled={!requestNote.trim() && !requestPlayerId}
+                        disabled={(!requestNote.trim() && !requestPlayerId && !showPlayerDataForm) || (showPlayerDataForm && (!playerData.number || !playerData.position))}
                       >
                         Enviar Solicitud
                       </button>
@@ -936,8 +1043,23 @@ export default function Profile() {
                             </div>
                           )}
                           {!user.playerId && user.roles?.includes('player') && (
-                            <div className="text-sm text-amber-600 mt-1">
-                              ⚠️ Tienes rol de jugador pero no estás vinculado a un jugador. Contacta a un administrador.
+                            <div className="text-sm text-amber-600 mt-1 space-y-2">
+                              <div>
+                                ℹ️ Tienes rol de jugador pero no estás vinculado a un jugador. 
+                                {user.roles?.includes('admin') ? (
+                                  <span> Puedes crear tu perfil de jugador desde la sección de administración de usuarios.</span>
+                                ) : (
+                                  <span> Contacta a un administrador para vincular tu perfil de jugador.</span>
+                                )}
+                              </div>
+                              {user.roles?.includes('admin') && (
+                                <Link
+                                  to="/admin/usuarios"
+                                  className="inline-block mt-1 px-3 py-1 bg-amber-600 text-white rounded text-xs hover:bg-amber-700 transition-colors"
+                                >
+                                  Ir a Gestión de Usuarios
+                                </Link>
+                              )}
                             </div>
                           )}
                         </div>

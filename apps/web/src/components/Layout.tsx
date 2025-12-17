@@ -108,7 +108,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
                 <span className="text-sm font-medium text-gray-900 truncate max-w-[120px]">{user.name || user.email}</span>
-                <span className="text-xs text-gray-500 capitalize">{user.roles?.[0] || 'Guest'}</span>
+                <span className="text-xs text-gray-500 capitalize">
+                  {user.roles?.[0] === 'guest'
+                    ? 'Refuerzo'
+                    : user.roles?.[0] || 'Jugador'}
+                </span>
               </div>
               <button
                 onClick={logout}

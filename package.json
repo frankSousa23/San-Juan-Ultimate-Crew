@@ -24,6 +24,7 @@
     "prisma:generate": "npm --workspace apps/api run prisma:generate",
     "prisma:migrate": "npm --workspace apps/api run prisma:migrate",
     "prisma:seed": "npm --workspace apps/api run prisma:seed",
+    "prisma:seed:clean": "npm --workspace apps/api run prisma:seed:clean",
     "prisma:reset": "npm --workspace apps/api run prisma:migrate && npm --workspace apps/api run prisma:seed",
     "prisma:setup": "npm --workspace apps/api run prisma:generate && npm --workspace apps/api run prisma:migrate && npm --workspace apps/api run prisma:seed",
     "build:prod": "./local/scripts/build-optimized.sh",

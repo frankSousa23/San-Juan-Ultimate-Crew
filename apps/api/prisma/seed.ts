@@ -64,10 +64,9 @@ async function main() {
     })
   }
   
-  // Player: communications and events management, view permissions for most resources
+  // Player: base role for todos los usuarios del equipo (puede comunicarse y ver info deportiva, pero no gestiona estructura)
   const playerPermNames = [
     'communications:manage',
-    'events:manage',
     'roster:view',
     'injuries:view',
     'rivals:view',
@@ -84,7 +83,7 @@ async function main() {
     })
   }
   
-  // Captain: manage roster (for tournaments), events, injuries, rivals, plays; view statistics
+  // Captain: liderazgo deportivo; gestiona casi todo lo deportivo, menos usuarios/finanzas
   const captainPermNames = [
     'roster:manage',
     'events:manage',
@@ -97,7 +96,9 @@ async function main() {
     'rivals:view',
     'plays:view',
     'resources:view',
+    'events:view',
     'statistics:view',
+    'finance:view',
   ]
   const captainPerms = allPerms.filter((p: any) => captainPermNames.includes(p.name))
   for (const p of captainPerms) {
@@ -108,7 +109,7 @@ async function main() {
     })
   }
   
-  // Coach: manage events, injuries, plays, resources; view roster, statistics
+  // Coach: por debajo de captain; foco en jugadas, entrenos, recursos y lesiones
   const coachPermNames = [
     'events:manage',
     'communications:manage',
@@ -116,10 +117,10 @@ async function main() {
     'plays:manage',
     'resources:manage',
     'roster:view',
-    'roster:manage', // Can manage tournament rosters
     'injuries:view',
     'plays:view',
     'resources:view',
+    'events:view',
     'statistics:view',
   ]
   const coachPerms = allPerms.filter((p: any) => coachPermNames.includes(p.name))
@@ -131,7 +132,7 @@ async function main() {
     })
   }
   
-  // Treasurer: manage finances; view roster, events, statistics
+  // Treasurer: jugador con responsabilidad financiera
   const treasurerPermNames = [
     'finance:manage',
     'finance:view',
@@ -148,10 +149,15 @@ async function main() {
     })
   }
   
-  // Guest has limited permissions (only statistics and public events view - for demo/showcase purposes)
+  // Guest: se usa como "jugador de refuerzo" muy limitado; ve eventos y estadísticas deportivas
   const guestPermNames = [
+    'events:view',
+    'roster:view',
+    'injuries:view',
+    'rivals:view',
+    'plays:view',
+    'resources:view',
     'statistics:view',
-    'events:view', // Can view public events info
   ]
   const guestPerms = allPerms.filter((p: any) => guestPermNames.includes(p.name))
   for (const p of guestPerms) {
