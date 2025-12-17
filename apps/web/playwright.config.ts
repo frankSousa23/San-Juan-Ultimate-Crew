@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const enableAuthProjects = process.env.PW_AUTH_PROJECTS === '1'
+const isCI = process.env.CI === 'true'
 
 export default defineConfig({
   testDir: './tests',
@@ -46,7 +47,9 @@ export default defineConfig({
         ? 'cross-env AUTH_REQUIRED=false npm --prefix ..\\api run start'
         : 'AUTH_REQUIRED=false npm --prefix ../api run start',
       port: 4000,
-      reuseExistingServer: !process.env.CI,
+      // En desarrollo reutilizamos el servidor existente si ya está corriendo,
+      // y solo arrancamos uno nuevo en CI.
+      reuseExistingServer: !isCI,
       timeout: 120000,
       env: {
         DATABASE_URL: process.env.DATABASE_URL || 'postgresql://sju:sju@localhost:5432/sju_dev',
@@ -58,7 +61,8 @@ export default defineConfig({
     {
       command: 'npm run dev -- --port 5173 --strictPort',
       port: 5173,
-      reuseExistingServer: !process.env.CI,
+      // Reutilizar el servidor de Vite existente en desarrollo si ya está corriendo.
+      reuseExistingServer: !isCI,
       timeout: 60000,
     },
   ],
