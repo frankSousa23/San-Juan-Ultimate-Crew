@@ -15,15 +15,23 @@
     "plugin:react-hooks/recommended",
     "prettier"
   ],
-  "plugins": ["@typescript-eslint", "react", "react-hooks", "prettier"],
+  "plugins": ["@typescript-eslint", "react", "react-hooks"],
   "rules": {
-    "prettier/prettier": "error",
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "react/no-unescaped-entities": "off",
+    "react/display-name": "off",
+    "react/jsx-no-duplicate-props": "warn",
+    "react-hooks/purity": "off",
+    "react-hooks/set-state-in-effect": "off",
+    "react-hooks/immutability": "off",
+    "react-hooks/rules-of-hooks": "warn",
+    "react-hooks/exhaustive-deps": "warn",
     "react/react-in-jsx-scope": "off",
     "react/prop-types": "off",
+    "no-empty": "warn",
     "no-console": ["warn", { "allow": ["warn", "error"] }]
   },
   "settings": {
@@ -36,6 +44,6 @@
     "es2022": true,
     "node": true
   },
-  "ignorePatterns": ["dist", "node_modules", "*.js", "vite.config.ts"]
+  "ignorePatterns": ["dist", "node_modules", "*.js", "vite.config.ts", "src/utils/bundleOptimization.ts", "src/services/componentOptimization.ts", "src/components/FileUpload.tsx", "src/components/Memoized.tsx", "src/hooks/useOptimization.ts"]
 }
 

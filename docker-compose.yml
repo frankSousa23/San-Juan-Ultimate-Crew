@@ -6,8 +6,12 @@ services:
       POSTGRES_USER: sju
       POSTGRES_PASSWORD: sju
       POSTGRES_DB: sju_dev
+      # Dev-only: avoid Windows/Docker auth edge cases for local tooling.
+      # Do NOT use this setting in production.
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
-      - "5432:5432"
+      # 5432 is commonly occupied by a local PostgreSQL service on Windows.
+      - "5433:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
 volumes:

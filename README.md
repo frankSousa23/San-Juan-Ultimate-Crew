@@ -14,7 +14,7 @@ Sistema de gestión full-stack para el equipo de Ultimate Frisbee San Juan.
 
 ### Requisitos
 
-- Node.js 18+
+- Node.js 18.x
 - Docker (para base de datos)
 
 ### Configuración
@@ -40,6 +40,10 @@ Sistema de gestión full-stack para el equipo de Ultimate Frisbee San Juan.
    ```bash
    npm run dev  # Inicia API y Web en paralelo
    ```
+
+## Nota sobre Node (reproducibilidad)
+
+El repo asume **Node 18** (ver `.nvmrc` y `engines` en `package.json`). Si usas otra versión, algunos tests/herramientas pueden fallar.
 
 ## Scripts Principales
 
@@ -67,6 +71,11 @@ El sistema incluye autenticación JWT opcional con roles (admin, player, guest).
 
 - **Toggle**: `AUTH_REQUIRED` en `apps/api/.env` (por defecto `false`)
 - **Usuario admin**: `admin@example.com` / `admin123`
+
+## Nota (Windows / PostgreSQL local)
+
+Si ya tienes PostgreSQL corriendo localmente en Windows, es común que el puerto `5432` esté ocupado.
+Este repo expone Postgres por defecto en `localhost:5433` (ver `docker-compose.yml` y `apps/api/.env.example`).
 
 ## Documentación
 

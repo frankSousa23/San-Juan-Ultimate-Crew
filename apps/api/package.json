@@ -19,10 +19,10 @@
     "format:check": "prettier --check \"src/**/*.ts\"",
     "smoke:finance": "tsx ../../local/scripts/api/smoke-finance.ts",
     "smoke:e2e": "tsx ../../local/scripts/api/smoke-e2e.ts",
-    "test:auth": "cross-env AUTH_REQUIRED=true vitest run src/auth.guard.test.ts",
-    "test": "vitest run",
-    "test:all:auth": "cross-env AUTH_REQUIRED=true vitest run",
-    "test:watch": "vitest"
+    "test:auth": "cross-env AUTH_REQUIRED=true node ../../node_modules/vitest/vitest.mjs run src/auth.guard.test.ts",
+    "test": "node ../../node_modules/vitest/vitest.mjs run",
+    "test:all:auth": "cross-env AUTH_REQUIRED=true node ../../node_modules/vitest/vitest.mjs run",
+    "test:watch": "node ../../node_modules/vitest/vitest.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.17.0",
@@ -45,6 +45,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",

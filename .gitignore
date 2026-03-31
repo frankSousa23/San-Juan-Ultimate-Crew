@@ -51,8 +51,8 @@ logs/
 docs/*.md
 !docs/README.md
 
-# Scripts de desarrollo (movidos a local/scripts/)
-scripts/
+# Scripts de desarrollo
+# `scripts/` es parte del repo (reproducibilidad). `local/` ya se ignora arriba.
 apps/api/scripts/
 
 # Reportes y documentación de auditoría (movidos a local/)

@@ -14,13 +14,15 @@ COPY apps/api ./apps/api
 COPY apps/api/prisma ./apps/api/prisma
 
 # Generate Prisma Client
+ENV PRISMA_CLIENT_ENGINE_TYPE=binary
 RUN cd apps/api && npx prisma generate
 
 # Build the application
 RUN cd apps/api && npm run build
 
 # Production stage
-FROM node:18-alpine
+# Use Debian-based image to avoid OpenSSL musl issues with Prisma engines.
+FROM node:18-slim
 
 WORKDIR /app
 

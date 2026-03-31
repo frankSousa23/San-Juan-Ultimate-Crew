@@ -1,6 +1,7 @@
 import { beforeAll, afterAll, beforeEach } from 'vitest'
 import { PrismaClient } from '@prisma/client'
 import { execSync } from 'child_process'
+import process from 'node:process'
 import fs from 'fs'
 import path from 'path'
 

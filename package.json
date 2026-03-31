@@ -4,6 +4,9 @@
   "workspaces": [
     "apps/*"
   ],
+  "engines": {
+    "node": ">=18 <19"
+  },
   "scripts": {
     "dev:api": "npm --workspace apps/api run dev",
     "dev:web": "npm --workspace apps/web run dev",
@@ -11,13 +14,11 @@
     "build": "npm -w apps/api run build && npm -w apps/web run build",
     "start": "npm -w apps/api run start",
     "smoke:e2e": "node local/scripts/api/smoke-e2e.cjs",
-    "dev-menu": "./local/scripts/dev.sh",
-    "setup": "./local/scripts/create-env-files.sh && ./local/scripts/setup-dev.sh",
-    "check": "./local/scripts/quick-check.sh",
-    "test": "node local/scripts/test-all.js",
-    "test:sh": "./local/scripts/test-all.sh",
-    "test:impl": "./local/scripts/test-implementation.sh",
-    "diagnose": "./local/scripts/diagnose.sh",
+    "dev-menu": "node scripts/quick-check.mjs",
+    "setup": "node scripts/create-env-files.mjs && node scripts/setup-dev.mjs",
+    "check": "node scripts/quick-check.mjs",
+    "test": "node scripts/test-all.mjs",
+    "diagnose": "node scripts/quick-check.mjs",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:reset": "docker compose down && docker compose up -d",
@@ -27,15 +28,16 @@
     "prisma:seed:clean": "npm --workspace apps/api run prisma:seed:clean",
     "prisma:reset": "npm --workspace apps/api run prisma:migrate && npm --workspace apps/api run prisma:seed",
     "prisma:setup": "npm --workspace apps/api run prisma:generate && npm --workspace apps/api run prisma:migrate && npm --workspace apps/api run prisma:seed",
-    "build:prod": "./local/scripts/build-optimized.sh",
-    "start:prod": "./start-production.sh",
-    "checkup": "node local/scripts/system-check.cjs",
+    "build:prod": "npm run build",
+    "start:prod": "docker compose -f docker-compose.prod.yml up -d --build",
+    "checkup": "node scripts/quick-check.mjs",
     "ci:test:api": "npm -w apps/api run test",
     "ci:test:api:auth": "npm -w apps/api run test:all:auth",
     "ci:test:web": "npm -w apps/web run test:e2e",
     "ci:all": "npm run build && npm run ci:test:api && npm run ci:test:api:auth && npm run ci:test:web"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "concurrently": "^8.2.2"
   },
   "license": "MIT"

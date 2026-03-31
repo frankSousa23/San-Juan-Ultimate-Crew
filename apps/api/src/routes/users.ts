@@ -4,7 +4,7 @@ import { requireAuth, requireRole } from './auth.js'
 import { z } from 'zod'
 import type { Prisma } from '@prisma/client'
 import { createAuditHelper } from '../lib/audit.js'
-import { success, updated, created, validationError, notFound, conflict, serverError, unauthorized, forbidden } from '../lib/response.js'
+import { success, updated, created, deleted, validationError, notFound, conflict, serverError, unauthorized, forbidden } from '../lib/response.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import bcrypt from 'bcryptjs'
 import { env } from '../lib/env.js'
@@ -1062,7 +1062,7 @@ router.delete('/:id', requireRole(['admin']), asyncHandler(async (req: Request, 
     deletedBy: admin?.sub ? Number(admin.sub) : null
   })
   
-  return deleted(res, { message: 'User deleted successfully' })
+  return deleted(res)
 }))
 
 router.post('/:id/reject', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
