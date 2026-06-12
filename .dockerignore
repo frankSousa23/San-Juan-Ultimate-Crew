@@ -1,0 +1,34 @@
+# Node
+node_modules/
+apps/api/node_modules/
+apps/web/node_modules/
+
+# Git
+.git/
+.gitignore
+
+# Env vars
+.env
+.env.*
+!.env.example
+
+# Local and test files
+local/
+docs/
+tests/
+playwright-report/
+test-results/
+coverage/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Build outputs
+**/dist/
+**/build/
+
+# Uploads and artifacts
+apps/api/uploads/

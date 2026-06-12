@@ -31,7 +31,7 @@ describe('Registration and Approval Flow', () => {
     const email = `pending+${Date.now()}@example.com`
     await request(app)
       .post('/api/auth/register')
-      .send({ email, password: 'password123' })
+      .send({ email, password: 'password123', name: 'Pending User' })
     
     const loginRes = await request(app)
       .post('/api/auth/login')
@@ -86,7 +86,7 @@ describe('Registration and Approval Flow', () => {
     const email = `reject+${Date.now()}@example.com`
     const registerRes = await request(app)
       .post('/api/auth/register')
-      .send({ email, password: 'password123' })
+      .send({ email, password: 'password123', name: 'To Reject' })
     
     const userId = registerRes.body.user.id
     
@@ -133,7 +133,7 @@ describe('Registration and Approval Flow', () => {
     // Register
     const registerRes = await request(app)
       .post('/api/auth/register')
-      .send({ email, password })
+      .send({ email, password, name: 'Re-register User' })
     
     expect(registerRes.status).toBe(200)
     const userId = registerRes.body.user.id

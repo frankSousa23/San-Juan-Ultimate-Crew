@@ -44,7 +44,7 @@ async function tryAdminLogin(): Promise<boolean> {
 async function runNpmScriptIn(dir: string, script: string) {
   const cmd = process.platform === 'win32' ? 'npm.cmd' : 'npm'
   return new Promise<void>((resolve, reject) => {
-    const p = spawn(cmd, ['run', script], { cwd: dir, stdio: 'inherit' })
+    const p = spawn(cmd, ['run', script], { cwd: dir, stdio: 'inherit', shell: process.platform === 'win32' })
     p.on('exit', (code) => {
       if (code === 0) resolve()
       else reject(new Error(`${script} failed with code ${code}`))
@@ -145,10 +145,10 @@ export default async function globalSetup(config: FullConfig) {
       console.warn('[globalSetup] Could not obtain admin token for storageState')
     }
 
-    // Guest storage state (register once if needed)
-    const guestEmail = 'e2e-guest@example.com'
-    const guestPass = 'test1234'
-    const guestToken = await ensureUserAndGetToken(guestEmail, guestPass, 'E2E Guest')
+    // Guest storage state
+    const guestEmail = 'guest@example.com'
+    const guestPass = 'admin123'
+    const guestToken = await getTokenOrNull(guestEmail, guestPass)
     if (guestToken) {
       const guestPath = path.join(authDir, 'guest.json')
       await writeStorageStateForToken(baseURL, guestPath, guestToken)

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { requireRole } from './auth.js';
+import { requirePermission } from './auth.js';
 import { requireSelfOrAdminForPlayer } from './auth.js';
 import { z } from 'zod';
 import { validateBody, validateParams } from '../middleware/validation.js';
@@ -86,7 +86,7 @@ const updatePlayerSchema = createPlayerSchema.partial();
  *       403:
  *         description: Forbidden - Admin role required
  */
-router.post('/', requireRole(['admin']), validateBody(createPlayerSchema), asyncHandler(async (req, res) => {
+router.post('/', requirePermission('roster:manage'), validateBody(createPlayerSchema), asyncHandler(async (req, res) => {
     const player = await prisma.player.create({ data: req.body });
     const audit = createAuditHelper(req);
     await audit.log('CREATE', 'Player', player.id, {
@@ -183,7 +183,7 @@ router.put('/:id', requireSelfOrAdminForPlayer(), validateParams(playerIdSchema)
  *       404:
  *         description: Player not found
  */
-router.delete('/:id', requireRole(['admin']), validateParams(playerIdSchema), asyncHandler(async (req, res) => {
+router.delete('/:id', requirePermission('roster:manage'), validateParams(playerIdSchema), asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const existing = await prisma.player.findUnique({ where: { id } });
     if (!existing)

@@ -81,7 +81,7 @@ router.get('/', requireRole(['admin']), asyncHandler(async (req: Request, res: R
 }))
 
 const userIdFromTokenSchema = z.object({
-  sub: z.string().transform(val => {
+  sub: z.union([z.string(), z.number()]).transform(val => {
     const num = Number(val)
     if (!Number.isInteger(num) || num <= 0) {
       throw new z.ZodError([{

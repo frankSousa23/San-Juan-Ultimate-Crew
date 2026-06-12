@@ -8,7 +8,8 @@ const DATABASE_URL =
 runShell('docker compose up -d')
 
 // Prisma generate can hit EPERM on Windows with node-api engine; binary is more reliable.
-runShell(`PRISMA_CLIENT_ENGINE_TYPE=binary npm -w apps/api run prisma:generate`, {
+process.env.PRISMA_CLIENT_ENGINE_TYPE = 'binary'
+runShell(`npm -w apps/api run prisma:generate`, {
   env: { ...process.env },
 })
 

@@ -22,6 +22,6 @@ test('profile page loads and shows session state', async ({ page }) => {
   
   await page.addInitScript((t) => localStorage.setItem('sjuc.auth.token', t as string), token)
   await page.goto('/perfil')
-  await expect(page.getByText('Perfil')).toBeVisible({ timeout: 10000 })
+  await expect(page.getByRole('heading', { name: /Mi Perfil/i })).toBeVisible({ timeout: 10000 })
   // We don't assert specific user fields since AUTH may be disabled in local env
 })

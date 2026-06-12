@@ -9,16 +9,20 @@ test('authenticated user can create and delete a resource', async ({ page }) => 
   // Login via API and set real token before navigation
   const login = await page.request.post('http://localhost:4000/api/auth/login', { data: { email: 'admin@example.com', password: 'admin123' } })
   const token = (await login.json())?.token
-  if (!token) test.skip()
+  if (!token) { test.skip(); return; }
   await page.addInitScript((t) => localStorage.setItem('sjuc.auth.token', t as string), token)
 
   // Go to Resources
   await page.goto('/recursos')
   // Ensure create form visible (auth-gated). Si no está visible, probablemente no hay permisos;
-  // en ese caso no forzamos el flujo en este entorno.
+  // en ese caso no forzamos el flujo  // Verify form is present
   const newResourceHeading = page.getByText('Nuevo recurso')
-  if (await newResourceHeading.count() === 0) {
+  const submitBtn = page.getByRole('button', { name: /Crear/ })
+  try {
+    await submitBtn.waitFor({ state: 'visible', timeout: 5000 })
+  } catch (e) {
     test.skip()
+    return
   }
   await expect(newResourceHeading).toBeVisible()
 

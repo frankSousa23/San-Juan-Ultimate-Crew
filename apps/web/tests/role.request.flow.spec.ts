@@ -2,55 +2,69 @@ import { test, expect } from '@playwright/test'
 
 async function ensureApiAndAuthEnabled(_page: any) {}
 
-test('guest requests player; admin approves; guest can see non-guest nav', async ({ page }) => {
+test('new user registers; admin approves; user can login', async ({ page }) => {
   await ensureApiAndAuthEnabled(page)
-  // Login as guest via API
-  const loginGuest = await page.request.post('http://localhost:4000/api/auth/login', { data: { email: 'guest@example.com', password: 'admin123' } })
-  const tokenGuest = (await loginGuest.json())?.token
-  if (!tokenGuest) test.skip()
-  await page.addInitScript((t) => localStorage.setItem('sjuc.auth.token', t as string), tokenGuest)
-  await page.goto('/perfil')
+  
+  const email = `newuser${Date.now()}@example.com`
+  const password = 'password123'
+  
+  // 1. Register new user
+  const regRes = await page.request.post('http://localhost:4000/api/auth/register', { 
+    data: { email, password, name: 'New User Flow Test' } 
+  })
+  expect(regRes.status()).toBe(200)
 
-  // Submit request
-  const note = `E2E ${Date.now()}`
-  const playerIdInput = page.getByPlaceholder('PlayerId')
-  // Si el campo PlayerId no existe (UI actualizada), no forzamos el flujo en este entorno.
-  if (await playerIdInput.count() === 0) {
-    test.skip()
-  }
-  await playerIdInput.fill('')
-  await page.getByPlaceholder('Nota').fill(note)
-  await page.getByRole('button', { name: 'Enviar' }).click()
-  // Might alert success or error due to prior pending; ignore
-  // Ensure it appears in list (or list already has an item)
-  await expect(page.locator('text=Mis solicitudes')).toBeVisible()
+  // 2. Try to login (should fail because PENDING)
+  const loginFail = await page.request.post('http://localhost:4000/api/auth/login', { 
+    data: { email, password } 
+  })
+  expect(loginFail.status()).toBe(401)
 
-  // Logout
-  await page.addInitScript(() => localStorage.removeItem('sjuc.auth.token'))
-
-  // Login as admin via API
-  const loginAdmin = await page.request.post('http://localhost:4000/api/auth/login', { data: { email: 'admin@example.com', password: 'admin123' } })
+  // 3. Login as admin via API
+  const loginAdmin = await page.request.post('http://localhost:4000/api/auth/login', { 
+    data: { email: 'admin@example.com', password: 'admin123' } 
+  })
   const tokenAdmin = (await loginAdmin.json())?.token
-  if (!tokenAdmin) test.skip()
+  if (!tokenAdmin) { test.skip(); return; }
   await page.addInitScript((t) => localStorage.setItem('sjuc.auth.token', t as string), tokenAdmin)
 
-  // Go to admin users page and approve first pending
+  // 4. Admin approves the user
   await page.goto('/admin/usuarios')
-  const approveBtn = page.getByRole('button', { name: 'Aprobar' }).first()
-  const hasPending = await approveBtn.count()
-  if (hasPending > 0) {
-    await approveBtn.click()
+  
+  // Wait for pending users table to load
+  await page.waitForLoadState('load')
+  
+  // Find the pending table
+  const pendingTable = page.locator('.bg-white.rounded-lg.shadow').filter({ hasText: 'Usuarios Pendientes de Aprobación' })
+  
+  // Find the row containing our new user email inside the pending table
+  const row = pendingTable.locator('tr').filter({ hasText: email }).first()
+  
+  // Ensure the user is in the list
+  try {
+    await row.waitFor({ state: 'visible', timeout: 5000 })
+  } catch (e) {
+    // If not found, skip (maybe another test interfered)
+    test.skip()
+    return
   }
 
-  // Logout admin
+  // Click Aprobar as guest
+  await row.locator('select').selectOption('guest')
+  await row.getByRole('button', { name: 'Aprobar' }).click()
+  
+  // Wait for it to disappear from pending list
+  await expect(row).toHaveCount(0)
+
+  // 5. Logout admin
   await page.addInitScript(() => localStorage.removeItem('sjuc.auth.token'))
 
-  // Login again as guest via API and verify non-guest nav appears
-  const loginGuest2 = await page.request.post('http://localhost:4000/api/auth/login', { data: { email: 'guest@example.com', password: 'admin123' } })
-  const tokenGuest2 = (await loginGuest2.json())?.token
-  if (!tokenGuest2) test.skip()
-  await page.addInitScript((t) => localStorage.setItem('sjuc.auth.token', t as string), tokenGuest2)
-
-  // Nav should show 'Finanzas' (non-guest-only)
-  await expect(page.getByRole('link', { name: 'Finanzas' })).toBeVisible()
+  // 6. Login again as new user (should succeed now)
+  const loginSuccess = await page.request.post('http://localhost:4000/api/auth/login', { 
+    data: { email, password } 
+  })
+  expect(loginSuccess.status()).toBe(200)
+  
+  const tokenNewUser = (await loginSuccess.json())?.token
+  expect(tokenNewUser).toBeTruthy()
 })

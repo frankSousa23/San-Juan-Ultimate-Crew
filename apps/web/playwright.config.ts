@@ -52,7 +52,7 @@ export default defineConfig({
       reuseExistingServer: !isCI,
       timeout: 120000,
       env: {
-        DATABASE_URL: process.env.DATABASE_URL || 'postgresql://sju:sju@localhost:5432/sju_dev',
+        DATABASE_URL: process.env.DATABASE_URL || 'postgresql://sju:sju@localhost:5433/sju_dev',
         NODE_ENV: 'test',
         CI: process.env.CI || 'false',
         RESET_DB: 'false',
