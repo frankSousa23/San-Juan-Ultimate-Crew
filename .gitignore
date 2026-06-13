@@ -96,3 +96,7 @@ desktop.ini
 # TestSprite - Testing automation (local only, not in repo)
 testsprite_tests/
 *.testsprite*
+
+# Generated Artifacts & Backups
+swagger-postman.json
+backups/

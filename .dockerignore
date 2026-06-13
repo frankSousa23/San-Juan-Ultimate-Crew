@@ -32,3 +32,14 @@ Thumbs.db
 
 # Uploads and artifacts
 apps/api/uploads/
+
+# Local Dev Tools and Scripts
+backups/
+tools/
+scripts/
+testsprite_tests/
+swagger-postman.json
+
+# Exclude all markdown files except README
+*.md
+!README.md
