@@ -4,18 +4,46 @@ import { faker } from '@faker-js/faker'
 
 const prisma = new PrismaClient()
 
-// Constantes de cantidad
-const NUM_PLAYERS = 500
-const NUM_USERS = 600
-const NUM_EVENTS = 1000
-const NUM_CHANNELS = 100
-const NUM_MESSAGES_PER_CHANNEL = 20
-const NUM_RIVALS = 50
-const NUM_TRANSACTIONS = 2000
+// Constantes de cantidad (Optimizadas para pruebas locales abundantes pero rápidas)
+const NUM_PLAYERS = 150
+const NUM_USERS = 160
+const NUM_EVENTS = 300
+const NUM_CHANNELS = 20
+const NUM_MESSAGES_PER_CHANNEL = 30
+const NUM_RIVALS = 25
+const NUM_TRANSACTIONS = 500
 
 async function main() {
   console.log('🌱 Iniciando seeder MASIVO...')
   const db: any = prisma;
+  
+  console.log('🧹 Vaciando la base de datos...')
+  await prisma.roleRequest.deleteMany()
+  await prisma.eventAnnotation.deleteMany()
+  await prisma.attendance.deleteMany()
+  await prisma.eventParticipant.deleteMany()
+  await prisma.message.deleteMany()
+  await prisma.transaction.deleteMany()
+  await prisma.newsPostFile.deleteMany()
+  await prisma.newsPost.deleteMany()
+  await prisma.injury.deleteMany()
+  await prisma.rivalPlayer.deleteMany()
+  await prisma.auditLog.deleteMany()
+  await prisma.passwordResetToken.deleteMany()
+  await prisma.rival.deleteMany()
+  await prisma.play.deleteMany()
+  await prisma.resource.deleteMany()
+  await prisma.channel.deleteMany()
+  await prisma.category.deleteMany()
+  await prisma.account.deleteMany()
+  await prisma.userRole.deleteMany()
+  await prisma.rolePermission.deleteMany()
+  await prisma.role.deleteMany()
+  await prisma.permission.deleteMany()
+  await prisma.user.deleteMany()
+  await prisma.player.deleteMany()
+  await prisma.event.deleteMany()
+  console.log('✨ Base de datos vaciada.')
   
   // 1. Roles y Permisos (Igual que el seed original para mantener coherencia)
   const managePerms = ['finance:manage', 'resources:manage', 'roster:manage', 'events:manage', 'communications:manage', 'injuries:manage', 'rivals:manage', 'plays:manage']

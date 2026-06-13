@@ -58,7 +58,7 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
       if (payload.heightCm !== undefined && payload.heightCm !== null && payload.heightCm !== '') {
         payload.heightCm = Number(payload.heightCm)
       }
-      if (payload.heightCm === '') {
+      if (payload.heightCm === '' || payload.heightCm === null) {
         delete (payload as UpdatePlayerInput).heightCm
       }
       if (mode === 'edit') {

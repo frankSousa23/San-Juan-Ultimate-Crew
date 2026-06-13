@@ -19,7 +19,7 @@ test('authenticated user can create and delete a finance transaction', async ({ 
   await page.goto('/finanzas')
 
   // If no create form, skip (UI might be missing)
-  const submitBtn = page.getByRole('button', { name: /Registrar/ })
+  const submitBtn = page.getByRole('button', { name: '+ Agregar' })
   try {
     await submitBtn.waitFor({ state: 'visible', timeout: 5000 })
   } catch (e) {

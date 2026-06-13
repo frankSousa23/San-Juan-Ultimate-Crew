@@ -14,7 +14,7 @@ const badgeColor: Record<Status, string> = {
 }
 
 export default function Roster() {
-  const { user: authUser, hasPermission } = useAuth()
+  const { isAuthenticated: authed, hasPermission, user: authUser } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [players, setPlayers] = useState<Player[]>([])
   const [q, setQ] = useState('')
@@ -34,7 +34,6 @@ export default function Roster() {
     completedEvents: number
   } | null>(null)
   const [loadingStats, setLoadingStats] = useState(false)
-  const authed = !!getAuthToken()
   
   const toasts = useToast()
   const { execute: loadPlayers, loading, error } = useApi(playersApi.list, {
@@ -78,6 +77,8 @@ export default function Roster() {
     authApi.me().then(me => { if (!cancel && me.user) setUser({ roles: me.user.roles, playerId: me.user.playerId }) }).catch(() => {})
     return () => { cancel = true }
   }, [authed])
+
+  // User state is provided by AuthContext
 
   // Load player statistics when a player is selected
   useEffect(() => {
@@ -337,7 +338,7 @@ export default function Roster() {
               </div>
             </div>
             <div className="p-4 flex gap-2">
-              {(hasPermission('roster:manage') || user?.playerId === selected.id) && (
+              {(hasPermission('roster:manage') || authUser?.playerId === selected.id) && (
               <button
                 className="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700"
                 onClick={() => { setEditOpen(true) }}

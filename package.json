@@ -22,6 +22,7 @@
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:reset": "docker compose down && docker compose up -d",
+    "db:seed": "npm --workspace apps/api run prisma:seed",
     "prisma:generate": "npm --workspace apps/api run prisma:generate",
     "prisma:migrate": "npm --workspace apps/api run prisma:migrate",
     "prisma:seed": "npm --workspace apps/api run prisma:seed",
