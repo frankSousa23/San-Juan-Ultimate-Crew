@@ -55,6 +55,7 @@ const upsertSchema = z.object({
   playerId: z.coerce.number().int(),
   role: z.string().optional().nullable(),
   status: z.string().optional().nullable(), // confirmed, tentative, declined
+  lineType: z.string().optional().nullable(), // O-Line, D-Line, Flex
 })
 
 const deleteQuerySchema = z.object({
@@ -91,6 +92,10 @@ const deleteQuerySchema = z.object({
  *                 type: string
  *                 nullable: true
  *                 description: Participant status (confirmed, tentative, declined)
+ *               lineType:
+ *                 type: string
+ *                 nullable: true
+ *                 description: Line type (O-Line, D-Line, Flex)
  *     responses:
  *       200:
  *         description: Event participant created or updated
@@ -108,11 +113,11 @@ const deleteQuerySchema = z.object({
 router.put('/', requirePermission('roster:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsed = upsertSchema.safeParse(req.body)
   if (!parsed.success) return validationError(res, 'Invalid input', parsed.error.errors)
-  const { eventId, playerId, role, status } = parsed.data
+  const { eventId, playerId, role, status, lineType } = parsed.data
   const participant = await prisma.eventParticipant.upsert({
     where: { eventId_playerId: { eventId, playerId } },
-    create: { eventId, playerId, role: role ?? undefined, status: status ?? undefined },
-    update: { role: role ?? undefined, status: status ?? undefined },
+    create: { eventId, playerId, role: role ?? undefined, status: status ?? undefined, lineType: lineType ?? undefined },
+    update: { role: role ?? undefined, status: status ?? undefined, lineType: lineType ?? undefined },
   })
   return updated(res, participant)
 }))

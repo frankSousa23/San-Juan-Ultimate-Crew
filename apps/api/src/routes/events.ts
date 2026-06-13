@@ -25,7 +25,19 @@ const router = Router();
  *               items:
  *                 $ref: '#/components/schemas/Event'
  */
-router.get('/', asyncHandler(async (_req: Request, res: Response) => {
+router.get('/', asyncHandler(async (req: Request, res: Response) => {
+  const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+  const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
+
+  if (page && !isNaN(page)) {
+    const skip = (page - 1) * limit;
+    const [events, total] = await Promise.all([
+      prisma.event.findMany({ orderBy: { startsAt: 'asc' }, skip, take: limit }),
+      prisma.event.count()
+    ]);
+    return success(res, { data: events, total, page, totalPages: Math.ceil(total / limit) });
+  }
+
   const events = await prisma.event.findMany({ orderBy: { startsAt: 'asc' } });
   return success(res, events);
 }));
@@ -38,6 +50,9 @@ const createEventSchema = z.object({
   location: z.string().optional(),
   startsAt: z.string().datetime(),
   endsAt: z.string().datetime().optional(),
+  parentId: z.number().optional().nullable(),
+  windSpeed: z.number().optional().nullable(),
+  windDirection: z.string().optional().nullable(),
 });
 
 const updateEventSchema = createEventSchema.partial();
@@ -78,6 +93,12 @@ const updateEventSchema = createEventSchema.partial();
  *               endsAt:
  *                 type: string
  *                 format: date-time
+ *               parentId:
+ *                 type: integer
+ *               windSpeed:
+ *                 type: number
+ *               windDirection:
+ *                 type: string
  *     responses:
  *       201:
  *         description: Event created successfully
@@ -146,6 +167,12 @@ const eventIdSchema = z.object({
  *               endsAt:
  *                 type: string
  *                 format: date-time
+ *               parentId:
+ *                 type: integer
+ *               windSpeed:
+ *                 type: number
+ *               windDirection:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Event updated successfully

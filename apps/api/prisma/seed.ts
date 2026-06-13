@@ -18,6 +18,8 @@ async function main() {
   const db: any = prisma;
   
   console.log('🧹 Vaciando la base de datos...')
+  await prisma.spiritScore.deleteMany()
+  await prisma.playerMatchStats.deleteMany()
   await prisma.roleRequest.deleteMany()
   await prisma.eventAnnotation.deleteMany()
   await prisma.attendance.deleteMany()
@@ -175,7 +177,9 @@ async function main() {
       status,
       location: faker.location.streetAddress(),
       startsAt,
-      endsAt: status === EventStatus.COMPLETED ? new Date(startsAt.getTime() + 1000 * 60 * 60 * 2) : null
+      endsAt: status === EventStatus.COMPLETED ? new Date(startsAt.getTime() + 1000 * 60 * 60 * 2) : null,
+      windSpeed: faker.number.int({ min: 0, max: 35 }),
+      windDirection: faker.helpers.arrayElement(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'])
     }
   })
   // Insertar en chunks
@@ -184,6 +188,29 @@ async function main() {
     await prisma.event.createMany({ data: eventsData.slice(i, i + chunkSize) })
   }
   const events = await prisma.event.findMany()
+
+  // 5.5. Jerarquía de Torneos (Padres e Hijos)
+  console.log(`🏆 Estableciendo jerarquía de torneos...`)
+  const tournaments = events.filter(e => e.type === EventType.TOURNAMENT).slice(0, 30)
+  const matches = events.filter(e => e.type !== EventType.TOURNAMENT && e.status === EventStatus.COMPLETED)
+  let matchIndex = 0
+  
+  const updatePromises = []
+  for (const tournament of tournaments) {
+    const numMatches = faker.number.int({ min: 3, max: 6 })
+    for (let i = 0; i < numMatches; i++) {
+      if (matchIndex < matches.length) {
+        updatePromises.push(
+          prisma.event.update({
+            where: { id: matches[matchIndex].id },
+            data: { parentId: tournament.id }
+          })
+        )
+        matchIndex++
+      }
+    }
+  }
+  await Promise.all(updatePromises)
 
   // 6. Participantes y Asistencia
   console.log(`✅ Creando participantes y asistencia...`)
@@ -200,7 +227,8 @@ async function main() {
         eventId: event.id,
         playerId: p.id,
         role: 'player',
-        status: faker.helpers.arrayElement(['confirmed', 'tentative', 'declined'])
+        status: faker.helpers.arrayElement(['confirmed', 'tentative', 'declined']),
+        lineType: faker.helpers.arrayElement(['O-Line', 'D-Line', 'Flex', null])
       })
       if (event.status === EventStatus.COMPLETED) {
         attendanceData.push({
@@ -218,6 +246,21 @@ async function main() {
   for (let i = 0; i < attendanceData.length; i += chunkSize) {
     await prisma.attendance.createMany({ data: attendanceData.slice(i, i + chunkSize), skipDuplicates: true })
   }
+
+  // 6.5. Espíritu de Juego (SOTG)
+  console.log(`🕊️ Evaluando Espíritu de Juego (SOTG)...`)
+  const completedMatches = eventsSub.filter(e => e.status === EventStatus.COMPLETED)
+  const spiritData = completedMatches.map(match => ({
+    eventId: match.id,
+    evaluatorTeamId: null, // Asumimos que es nuestra evaluación al otro equipo
+    rulesKnowledge: faker.number.int({ min: 1, max: 4 }),
+    foulsAndContact: faker.number.int({ min: 1, max: 4 }),
+    fairMindedness: faker.number.int({ min: 1, max: 4 }),
+    positiveAttitude: faker.number.int({ min: 1, max: 4 }),
+    communication: faker.number.int({ min: 1, max: 4 }),
+    comment: faker.datatype.boolean() ? faker.lorem.sentence() : null
+  }))
+  await prisma.spiritScore.createMany({ data: spiritData })
 
   // 7. Lesiones
   console.log(`🏥 Creando lesiones...`)
@@ -318,22 +361,94 @@ async function main() {
   }
 
   // 11. Anotaciones (EventAnnotations)
-  console.log(`📈 Creando anotaciones de eventos...`)
+  console.log(`📈 Creando anotaciones de eventos y rivales...`)
+  const rivalPlayers = await prisma.rivalPlayer.findMany()
+  
   const annotationData = []
   for (const event of eventsSub.filter(e => e.status === EventStatus.COMPLETED)) {
     for (let i = 0; i < 20; i++) {
-      annotationData.push({
+      const isOurPlayer = faker.datatype.boolean()
+      const type = faker.helpers.arrayElement(Object.values(AnnotationType))
+      
+      let annotation = {
         eventId: event.id,
-        playerId: faker.datatype.boolean() ? faker.helpers.arrayElement(players).id : null,
-        type: faker.helpers.arrayElement(Object.values(AnnotationType)),
+        type,
         note: faker.lorem.sentence(),
         timestamp: faker.date.recent(),
-      })
+        playerId: null as number | null,
+        rivalId: null as number | null,
+        rivalPlayerId: null as number | null,
+        opponentTeamName: null as string | null,
+      }
+      
+      if (isOurPlayer) {
+        annotation.playerId = faker.helpers.arrayElement(players).id
+      } else {
+        const rivalPlayer = faker.helpers.arrayElement(rivalPlayers)
+        annotation.rivalId = rivalPlayer.rivalId
+        annotation.rivalPlayerId = rivalPlayer.id
+        annotation.opponentTeamName = rivals.find(r => r.id === rivalPlayer.rivalId)?.name || null
+      }
+      
+      annotationData.push(annotation)
     }
   }
 
   for (let i = 0; i < annotationData.length; i += chunkSize) {
     await prisma.eventAnnotation.createMany({ data: annotationData.slice(i, i + chunkSize) })
+  }
+
+  // 12. Recursos
+  console.log(`📁 Creando recursos...`)
+  const resourceData = Array.from({ length: 50 }).map(() => ({
+    title: faker.system.fileName(),
+    description: faker.lorem.sentence(),
+    category: faker.helpers.arrayElement(['Video', 'Documento', 'Reglamento', 'Estrategia']),
+    url: faker.internet.url(),
+  }))
+  await prisma.resource.createMany({ data: resourceData })
+
+  // 13. Jugadas
+  console.log(`📋 Creando jugadas...`)
+  const playData = Array.from({ length: 50 }).map(() => ({
+    name: faker.lorem.words(3),
+    category: faker.helpers.arrayElement(Object.values(PlayCategory)),
+    description: faker.lorem.sentences(2),
+    content: faker.lorem.paragraphs(2),
+  }))
+  await prisma.play.createMany({ data: playData })
+
+  // 14. Noticias y Anuncios
+  console.log(`📰 Creando noticias...`)
+  const newsData = Array.from({ length: 50 }).map(() => ({
+    title: faker.lorem.sentence(),
+    content: faker.lorem.paragraphs(3),
+    authorId: faker.helpers.arrayElement(players).id,
+    category: faker.helpers.arrayElement(['General', 'Torneos', 'Reuniones', 'Anuncios']),
+    isPublished: true,
+    isPinned: faker.datatype.boolean({ probability: 0.1 }),
+  }))
+  await prisma.newsPost.createMany({ data: newsData })
+
+  // 15. PlayerMatchStats (Resumen Estadístico)
+  console.log(`📊 Generando estadísticas de partidos...`)
+  const statsMap = new Map<string, any>()
+  for (const ann of annotationData) {
+    if (!ann.playerId) continue
+    const key = `${ann.eventId}_${ann.playerId}`
+    if (!statsMap.has(key)) {
+      statsMap.set(key, { eventId: ann.eventId, playerId: ann.playerId, goals: 0, assists: 0, defenses: 0, turnovers: 0, drops: 0 })
+    }
+    const st = statsMap.get(key)
+    if (ann.type === 'GOAL') st.goals++
+    if (ann.type === 'ASSIST') st.assists++
+    if (ann.type === 'DEFENSE') st.defenses++
+    if (ann.type === 'TURNOVER') st.turnovers++
+    if (ann.type === 'DROP') st.drops++
+  }
+  const statsData = Array.from(statsMap.values())
+  for (let i = 0; i < statsData.length; i += chunkSize) {
+    await prisma.playerMatchStats.createMany({ data: statsData.slice(i, i + chunkSize) })
   }
 
   console.log('✅ Seeder masivo completado.')

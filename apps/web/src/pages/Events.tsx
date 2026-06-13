@@ -3,6 +3,7 @@ import { eventsApi, channelsApi, attendanceApi, playersApi, annotationsApi } fro
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import EventForm from '../components/EventForm'
 import LiveAnnotationsTable from '../components/LiveAnnotationsTable'
+import TournamentBracket from '../components/TournamentBracket'
 import { EventItem, EventType, EventStatus } from '../types/event'
 import ConfirmModal from '../components/ConfirmModal'
 import { useToast } from '../hooks/useToast'
@@ -418,7 +419,19 @@ export default function Events() {
             }} />
           )}
           {tab === 'tournaments' && (
-            <div className="text-gray-600">Gestión de brackets y llaves próximamente.</div>
+            <div className="space-y-6">
+              {events.filter(e => e.type === 'TOURNAMENT').length === 0 ? (
+                 <div className="text-gray-500 italic p-4 text-center">No hay torneos registrados.</div>
+              ) : (
+                events.filter(e => e.type === 'TOURNAMENT').map(tournament => (
+                  <TournamentBracket 
+                    key={tournament.id} 
+                    tournament={tournament} 
+                    matches={events.filter(m => m.parentId === tournament.id)} 
+                  />
+                ))
+              )}
+            </div>
           )}
           {tab === 'stats' && (
             <div className="text-gray-600">Estadísticas de eventos próximamente.</div>

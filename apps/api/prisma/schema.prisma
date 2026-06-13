@@ -70,6 +70,8 @@ enum AnnotationType {
   GENERAL
   STRATEGY
   PERFORMANCE
+  CALLAHAN
+  GREATEST
 }
 
 // Finance
@@ -116,6 +118,7 @@ model Player {
   injuries          Injury[]
   annotations       EventAnnotation[]
   newsPosts         NewsPost[]
+  matchStats        PlayerMatchStats[]
 
   // Reverse relation to User (one-to-one)
   user User? @relation("PlayerUser")
@@ -137,17 +140,72 @@ model Event {
   location    String?
   startsAt    DateTime
   endsAt      DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+
+  // Ultimate Frisbee Specific Fields
+  windSpeed     Int? // km/h
+  windDirection String? // "N", "NE", "Crosswind", etc.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   participants EventParticipant[]
   attendances  Attendance[]
   annotations  EventAnnotation[]
   channel      Channel?
 
+  // Tournaments integration (Event Hierarchy)
+  parentId Int?
+  parent   Event?  @relation("EventHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children Event[] @relation("EventHierarchy")
+
+  // Statistics
+  matchStats   PlayerMatchStats[]
+  spiritScores SpiritScore[]
+
   @@index([startsAt])
   @@index([type])
   @@index([status])
+  @@index([parentId])
+}
+
+model SpiritScore {
+  id               Int      @id @default(autoincrement())
+  eventId          Int
+  evaluatorTeamId  Int? // If we are evaluating or being evaluated (null = we evaluate them)
+  rulesKnowledge   Int      @default(0) // 0-4
+  foulsAndContact  Int      @default(0) // 0-4
+  fairMindedness   Int      @default(0) // 0-4
+  positiveAttitude Int      @default(0) // 0-4
+  communication    Int      @default(0) // 0-4
+  comment          String?
+  createdAt        DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
+
+model PlayerMatchStats {
+  id       Int    @id @default(autoincrement())
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId Int
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId  Int
+
+  // Statistical fields
+  goals        Int @default(0)
+  assists      Int @default(0)
+  defenses     Int @default(0)
+  turnovers    Int @default(0)
+  drops        Int @default(0)
+  pointsPlayed Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([playerId, eventId])
+  @@index([eventId])
+  @@index([playerId])
 }
 
 model EventParticipant {
@@ -157,6 +215,7 @@ model EventParticipant {
   playerId Int
   role     String?
   status   String? // confirmed, tentative, declined
+  lineType String? // O-Line, D-Line, Flex
 
   @@id([eventId, playerId])
   @@index([eventId])
@@ -201,30 +260,30 @@ model Attendance {
 }
 
 model EventAnnotation {
-  id          Int            @id @default(autoincrement())
-  event       Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  eventId     Int
-  player      Player?        @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  playerId    Int?           // Nullable para soportar jugadores oponentes
-  type        AnnotationType
-  note        String?        // Descripción detallada de la anotación
-  timestamp   DateTime       @default(now()) // Momento en que ocurrió durante el evento
-  category    String?        // Para FULL_DAY: "OPEN" o "MIXTO", null para otros tipos
-  createdBy   Int?           // Usuario que creó la anotación (opcional, para auditoría)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  
+  id        Int            @id @default(autoincrement())
+  event     Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId   Int
+  player    Player?        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  playerId  Int? // Nullable para soportar jugadores oponentes
+  type      AnnotationType
+  note      String? // Descripción detallada de la anotación
+  timestamp DateTime       @default(now()) // Momento en que ocurrió durante el evento
+  category  String? // Para FULL_DAY: "OPEN" o "MIXTO", null para otros tipos
+  createdBy Int? // Usuario que creó la anotación (opcional, para auditoría)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
   // Campos para jugadores oponentes (versus)
-  rival       Rival?         @relation(fields: [rivalId], references: [id], onDelete: SetNull)
-  rivalId     Int?           // Relación directa con Rival
-  opponentTeamName String?    // Nombre del equipo oponente (puede ser diferente del nombre del rival)
-  opponentPlayerName String?  // Nombre del jugador oponente (si no está en nuestro roster)
-  opponentPlayerNumber Int?   // Número del jugador oponente
-  rivalPlayerId Int?         // Relación con RivalPlayer si existe
-  rivalPlayer RivalPlayer?   @relation(fields: [rivalPlayerId], references: [id], onDelete: SetNull)
-  teamSide String?           // "HOME" o "AWAY" - para identificar qué equipo
-  scoreHome Int?             // Puntos del equipo local en ese momento
-  scoreAway Int?             // Puntos del equipo visitante en ese momento
+  rival                Rival?       @relation(fields: [rivalId], references: [id], onDelete: SetNull)
+  rivalId              Int? // Relación directa con Rival
+  opponentTeamName     String? // Nombre del equipo oponente (puede ser diferente del nombre del rival)
+  opponentPlayerName   String? // Nombre del jugador oponente (si no está en nuestro roster)
+  opponentPlayerNumber Int? // Número del jugador oponente
+  rivalPlayerId        Int? // Relación con RivalPlayer si existe
+  rivalPlayer          RivalPlayer? @relation(fields: [rivalPlayerId], references: [id], onDelete: SetNull)
+  teamSide             String? // "HOME" o "AWAY" - para identificar qué equipo
+  scoreHome            Int? // Puntos del equipo local en ese momento
+  scoreAway            Int? // Puntos del equipo visitante en ese momento
 
   @@index([eventId])
   @@index([playerId])
@@ -301,23 +360,23 @@ model Rival {
   createdAt    DateTime  @default(now())
 
   // Relación con jugadores del rival
-  players      RivalPlayer[]
+  players     RivalPlayer[]
   // Relación con anotaciones (a través de opponentTeamName)
-  annotations  EventAnnotation[]
+  annotations EventAnnotation[]
 
   @@index([name])
 }
 
 model RivalPlayer {
-  id          Int      @id @default(autoincrement())
-  rival       Rival    @relation(fields: [rivalId], references: [id], onDelete: Cascade)
-  rivalId     Int
-  name        String
-  number      Int
-  position    String?  // Posición del jugador (opcional)
-  notes       String?  // Notas adicionales sobre el jugador
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  rival     Rival    @relation(fields: [rivalId], references: [id], onDelete: Cascade)
+  rivalId   Int
+  name      String
+  number    Int
+  position  String? // Posición del jugador (opcional)
+  notes     String? // Notas adicionales sobre el jugador
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relación con anotaciones
   annotations EventAnnotation[]
@@ -363,20 +422,20 @@ model Resource {
 
 // News Posts (Noticias/Foro)
 model NewsPost {
-  id          Int            @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   title       String
-  content     String         // Contenido del post (Markdown o texto)
-  author      Player?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  content     String // Contenido del post (Markdown o texto)
+  author      Player?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
   authorId    Int?
-  isPinned    Boolean        @default(false) // Post fijado
-  isPublished Boolean        @default(true)   // Publicado o borrador
-  category    String?        // Categoría del post (ej: "Anuncios", "Eventos", "General")
-  views       Int            @default(0)     // Contador de vistas
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  publishedAt DateTime?      // Fecha de publicación (si es borrador)
+  isPinned    Boolean   @default(false) // Post fijado
+  isPublished Boolean   @default(true) // Publicado o borrador
+  category    String? // Categoría del post (ej: "Anuncios", "Eventos", "General")
+  views       Int       @default(0) // Contador de vistas
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime? // Fecha de publicación (si es borrador)
 
-  files       NewsPostFile[]
+  files NewsPostFile[]
 
   @@index([authorId])
   @@index([isPublished])
@@ -388,16 +447,16 @@ model NewsPost {
 }
 
 model NewsPostFile {
-  id          Int       @id @default(autoincrement())
-  post        NewsPost  @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId      Int
-  fileName    String
-  originalName String   // Nombre original del archivo
-  mimeType    String
-  size        Int       // Tamaño en bytes
-  storagePath String    // Ruta de almacenamiento
-  description String?   // Descripción opcional del archivo
-  createdAt   DateTime  @default(now())
+  id           Int      @id @default(autoincrement())
+  post         NewsPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId       Int
+  fileName     String
+  originalName String // Nombre original del archivo
+  mimeType     String
+  size         Int // Tamaño en bytes
+  storagePath  String // Ruta de almacenamiento
+  description  String? // Descripción opcional del archivo
+  createdAt    DateTime @default(now())
 
   @@index([postId])
   @@index([createdAt])
@@ -420,7 +479,7 @@ model User {
 
   roleRequests    RoleRequest[]
   // Reverse relation to RoleRequest.decidedBy
-  decidedRequests RoleRequest[] @relation("RoleRequestDecider")
+  decidedRequests RoleRequest[]        @relation("RoleRequestDecider")
   auditLogs       AuditLog[]
   passwordResets  PasswordResetToken[]
 

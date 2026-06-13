@@ -111,6 +111,10 @@ export const playersApi = {
   },
   remove: async (id: number): Promise<void> => {
     await http.delete(`/api/players/${id}`)
+  },
+  getMatchStats: async (id: number): Promise<any> => {
+    const { data } = await http.get(`/api/players/${id}/stats`)
+    return data
   }
 }
 

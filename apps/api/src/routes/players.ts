@@ -26,7 +26,19 @@ const router = Router();
  *               items:
  *                 $ref: '#/components/schemas/Player'
  */
-router.get('/', asyncHandler(async (_req: Request, res: Response) => {
+router.get('/', asyncHandler(async (req: Request, res: Response) => {
+  const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+  const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
+
+  if (page && !isNaN(page)) {
+    const skip = (page - 1) * limit;
+    const [players, total] = await Promise.all([
+      prisma.player.findMany({ orderBy: { number: 'asc' }, skip, take: limit }),
+      prisma.player.count()
+    ]);
+    return success(res, { data: players, total, page, totalPages: Math.ceil(total / limit) });
+  }
+
   const players = await prisma.player.findMany({ orderBy: { number: 'asc' } });
   return success(res, players);
 }));
@@ -202,6 +214,44 @@ router.delete('/:id', requirePermission('roster:manage'), validateParams(playerI
     number: existing.number,
   });
   return deleted(res);
+}));
+
+/**
+ * @swagger
+ * /api/players/{id}/stats:
+ *   get:
+ *     summary: Get player stats
+ *     tags: [Players]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Player match statistics including efficiency (+/-)
+ *       404:
+ *         description: Player not found
+ */
+router.get('/:id/stats', asyncHandler(async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const stats = await prisma.playerMatchStats.aggregate({
+    where: { playerId: id },
+    _sum: {
+      goals: true,
+      assists: true,
+      defenses: true,
+      turnovers: true,
+      drops: true,
+      pointsPlayed: true,
+    }
+  });
+  
+  const sum = stats._sum;
+  const plusMinus = ((sum.goals || 0) + (sum.assists || 0) + (sum.defenses || 0)) - ((sum.turnovers || 0) + (sum.drops || 0));
+
+  return success(res, { ...sum, plusMinus });
 }));
 
 export default router;

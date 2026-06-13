@@ -32,6 +32,7 @@ export default function Roster() {
     attendanceRate: number
     eventsParticipated: number
     completedEvents: number
+    matchStats?: any
   } | null>(null)
   const [loadingStats, setLoadingStats] = useState(false)
   
@@ -125,12 +126,16 @@ export default function Roster() {
         const totalCompleted = completedEvents.length
         const attendanceRate = totalCompleted > 0 ? Math.round((eventsAttended / totalCompleted) * 100) : 0
         
+        
+        const matchStats = await playersApi.getMatchStats(selected.id)
+
         setPlayerStats({
           totalEvents: allEvents.length,
           eventsAttended,
           attendanceRate,
           eventsParticipated: allParticipants.length,
-          completedEvents: totalCompleted
+          completedEvents: totalCompleted,
+          matchStats
         })
       } catch (error) {
         console.error('Error loading player stats:', error)
@@ -327,10 +332,18 @@ export default function Roster() {
                       <div className="text-gray-600 text-xs">Tasa de Asistencia</div>
                       <div className="font-bold text-amber-700">{playerStats.attendanceRate}%</div>
                     </div>
-                    <div className="bg-indigo-50 p-2 rounded col-span-2">
+                    <div className="bg-indigo-50 p-2 rounded">
                       <div className="text-gray-600 text-xs">Participaciones</div>
-                      <div className="font-bold text-indigo-700">{playerStats.eventsParticipated} eventos</div>
+                      <div className="font-bold text-indigo-700">{playerStats.eventsParticipated}</div>
                     </div>
+                    {playerStats.matchStats && (
+                      <div className="bg-rose-50 p-2 rounded">
+                        <div className="text-gray-600 text-xs">Eficiencia (+/-)</div>
+                        <div className={`font-bold ${playerStats.matchStats.plusMinus >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {playerStats.matchStats.plusMinus > 0 ? '+' : ''}{playerStats.matchStats.plusMinus}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-sm text-gray-500">No hay estadísticas disponibles</div>

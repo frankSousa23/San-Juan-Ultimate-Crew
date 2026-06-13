@@ -10,6 +10,7 @@ export interface EventItem {
   location?: string
   startsAt: string
   endsAt?: string
+  parentId?: number | null
 }
 
 export type CreateEventInput = Omit<EventItem, 'id'>

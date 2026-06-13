@@ -11,6 +11,8 @@ export type AnnotationType =
   | 'GENERAL'
   | 'STRATEGY'
   | 'PERFORMANCE'
+  | 'CALLAHAN'
+  | 'GREATEST'
 
 export interface EventAnnotation {
   id: number

@@ -487,6 +487,22 @@ function renderPlayerList(
                 </button>
               </div>
             )}
+            {canManage && (
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <button
+                  onClick={() => quickAddAnnotation(isHome ? stat.playerId : null, isHome ? null : stat.playerName, isHome ? null : stat.playerNumber, 'CALLAHAN', side)}
+                  className="h-10 bg-amber-500 text-white rounded-lg text-sm font-black shadow-[0_4px_0_0_#b45309] active:shadow-none active:translate-y-[4px] flex items-center justify-center transition-all"
+                >
+                  🔥 CALLAHAN
+                </button>
+                <button
+                  onClick={() => quickAddAnnotation(isHome ? stat.playerId : null, isHome ? null : stat.playerName, isHome ? null : stat.playerNumber, 'GREATEST', side)}
+                  className="h-10 bg-rose-500 text-white rounded-lg text-sm font-black shadow-[0_4px_0_0_#be123c] active:shadow-none active:translate-y-[4px] flex items-center justify-center transition-all"
+                >
+                  ⭐ GREATEST
+                </button>
+              </div>
+            )}
           </div>
         ))}
         {stats.length === 0 && (
@@ -540,6 +556,20 @@ function renderPlayerList(
                         title="Anotar Intercepción"
                       >
                         I
+                      </button>
+                      <button
+                        onClick={() => quickAddAnnotation(isHome ? stat.playerId : null, isHome ? null : stat.playerName, isHome ? null : stat.playerNumber, 'CALLAHAN', side)}
+                        className="w-14 h-14 bg-amber-500 text-white rounded-xl font-black text-2xl hover:bg-amber-600 active:bg-amber-700 shadow-md flex items-center justify-center transition-transform active:scale-90"
+                        title="Callahan"
+                      >
+                        🔥
+                      </button>
+                      <button
+                        onClick={() => quickAddAnnotation(isHome ? stat.playerId : null, isHome ? null : stat.playerName, isHome ? null : stat.playerNumber, 'GREATEST', side)}
+                        className="w-14 h-14 bg-rose-500 text-white rounded-xl font-black text-2xl hover:bg-rose-600 active:bg-rose-700 shadow-md flex items-center justify-center transition-transform active:scale-90"
+                        title="Greatest"
+                      >
+                        ⭐
                       </button>
                     </div>
                   </td>
