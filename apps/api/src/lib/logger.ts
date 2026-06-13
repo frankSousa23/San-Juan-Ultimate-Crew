@@ -33,6 +33,7 @@ class Logger {
 
   private output(entry: LogEntry): void {
     if (process.env.NODE_ENV === 'production') {
+      // eslint-disable-next-line no-console
       console.log(JSON.stringify(entry));
     } else {
       const { level, message, timestamp, ...meta } = entry;

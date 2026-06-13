@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Router, Request, Response, NextFunction } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { env } from '../lib/env.js'

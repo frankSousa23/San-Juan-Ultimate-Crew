@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { prisma } from './prisma.js'
 import { Request } from 'express'
 import { AuditAction } from '@prisma/client'

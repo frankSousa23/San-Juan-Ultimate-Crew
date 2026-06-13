@@ -15,7 +15,8 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
       responseTime: duration,
       userAgent: req.get('User-Agent') || '',
       ip: req.ip || req.connection.remoteAddress || '',
-      userId: (req as unknown).user?.sub,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      userId: (req as any).user?.sub,
     })
   })
   
@@ -27,7 +28,8 @@ export function errorLogger(error: Error, req: Request, res: Response, next: Nex
     url: req.url,
     method: req.method,
     ip: req.ip || req.connection.remoteAddress || '',
-    userId: (req as unknown).user?.sub,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    userId: (req as any).user?.sub,
   })
   
   next(error)
