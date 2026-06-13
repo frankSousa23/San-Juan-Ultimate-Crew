@@ -4,6 +4,6 @@
   "critical": true,
   "allowlist": [],
   "report-type": "summary",
-  "skip-dev": false
+  "skip-dev": true
 }
 

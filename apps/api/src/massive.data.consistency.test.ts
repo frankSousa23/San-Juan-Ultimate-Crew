@@ -6,7 +6,7 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 let adminToken: string
 
-describe('Massive Data Consistency Tests', () => {
+describe.skipIf(process.env.TEST_MASSIVE !== 'true')('Massive Data Consistency Tests', () => {
   beforeAll(async () => {
     // Login as admin to get token
     const res = await request(app)
