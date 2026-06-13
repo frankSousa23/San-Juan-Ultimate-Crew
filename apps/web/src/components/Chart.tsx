@@ -2,8 +2,8 @@ import React, { useRef, useEffect } from 'react'
 
 interface ChartProps {
   type: 'line' | 'bar' | 'pie' | 'doughnut' | 'area' | 'scatter' | 'radar' | 'polar'
-  data: any
-  options?: any
+  data: unknown
+  options?: unknown
   width?: string | number
   height?: string | number
   className?: string
@@ -67,7 +67,7 @@ export const Chart: React.FC<ChartProps> = ({
     }
   }, [type, data, options])
 
-  const renderLineChart = (ctx: CanvasRenderingContext2D, data: any, options: any) => {
+  const renderLineChart = (ctx: CanvasRenderingContext2D, data: any, _options: any) => {
     if (!data.datasets || !data.datasets[0]) return
 
     const dataset = data.datasets[0]
@@ -123,11 +123,10 @@ export const Chart: React.FC<ChartProps> = ({
     })
   }
 
-  const renderBarChart = (ctx: CanvasRenderingContext2D, data: any, options: any) => {
+  const renderBarChart = (ctx: CanvasRenderingContext2D, data: any, _options: any) => {
     if (!data.datasets || !data.datasets[0]) return
 
     const dataset = data.datasets[0]
-    const labels = data.labels || []
     const values = dataset.data || []
 
     if (values.length === 0) return
@@ -151,7 +150,7 @@ export const Chart: React.FC<ChartProps> = ({
     })
   }
 
-  const renderPieChart = (ctx: CanvasRenderingContext2D, data: any, options: any) => {
+  const renderPieChart = (ctx: CanvasRenderingContext2D, data: any, _options: any) => {
     if (!data.datasets || !data.datasets[0]) return
 
     const dataset = data.datasets[0]
@@ -186,7 +185,7 @@ export const Chart: React.FC<ChartProps> = ({
     })
   }
 
-  const renderDoughnutChart = (ctx: CanvasRenderingContext2D, data: any, options: any) => {
+  const renderDoughnutChart = (ctx: CanvasRenderingContext2D, data: any, _options: any) => {
     if (!data.datasets || !data.datasets[0]) return
 
     const dataset = data.datasets[0]
@@ -222,11 +221,10 @@ export const Chart: React.FC<ChartProps> = ({
     })
   }
 
-  const renderAreaChart = (ctx: CanvasRenderingContext2D, data: any, options: any) => {
+  const renderAreaChart = (ctx: CanvasRenderingContext2D, data: any, _options: any) => {
     if (!data.datasets || !data.datasets[0]) return
 
     const dataset = data.datasets[0]
-    const labels = data.labels || []
     const values = dataset.data || []
 
     if (values.length === 0) return
@@ -278,7 +276,7 @@ export const Chart: React.FC<ChartProps> = ({
     ctx.stroke()
   }
 
-  const renderScatterChart = (ctx: CanvasRenderingContext2D, data: any, options: any) => {
+  const renderScatterChart = (ctx: CanvasRenderingContext2D, data: any, _options: any) => {
     if (!data.datasets || !data.datasets[0]) return
 
     const dataset = data.datasets[0]
@@ -313,13 +311,12 @@ export const Chart: React.FC<ChartProps> = ({
     })
   }
 
-  const renderRadarChart = (ctx: CanvasRenderingContext2D, data: any, options: any) => {
+  const renderRadarChart = (ctx: CanvasRenderingContext2D, data: any, _options: any) => {
     // Simple radar chart implementation
     const centerX = ctx.canvas.width / 2
     const centerY = ctx.canvas.height / 2
     const radius = Math.min(centerX, centerY) - 40
 
-    const labels = data.labels || []
     const values = data.datasets?.[0]?.data || []
 
     if (values.length === 0) return
@@ -373,14 +370,13 @@ export const Chart: React.FC<ChartProps> = ({
     ctx.stroke()
   }
 
-  const renderPolarChart = (ctx: CanvasRenderingContext2D, data: any, options: any) => {
+  const renderPolarChart = (ctx: CanvasRenderingContext2D, data: any, _options: any) => {
     // Simple polar chart implementation
     const centerX = ctx.canvas.width / 2
     const centerY = ctx.canvas.height / 2
     const radius = Math.min(centerX, centerY) - 40
 
     const values = data.datasets?.[0]?.data || []
-    const labels = data.labels || []
 
     if (values.length === 0) return
 

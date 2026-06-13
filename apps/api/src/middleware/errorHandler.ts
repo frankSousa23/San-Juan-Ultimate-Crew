@@ -19,9 +19,9 @@ export interface LegacyAppError extends Error {
 
 export function errorHandler(
   error: LegacyAppError | AppError | Error,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) {
   let appError: AppError
 

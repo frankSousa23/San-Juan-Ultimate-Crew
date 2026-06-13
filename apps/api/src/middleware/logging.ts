@@ -15,7 +15,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
       responseTime: duration,
       userAgent: req.get('User-Agent') || '',
       ip: req.ip || req.connection.remoteAddress || '',
-      userId: (req as any).user?.sub,
+      userId: (req as unknown).user?.sub,
     })
   })
   
@@ -27,7 +27,7 @@ export function errorLogger(error: Error, req: Request, res: Response, next: Nex
     url: req.url,
     method: req.method,
     ip: req.ip || req.connection.remoteAddress || '',
-    userId: (req as any).user?.sub,
+    userId: (req as unknown).user?.sub,
   })
   
   next(error)

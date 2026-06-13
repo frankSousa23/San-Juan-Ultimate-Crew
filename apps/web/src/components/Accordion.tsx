@@ -69,7 +69,7 @@ export const Accordion: React.FC<AccordionProps> = ({
 
   return (
     <div className={`${variantClasses[variant]} ${className}`}>
-      {items.map((item, index) => {
+      {items.map((item, _index) => {
         const isOpen = openItems.includes(item.id)
         const isDisabled = item.disabled
 

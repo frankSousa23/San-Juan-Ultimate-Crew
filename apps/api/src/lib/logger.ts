@@ -37,7 +37,7 @@ class Logger {
     } else {
       const { level, message, timestamp, ...meta } = entry;
       const metaStr = Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
-      console.log(`[${timestamp}] ${level.toUpperCase()}: ${message}${metaStr}`);
+      console.warn(`[${timestamp}] ${level.toUpperCase()}:`, message, metaStr);
     }
   }
 
