@@ -196,7 +196,7 @@ export default function Finances() {
       const batch = 200
       let off = 0
       let all: TransactionItem[] = []
-      // eslint-disable-next-line no-constant-condition
+       
       while (true) {
         const r = await transactionsApi.list({ ...params, limit: batch, offset: off })
         all = all.concat(r.items)

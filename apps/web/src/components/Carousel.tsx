@@ -72,6 +72,7 @@ export const Carousel: React.FC<CarouselProps> = ({
         clearInterval(intervalRef.current)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoplay, autoplayInterval, currentIndex, totalSlides])
 
   const handleMouseEnter = () => {

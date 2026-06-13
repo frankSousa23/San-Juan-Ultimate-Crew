@@ -239,7 +239,7 @@ export async function exportPlaysCsv(params?: { q?: string; category?: string })
   let offset = 0
   let all: PlayItem[] = []
   // Fetch all pages
-  // eslint-disable-next-line no-constant-condition
+   
   while (true) {
     const { items, total } = await playsApi.listPaged({ ...params, limit, offset })
     all = all.concat(items)
