@@ -41,6 +41,8 @@ services:
         condition: service_healthy
     volumes:
       - ./apps/api/uploads:/app/uploads
+    ports:
+      - "4000:4000"
     networks:
       - app-network
 

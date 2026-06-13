@@ -81,7 +81,7 @@ describe('Injuries API', () => {
     if (authHeader) req = req.set('Authorization', authHeader)
     const res = await req.send({
       playerId,
-      type: 'Ankle sprain',
+      type: 'Test Injury XYZ',
       severity: 'MILD',
       status: 'ACTIVE',
       startDate: new Date().toISOString(),
@@ -95,17 +95,19 @@ describe('Injuries API', () => {
     
     expect(res.status).toBe(201)
     expect(res.body).toHaveProperty('id')
-    expect(res.body.type).toBe('Ankle sprain')
+    expect(res.body.type).toBe('Test Injury XYZ')
     expect(res.body.severity).toBe('MILD')
     injuryId = res.body.id
   })
 
   it('should find created injury in list', async () => {
+    // We already created an injury in the "should create an injury" test, its ID is in injuryId
+    if (!injuryId) return
     const res = await request(app).get('/api/injuries')
     expect(res.status).toBe(200)
     const found = res.body.find((i: { id: number }) => i.id === injuryId)
     expect(found).toBeDefined()
-    expect(found.type).toBe('Ankle sprain')
+    expect(found.type).toBe('Test Injury XYZ')
   })
 
   it('should update an injury', async () => {

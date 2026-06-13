@@ -13,6 +13,7 @@
     "prisma:migrate": "prisma db push",
     "prisma:seed": "tsx prisma/seed.ts",
     "prisma:seed:clean": "tsx prisma/seed.clean.ts",
+    "prisma:seed:massive": "tsx prisma/seed.massive.ts",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
@@ -46,6 +47,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
+    "@faker-js/faker": "^10.4.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",

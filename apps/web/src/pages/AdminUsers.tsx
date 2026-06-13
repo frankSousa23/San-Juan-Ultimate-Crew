@@ -458,7 +458,8 @@ export default function AdminUsers() {
             <option value="REJECTED">Rechazados</option>
           </select>
         </div>
-        <table className="min-w-full text-sm">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
               <th className="text-left px-4 py-2">Email</th>
@@ -537,6 +538,7 @@ export default function AdminUsers() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -555,7 +557,8 @@ export default function AdminUsers() {
             </select>
           </div>
         </div>
-        <table className="min-w-full text-sm">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
               <th className="text-left px-4 py-2">ID</th>
@@ -661,6 +664,7 @@ export default function AdminUsers() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   )

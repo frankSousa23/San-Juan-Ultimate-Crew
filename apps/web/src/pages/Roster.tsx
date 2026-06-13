@@ -8,9 +8,9 @@ import PlayerForm from '../components/PlayerForm'
 import { Player, Position, Status } from '../types/player'
 
 const badgeColor: Record<Status, string> = {
-  ACTIVE: 'text-green-600',
-  INJURED: 'text-red-600',
-  INACTIVE: 'text-gray-600',
+  ACTIVE: 'text-green-700',
+  INJURED: 'text-red-700',
+  INACTIVE: 'text-gray-700',
 }
 
 export default function Roster() {
@@ -20,6 +20,8 @@ export default function Roster() {
   const [q, setQ] = useState('')
   const [pos, setPos] = useState<'' | Position>('')
   const [st, setSt] = useState<'' | Status>('')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 24
   const [selected, setSelected] = useState<Player | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -177,6 +179,17 @@ export default function Roster() {
     })
   }, [players, q, pos, st])
 
+  useEffect(() => {
+    setPage(1)
+  }, [q, pos, st])
+
+  const paginatedPlayers = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE
+    return filtered.slice(start, start + PAGE_SIZE)
+  }, [filtered, page])
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+
   const posClass = (p: Position) =>
     p === 'HANDLER' ? 'bg-gradient-to-br from-sky-500 to-cyan-400' :
     p === 'CUTTER' ? 'bg-gradient-to-br from-emerald-500 to-teal-400' :
@@ -216,13 +229,13 @@ export default function Roster() {
             placeholder="Buscar jugador..."
             className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm sm:text-base"
           />
-          <select value={pos} onChange={e => setPos(e.target.value as '' | Position)} className="px-3 sm:px-4 py-2 border rounded-lg text-sm sm:text-base">
+          <select aria-label="Filtrar por posición" value={pos} onChange={e => setPos(e.target.value as '' | Position)} className="px-3 sm:px-4 py-2 border rounded-lg text-sm sm:text-base">
             <option value=''>Todas las posiciones</option>
             <option value='HANDLER'>Handler</option>
             <option value='CUTTER'>Cutter</option>
             <option value='HYBRID'>Hybrid</option>
           </select>
-          <select value={st} onChange={e => setSt(e.target.value as '' | Status)} className="px-3 sm:px-4 py-2 border rounded-lg text-sm sm:text-base">
+          <select aria-label="Filtrar por estado" value={st} onChange={e => setSt(e.target.value as '' | Status)} className="px-3 sm:px-4 py-2 border rounded-lg text-sm sm:text-base">
             <option value=''>Todos los estados</option>
             <option value='ACTIVE'>Activo</option>
             <option value='INJURED'>Lesionado</option>
@@ -233,7 +246,7 @@ export default function Roster() {
 
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filtered.map(p => (
+        {paginatedPlayers.map(p => (
           <button key={p.id} onClick={() => setSelected(p)} className="text-left bg-white rounded-xl shadow-md overflow-hidden hover:-translate-y-0.5 transition-transform">
             <div className={`${posClass(p.position)} p-4 text-white text-center`}>
               <div className="text-lg font-bold">#{p.number}</div>
@@ -253,6 +266,28 @@ export default function Roster() {
           <div className="text-gray-600">No hay jugadores que coincidan con el filtro.</div>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {!loading && filtered.length > PAGE_SIZE && (
+        <div className="flex justify-center items-center gap-4 mt-6">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50"
+          >
+            Anterior
+          </button>
+          <span className="text-gray-600 font-medium">Página {page} de {totalPages}</span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50"
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
+
       {error && <div className="text-sm text-red-600">{error}</div>}
 
       {/* Modal (placeholder) */}

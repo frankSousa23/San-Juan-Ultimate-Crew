@@ -37,7 +37,9 @@
     "ci:all": "npm run build && npm run ci:test:api && npm run ci:test:api:auth && npm run ci:test:web"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
     "@eslint/js": "^9.39.4",
+    "autocannon": "^8.0.0",
     "concurrently": "^8.2.2"
   },
   "license": "MIT"

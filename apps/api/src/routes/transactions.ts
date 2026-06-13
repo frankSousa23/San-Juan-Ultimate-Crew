@@ -88,7 +88,7 @@ const transactionQuerySchema = z.object({
  *                 offset:
  *                   type: integer
  */
-router.get('/', asyncHandler(async (req: Request, res: Response) => {
+router.get('/', requireRole(['admin', 'treasurer']), asyncHandler(async (req: Request, res: Response) => {
   const parsed = transactionQuerySchema.safeParse(req.query)
   if (!parsed.success) {
     return validationError(res, 'Invalid query parameters', parsed.error.errors)

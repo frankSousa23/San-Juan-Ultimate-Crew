@@ -10,10 +10,12 @@ test('profile page loads and shows session state', async ({ page }) => {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        id: 99,
-        email: 'test@example.com',
-        role: 'player',
-        player: { name: 'Test User' }
+        user: {
+          id: 99,
+          email: 'test@example.com',
+          roles: ['player'],
+          name: 'Test User'
+        }
       })
     })
   })
