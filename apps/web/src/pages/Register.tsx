@@ -250,8 +250,8 @@ export const Register: React.FC = () => {
                 value={playerPosition}
                 onChange={e => setPlayerPosition(e.target.value as 'HANDLER' | 'CUTTER' | 'HYBRID')}
               >
-                <option value="CUTTER">Cutter</option>
-                <option value="HANDLER">Handler</option>
+                <option value="CUTTER">Cortador</option>
+                <option value="HANDLER">Manejador</option>
                 <option value="HYBRID">Híbrido</option>
               </select>
             </div>

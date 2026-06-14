@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
+import ConfirmModal from '../components/ConfirmModal'
 import { http, adminUsersApi, usersApi } from '../lib/api'
 
 interface UserItem { id: number; email: string; name?: string; roles: string[]; playerId: number | null; status?: string; createdAt?: string }
@@ -30,6 +31,7 @@ export default function AdminUsers() {
   const [playerData, setPlayerData] = useState<Record<number, { number: string; position: 'HANDLER' | 'CUTTER' | 'HYBRID'; heightCm: string; experience: string }>>({})
   const [userStatusFilter, setUserStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL')
   const [deleting, setDeleting] = useState<Record<number, boolean>>({})
+  const [confirmState, setConfirmState] = useState<{ title: string; message: string; confirmText: string; onYes: () => void } | null>(null)
 
   const loadPendingUsers = async () => {
     setPendingLoading(true)
@@ -110,18 +112,24 @@ export default function AdminUsers() {
   const handleRejectUser = async (id: number) => {
     const user = pendingUsers.find(u => u.id === id)
     const email = user?.email || 'este usuario'
-    if (!confirm(`¿Estás seguro de que deseas rechazar a ${email}? Esta acción no se puede deshacer.`)) return
-    setApproving(prev => ({ ...prev, [id]: true }))
-    try {
-      await usersApi.reject(id)
-      toast.showSuccessToast(`Usuario ${email} rechazado`)
-      await loadPendingUsers()
-      await load() // Reload all users
-    } catch (e: any) {
-      toast.showErrorToast(e?.response?.data?.error || 'No se pudo rechazar el usuario')
-    } finally {
-      setApproving(prev => ({ ...prev, [id]: false }))
-    }
+    setConfirmState({
+      title: 'Rechazar Usuario',
+      message: `¿Estás seguro de que deseas rechazar a ${email}? Esta acción no se puede deshacer.`,
+      confirmText: 'Rechazar',
+      onYes: async () => {
+        setApproving(prev => ({ ...prev, [id]: true }))
+        try {
+          await usersApi.reject(id)
+          toast.showSuccessToast(`Usuario ${email} rechazado`)
+          await loadPendingUsers()
+          await load()
+        } catch (e: any) {
+          toast.showErrorToast(e?.response?.data?.error || 'No se pudo rechazar el usuario')
+        } finally {
+          setApproving(prev => ({ ...prev, [id]: false }))
+        }
+      }
+    })
   }
 
   const handleDeleteUser = async (id: number) => {
@@ -129,15 +137,10 @@ export default function AdminUsers() {
     const email = user?.email || 'este usuario'
     const name = user?.name || email
     const isSelf = currentUser?.id === id
-    
-    // Primera confirmación
-    if (!confirm(`¿Estás seguro de que deseas ELIMINAR permanentemente a ${name} (${email})?\n\nEsta acción es IRREVERSIBLE y eliminará:\n- El usuario y todos sus roles\n- Todas sus solicitudes de rol\n- El vínculo con su jugador (si existe)\n\n¿Continuar?`)) {
-      return
-    }
-    
-    // Segunda confirmación si es el mismo usuario
+
     if (isSelf) {
-      if (!confirm(`⚠️ ADVERTENCIA CRÍTICA ⚠️\n\nEstás intentando eliminar TU PROPIA CUENTA.\n\nSi confirmas esta acción:\n- Perderás acceso inmediatamente\n- No podrás iniciar sesión nunca más\n- Todos tus datos serán eliminados permanentemente\n\n¿Estás ABSOLUTAMENTE SEGURO de que quieres continuar?\n\nEscribe "ELIMINAR" en el siguiente prompt para confirmar.`)) {
+      // Si es self, pedimos validación estricta con un prompt para mayor seguridad
+      if (!window.confirm(`⚠️ ADVERTENCIA CRÍTICA ⚠️\n\nEstás intentando eliminar TU PROPIA CUENTA.\n\nSi confirmas esta acción:\n- Perderás acceso inmediatamente\n- Todos tus datos serán eliminados permanentemente\n\n¿Estás ABSOLUTAMENTE SEGURO de que quieres continuar?\n\nEscribe "ELIMINAR" en el siguiente prompt para confirmar.`)) {
         return
       }
       
@@ -147,31 +150,31 @@ export default function AdminUsers() {
         return
       }
       
-      // Tercera confirmación final
-      if (!confirm(`ÚLTIMA OPORTUNIDAD\n\nEstás a punto de eliminar tu propia cuenta de forma permanente.\n\n¿Estás COMPLETAMENTE SEGURO de que quieres hacer esto?`)) {
+      if (!window.confirm(`ÚLTIMA OPORTUNIDAD\n\nEstás a punto de eliminar tu propia cuenta de forma permanente.\n\n¿Estás COMPLETAMENTE SEGURO de que quieres hacer esto?`)) {
         return
       }
+      executeDelete(id, email)
+      return
     }
-    
+
+    // Usuario regular, usamos confirm modal estandar
+    setConfirmState({
+      title: 'Eliminar permanentemente',
+      message: `¿Estás seguro de que deseas ELIMINAR permanentemente a ${name} (${email})?\n\nEsta acción es IRREVERSIBLE y eliminará:\n- El usuario y todos sus roles\n- Todas sus solicitudes de rol\n- El vínculo con su jugador (si existe)`,
+      confirmText: 'Sí, eliminar',
+      onYes: () => executeDelete(id, email)
+    })
+  }
+
+  const executeDelete = async (id: number, email: string) => {
     setDeleting(prev => ({ ...prev, [id]: true }))
     try {
       await usersApi.delete(id)
       toast.showSuccessToast(`Usuario ${email} eliminado permanentemente`)
       await loadPendingUsers()
-      await load() // Reload all users
-      
-      // Si se eliminó a sí mismo, redirigir al login
-      if (isSelf) {
-        setTimeout(() => {
-          window.location.href = '/login'
-        }, 2000)
-      }
+      await load()
     } catch (e: any) {
-      const errorMsg = e?.response?.data?.error || 'No se pudo eliminar el usuario'
-      toast.showErrorToast(errorMsg)
-      if (errorMsg.includes('cannot delete your own account')) {
-        toast.showErrorToast('No puedes eliminar tu propia cuenta')
-      }
+      toast.showErrorToast(e?.response?.data?.error || 'No se pudo eliminar el usuario')
     } finally {
       setDeleting(prev => ({ ...prev, [id]: false }))
     }
@@ -361,8 +364,8 @@ export default function AdminUsers() {
                                     [u.id]: { ...(prev[u.id] || { number: '', position: 'CUTTER', heightCm: '', experience: '' }), position: e.target.value as any }
                                   }))}
                                 >
-                                  <option value="CUTTER">Cutter</option>
-                                  <option value="HANDLER">Handler</option>
+                                  <option value="CUTTER">Cortador</option>
+                                  <option value="HANDLER">Manejador</option>
                                   <option value="HYBRID">Híbrido</option>
                                 </select>
                               </div>
@@ -666,6 +669,21 @@ export default function AdminUsers() {
         </table>
         </div>
       </div>
+      
+      {/* Confirm Modal */}
+      {confirmState && (
+        <ConfirmModal
+          title={confirmState.title}
+          message={confirmState.message}
+          confirmText={confirmState.confirmText}
+          cancelText="Cancelar"
+          onCancel={() => setConfirmState(null)}
+          onConfirm={async () => {
+            confirmState.onYes()
+            setConfirmState(null)
+          }}
+        />
+      )}
     </div>
   )
 }

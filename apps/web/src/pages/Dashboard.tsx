@@ -65,12 +65,12 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-          {isAdmin ? 'Dashboard Administrativo' :
-           isCaptain ? 'Dashboard de Capitán' :
-           isCoach ? 'Dashboard de Entrenador' :
-           isTreasurer ? 'Dashboard de Tesorero' :
-           isPlayer ? 'Mi Dashboard' :
-           'Dashboard'}
+          {isAdmin ? 'Panel Principal Administrativo' :
+           isCaptain ? 'Panel Principal de Capitán' :
+           isCoach ? 'Panel Principal de Entrenador' :
+           isTreasurer ? 'Panel Principal de Tesorero' :
+           isPlayer ? 'Mi Panel Principal' :
+           'Panel Principal'}
         </h1>
         <p className="text-sm sm:text-base text-gray-600">
           {isAdmin ? 'Vista general del sistema completo' :
@@ -249,7 +249,7 @@ export default function Dashboard() {
           {(hasPermission('rivals:view') || isAdmin || isPlayer) && !isCoach && (
             <Link to="/rivales" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
               <div className="text-xl sm:text-2xl mb-1 sm:mb-2">⚔️</div>
-              <div className="text-xs sm:text-sm font-medium">Rivales</div>
+              <div className="text-xs sm:text-sm font-medium">Equipos Rivales</div>
             </Link>
           )}
 

@@ -4,7 +4,7 @@ import { app } from './app.js'
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
 
 describe('Admin users endpoints', () => {
-  const adminCreds = { email: 'admin@example.com', password: 'admin123' }
+  const adminCreds = { email: 'admin@sju.com', password: '123456' }
   let adminToken: string | null = null
 
   it('login as admin', async () => {

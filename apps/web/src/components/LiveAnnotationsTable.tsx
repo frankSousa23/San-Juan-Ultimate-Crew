@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { EventAnnotation, CreateAnnotationInput, AnnotationType } from '../types/annotation'
 import { Player } from '../types/player'
 import { EventItem } from '../types/event'
+import ConfirmModal from '../components/ConfirmModal'
 
 interface LiveAnnotationsTableProps {
   event: EventItem
@@ -32,6 +33,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
   const [players, setPlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [confirmState, setConfirmState] = useState<{ id: number; message: string; type: AnnotationType; onYes: () => Promise<void> } | null>(null)
   
   // Configuración del evento
   const [isVersus, setIsVersus] = useState(false)
@@ -207,7 +209,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
   }
 
   const removeAnnotation = async (annotationId: number, type: AnnotationType) => {
-    if (!canManage || !confirm('¿Eliminar esta anotación?')) return
+    if (!canManage) return
     
     try {
       await annotationsApi.remove(annotationId)
@@ -386,13 +388,16 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
                       ann.type === 'DEFENSE' ? 'text-purple-600' : 'text-gray-600'
                     }`}>
                       {ann.type === 'GOAL' ? '⚽ GOL' :
-                       ann.type === 'ASSIST' ? '🎯 ASISTENCIA' :
-                       ann.type === 'DEFENSE' ? '🛡️ INTERCEPCIÓN' : ann.type}
+                       ann.type === 'ASSIST' ? '🎯 AST' :
+                       ann.type === 'DEFENSE' ? '🛡️ INT' :
+                       ann.type === 'TURNOVER' ? '❌ TURN' :
+                       ann.type === 'DROP' ? '⏬ DROP' :
+                       ann.type === 'CALLAHAN' ? '🔥 CALL' : ann.type}
                     </span>
                   </span>
                   {canManage && (
                     <button
-                      onClick={() => removeAnnotation(ann.id, ann.type)}
+                      onClick={() => setConfirmState({ id: ann.id, type: ann.type, message: '¿Eliminar esta anotación?', onYes: () => removeAnnotation(ann.id, ann.type) })}
                       className="ml-4 w-10 h-10 flex items-center justify-center bg-red-100 text-red-600 rounded-full hover:bg-red-200 active:bg-red-300 font-bold text-xl transition-colors shadow-sm"
                       title="Eliminar anotación"
                     >
@@ -427,6 +432,21 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
   return (
     <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-[60] flex items-center justify-center p-0 sm:p-6" onClick={onClose}>
       {content}
+      
+      {/* Confirm Modal */}
+      {confirmState && (
+        <ConfirmModal
+          title="Confirmar eliminación"
+          message={confirmState.message}
+          confirmText="Sí, eliminar"
+          cancelText="Cancelar"
+          onCancel={() => setConfirmState(null)}
+          onConfirm={async () => {
+            await confirmState.onYes()
+            setConfirmState(null)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -496,10 +516,10 @@ function renderPlayerList(
                   🔥 CALLAHAN
                 </button>
                 <button
-                  onClick={() => quickAddAnnotation(isHome ? stat.playerId : null, isHome ? null : stat.playerName, isHome ? null : stat.playerNumber, 'GREATEST', side)}
+                  onClick={() => quickAddAnnotation(isHome ? stat.playerId : null, isHome ? null : stat.playerName, isHome ? null : stat.playerNumber, 'MVP', side)}
                   className="h-10 bg-rose-500 text-white rounded-lg text-sm font-black shadow-[0_4px_0_0_#be123c] active:shadow-none active:translate-y-[4px] flex items-center justify-center transition-all"
                 >
-                  ⭐ GREATEST
+                  ⭐ MVP
                 </button>
               </div>
             )}
@@ -539,35 +559,35 @@ function renderPlayerList(
                       <button
                         onClick={() => quickAddAnnotation(isHome ? stat.playerId : null, isHome ? null : stat.playerName, isHome ? null : stat.playerNumber, 'GOAL', side)}
                         className="w-14 h-14 bg-green-500 text-white rounded-xl font-black text-2xl hover:bg-green-600 active:bg-green-700 shadow-md flex items-center justify-center transition-transform active:scale-90"
-                        title="Anotar Gol"
+                        title="GOL"
                       >
                         G
                       </button>
                       <button
                         onClick={() => quickAddAnnotation(isHome ? stat.playerId : null, isHome ? null : stat.playerName, isHome ? null : stat.playerNumber, 'ASSIST', side)}
                         className="w-14 h-14 bg-blue-500 text-white rounded-xl font-black text-2xl hover:bg-blue-600 active:bg-blue-700 shadow-md flex items-center justify-center transition-transform active:scale-90"
-                        title="Anotar Asistencia"
+                        title="AST"
                       >
                         A
                       </button>
                       <button
                         onClick={() => quickAddAnnotation(isHome ? stat.playerId : null, isHome ? null : stat.playerName, isHome ? null : stat.playerNumber, 'DEFENSE', side)}
                         className="w-14 h-14 bg-purple-500 text-white rounded-xl font-black text-2xl hover:bg-purple-600 active:bg-purple-700 shadow-md flex items-center justify-center transition-transform active:scale-90"
-                        title="Anotar Intercepción"
+                        title="INT"
                       >
                         I
                       </button>
                       <button
                         onClick={() => quickAddAnnotation(isHome ? stat.playerId : null, isHome ? null : stat.playerName, isHome ? null : stat.playerNumber, 'CALLAHAN', side)}
-                        className="w-14 h-14 bg-amber-500 text-white rounded-xl font-black text-2xl hover:bg-amber-600 active:bg-amber-700 shadow-md flex items-center justify-center transition-transform active:scale-90"
-                        title="Callahan"
+                        className="w-14 h-14 bg-orange-500 text-white rounded-xl font-black text-2xl hover:bg-orange-600 active:bg-orange-700 shadow-md flex items-center justify-center transition-transform active:scale-90"
+                        title="CALL"
                       >
                         🔥
                       </button>
                       <button
-                        onClick={() => quickAddAnnotation(isHome ? stat.playerId : null, isHome ? null : stat.playerName, isHome ? null : stat.playerNumber, 'GREATEST', side)}
+                        onClick={() => quickAddAnnotation(isHome ? stat.playerId : null, isHome ? null : stat.playerName, isHome ? null : stat.playerNumber, 'MVP', side)}
                         className="w-14 h-14 bg-rose-500 text-white rounded-xl font-black text-2xl hover:bg-rose-600 active:bg-rose-700 shadow-md flex items-center justify-center transition-transform active:scale-90"
-                        title="Greatest"
+                        title="MVP"
                       >
                         ⭐
                       </button>

@@ -96,7 +96,7 @@ async function cleanupTestData() {
   const seedUsers = await prisma.user.findMany({
     where: {
       email: {
-        in: ['admin@example.com', 'guest@example.com', 'player@example.com']
+        in: ['admin@sju.com', 'guest@example.com', 'player@example.com']
       }
     },
     select: { id: true }
@@ -120,7 +120,7 @@ async function cleanupTestData() {
   await prisma.user.deleteMany({
     where: {
       email: {
-        not: 'admin@example.com',
+        not: 'admin@sju.com',
         contains: 'test'
       }
     }
@@ -128,7 +128,7 @@ async function cleanupTestData() {
   
   // Ensure seed users have their roles (re-seed if needed)
   // Use upsert to avoid unique constraint errors
-  const adminUser = await prisma.user.findUnique({ where: { email: 'admin@example.com' } })
+  const adminUser = await prisma.user.findUnique({ where: { email: 'admin@sju.com' } })
   if (adminUser) {
     const adminRole = await prisma.role.findUnique({ where: { name: 'admin' } })
     if (adminRole) {

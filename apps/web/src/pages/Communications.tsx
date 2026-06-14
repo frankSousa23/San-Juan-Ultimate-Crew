@@ -6,6 +6,7 @@ import { NewsPost, NewsPostFile } from '../types/news'
 import { useToast } from '../hooks/useToast'
 import { useApi } from '../hooks/useApi'
 import { useAuth } from '../contexts/AuthContext'
+import ConfirmModal from '../components/ConfirmModal'
 
 export default function Communications() {
   const { user, hasPermission } = useAuth()
@@ -41,6 +42,7 @@ export default function Communications() {
   const [newsCategory, setNewsCategory] = useState<string>('all')
   const [newsPage, setNewsPage] = useState(1)
   const [newsTotal, setNewsTotal] = useState(0)
+  const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => void } | null>(null)
   
   const toasts = useToast()
 
@@ -534,9 +536,10 @@ export default function Communications() {
           onCreate={() => setShowNewsForm(true)}
           onEdit={setEditingPost}
           onDelete={(id) => {
-            if (confirm('¿Eliminar esta noticia?')) {
-              deleteNewsPost(id)
-            }
+            setConfirmState({
+              message: '¿Eliminar esta noticia?',
+              onYes: () => deleteNewsPost(id)
+            })
           }}
           category={newsCategory}
           onCategoryChange={setNewsCategory}
@@ -575,10 +578,13 @@ export default function Communications() {
             setEditingPost(selectedPost)
           }}
           onDelete={() => {
-            if (confirm('¿Eliminar esta noticia?')) {
-              deleteNewsPost(selectedPost.id)
-              setSelectedPost(null)
-            }
+            setConfirmState({
+              message: '¿Eliminar esta noticia?',
+              onYes: () => {
+                deleteNewsPost(selectedPost.id)
+                setSelectedPost(null)
+              }
+            })
           }}
         />
       )}
@@ -621,6 +627,18 @@ export default function Communications() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Confirm Modal */}
+      {confirmState && (
+        <ConfirmModal
+          title="Confirmar eliminación"
+          message={confirmState.message}
+          confirmText="Sí, eliminar"
+          cancelText="Cancelar"
+          onCancel={() => setConfirmState(null)}
+          onConfirm={async () => { confirmState.onYes(); setConfirmState(null) }}
+        />
       )}
     </div>
   )
@@ -819,6 +837,7 @@ function NewsPostForm({
   const [isPublished, setIsPublished] = useState(post?.isPublished !== false)
   const [uploadingFiles, setUploadingFiles] = useState<File[]>([])
   const [uploadedFiles, setUploadedFiles] = useState<NewsPostFile[]>(post?.files || [])
+  const [confirmState, setConfirmState] = useState<{ id: number; message: string; onYes: () => Promise<void> } | null>(null)
   const toasts = useToast()
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -850,7 +869,6 @@ function NewsPostForm({
 
   const handleFileDelete = async (fileId: number) => {
     if (!post?.id) return
-    if (!confirm('¿Eliminar este archivo?')) return
     try {
       await newsApi.deleteFile(post.id, fileId)
       setUploadedFiles(prev => prev.filter(f => f.id !== fileId))
@@ -938,7 +956,7 @@ function NewsPostForm({
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleFileDelete(file.id)}
+                        onClick={() => setConfirmState({ id: file.id, message: '¿Eliminar este archivo?', onYes: () => handleFileDelete(file.id) })}
                         className="text-red-600 hover:underline text-sm"
                       >
                         Eliminar
@@ -972,6 +990,16 @@ function NewsPostForm({
           </div>
         </form>
       </div>
+      {confirmState && (
+        <ConfirmModal
+          title="Confirmar eliminación"
+          message={confirmState.message}
+          confirmText="Sí, eliminar"
+          cancelText="Cancelar"
+          onCancel={() => setConfirmState(null)}
+          onConfirm={async () => { await confirmState.onYes(); setConfirmState(null) }}
+        />
+      )}
     </div>
   )
 }

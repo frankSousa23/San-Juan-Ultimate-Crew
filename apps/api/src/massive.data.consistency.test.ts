@@ -11,7 +11,7 @@ describe.skipIf(process.env.TEST_MASSIVE !== 'true')('Massive Data Consistency T
     // Login as admin to get token
     const res = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'admin@example.com', password: 'admin123' })
+      .send({ email: 'admin@sju.com', password: '123456' })
     adminToken = res.body.token
   })
 

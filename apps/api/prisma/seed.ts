@@ -86,15 +86,15 @@ async function main() {
 
   // 2. Usuarios Base
   console.log('👤 Creando usuarios base...')
-  const passwordHash = await bcrypt.hash('admin123', 10)
+  const passwordHash = await bcrypt.hash('123456', 10)
   
   await prisma.user.upsert({
-    where: { email: 'admin@example.com' },
+    where: { email: 'admin@sju.com' },
     update: { passwordHash, status: 'APPROVED' },
-    create: { email: 'admin@example.com', name: 'Administrador Masivo', passwordHash, status: 'APPROVED' }
+    create: { email: 'admin@sju.com', name: 'Superadmin', passwordHash, status: 'APPROVED' }
   })
 
-  const adminUser = await prisma.user.findUnique({ where: { email: 'admin@example.com' } })
+  const adminUser = await prisma.user.findUnique({ where: { email: 'admin@sju.com' } })
   if (adminUser) {
     await prisma.userRole.upsert({
       where: { userId_roleId: { userId: adminUser.id, roleId: roleMap['admin'] } },
@@ -158,7 +158,7 @@ async function main() {
   await prisma.user.createMany({ data: usersData, skipDuplicates: true })
   
   const allUsers = await prisma.user.findMany()
-  const explicitUsers = ['admin@example.com', 'player@example.com', 'guest@example.com']
+  const explicitUsers = ['admin@sju.com', 'player@example.com', 'guest@example.com']
   const userRolesData = allUsers.filter(u => !explicitUsers.includes(u.email)).map(u => ({
     userId: u.id,
     roleId: faker.helpers.arrayElement([roleMap['player'], roleMap['guest'], roleMap['captain']])

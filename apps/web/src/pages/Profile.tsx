@@ -428,7 +428,7 @@ export default function Profile() {
                             #{playerInfo.number} - {playerInfo.name}
                           </div>
                           <div className="text-sm text-gray-600 mt-1">
-                            {playerInfo.position} • {playerInfo.status}
+                            {playerInfo.position === 'HANDLER' ? 'Manejador' : playerInfo.position === 'CUTTER' ? 'Cortador' : 'Híbrido'} • {playerInfo.status === 'ACTIVE' ? 'Activo' : playerInfo.status === 'INACTIVE' ? 'Inactivo' : 'Lesionado'}
                           </div>
                           {!user.roles?.includes('player') && (
                             <div className="text-xs text-amber-600 mt-1">
@@ -853,8 +853,8 @@ export default function Profile() {
                                 value={playerData.position}
                                 onChange={e => setPlayerData(prev => ({ ...prev, position: e.target.value as any }))}
                               >
-                                <option value="CUTTER">Cutter</option>
-                                <option value="HANDLER">Handler</option>
+                                <option value="HANDLER">Manejador</option>
+                                <option value="CUTTER">Cortador</option>
                                 <option value="HYBRID">Híbrido</option>
                               </select>
                             </div>

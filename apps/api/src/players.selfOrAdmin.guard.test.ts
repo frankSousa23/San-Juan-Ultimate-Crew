@@ -4,8 +4,8 @@ import { app } from './app.js'
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
 
 describe('Players self-or-admin guard', () => {
-  const admin = { email: 'admin@example.com', password: 'admin123' }
-  const player = { email: 'player@example.com', password: 'admin123' }
+  const admin = { email: 'admin@sju.com', password: '123456' }
+  const player = { email: 'player@example.com', password: '123456' }
   let adminToken: string | null = null
   let playerToken: string | null = null
   let selfPlayerId: number | null = null

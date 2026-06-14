@@ -113,7 +113,9 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
             className="w-full px-3 py-2 border rounded-lg"
           >
             {positionOptions.map(p => (
-              <option key={p} value={p}>{p}</option>
+              <option key={p} value={p}>
+                {p === 'HANDLER' ? 'Manejador' : p === 'CUTTER' ? 'Cortador' : 'Híbrido'}
+              </option>
             ))}
           </select>
         </div>
@@ -125,7 +127,9 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
             className="w-full px-3 py-2 border rounded-lg"
           >
             {statusOptions.map(s => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>
+                {s === 'ACTIVE' ? 'Activo' : s === 'INACTIVE' ? 'Inactivo' : 'Lesionado'}
+              </option>
             ))}
           </select>
         </div>

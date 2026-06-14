@@ -250,15 +250,15 @@ export default function RosterTorneo() {
                      value={q} onChange={e => setQ(e.target.value)} />
               <select className="border rounded px-2 py-1" value={pos} onChange={e => setPos(e.target.value)}>
                 <option value="">Posición</option>
-                <option value="HANDLER">HANDLER</option>
-                <option value="CUTTER">CUTTER</option>
-                <option value="HYBRID">HYBRID</option>
+                <option value="HANDLER">Manejador</option>
+                <option value="CUTTER">Cortador</option>
+                <option value="HYBRID">Híbrido</option>
               </select>
               <select className="border rounded px-2 py-1" value={pstatus} onChange={e => setPstatus(e.target.value)}>
                 <option value="">Estado</option>
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="INJURED">INJURED</option>
-                <option value="INACTIVE">INACTIVE</option>
+                <option value="ACTIVE">Activo</option>
+                <option value="INJURED">Lesionado</option>
+                <option value="INACTIVE">Inactivo</option>
               </select>
               <select className="border rounded px-2 py-1" value={sortKey} onChange={e => setSortKey(e.target.value as any)}>
                 <option value="number">Orden: número</option>
@@ -284,7 +284,9 @@ export default function RosterTorneo() {
               <div key={p.id} className="py-2 flex items-center justify-between">
                 <div>
                   <div className="font-medium">#{p.number} {p.name}</div>
-                  <div className="text-xs text-gray-500">{p.position} · {p.status}</div>
+                  <div className="text-xs text-gray-500">
+                    {p.position === 'HANDLER' ? 'Manejador' : p.position === 'CUTTER' ? 'Cortador' : 'Híbrido'} · {p.status === 'ACTIVE' ? 'Activo' : p.status === 'INACTIVE' ? 'Inactivo' : 'Lesionado'}
+                  </div>
                 </div>
                 {authed && <button className="px-2 py-1 text-sm rounded bg-indigo-600 text-white" onClick={() => addPlayer(p.id)} disabled={loading}>Agregar</button>}
               </div>
@@ -341,7 +343,7 @@ export default function RosterTorneo() {
                       )}
                     </div>
                   </div>
-                  {authed && <button className="px-2 py-1 text-sm rounded bg-rose-600 text-white" onClick={() => removePlayer(p.playerId)} disabled={loading}>Quitar</button>}
+                  {authed && <button className="px-2 py-1 text-sm rounded bg-rose-600 text-white" onClick={() => setConfirmState({ message: `¿Quitar a ${pl?.name ?? 'este jugador'} del roster del torneo?`, onYes: () => removePlayer(p.playerId) })} disabled={loading}>Quitar</button>}
                 </div>
               )
             })}

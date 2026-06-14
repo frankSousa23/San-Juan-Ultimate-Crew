@@ -4,7 +4,7 @@ import { app } from './app.js'
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
 
 describe('Admin set roles validation', () => {
-  const admin = { email: 'admin@example.com', password: 'admin123' }
+  const admin = { email: 'admin@sju.com', password: '123456' }
   let adminToken: string | null = null
   let guestUser: any = null
 

@@ -5,6 +5,7 @@ import { useApi } from '../hooks/useApi'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
 import PlayerForm from '../components/PlayerForm'
+import ConfirmModal from '../components/ConfirmModal'
 import { Player, Position, Status } from '../types/player'
 
 const badgeColor: Record<Status, string> = {
@@ -25,6 +26,7 @@ export default function Roster() {
   const [selected, setSelected] = useState<Player | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => void } | null>(null)
   const [user, setUser] = useState<{ roles?: string[]; playerId?: number | null } | null>(null)
   const [playerStats, setPlayerStats] = useState<{
     totalEvents: number
@@ -237,9 +239,9 @@ export default function Roster() {
           />
           <select aria-label="Filtrar por posición" value={pos} onChange={e => setPos(e.target.value as '' | Position)} className="px-3 sm:px-4 py-2 border rounded-lg text-sm sm:text-base">
             <option value=''>Todas las posiciones</option>
-            <option value='HANDLER'>Handler</option>
-            <option value='CUTTER'>Cutter</option>
-            <option value='HYBRID'>Hybrid</option>
+            <option value='HANDLER'>Manejador</option>
+            <option value='CUTTER'>Cortador</option>
+            <option value='HYBRID'>Híbrido</option>
           </select>
           <select aria-label="Filtrar por estado" value={st} onChange={e => setSt(e.target.value as '' | Status)} className="px-3 sm:px-4 py-2 border rounded-lg text-sm sm:text-base">
             <option value=''>Todos los estados</option>
@@ -260,8 +262,12 @@ export default function Roster() {
             <div className="p-4">
               <h3 className="font-bold text-lg text-gray-800 mb-1">{p.name}</h3>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600">{p.position}</span>
-                <span className={`text-xs font-semibold ${badgeColor[p.status]}`}>{p.status}</span>
+                <span className="text-gray-600">
+                  {p.position === 'HANDLER' ? 'Manejador' : p.position === 'CUTTER' ? 'Cortador' : 'Híbrido'}
+                </span>
+                <span className={`text-xs font-semibold ${badgeColor[p.status]}`}>
+                  {p.status === 'ACTIVE' ? 'Activo' : p.status === 'INACTIVE' ? 'Inactivo' : 'Lesionado'}
+                </span>
               </div>
             </div>
           </button>
@@ -362,8 +368,13 @@ export default function Roster() {
                 className="flex-1 bg-red-50 text-red-700 py-2 rounded-lg hover:bg-red-100"
                 onClick={() => {
                   if (!selected) return
-                  if (!confirm(`¿Eliminar a ${selected.name}?`)) return
-                  deletePlayer(selected.id)
+                  setConfirmState({
+                    message: `¿Eliminar a ${selected.name}?`,
+                    onYes: () => {
+                      deletePlayer(selected.id)
+                      setSelected(null)
+                    }
+                  })
                 }}
               >Eliminar</button>
               )}
@@ -409,6 +420,20 @@ export default function Roster() {
             </div>
           </div>
         </div>
+      )}
+
+      {confirmState && (
+        <ConfirmModal
+          title="Confirmar eliminación"
+          message={confirmState.message}
+          confirmText="Sí, eliminar"
+          cancelText="Cancelar"
+          onCancel={() => setConfirmState(null)}
+          onConfirm={async () => {
+            confirmState.onYes()
+            setConfirmState(null)
+          }}
+        />
       )}
     </div>
   )

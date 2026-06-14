@@ -61,7 +61,7 @@ export const Login: React.FC = () => {
           <label htmlFor="login-password" className="block text-sm font-medium mb-1">Contraseña</label>
           <input
             id="login-password"
-            aria-label="Password"
+            aria-label="Contraseña"
             className="w-full border rounded px-3 py-2"
             type="password"
             autoComplete="current-password"

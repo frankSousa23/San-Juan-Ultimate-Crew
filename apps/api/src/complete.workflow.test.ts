@@ -12,8 +12,8 @@ describe('Complete Workflow: Registration, Approval, Login, and Permissions', ()
   it('admin can login', async () => {
     if (!AUTH_ON) return
     const res = await request(app).post('/api/auth/login').send({
-      email: 'admin@example.com',
-      password: 'admin123'
+      email: 'admin@sju.com',
+      password: '123456'
     })
     if (res.status === 200) {
       adminToken = res.body.token
@@ -185,7 +185,7 @@ describe('Complete Workflow: Registration, Approval, Login, and Permissions', ()
     
     const loginRes = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'guest@example.com', password: 'admin123' })
+      .send({ email: 'guest@example.com', password: '123456' })
     
     if (loginRes.status !== 200) return
     const guestToken = loginRes.body.token

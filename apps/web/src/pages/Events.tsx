@@ -48,7 +48,6 @@ export default function Events() {
   const [attEvent, setAttEvent] = useState<EventItem | null>(null)
   const [annotEvent, setAnnotEvent] = useState<EventItem | null>(null)
   const [selectedDateEvents, setSelectedDateEvents] = useState<{ date: Date; events: EventItem[] } | null>(null)
-  
   const [confirmState, setConfirmState] = useState<{ eventId?: number; title?: string; message: string; onYes: () => Promise<void> } | null>(null)
 
   // API hooks
@@ -77,10 +76,8 @@ export default function Events() {
 
   const { execute: deleteEvent } = useApi(eventsApi.remove, {
     onSuccess: () => {
-      if (confirmState?.eventId) {
-        setEvents(prev => prev.filter(x => x.id !== confirmState.eventId))
-      }
       toasts.success('Evento eliminado exitosamente')
+      loadEvents()
     },
     showErrorToast: true
   })
@@ -439,7 +436,6 @@ export default function Events() {
         </div>
       </div>
     </div>
-  {/* global toasts via ToastProvider */}
     {confirmState && (
       <ConfirmModal
         title={confirmState.title || 'Confirmar'}
@@ -450,6 +446,7 @@ export default function Events() {
         onConfirm={async () => { await confirmState.onYes(); setConfirmState(null) }}
       />
     )}
+  {/* global toasts via ToastProvider */}
       {createOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setCreateOpen(false)}>
           <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -766,6 +763,7 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
   const [error, setError] = useState<string | null>(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingAnnotation, setEditingAnnotation] = useState<EventAnnotation | null>(null)
+  const [confirmState, setConfirmState] = useState<{ id: number; message: string; onYes: () => Promise<void> } | null>(null)
   const [stats, setStats] = useState<any>(null)
   const [viewMode, setViewMode] = useState<'list' | 'table'>('list')
   const toasts = useToast()
@@ -854,7 +852,6 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Eliminar esta anotación?')) return
     try {
       await annotationsApi.remove(id)
       setAnnotations(prev => prev.filter(a => a.id !== id))
@@ -998,16 +995,16 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
                             </div>
                           </div>
                           {canManage && (
-                            <div className="flex gap-2 sm:gap-2 shrink-0">
+                            <div className="flex justify-end gap-2 mt-3 pt-3 border-t">
                               <button
                                 onClick={() => setEditingAnnotation(ann)}
-                                className="text-blue-600 hover:underline text-xs sm:text-sm whitespace-nowrap px-2 py-1"
+                                className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded text-sm transition-colors"
                               >
                                 Editar
                               </button>
                               <button
-                                onClick={() => handleDelete(ann.id)}
-                                className="text-red-600 hover:underline text-xs sm:text-sm whitespace-nowrap px-2 py-1"
+                                onClick={() => setConfirmState({ id: ann.id, message: '¿Eliminar esta anotación?', onYes: () => handleDelete(ann.id) })}
+                                className="text-red-600 hover:bg-red-50 px-3 py-1 rounded text-sm transition-colors"
                               >
                                 Eliminar
                               </button>
@@ -1031,6 +1028,16 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
           </button>
         </div>
       </div>
+      {confirmState && (
+        <ConfirmModal
+          title="Confirmar eliminación"
+          message={confirmState.message}
+          confirmText="Sí, eliminar"
+          cancelText="Cancelar"
+          onCancel={() => setConfirmState(null)}
+          onConfirm={async () => { await confirmState.onYes(); setConfirmState(null) }}
+        />
+      )}
     </div>
   )
 }
@@ -1061,7 +1068,7 @@ function AnnotationForm({
   const [category, setCategory] = useState<string>(initial?.category || '')
 
   const annotationTypes: AnnotationType[] = [
-    'GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER', 'DROP', 'FOUL',
+    'GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER', 'DROP', 'CALLAHAN', 'MVP', 'FOUL',
     'TIMEOUT', 'SUBSTITUTION', 'INJURY', 'GENERAL', 'STRATEGY', 'PERFORMANCE'
   ]
 
@@ -1103,11 +1110,13 @@ function AnnotationForm({
           >
             {annotationTypes.map(t => (
               <option key={t} value={t}>
-                {t === 'GOAL' ? 'Gol' :
-                 t === 'ASSIST' ? 'Asistencia' :
-                 t === 'DEFENSE' ? 'Defensa' :
-                 t === 'TURNOVER' ? 'Pérdida' :
-                 t === 'DROP' ? 'Caída' :
+                {t === 'GOAL' ? 'GOL' :
+                 t === 'ASSIST' ? 'AST' :
+                 t === 'DEFENSE' ? 'INT' :
+                 t === 'TURNOVER' ? 'TURN' :
+                 t === 'DROP' ? 'DROP' :
+                 t === 'CALLAHAN' ? 'CALL' :
+                 t === 'MVP' ? 'MVP' :
                  t === 'FOUL' ? 'Falta' :
                  t === 'TIMEOUT' ? 'Tiempo muerto' :
                  t === 'SUBSTITUTION' ? 'Sustitución' :

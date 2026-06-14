@@ -212,8 +212,8 @@ export const PlayerPositionBadge: React.FC<PlayerPositionBadgeProps> = ({
   size = 'sm'
 }) => {
   const positionConfig = {
-    HANDLER: { variant: 'info' as const, label: 'Handler', icon: '🎯' },
-    CUTTER: { variant: 'success' as const, label: 'Cutter', icon: '🏃' },
+    HANDLER: { variant: 'info' as const, label: 'Manejador', icon: '🎯' },
+    CUTTER: { variant: 'success' as const, label: 'Cortador', icon: '🏃' },
     HYBRID: { variant: 'warning' as const, label: 'Híbrido', icon: '🔄' }
   }
 

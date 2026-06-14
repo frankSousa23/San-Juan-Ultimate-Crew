@@ -3,8 +3,8 @@ import { app } from './app.js'
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
 
 describe('Auth guards on protected routes', () => {
-  const adminEmail = 'admin@example.com'
-  const adminPassword = 'admin123'
+  const adminEmail = 'admin@sju.com'
+  const adminPassword = '123456'
 
   it('handles unauthenticated access appropriately', async () => {
     const res = await request(app)

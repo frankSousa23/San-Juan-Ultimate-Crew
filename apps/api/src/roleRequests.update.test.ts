@@ -4,7 +4,7 @@ import { app } from './app.js'
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
 
 describe('Role requests: update pending (playerId/note)', () => {
-  const admin = { email: 'admin@example.com', password: 'admin123' }
+  const admin = { email: 'admin@sju.com', password: '123456' }
   let adminToken: string | null = null
 
   it('login admin', async () => {
@@ -19,7 +19,7 @@ describe('Role requests: update pending (playerId/note)', () => {
   it('admin can update note and playerId for a pending request', async () => {
     if (!AUTH_ON || !adminToken) return
     const email = `update+${Date.now()}@example.com`
-    const password = 'admin123'
+    const password = '123456'
     const reg = await request(app).post('/api/auth/register').send({ email, password })
     const userToken = reg.status === 200 ? reg.body?.token : (await request(app).post('/api/auth/login').send({ email, password })).body?.token
     if (!userToken) return
@@ -74,7 +74,7 @@ describe('Role requests: update pending (playerId/note)', () => {
   it('update returns 409 for non-pending requests', async () => {
     if (!AUTH_ON || !adminToken) return
     const email = `nonpending+${Date.now()}@example.com`
-    const password = 'admin123'
+    const password = '123456'
     const reg = await request(app).post('/api/auth/register').send({ email, password })
     const userToken = reg.status === 200 ? reg.body?.token : (await request(app).post('/api/auth/login').send({ email, password })).body?.token
     if (!userToken) return
@@ -120,7 +120,7 @@ describe('Role requests: update pending (playerId/note)', () => {
     const playerId = linkedUser.playerId as number
 
     const email = `conflictupd+${Date.now()}@example.com`
-    const password = 'admin123'
+    const password = '123456'
     const reg = await request(app).post('/api/auth/register').send({ email, password })
     const userToken = reg.status === 200 ? reg.body?.token : (await request(app).post('/api/auth/login').send({ email, password })).body?.token
     if (!userToken) return
@@ -161,7 +161,7 @@ describe('Role requests: update pending (playerId/note)', () => {
 
     // Create a pending request and try to set a non-existent playerId
     const email = `nofoundp+${Date.now()}@example.com`
-    const password = 'admin123'
+    const password = '123456'
     const reg = await request(app).post('/api/auth/register').send({ email, password })
     const userToken = reg.status === 200 ? reg.body?.token : (await request(app).post('/api/auth/login').send({ email, password })).body?.token
     if (!userToken) return
@@ -194,7 +194,7 @@ describe('Role requests: update pending (playerId/note)', () => {
   it('update returns 400 for invalid payloads (negative/non-integer playerId, too long note)', async () => {
     if (!AUTH_ON || !adminToken) return
     const email = `badpayload+${Date.now()}@example.com`
-    const password = 'admin123'
+    const password = '123456'
     const reg = await request(app).post('/api/auth/register').send({ email, password })
     const userToken = reg.status === 200 ? reg.body?.token : (await request(app).post('/api/auth/login').send({ email, password })).body?.token
     if (!userToken) return

@@ -5,7 +5,7 @@ import { prisma } from './tests/setup.js'
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
 
 describe('Registration and Approval Flow', () => {
-  const admin = { email: 'admin@example.com', password: 'admin123' }
+  const admin = { email: 'admin@sju.com', password: '123456' }
   let adminToken: string | null = null
 
   it('admin can login', async () => {
@@ -156,7 +156,7 @@ describe('Registration and Approval Flow', () => {
 
 describe('Password Reset Flow', () => {
   it('can request password reset', async () => {
-    const email = 'admin@example.com'
+    const email = 'admin@sju.com'
     const res = await request(app)
       .post('/api/auth/forgot-password')
       .send({ email })
@@ -175,7 +175,7 @@ describe('Password Reset Flow', () => {
     
     // Approve user (if auth is on)
     if (AUTH_ON) {
-      const admin = { email: 'admin@example.com', password: 'admin123' }
+      const admin = { email: 'admin@sju.com', password: '123456' }
       const loginRes = await request(app).post('/api/auth/login').send(admin)
       if (loginRes.status === 200) {
         const adminToken = loginRes.body.token

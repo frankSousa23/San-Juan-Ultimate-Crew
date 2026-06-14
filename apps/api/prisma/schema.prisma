@@ -71,7 +71,7 @@ enum AnnotationType {
   STRATEGY
   PERFORMANCE
   CALLAHAN
-  GREATEST
+  MVP
 }
 
 // Finance

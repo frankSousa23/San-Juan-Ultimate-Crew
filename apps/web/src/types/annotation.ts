@@ -12,7 +12,7 @@ export type AnnotationType =
   | 'STRATEGY'
   | 'PERFORMANCE'
   | 'CALLAHAN'
-  | 'GREATEST'
+  | 'MVP'
 
 export interface EventAnnotation {
   id: number

@@ -205,8 +205,8 @@ export const PlayerForm: React.FC<PlayerFormProps> = ({
       type: 'select',
       required: true,
       options: [
-        { value: 'HANDLER', label: 'Handler' },
-        { value: 'CUTTER', label: 'Cutter' },
+        { value: 'HANDLER', label: 'Manejador' },
+        { value: 'CUTTER', label: 'Cortador' },
         { value: 'HYBRID', label: 'Híbrido' },
       ],
     },

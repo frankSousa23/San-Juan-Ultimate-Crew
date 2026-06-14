@@ -225,7 +225,7 @@ async function main() {
 
   // 1. ADMIN: admin + player
   const adminUser = await db.user.upsert({
-    where: { email: 'admin@example.com' },
+    where: { email: 'admin@sju.com' },
     update: {
       passwordHash,
       status: 'APPROVED',
@@ -233,7 +233,7 @@ async function main() {
       playerId: players[0].id,
     },
     create: {
-      email: 'admin@example.com',
+      email: 'admin@sju.com',
       name: 'Administrador',
       passwordHash,
       status: 'APPROVED',
@@ -386,7 +386,7 @@ async function main() {
   console.log('- 6 jugadores creados y vinculados')
   console.log('- Base permissions and roles created')
   console.log('\n🔑 Credenciales de acceso (todos con password: password123):')
-  console.log('   1. Admin:      admin@example.com      (admin + player)')
+  console.log('   1. Admin:      admin@sju.com      (admin + player)')
   console.log('   2. Captain:    captain@example.com     (captain + player)')
   console.log('   3. Coach:      coach@example.com       (coach + player)')
   console.log('   4. Treasurer:  treasurer@example.com   (treasurer + player)')

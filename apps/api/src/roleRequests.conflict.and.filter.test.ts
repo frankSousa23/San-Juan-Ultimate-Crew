@@ -4,7 +4,7 @@ import { app } from './app.js'
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
 
 describe('Role requests: conflict on approve and status filtering', () => {
-  const admin = { email: 'admin@example.com', password: 'admin123' }
+  const admin = { email: 'admin@sju.com', password: '123456' }
   let adminToken: string | null = null
 
   it('login admin', async () => {
@@ -24,7 +24,7 @@ describe('Role requests: conflict on approve and status filtering', () => {
     if (!linked) return
     const playerId = linked.playerId as number
     const email = `conflict+${Date.now()}@example.com`
-    const password = 'admin123'
+    const password = '123456'
     const reg = await request(app).post('/api/auth/register').send({ email, password })
     const token = reg.status === 200 ? reg.body?.token : (await request(app).post('/api/auth/login').send({ email, password })).body?.token
     if (!token) return
@@ -50,7 +50,7 @@ describe('Role requests: conflict on approve and status filtering', () => {
   it('status filtering: pending then approved', async () => {
     if (!AUTH_ON || !adminToken) return
     const email = `filter+${Date.now()}@example.com`
-    const password = 'admin123'
+    const password = '123456'
     const reg = await request(app).post('/api/auth/register').send({ email, password })
     const token = reg.status === 200 ? reg.body?.token : (await request(app).post('/api/auth/login').send({ email, password })).body?.token
     if (!token) return
