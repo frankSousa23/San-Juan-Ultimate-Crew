@@ -91,7 +91,7 @@ const transactionQuerySchema = z.object({
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const parsed = transactionQuerySchema.safeParse(req.query)
   if (!parsed.success) {
-    return validationError(res, 'Invalid query parameters', parsed.error.errors)
+    return validationError(res, 'Invalid query parameters', parsed.error.issues)
   }
   
   const { from, to, type, accountId, categoryId, limit, offset } = parsed.data
@@ -176,7 +176,7 @@ const createSchema = z.object({
 router.post('/', requirePermission('finance:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsed = createSchema.safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid payload', parsed.error.errors)
+    return validationError(res, 'Invalid payload', parsed.error.issues)
   }
   
   const transaction = await prisma.transaction.create({ data: parsed.data })
@@ -196,7 +196,7 @@ const transactionIdSchema = z.object({
 router.put('/:id', requirePermission('finance:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = transactionIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   
@@ -207,7 +207,7 @@ router.put('/:id', requirePermission('finance:manage'), asyncHandler(async (req:
   
   const parsed = createSchema.partial().safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid payload', parsed.error.errors)
+    return validationError(res, 'Invalid payload', parsed.error.issues)
   }
   
   const transaction = await prisma.transaction.update({ where: { id }, data: parsed.data })
@@ -223,7 +223,7 @@ router.put('/:id', requirePermission('finance:manage'), asyncHandler(async (req:
 router.delete('/:id', requirePermission('finance:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = transactionIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   
@@ -292,7 +292,7 @@ const summaryQuerySchema = z.object({
 router.get('/summary/overall', asyncHandler(async (req: Request, res: Response) => {
   const parsed = summaryQuerySchema.safeParse(req.query)
   if (!parsed.success) {
-    return validationError(res, 'Invalid query parameters', parsed.error.errors)
+    return validationError(res, 'Invalid query parameters', parsed.error.issues)
   }
   
   const { from, to } = parsed.data

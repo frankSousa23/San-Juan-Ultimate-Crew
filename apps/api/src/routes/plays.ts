@@ -69,7 +69,7 @@ const playIdSchema = z.object({
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const parsed = querySchema.safeParse(req.query)
   if (!parsed.success) {
-    return validationError(res, 'Invalid query parameters', parsed.error.errors)
+    return validationError(res, 'Invalid query parameters', parsed.error.issues)
   }
   
   const { category, q } = parsed.data
@@ -146,7 +146,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
 router.get('/paged', asyncHandler(async (req: Request, res: Response) => {
   const parsed = listQuerySchema.safeParse(req.query)
   if (!parsed.success) {
-    return validationError(res, 'Invalid query parameters', parsed.error.errors)
+    return validationError(res, 'Invalid query parameters', parsed.error.issues)
   }
   
   const { q, category, limit, offset } = parsed.data
@@ -207,7 +207,7 @@ router.get('/paged', asyncHandler(async (req: Request, res: Response) => {
 router.post('/', requirePermission('plays:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsed = createSchema.safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid input', parsed.error.errors)
+    return validationError(res, 'Invalid input', parsed.error.issues)
   }
   
   const play = await prisma.play.create({ data: parsed.data })
@@ -264,13 +264,13 @@ router.post('/', requirePermission('plays:manage'), asyncHandler(async (req: Req
 router.put('/:id', requirePermission('plays:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = playIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   
   const parsed = updateSchema.safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid input', parsed.error.errors)
+    return validationError(res, 'Invalid input', parsed.error.issues)
   }
   
   try {
@@ -308,7 +308,7 @@ router.put('/:id', requirePermission('plays:manage'), asyncHandler(async (req: R
 router.delete('/:id', requirePermission('plays:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = playIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   

@@ -39,7 +39,7 @@ const getQuerySchema = z.object({
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const parsed = getQuerySchema.safeParse(req.query)
   if (!parsed.success) {
-    return validationError(res, 'Invalid query parameters', parsed.error.errors)
+    return validationError(res, 'Invalid query parameters', parsed.error.issues)
   }
   
   const { eventId } = parsed.data
@@ -97,7 +97,7 @@ const upsertSchema = z.object({
  */
 router.put('/', requirePermission('events:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsed = upsertSchema.safeParse(req.body)
-  if (!parsed.success) return validationError(res, 'Invalid input', parsed.error.errors)
+  if (!parsed.success) return validationError(res, 'Invalid input', parsed.error.issues)
   const { eventId, playerId, status, note } = parsed.data
   const record = await prisma.attendance.upsert({
     where: { playerId_eventId: { playerId, eventId } },
@@ -143,7 +143,7 @@ const deleteQuerySchema = z.object({
 router.delete('/', requirePermission('events:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsed = deleteQuerySchema.safeParse(req.query)
   if (!parsed.success) {
-    return validationError(res, 'Invalid query parameters', parsed.error.errors)
+    return validationError(res, 'Invalid query parameters', parsed.error.issues)
   }
   
   const { eventId, playerId } = parsed.data

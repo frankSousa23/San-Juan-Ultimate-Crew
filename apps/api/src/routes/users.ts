@@ -203,12 +203,12 @@ const userIdSchema = z.object({
 router.put('/:id/roles', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = userIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id: userId } = parsedId.data
   const parsed = setRolesSchema.safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid roles', parsed.error.errors)
+    return validationError(res, 'Invalid roles', parsed.error.issues)
   }
   const { roles } = parsed.data
   
@@ -315,12 +315,12 @@ const linkPlayerSchema = z.object({ playerId: z.coerce.number().int().positive()
 router.put('/:id/link-player', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = userIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id: userId } = parsedId.data
   const parsed = linkPlayerSchema.safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid playerId', parsed.error.errors)
+    return validationError(res, 'Invalid playerId', parsed.error.issues)
   }
   const { playerId } = parsed.data
   
@@ -373,7 +373,7 @@ const roleRequestsQuerySchema = z.object({
 router.get('/role-requests', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsed = roleRequestsQuerySchema.safeParse(req.query)
   if (!parsed.success) {
-    return validationError(res, 'Invalid query parameters', parsed.error.errors)
+    return validationError(res, 'Invalid query parameters', parsed.error.issues)
   }
   
   const { status } = parsed.data
@@ -455,7 +455,7 @@ router.post('/role-requests', requireAuth, asyncHandler(async (req: Request, res
   
   const parsed = createRoleRequestSchema.safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid payload', parsed.error.errors)
+    return validationError(res, 'Invalid payload', parsed.error.issues)
   }
   const { role, playerId, note, playerData } = parsed.data
   
@@ -560,12 +560,12 @@ const roleRequestIdSchema = z.object({
 router.put('/role-requests/:id', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = roleRequestIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   const parsed = updateRoleRequestSchema.safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid payload', parsed.error.errors)
+    return validationError(res, 'Invalid payload', parsed.error.issues)
   }
   const { playerId, note } = parsed.data
   
@@ -635,13 +635,13 @@ const approveRoleRequestSchema = z.object({
 router.post('/role-requests/:id/approve', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = roleRequestIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   
   const parsedBody = approveRoleRequestSchema.safeParse(req.body)
   if (!parsedBody.success) {
-    return validationError(res, 'Invalid payload', parsedBody.error.errors)
+    return validationError(res, 'Invalid payload', parsedBody.error.issues)
   }
   const { playerData } = parsedBody.data
   
@@ -772,7 +772,7 @@ router.post('/role-requests/:id/approve', requireRole(['admin']), asyncHandler(a
 router.post('/role-requests/:id/deny', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = roleRequestIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   const admin = (req as Request & { user?: { sub: string } }).user
@@ -857,13 +857,13 @@ const approveUserSchema = z.object({
 router.post('/:id/approve', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = userIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid user ID', parsedId.error.errors)
+    return validationError(res, 'Invalid user ID', parsedId.error.issues)
   }
   const { id } = parsedId.data
   
   const parsed = approveUserSchema.safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid payload', parsed.error.errors)
+    return validationError(res, 'Invalid payload', parsed.error.issues)
   }
   const { role = 'guest', playerId, playerData } = parsed.data
   
@@ -1019,7 +1019,7 @@ router.post('/:id/approve', requireRole(['admin']), asyncHandler(async (req: Req
 router.delete('/:id', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = userIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid user ID', parsedId.error.errors)
+    return validationError(res, 'Invalid user ID', parsedId.error.issues)
   }
   const { id } = parsedId.data
   
@@ -1068,7 +1068,7 @@ router.delete('/:id', requireRole(['admin']), asyncHandler(async (req: Request, 
 router.post('/:id/reject', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = userIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid user ID', parsedId.error.errors)
+    return validationError(res, 'Invalid user ID', parsedId.error.issues)
   }
   const { id } = parsedId.data
   
@@ -1160,7 +1160,7 @@ router.put('/me', requireAuth, asyncHandler(async (req: Request, res: Response) 
   
   const parsed = updateProfileSchema.safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid payload', parsed.error.errors)
+    return validationError(res, 'Invalid payload', parsed.error.issues)
   }
   const { name } = parsed.data
   
@@ -1248,7 +1248,7 @@ router.put('/me/password', requireAuth, asyncHandler(async (req: Request, res: R
   
   const parsed = changePasswordSchema.safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid payload', parsed.error.errors)
+    return validationError(res, 'Invalid payload', parsed.error.issues)
   }
   const { currentPassword, newPassword } = parsed.data
   
@@ -1386,7 +1386,7 @@ router.put('/me/player-role', requireAuth, asyncHandler(async (req: Request, res
   
   const parsed = togglePlayerRoleSchema.safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid payload', parsed.error.errors)
+    return validationError(res, 'Invalid payload', parsed.error.issues)
   }
   const { active } = parsed.data
   

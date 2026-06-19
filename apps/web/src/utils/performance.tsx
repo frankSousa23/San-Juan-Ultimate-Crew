@@ -1,3 +1,5 @@
+import React, { useRef, useEffect, useState } from 'react'
+
 // Utilidades de rendimiento
 export class PerformanceMonitor {
   private static instance: PerformanceMonitor
@@ -129,7 +131,7 @@ export const memoryOptimization = {
 // Optimización de red
 export const networkOptimization = {
   // Batch de requests
-  batchRequests: async <T>(
+  batchRequests: async <T,>(
     requests: (() => Promise<T>)[],
     batchSize: number = 5
   ): Promise<T[]> => {
@@ -145,7 +147,7 @@ export const networkOptimization = {
   },
 
   // Retry con backoff
-  retryWithBackoff: async <T>(
+  retryWithBackoff: async <T,>(
     fn: () => Promise<T>,
     maxRetries: number = 3,
     baseDelay: number = 1000

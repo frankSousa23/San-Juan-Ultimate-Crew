@@ -125,7 +125,7 @@ router.post('/', requirePermission('finance:manage'), asyncHandler(async (req: R
 router.delete('/:id', requirePermission('finance:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = categoryIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   

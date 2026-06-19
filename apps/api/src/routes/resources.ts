@@ -60,7 +60,7 @@ const pagedQuerySchema = z.object({
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const parsed = querySchema.safeParse(req.query)
   if (!parsed.success) {
-    return validationError(res, 'Invalid query parameters', parsed.error.errors)
+    return validationError(res, 'Invalid query parameters', parsed.error.issues)
   }
   
   const { q, category } = parsed.data
@@ -175,7 +175,7 @@ router.get('/categories', asyncHandler(async (_req: Request, res: Response) => {
 router.get('/paged', asyncHandler(async (req: Request, res: Response) => {
   const parsed = pagedQuerySchema.safeParse(req.query)
   if (!parsed.success) {
-    return validationError(res, 'Invalid query parameters', parsed.error.errors)
+    return validationError(res, 'Invalid query parameters', parsed.error.issues)
   }
   
   const { q, category, order, limit, offset } = parsed.data
@@ -242,7 +242,7 @@ router.get('/paged', asyncHandler(async (req: Request, res: Response) => {
 router.get('/export', asyncHandler(async (req: Request, res: Response) => {
   const parsed = pagedQuerySchema.omit({ limit: true, offset: true }).safeParse(req.query)
   if (!parsed.success) {
-    return validationError(res, 'Invalid query parameters', parsed.error.errors)
+    return validationError(res, 'Invalid query parameters', parsed.error.issues)
   }
   
   const { q, category, order } = parsed.data
@@ -403,7 +403,7 @@ router.post('/', requirePermission('resources:manage'), asyncHandler(async (req:
 router.put('/:id', requirePermission('resources:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = resourceIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   try {
@@ -424,7 +424,7 @@ router.put('/:id', requirePermission('resources:manage'), asyncHandler(async (re
 router.delete('/:id', requirePermission('resources:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = resourceIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   try {

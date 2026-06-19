@@ -100,7 +100,7 @@ const rivalIdSchema = z.object({
 router.get('/paged', asyncHandler(async (req: Request, res: Response) => {
   const parsed = listQuerySchema.safeParse(req.query)
   if (!parsed.success) {
-    return validationError(res, 'Invalid query parameters', parsed.error.errors)
+    return validationError(res, 'Invalid query parameters', parsed.error.issues)
   }
   
   const { q, limit, offset } = parsed.data
@@ -157,7 +157,7 @@ router.get('/paged', asyncHandler(async (req: Request, res: Response) => {
 router.post('/', requirePermission('rivals:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsed = createSchema.safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid input', parsed.error.errors)
+    return validationError(res, 'Invalid input', parsed.error.issues)
   }
   
   const data = parsed.data
@@ -215,13 +215,13 @@ router.post('/', requirePermission('rivals:manage'), asyncHandler(async (req: Re
 router.put('/:id', requirePermission('rivals:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = rivalIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   
   const parsed = updateSchema.safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid input', parsed.error.errors)
+    return validationError(res, 'Invalid input', parsed.error.issues)
   }
   
   const data = parsed.data
@@ -260,7 +260,7 @@ router.put('/:id', requirePermission('rivals:manage'), asyncHandler(async (req: 
 router.delete('/:id', requirePermission('rivals:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = rivalIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   
@@ -295,7 +295,7 @@ const updateRivalPlayerSchema = createRivalPlayerSchema.partial()
 router.get('/:id/players', asyncHandler(async (req: Request, res: Response) => {
   const parsedId = rivalIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   
@@ -317,13 +317,13 @@ router.get('/:id/players', asyncHandler(async (req: Request, res: Response) => {
 router.post('/:id/players', requirePermission('rivals:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = rivalIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   
   const parsed = createRivalPlayerSchema.safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid input', parsed.error.errors)
+    return validationError(res, 'Invalid input', parsed.error.issues)
   }
   
   // Verificar que el rival existe
@@ -352,7 +352,7 @@ router.post('/:id/players', requirePermission('rivals:manage'), asyncHandler(asy
 router.put('/:id/players/:playerId', requirePermission('rivals:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = rivalIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   
@@ -363,7 +363,7 @@ router.put('/:id/players/:playerId', requirePermission('rivals:manage'), asyncHa
   
   const parsed = updateRivalPlayerSchema.safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid input', parsed.error.errors)
+    return validationError(res, 'Invalid input', parsed.error.issues)
   }
   
   try {
@@ -390,7 +390,7 @@ router.put('/:id/players/:playerId', requirePermission('rivals:manage'), asyncHa
 router.delete('/:id/players/:playerId', requirePermission('rivals:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = rivalIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   
@@ -422,7 +422,7 @@ router.delete('/:id/players/:playerId', requirePermission('rivals:manage'), asyn
 router.get('/:id/stats', asyncHandler(async (req: Request, res: Response) => {
   const parsedId = rivalIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   

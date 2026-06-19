@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 
 // Servicio de optimización de estado
 export interface StateOptimizationOptions {
@@ -279,11 +279,11 @@ export function useStateOptimization() {
     return stateOptimization.subscribe(key, callback)
   }, [])
 
-  const createSelector = useCallback(<T>(key: string, selector: (state: any) => T) => {
+  const createSelector = useCallback(<T,>(key: string, selector: (state: any) => T) => {
     return stateOptimization.createSelector(key, selector)
   }, [])
 
-  const select = useCallback(<T>(key: string, state?: any) => {
+  const select = useCallback(<T,>(key: string, state?: any) => {
     return stateOptimization.select<T>(key, state)
   }, [])
 

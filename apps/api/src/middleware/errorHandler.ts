@@ -55,7 +55,7 @@ export function errorHandler(
   // Manejar errores de Zod
   else if (error instanceof z.ZodError) {
     appError = new AppValidationError('Validation failed', {
-      issues: error.errors.map(err => ({
+      issues: error.issues.map(err => ({
         field: err.path.join('.'),
         message: err.message,
         code: err.code,

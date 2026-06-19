@@ -63,7 +63,7 @@ const listMessagesQuerySchema = z.object({
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const parsed = listMessagesQuerySchema.safeParse(req.query)
   if (!parsed.success) {
-    return validationError(res, 'Invalid query parameters', parsed.error.errors)
+    return validationError(res, 'Invalid query parameters', parsed.error.issues)
   }
   
   const { channelId, limit, before, since } = parsed.data

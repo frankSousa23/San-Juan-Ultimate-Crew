@@ -116,7 +116,7 @@ const injuryIdSchema = z.object({
 router.get('/paged', asyncHandler(async (req: Request, res: Response) => {
   const parsed = listQuerySchema.safeParse(req.query)
   if (!parsed.success) {
-    return validationError(res, 'Invalid query parameters', parsed.error.errors)
+    return validationError(res, 'Invalid query parameters', parsed.error.issues)
   }
   
   const { playerId, severity, status, limit, offset } = parsed.data
@@ -184,7 +184,7 @@ router.get('/paged', asyncHandler(async (req: Request, res: Response) => {
 router.post('/', requirePermission('injuries:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsed = createSchema.safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid input', parsed.error.errors)
+    return validationError(res, 'Invalid input', parsed.error.issues)
   }
   
   const data = parsed.data
@@ -247,13 +247,13 @@ router.post('/', requirePermission('injuries:manage'), asyncHandler(async (req: 
 router.put('/:id', requirePermission('injuries:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = injuryIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   
   const parsed = updateSchema.safeParse(req.body)
   if (!parsed.success) {
-    return validationError(res, 'Invalid input', parsed.error.errors)
+    return validationError(res, 'Invalid input', parsed.error.issues)
   }
   
   const data = parsed.data
@@ -292,7 +292,7 @@ router.put('/:id', requirePermission('injuries:manage'), asyncHandler(async (req
 router.delete('/:id', requirePermission('injuries:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = injuryIdSchema.safeParse(req.params)
   if (!parsedId.success) {
-    return validationError(res, 'Invalid id', parsedId.error.errors)
+    return validationError(res, 'Invalid id', parsedId.error.issues)
   }
   const { id } = parsedId.data
   

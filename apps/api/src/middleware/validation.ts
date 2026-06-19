@@ -12,7 +12,7 @@ export function validateBody(schema: ZodSchema) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           error: 'Validation failed',
-          issues: error.errors.map(err => ({
+          issues: error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message,
             code: err.code
@@ -27,13 +27,13 @@ export function validateBody(schema: ZodSchema) {
 export function validateQuery(schema: ZodSchema) {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      req.query = schema.parse(req.query)
+      req.query = schema.parse(req.query) as any
       next()
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           error: 'Query validation failed',
-          issues: error.errors.map(err => ({
+          issues: error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message,
             code: err.code
@@ -48,13 +48,13 @@ export function validateQuery(schema: ZodSchema) {
 export function validateParams(schema: ZodSchema) {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      req.params = schema.parse(req.params)
+      req.params = schema.parse(req.params) as any
       next()
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           error: 'Parameter validation failed',
-          issues: error.errors.map(err => ({
+          issues: error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message,
             code: err.code

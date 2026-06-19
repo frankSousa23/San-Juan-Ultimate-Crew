@@ -123,7 +123,7 @@ const listQuerySchema = z.object({
  */
 router.get('/', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
   const parsed = listQuerySchema.safeParse(req.query)
-  if (!parsed.success) return validationError(res, 'Invalid query parameters', parsed.error.errors)
+  if (!parsed.success) return validationError(res, 'Invalid query parameters', parsed.error.issues)
   
   const { action, entityType, entityId, userId, from, to, limit, offset } = parsed.data
   const where: Prisma.AuditLogWhereInput = {}

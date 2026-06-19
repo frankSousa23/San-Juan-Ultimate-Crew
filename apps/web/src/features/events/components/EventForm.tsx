@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { CreateEventInput, EventItem, EventStatus, EventType, UpdateEventInput } from '../types/event'
+import { CreateEventInput, EventItem, EventStatus, EventType, UpdateEventInput } from '../../../types/event'
 
 type Mode = 'create' | 'edit'
 

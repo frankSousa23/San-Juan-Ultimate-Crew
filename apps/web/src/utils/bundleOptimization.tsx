@@ -1,3 +1,5 @@
+import React, { useState, useEffect, useCallback } from 'react';
+
 // Sistema de optimización de bundle y code splitting
 export interface BundleChunk {
   id: string

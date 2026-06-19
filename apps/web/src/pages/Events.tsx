@@ -6,12 +6,14 @@ import LiveAnnotationsTable from '../components/LiveAnnotationsTable'
 import TournamentBracket from '../components/TournamentBracket'
 import { EventItem, EventType, EventStatus } from '../types/event'
 import ConfirmModal from '../components/ConfirmModal'
-import { useToast } from '../hooks/useToast'
-import { useApi } from '../hooks/useApi'
 import { useAuth } from '../contexts/AuthContext'
 import { AttendanceRecord } from '../types/attendance'
 import { Player } from '../types/player'
 import { EventAnnotation, AnnotationType, CreateAnnotationInput } from '../types/annotation'
+import { useEvents } from '../features/events/hooks/useEvents'
+import { useToast } from '../hooks/useToast'
+import { AnnotationForm } from '../features/events/components/AnnotationForm'
+import { EventModals } from '../features/events/components/EventModals'
 
 const typeLabel: Record<EventType, string> = {
   TRAINING: 'Entrenamiento',
@@ -34,128 +36,19 @@ export default function Events() {
   const toasts = useToast()
   const navigate = useNavigate()
   const { hasPermission } = useAuth()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const [events, setEvents] = useState<EventItem[]>([])
-  const [tab, setTab] = useState<'events' | 'calendar' | 'tournaments' | 'stats'>('events')
-  const [typeFilter, setTypeFilter] = useState<'all' | EventType>('all')
-  const [statusFilter, setStatusFilter] = useState<'all' | EventStatus>('all')
-  const [q, setQ] = useState('')
-  const [limit, setLimit] = useState<number>(20)
-  const [page, setPage] = useState<number>(1)
-  const [createOpen, setCreateOpen] = useState(false)
-  const [editTarget, setEditTarget] = useState<EventItem | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [attEvent, setAttEvent] = useState<EventItem | null>(null)
-  const [annotEvent, setAnnotEvent] = useState<EventItem | null>(null)
-  const [selectedDateEvents, setSelectedDateEvents] = useState<{ date: Date; events: EventItem[] } | null>(null)
-  const [confirmState, setConfirmState] = useState<{ eventId?: number; title?: string; message: string; onYes: () => Promise<void> } | null>(null)
-
-  // API hooks
-  const { execute: loadEvents, loading } = useApi(eventsApi.list, {
-    onSuccess: (data) => setEvents(data),
-    showErrorToast: true
-  })
-
-  const { execute: createEvent } = useApi(eventsApi.create, {
-    onSuccess: (data) => {
-      setEvents(prev => [...prev, data].sort((a,b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()))
-      setCreateOpen(false)
-      toasts.success('Evento creado exitosamente')
-    },
-    showErrorToast: true
-  })
-
-  const { execute: updateEvent } = useApi(eventsApi.update, {
-    onSuccess: (data) => {
-      setEvents(prev => prev.map(ev => ev.id === editTarget?.id ? data : ev).sort((a,b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()))
-      setEditTarget(null)
-      toasts.success('Evento actualizado exitosamente')
-    },
-    showErrorToast: true
-  })
-
-  const { execute: deleteEvent } = useApi(eventsApi.remove, {
-    onSuccess: () => {
-      toasts.success('Evento eliminado exitosamente')
-      loadEvents()
-    },
-    showErrorToast: true
-  })
-
-  useEffect(() => {
-    let mounted = true
-    const load = async () => {
-      try {
-        await loadEvents()
-      } catch (err: any) {
-        if (mounted) {
-          setError(err?.response?.data?.error || 'Error al cargar eventos')
-          console.error('Error loading events:', err)
-        }
-      }
-    }
-    load()
-    return () => {
-      mounted = false
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-  // Sync state from URL
-  useEffect(() => {
-    const t = searchParams.get('tab')
-    const type = searchParams.get('type')
-    const status = searchParams.get('status')
-    const sq = searchParams.get('q') || ''
-    const slimit = parseInt(searchParams.get('limit') || '')
-    const spage = parseInt(searchParams.get('page') || '')
-    if (t && ['events','calendar','tournaments','stats'].includes(t) && tab !== t) {
-      setTab(t as 'events' | 'calendar' | 'tournaments' | 'stats')
-    }
-    if (type && (['TOURNAMENT','TRAINING','SOCIAL','WORKSHOP','FULL_DAY_OPEN','FULL_DAY_MIXTO','AMISTOSO'].includes(type) || type === 'all') && typeFilter !== type) {
-      setTypeFilter(type as 'all' | EventType)
-    }
-    if (status && (['UPCOMING','ONGOING','COMPLETED','CANCELLED'].includes(status) || status === 'all') && statusFilter !== status) {
-      setStatusFilter(status as 'all' | EventStatus)
-    }
-    if (sq !== q) setQ(sq)
-    if (!Number.isNaN(slimit) && slimit >= 5 && slimit <= 200 && slimit !== limit) setLimit(slimit)
-    if (!Number.isNaN(spage) && spage >= 1 && spage !== page) setPage(spage)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams])
-
-  // Seed limit from localStorage on first load if URL has no limit
-  useEffect(() => {
-    if (!searchParams.get('limit')) {
-      const saved = localStorage.getItem('events.limit')
-      if (saved) {
-        const n = parseInt(saved)
-        if (!Number.isNaN(n) && n >= 5 && n <= 200) {
-          const params = new URLSearchParams(searchParams)
-          params.set('limit', String(n))
-          params.set('page', '1')
-          setSearchParams(params)
-        }
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const filtered = useMemo(() => {
-    const text = q.trim().toLowerCase()
-    return events.filter(e =>
-      (typeFilter === 'all' || e.type === typeFilter) &&
-      (statusFilter === 'all' || e.status === statusFilter) &&
-      (text === '' || e.title.toLowerCase().includes(text))
-    )
-  }, [events, typeFilter, statusFilter, q])
-
-  const total = filtered.length
-  const totalPages = Math.max(1, Math.ceil(total / limit))
-  const currentPage = Math.min(page, totalPages)
-  const paged = useMemo(() => {
-    const start = (currentPage - 1) * limit
-    return filtered.slice(start, start + limit)
-  }, [filtered, currentPage, limit])
+  const { state, actions } = useEvents()
+  const {
+    events, tab, typeFilter, statusFilter, q, limit, page,
+    createOpen, editTarget, error, attEvent, annotEvent,
+    selectedDateEvents, confirmState, loading, filtered, paged,
+    totalPages, currentPage, searchParams
+  } = state
+  const {
+    setTab, setTypeFilter, setStatusFilter, setQ, setLimit, setPage,
+    setCreateOpen, setEditTarget, setError, setAttEvent, setAnnotEvent,
+    setSelectedDateEvents, setConfirmState, setSearchParams,
+    loadEvents, createEvent, updateEvent, deleteEvent
+  } = actions
 
   // Show loading state on initial load
   if (loading && events.length === 0 && !error) {
@@ -447,40 +340,14 @@ export default function Events() {
       />
     )}
   {/* global toasts via ToastProvider */}
-      {createOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setCreateOpen(false)}>
-          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-amber-600 to-rose-600 text-white p-4">
-              <div className="text-lg font-bold">Crear Evento</div>
-            </div>
-            <div className="p-4">
-              <EventForm
-                mode="create"
-                initial={null}
-                onCancel={() => setCreateOpen(false)}
-                onSubmit={(data) => createEvent(data)}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-      {editTarget && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setEditTarget(null)}>
-          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-indigo-600 to-amber-600 text-white p-4">
-              <div className="text-lg font-bold">Editar Evento</div>
-            </div>
-            <div className="p-4">
-              <EventForm
-                mode="edit"
-                initial={editTarget}
-                onCancel={() => setEditTarget(null)}
-                onSubmit={(data) => editTarget && updateEvent(editTarget.id, data)}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      <EventModals 
+        createOpen={createOpen}
+        editTarget={editTarget}
+        setCreateOpen={setCreateOpen}
+        setEditTarget={setEditTarget}
+        createEvent={createEvent}
+        updateEvent={updateEvent}
+      />
       {attEvent && (
         <AttendanceModal eventItem={attEvent} onClose={() => setAttEvent(null)} />
       )}
@@ -1042,142 +909,3 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
   )
 }
 
-function AnnotationForm({
-  eventId,
-  players,
-  isFullDay,
-  initial,
-  onSubmit,
-  onCancel,
-}: {
-  eventId: number
-  players: Player[]
-  isFullDay: boolean
-  initial?: EventAnnotation | null
-  onSubmit: (data: CreateAnnotationInput) => void
-  onCancel: () => void
-}) {
-  const [playerId, setPlayerId] = useState<number>(initial?.playerId || players[0]?.id || 0)
-  const [type, setType] = useState<AnnotationType>(initial?.type || 'GENERAL')
-  const [note, setNote] = useState<string>(initial?.note || '')
-  const [timestamp, setTimestamp] = useState<string>(
-    initial?.timestamp 
-      ? new Date(initial.timestamp).toISOString().slice(0, 16)
-      : new Date().toISOString().slice(0, 16)
-  )
-  const [category, setCategory] = useState<string>(initial?.category || '')
-
-  const annotationTypes: AnnotationType[] = [
-    'GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER', 'DROP', 'CALLAHAN', 'MVP', 'FOUL',
-    'TIMEOUT', 'SUBSTITUTION', 'INJURY', 'GENERAL', 'STRATEGY', 'PERFORMANCE'
-  ]
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit({
-      playerId,
-      type,
-      note: note.trim() || undefined,
-      timestamp: new Date(timestamp).toISOString(),
-      category: isFullDay && category ? category : undefined,
-    })
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
-      <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">{initial ? 'Editar' : 'Nueva'} Anotación</h4>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-        <div>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Jugador</label>
-          <select
-            value={playerId}
-            onChange={(e) => setPlayerId(Number(e.target.value))}
-            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg text-sm"
-            required
-          >
-            {players.map(p => (
-              <option key={p.id} value={p.id}>#{p.number} {p.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Tipo</label>
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value as AnnotationType)}
-            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg text-sm"
-            required
-          >
-            {annotationTypes.map(t => (
-              <option key={t} value={t}>
-                {t === 'GOAL' ? 'GOL' :
-                 t === 'ASSIST' ? 'AST' :
-                 t === 'DEFENSE' ? 'INT' :
-                 t === 'TURNOVER' ? 'TURN' :
-                 t === 'DROP' ? 'DROP' :
-                 t === 'CALLAHAN' ? 'CALL' :
-                 t === 'MVP' ? 'MVP' :
-                 t === 'FOUL' ? 'Falta' :
-                 t === 'TIMEOUT' ? 'Tiempo muerto' :
-                 t === 'SUBSTITUTION' ? 'Sustitución' :
-                 t === 'INJURY' ? 'Lesión' :
-                 t === 'GENERAL' ? 'General' :
-                 t === 'STRATEGY' ? 'Estrategia' :
-                 t === 'PERFORMANCE' ? 'Rendimiento' : t}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Momento</label>
-          <input
-            type="datetime-local"
-            value={timestamp}
-            onChange={(e) => setTimestamp(e.target.value)}
-            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg text-sm"
-            required
-          />
-        </div>
-        {isFullDay && (
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Categoría</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg text-sm"
-            >
-              <option value="">Sin categoría</option>
-              <option value="OPEN">Open</option>
-              <option value="MIXTO">Mixto</option>
-            </select>
-          </div>
-        )}
-        <div className={isFullDay ? 'md:col-span-2' : ''}>
-          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Nota/Descripción</label>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border rounded-lg text-sm"
-            rows={3}
-            placeholder="Descripción detallada de la anotación..."
-          />
-        </div>
-      </div>
-      <div className="flex flex-col sm:flex-row justify-end gap-2 mt-3 sm:mt-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="w-full sm:w-auto px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 transition-colors text-sm"
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          className="w-full sm:w-auto px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700 transition-colors text-sm"
-        >
-          {initial ? 'Actualizar' : 'Crear'}
-        </button>
-      </div>
-    </form>
-  )
-}

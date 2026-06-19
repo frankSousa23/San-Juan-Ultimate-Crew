@@ -361,7 +361,7 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
       } 
     })
     
-    let playerId = null
+    let playerId: number | null = null
     // If willBePlayer is true and playerData is provided, create the player
     if (willBePlayer && playerData) {
       const player = await tx.player.create({
