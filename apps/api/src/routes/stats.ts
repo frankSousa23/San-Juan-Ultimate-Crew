@@ -535,4 +535,57 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   }
 }))
 
+router.get('/tournament/:id', asyncHandler(async (req: Request, res: Response) => {
+  const tournamentId = Number(req.params.id);
+  if (isNaN(tournamentId)) return unauthorized(res, 'Invalid tournament ID');
+
+  const matches = await prisma.event.findMany({
+    where: { parentId: tournamentId },
+    select: { id: true }
+  });
+  
+  const matchIds = matches.map(m => m.id);
+  if (matchIds.length === 0) {
+    return success(res, { goals: 0, assists: 0, defenses: 0, turnovers: 0, matchesPlayed: 0, playerStats: [] });
+  }
+
+  // Get aggregated stats
+  const stats = await prisma.playerMatchStats.groupBy({
+    by: ['playerId'],
+    where: { eventId: { in: matchIds } },
+    _sum: { goals: true, assists: true, defenses: true, turnovers: true, drops: true }
+  });
+
+  const players = await prisma.player.findMany({
+    where: { id: { in: stats.map(s => s.playerId) } },
+    select: { id: true, name: true, number: true }
+  });
+
+  const aggregated = stats.map(s => {
+    const p = players.find(player => player.id === s.playerId);
+    return {
+      playerId: s.playerId,
+      playerName: p?.name || 'Desconocido',
+      playerNumber: p?.number || 0,
+      goals: s._sum.goals || 0,
+      assists: s._sum.assists || 0,
+      defenses: s._sum.defenses || 0,
+      turnovers: s._sum.turnovers || 0,
+      drops: s._sum.drops || 0,
+    };
+  }).sort((a, b) => (b.goals + b.assists) - (a.goals + a.assists));
+
+  const totalGoals = aggregated.reduce((acc, curr) => acc + curr.goals, 0);
+  const totalAssists = aggregated.reduce((acc, curr) => acc + curr.assists, 0);
+  const totalDefenses = aggregated.reduce((acc, curr) => acc + curr.defenses, 0);
+
+  return success(res, {
+    matchesPlayed: matchIds.length,
+    goals: totalGoals,
+    assists: totalAssists,
+    defenses: totalDefenses,
+    playerStats: aggregated
+  });
+}));
+
 export default router

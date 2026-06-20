@@ -32,13 +32,13 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   if (page && !isNaN(page)) {
     const skip = (page - 1) * limit;
     const [events, total] = await Promise.all([
-      prisma.event.findMany({ orderBy: { startsAt: 'asc' }, skip, take: limit }),
+      prisma.event.findMany({ orderBy: { startsAt: 'desc' }, skip, take: limit, include: { children: true } }),
       prisma.event.count()
     ]);
     return success(res, { data: events, total, page, totalPages: Math.ceil(total / limit) });
   }
 
-  const events = await prisma.event.findMany({ orderBy: { startsAt: 'asc' } });
+  const events = await prisma.event.findMany({ orderBy: { startsAt: 'desc' }, include: { children: true } });
   return success(res, events);
 }));
 

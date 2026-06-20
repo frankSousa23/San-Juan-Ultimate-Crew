@@ -43,6 +43,7 @@ export default function Events() {
     selectedDateEvents, confirmState, loading, filtered, paged,
     totalPages, currentPage, searchParams
   } = state
+  const [expandedTournaments, setExpandedTournaments] = useState<number[]>([])
   const {
     setTab, setTypeFilter, setStatusFilter, setQ, setLimit, setPage,
     setCreateOpen, setEditTarget, setError, setAttEvent, setAnnotEvent,
@@ -203,7 +204,8 @@ export default function Events() {
 
               <div className="space-y-3">
                 {paged.map(e => (
-                  <div key={e.id} className="bg-white border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <React.Fragment key={e.id}>
+                  <div className="bg-white border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-gray-800 truncate">{e.title}</div>
                       <div className="text-xs text-gray-500">{typeLabel[e.type]}</div>
@@ -241,6 +243,39 @@ export default function Events() {
                       )}
                     </div>
                   </div>
+                  {e.type === 'TOURNAMENT' && e.children && e.children.length > 0 && (
+                    <div className="pl-4 border-l-2 border-indigo-200 mt-2 space-y-2">
+                      <button
+                        onClick={() => setExpandedTournaments(prev => prev.includes(e.id) ? prev.filter(id => id !== e.id) : [...prev, e.id])}
+                        className="text-indigo-600 text-sm font-semibold hover:underline"
+                      >
+                        {expandedTournaments.includes(e.id) ? `▼ Ocultar ${e.children.length} Partidos` : `▶ Ver ${e.children.length} Partidos`}
+                      </button>
+                      {expandedTournaments.includes(e.id) && (
+                        <div className="space-y-2 mt-2">
+                          {e.children.map(child => (
+                            <div key={child.id} className="bg-gray-50 border rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 ml-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-gray-800 text-sm truncate">{child.title}</div>
+                                <div className="text-xs text-gray-500">{typeLabel[child.type] || child.type}</div>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${statusBadge[child.status]}`}>{child.status}</span>
+                                <div className="text-xs text-gray-600 whitespace-nowrap">{child.startsAt ? new Date(child.startsAt).toLocaleString() : ''}</div>
+                                {hasPermission('events:manage') && (
+                                  <>
+                                    <button className="text-teal-700 hover:underline text-xs whitespace-nowrap" onClick={() => setAttEvent(child as any)}>Asistencia</button>
+                                    <button className="text-purple-700 hover:underline text-xs whitespace-nowrap" onClick={() => setAnnotEvent(child as any)}>Anotaciones</button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  </React.Fragment>
                 ))}
                 {loading && <div className="text-gray-600">Cargando...</div>}
                 {!loading && filtered.length === 0 && <div className="text-gray-600">No hay eventos para los filtros seleccionados.</div>}

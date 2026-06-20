@@ -1,21 +1,31 @@
+import * as dotenv from 'dotenv'
+dotenv.config()
 import { PrismaClient, PlayerPosition, PlayerStatus, EventType, EventStatus, InjurySeverity, InjuryStatus, PlayCategory, AccountType, TransactionType, AnnotationType } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { faker } from '@faker-js/faker'
 
-const prisma = new PrismaClient()
+import { prisma } from '../src/lib/prisma.js'
 
-// Constantes de cantidad (Optimizadas para pruebas locales abundantes pero rápidas)
-const NUM_PLAYERS = 150
-const NUM_USERS = 160
-const NUM_EVENTS = 300
-const NUM_CHANNELS = 20
-const NUM_MESSAGES_PER_CHANNEL = 30
-const NUM_RIVALS = 25
-const NUM_TRANSACTIONS = 500
+// Constantes de cantidad multiplicadas
+const NUM_PLAYERS = 300
+const NUM_USERS = 320
+const NUM_TOURNAMENTS = 50
+const NUM_REGULAR_EVENTS = 600
+const NUM_CHANNELS = 50
+const NUM_MESSAGES_PER_CHANNEL = 100
+const NUM_RIVALS = 50
+const NUM_TRANSACTIONS = 1000
+const NUM_INJURIES = 600
+const NUM_RESOURCES = 100
+const NUM_PLAYS = 100
+const NUM_NEWS = 100
 
 async function main() {
-  console.log('🌱 Iniciando seeder MASIVO...')
-  const db: any = prisma;
+  if (process.env.NODE_ENV === 'production') {
+    console.log('Ambiente de producción detectado. El seeder masivo no se ejecutará aquí.')
+    return
+  }
+  console.log('🌱 Iniciando seeder MASIVO REESTRUCTURADO...')
   
   console.log('🧹 Vaciando la base de datos...')
   await prisma.spiritScore.deleteMany()
@@ -47,7 +57,7 @@ async function main() {
   await prisma.event.deleteMany()
   console.log('✨ Base de datos vaciada.')
   
-  // 1. Roles y Permisos (Igual que el seed original para mantener coherencia)
+  // 1. Roles y Permisos
   const managePerms = ['finance:manage', 'resources:manage', 'roster:manage', 'events:manage', 'communications:manage', 'injuries:manage', 'rivals:manage', 'plays:manage']
   const viewPerms = ['roster:view', 'events:view', 'injuries:view', 'rivals:view', 'plays:view', 'resources:view', 'finance:view', 'statistics:view']
   const allPermNames = [...managePerms, ...viewPerms]
@@ -65,7 +75,6 @@ async function main() {
     skipDuplicates: true
   })
 
-  // Obtener roles y permisos para asignaciones rápidas
   const dbRoles = await prisma.role.findMany()
   const roleMap = Object.fromEntries(dbRoles.map(r => [r.name, r.id]))
   const dbPerms = await prisma.permission.findMany()
@@ -93,28 +102,16 @@ async function main() {
     update: { passwordHash, status: 'APPROVED' },
     create: { email: 'admin@sju.com', name: 'Administrador Masivo', passwordHash, status: 'APPROVED' }
   })
-
   const adminUser = await prisma.user.findUnique({ where: { email: 'admin@sju.com' } })
-  if (adminUser) {
-    await prisma.userRole.upsert({
-      where: { userId_roleId: { userId: adminUser.id, roleId: roleMap['admin'] } },
-      update: {}, create: { userId: adminUser.id, roleId: roleMap['admin'] }
-    })
-  }
+  if (adminUser) await prisma.userRole.upsert({ where: { userId_roleId: { userId: adminUser.id, roleId: roleMap['admin'] } }, update: {}, create: { userId: adminUser.id, roleId: roleMap['admin'] } })
 
-  // Create explicit player and guest users for tests
   await prisma.user.upsert({
     where: { email: 'player@example.com' },
     update: { passwordHash, status: 'APPROVED' },
     create: { email: 'player@example.com', name: 'Test Player', passwordHash, status: 'APPROVED' }
   })
   const playerUser = await prisma.user.findUnique({ where: { email: 'player@example.com' } })
-  if (playerUser) {
-    await prisma.userRole.upsert({
-      where: { userId_roleId: { userId: playerUser.id, roleId: roleMap['player'] } },
-      update: {}, create: { userId: playerUser.id, roleId: roleMap['player'] }
-    })
-  }
+  if (playerUser) await prisma.userRole.upsert({ where: { userId_roleId: { userId: playerUser.id, roleId: roleMap['player'] } }, update: {}, create: { userId: playerUser.id, roleId: roleMap['player'] } })
 
   await prisma.user.upsert({
     where: { email: 'guest@example.com' },
@@ -122,12 +119,7 @@ async function main() {
     create: { email: 'guest@example.com', name: 'Test Guest', passwordHash, status: 'APPROVED' }
   })
   const guestUser = await prisma.user.findUnique({ where: { email: 'guest@example.com' } })
-  if (guestUser) {
-    await prisma.userRole.upsert({
-      where: { userId_roleId: { userId: guestUser.id, roleId: roleMap['guest'] } },
-      update: {}, create: { userId: guestUser.id, roleId: roleMap['guest'] }
-    })
-  }
+  if (guestUser) await prisma.userRole.upsert({ where: { userId_roleId: { userId: guestUser.id, roleId: roleMap['guest'] } }, update: {}, create: { userId: guestUser.id, roleId: roleMap['guest'] } })
 
   // 3. Jugadores Masivos
   console.log(`🏃 Creando ${NUM_PLAYERS} jugadores...`)
@@ -146,13 +138,13 @@ async function main() {
   await prisma.player.createMany({ data: playersData, skipDuplicates: true })
   const players = await prisma.player.findMany()
 
-  // 4. Usuarios Masivos (asignados a jugadores)
+  // 4. Usuarios Masivos
   console.log(`🧑‍💻 Creando ${NUM_USERS} usuarios...`)
   const usersData = Array.from({ length: NUM_USERS }).map((_, i) => ({
-    email: faker.internet.email() + i, // Evitar colisiones
+    email: faker.internet.email() + i, 
     name: faker.person.fullName(),
     passwordHash,
-    status: 'APPROVED',
+    status: 'APPROVED' as any,
     playerId: i < players.length ? players[i].id : null,
   }))
   await prisma.user.createMany({ data: usersData, skipDuplicates: true })
@@ -165,117 +157,68 @@ async function main() {
   }))
   await prisma.userRole.createMany({ data: userRolesData, skipDuplicates: true })
 
-  // 5. Eventos Masivos
-  console.log(`📅 Creando ${NUM_EVENTS} eventos...`)
-  const eventsData = Array.from({ length: NUM_EVENTS }).map(() => {
+  // 5. Creación Jerárquica de Eventos y Torneos
+  console.log(`🏆 Creando ${NUM_TOURNAMENTS} Torneos y Partidos hijos...`)
+  
+  const tournamentList = []
+  for (let i = 0; i < NUM_TOURNAMENTS; i++) {
+    const startsAt = faker.date.between({ from: '2025-01-01', to: '2026-12-31' })
+    const status = startsAt < new Date() ? EventStatus.COMPLETED : faker.helpers.arrayElement([EventStatus.UPCOMING, EventStatus.CANCELLED])
+    
+    // Create Tournament
+    const tournament = await prisma.event.create({
+      data: {
+        title: `Torneo ${faker.location.city()}`,
+        description: faker.lorem.sentence(),
+        type: EventType.TOURNAMENT,
+        status,
+        location: faker.location.streetAddress(),
+        startsAt,
+        endsAt: status === EventStatus.COMPLETED ? new Date(startsAt.getTime() + 1000 * 60 * 60 * 48) : null,
+      }
+    })
+    tournamentList.push(tournament)
+
+    // Create Matches for Tournament
+    if (status === EventStatus.COMPLETED) {
+      const numMatches = faker.number.int({ min: 4, max: 8 })
+      const matchData = Array.from({ length: numMatches }).map((_, idx) => ({
+        title: `Partido ${idx + 1} - ${tournament.title}`,
+        type: EventType.FULL_DAY_OPEN, // Or AMISTOSO
+        status: EventStatus.COMPLETED,
+        location: tournament.location,
+        startsAt: new Date(startsAt.getTime() + 1000 * 60 * 60 * idx * 2), // Match every 2 hours
+        endsAt: new Date(startsAt.getTime() + 1000 * 60 * 60 * (idx * 2 + 1)),
+        parentId: tournament.id
+      }))
+      await prisma.event.createMany({ data: matchData })
+    }
+  }
+
+  console.log(`📅 Creando ${NUM_REGULAR_EVENTS} eventos regulares...`)
+  const chunkSize = 500
+  const regularEventsData = Array.from({ length: NUM_REGULAR_EVENTS }).map(() => {
     const startsAt = faker.date.between({ from: '2025-01-01', to: '2026-12-31' })
     const status = startsAt < new Date() ? EventStatus.COMPLETED : faker.helpers.arrayElement([EventStatus.UPCOMING, EventStatus.CANCELLED])
     return {
       title: faker.lorem.words(3),
-      description: faker.lorem.sentence(),
-      type: faker.helpers.arrayElement(Object.values(EventType)),
+      type: faker.helpers.arrayElement([EventType.TRAINING, EventType.SOCIAL, EventType.WORKSHOP, EventType.AMISTOSO]),
       status,
       location: faker.location.streetAddress(),
       startsAt,
       endsAt: status === EventStatus.COMPLETED ? new Date(startsAt.getTime() + 1000 * 60 * 60 * 2) : null,
-      windSpeed: faker.number.int({ min: 0, max: 35 }),
-      windDirection: faker.helpers.arrayElement(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'])
     }
   })
-  // Insertar en chunks
-  const chunkSize = 500
-  for (let i = 0; i < eventsData.length; i += chunkSize) {
-    await prisma.event.createMany({ data: eventsData.slice(i, i + chunkSize) })
-  }
-  const events = await prisma.event.findMany()
-
-  // 5.5. Jerarquía de Torneos (Padres e Hijos)
-  console.log(`🏆 Estableciendo jerarquía de torneos...`)
-  const tournaments = events.filter(e => e.type === EventType.TOURNAMENT).slice(0, 30)
-  const matches = events.filter(e => e.type !== EventType.TOURNAMENT && e.status === EventStatus.COMPLETED)
-  let matchIndex = 0
   
-  const updatePromises = []
-  for (const tournament of tournaments) {
-    const numMatches = faker.number.int({ min: 3, max: 6 })
-    for (let i = 0; i < numMatches; i++) {
-      if (matchIndex < matches.length) {
-        updatePromises.push(
-          prisma.event.update({
-            where: { id: matches[matchIndex].id },
-            data: { parentId: tournament.id }
-          })
-        )
-        matchIndex++
-      }
-    }
-  }
-  await Promise.all(updatePromises)
-
-  // 6. Participantes y Asistencia
-  console.log(`✅ Creando participantes y asistencia...`)
-  // Para no explotar memoria, seleccionamos un subset de eventos
-  const eventsSub = events.slice(0, 200) 
-  const participantData = []
-  const attendanceData = []
-
-  for (const event of eventsSub) {
-    // 10 a 30 jugadores por evento
-    const shuffledPlayers = faker.helpers.shuffle(players).slice(0, faker.number.int({ min: 10, max: 30 }))
-    for (const p of shuffledPlayers) {
-      participantData.push({
-        eventId: event.id,
-        playerId: p.id,
-        role: 'player',
-        status: faker.helpers.arrayElement(['confirmed', 'tentative', 'declined']),
-        lineType: faker.helpers.arrayElement(['O-Line', 'D-Line', 'Flex', null])
-      })
-      if (event.status === EventStatus.COMPLETED) {
-        attendanceData.push({
-          eventId: event.id,
-          playerId: p.id,
-          status: faker.helpers.weightedArrayElement([{weight:80, value:'present'}, {weight:10, value:'absent'}, {weight:10, value:'late'}])
-        })
-      }
-    }
+  for (let i = 0; i < regularEventsData.length; i += chunkSize) {
+    await prisma.event.createMany({ data: regularEventsData.slice(i, i + chunkSize) })
   }
 
-  for (let i = 0; i < participantData.length; i += chunkSize) {
-    await prisma.eventParticipant.createMany({ data: participantData.slice(i, i + chunkSize), skipDuplicates: true })
-  }
-  for (let i = 0; i < attendanceData.length; i += chunkSize) {
-    await prisma.attendance.createMany({ data: attendanceData.slice(i, i + chunkSize), skipDuplicates: true })
-  }
+  const allEvents = await prisma.event.findMany()
+  const completedMatches = allEvents.filter(e => e.status === EventStatus.COMPLETED && e.parentId !== null)
 
-  // 6.5. Espíritu de Juego (SOTG)
-  console.log(`🕊️ Evaluando Espíritu de Juego (SOTG)...`)
-  const completedMatches = eventsSub.filter(e => e.status === EventStatus.COMPLETED)
-  const spiritData = completedMatches.map(match => ({
-    eventId: match.id,
-    evaluatorTeamId: null, // Asumimos que es nuestra evaluación al otro equipo
-    rulesKnowledge: faker.number.int({ min: 1, max: 4 }),
-    foulsAndContact: faker.number.int({ min: 1, max: 4 }),
-    fairMindedness: faker.number.int({ min: 1, max: 4 }),
-    positiveAttitude: faker.number.int({ min: 1, max: 4 }),
-    communication: faker.number.int({ min: 1, max: 4 }),
-    comment: faker.datatype.boolean() ? faker.lorem.sentence() : null
-  }))
-  await prisma.spiritScore.createMany({ data: spiritData })
-
-  // 7. Lesiones
-  console.log(`🏥 Creando lesiones...`)
-  const injuriesData = Array.from({ length: 300 }).map(() => ({
-    playerId: faker.helpers.arrayElement(players).id,
-    type: faker.lorem.words(2),
-    severity: faker.helpers.arrayElement(Object.values(InjurySeverity)),
-    status: faker.helpers.arrayElement(Object.values(InjuryStatus)),
-    startDate: faker.date.past(),
-    description: faker.lorem.sentence()
-  }))
-  await prisma.injury.createMany({ data: injuriesData })
-
-  // 8. Rivalidades y Jugadores Rivales
-  console.log(`🛡️ Creando rivales y jugadores rivales...`)
+  // 6. Rivales
+  console.log(`🛡️ Creando ${NUM_RIVALS} rivales...`)
   const rivalData = Array.from({ length: NUM_RIVALS }).map(() => ({
     name: faker.company.name() + " Ultimate",
     strengths: faker.lorem.words(3),
@@ -298,140 +241,84 @@ async function main() {
   for (let i = 0; i < rivalPlayersData.length; i += chunkSize) {
     await prisma.rivalPlayer.createMany({ data: rivalPlayersData.slice(i, i + chunkSize), skipDuplicates: true })
   }
+  const rivalPlayers = await prisma.rivalPlayer.findMany()
 
-  // 9. Canales y Mensajes
-  console.log(`💬 Creando canales y mensajes...`)
-  const channelData = Array.from({ length: NUM_CHANNELS }).map(() => ({
-    name: faker.lorem.words(2),
-  }))
-  await prisma.channel.createMany({ data: channelData })
-  const channels = await prisma.channel.findMany()
+  // 7. Asistencia y Anotaciones para los partidos (Generación de estadísticas lógicas)
+  console.log(`✅ Creando Participantes, Asistencia y Anotaciones...`)
+  
+  const participantData = []
+  const attendanceData = []
+  const annotationData = []
+  
+  for (const match of completedMatches) {
+    // Escoger entre 14 y 21 jugadores para este partido
+    const rosterForMatch = faker.helpers.shuffle(players).slice(0, faker.number.int({ min: 14, max: 21 }))
+    const opponentTeam = faker.helpers.arrayElement(rivals)
+    
+    // Event Participants & Attendance
+    for (const p of rosterForMatch) {
+      participantData.push({
+        eventId: match.id,
+        playerId: p.id,
+        role: 'player',
+        status: 'confirmed',
+        lineType: faker.helpers.arrayElement(['O-Line', 'D-Line', 'Flex'])
+      })
+      attendanceData.push({
+        eventId: match.id,
+        playerId: p.id,
+        status: 'present'
+      })
+    }
 
-  const messageData = []
-  for (const c of channels) {
-    for (let i = 0; i < NUM_MESSAGES_PER_CHANNEL; i++) {
-      messageData.push({
-        channelId: c.id,
-        authorId: faker.helpers.arrayElement(players).id,
-        content: faker.lorem.sentences(2),
-        createdAt: faker.date.recent({ days: 30 })
+    // Annotations (Goals, Assists, D's, etc)
+    // Supongamos que en un partido hay de 10 a 15 puntos nuestros, y de 8 a 15 de ellos.
+    const ourGoals = faker.number.int({ min: 8, max: 15 })
+    for (let g = 0; g < ourGoals; g++) {
+      const scorer = faker.helpers.arrayElement(rosterForMatch)
+      const assister = faker.helpers.arrayElement(rosterForMatch.filter(p => p.id !== scorer.id))
+      
+      annotationData.push({
+        eventId: match.id,
+        type: AnnotationType.GOAL,
+        playerId: scorer.id,
+        timestamp: new Date(match.startsAt.getTime() + faker.number.int({min: 1000, max: 3000000})),
+        opponentTeamName: opponentTeam.name,
+      })
+      annotationData.push({
+        eventId: match.id,
+        type: AnnotationType.ASSIST,
+        playerId: assister.id,
+        timestamp: new Date(match.startsAt.getTime() + faker.number.int({min: 1000, max: 3000000})),
+        opponentTeamName: opponentTeam.name,
+      })
+    }
+    
+    // Other actions
+    const otherActionsCount = faker.number.int({ min: 15, max: 30 })
+    for (let a = 0; a < otherActionsCount; a++) {
+      annotationData.push({
+        eventId: match.id,
+        type: faker.helpers.arrayElement([AnnotationType.DEFENSE, AnnotationType.TURNOVER, AnnotationType.DROP]),
+        playerId: faker.helpers.arrayElement(rosterForMatch).id,
+        timestamp: new Date(match.startsAt.getTime() + faker.number.int({min: 1000, max: 3000000})),
+        opponentTeamName: opponentTeam.name,
       })
     }
   }
-  for (let i = 0; i < messageData.length; i += chunkSize) {
-    await prisma.message.createMany({ data: messageData.slice(i, i + chunkSize) })
+
+  for (let i = 0; i < participantData.length; i += chunkSize) {
+    await prisma.eventParticipant.createMany({ data: participantData.slice(i, i + chunkSize), skipDuplicates: true })
   }
-
-  // 10. Finanzas
-  console.log(`💰 Creando transacciones financieras...`)
-  await prisma.account.createMany({
-    data: [
-      { name: 'Caja Chica', type: AccountType.CASH },
-      { name: 'Banco Principal', type: AccountType.BANK }
-    ]
-  })
-  await prisma.category.createMany({
-    data: [
-      { name: 'Cuotas', kind: TransactionType.INCOME },
-      { name: 'Torneos', kind: TransactionType.INCOME },
-      { name: 'Material', kind: TransactionType.EXPENSE },
-      { name: 'Canchas', kind: TransactionType.EXPENSE }
-    ]
-  })
-  
-  const accounts = await prisma.account.findMany()
-  const categories = await prisma.category.findMany()
-  const expenses = categories.filter(c => c.kind === TransactionType.EXPENSE)
-  const incomes = categories.filter(c => c.kind === TransactionType.INCOME)
-
-  const transactionData = Array.from({ length: NUM_TRANSACTIONS }).map(() => {
-    const isIncome = faker.datatype.boolean()
-    return {
-      accountId: faker.helpers.arrayElement(accounts).id,
-      categoryId: faker.helpers.arrayElement(isIncome ? incomes : expenses).id,
-      type: isIncome ? TransactionType.INCOME : TransactionType.EXPENSE,
-      amountCents: faker.number.int({ min: 1000, max: 100000 }), // $10 a $1000
-      occurredAt: faker.date.past({ years: 1 }),
-      description: faker.lorem.sentence()
-    }
-  })
-
-  for (let i = 0; i < transactionData.length; i += chunkSize) {
-    await prisma.transaction.createMany({ data: transactionData.slice(i, i + chunkSize) })
+  for (let i = 0; i < attendanceData.length; i += chunkSize) {
+    await prisma.attendance.createMany({ data: attendanceData.slice(i, i + chunkSize), skipDuplicates: true })
   }
-
-  // 11. Anotaciones (EventAnnotations)
-  console.log(`📈 Creando anotaciones de eventos y rivales...`)
-  const rivalPlayers = await prisma.rivalPlayer.findMany()
-  
-  const annotationData = []
-  for (const event of eventsSub.filter(e => e.status === EventStatus.COMPLETED)) {
-    for (let i = 0; i < 20; i++) {
-      const isOurPlayer = faker.datatype.boolean()
-      const type = faker.helpers.arrayElement(Object.values(AnnotationType))
-      
-      let annotation = {
-        eventId: event.id,
-        type,
-        note: faker.lorem.sentence(),
-        timestamp: faker.date.recent(),
-        playerId: null as number | null,
-        rivalId: null as number | null,
-        rivalPlayerId: null as number | null,
-        opponentTeamName: null as string | null,
-      }
-      
-      if (isOurPlayer) {
-        annotation.playerId = faker.helpers.arrayElement(players).id
-      } else {
-        const rivalPlayer = faker.helpers.arrayElement(rivalPlayers)
-        annotation.rivalId = rivalPlayer.rivalId
-        annotation.rivalPlayerId = rivalPlayer.id
-        annotation.opponentTeamName = rivals.find(r => r.id === rivalPlayer.rivalId)?.name || null
-      }
-      
-      annotationData.push(annotation)
-    }
-  }
-
   for (let i = 0; i < annotationData.length; i += chunkSize) {
     await prisma.eventAnnotation.createMany({ data: annotationData.slice(i, i + chunkSize) })
   }
 
-  // 12. Recursos
-  console.log(`📁 Creando recursos...`)
-  const resourceData = Array.from({ length: 50 }).map(() => ({
-    title: faker.system.fileName(),
-    description: faker.lorem.sentence(),
-    category: faker.helpers.arrayElement(['Video', 'Documento', 'Reglamento', 'Estrategia']),
-    url: faker.internet.url(),
-  }))
-  await prisma.resource.createMany({ data: resourceData })
-
-  // 13. Jugadas
-  console.log(`📋 Creando jugadas...`)
-  const playData = Array.from({ length: 50 }).map(() => ({
-    name: faker.lorem.words(3),
-    category: faker.helpers.arrayElement(Object.values(PlayCategory)),
-    description: faker.lorem.sentences(2),
-    content: faker.lorem.paragraphs(2),
-  }))
-  await prisma.play.createMany({ data: playData })
-
-  // 14. Noticias y Anuncios
-  console.log(`📰 Creando noticias...`)
-  const newsData = Array.from({ length: 50 }).map(() => ({
-    title: faker.lorem.sentence(),
-    content: faker.lorem.paragraphs(3),
-    authorId: faker.helpers.arrayElement(players).id,
-    category: faker.helpers.arrayElement(['General', 'Torneos', 'Reuniones', 'Anuncios']),
-    isPublished: true,
-    isPinned: faker.datatype.boolean({ probability: 0.1 }),
-  }))
-  await prisma.newsPost.createMany({ data: newsData })
-
-  // 15. PlayerMatchStats (Resumen Estadístico)
-  console.log(`📊 Generando estadísticas de partidos...`)
+  // 8. PlayerMatchStats (Generado a partir de las anotaciones de forma agregada por partido)
+  console.log(`📊 Generando estadísticas agregadas de partidos (PlayerMatchStats)...`)
   const statsMap = new Map<string, any>()
   for (const ann of annotationData) {
     if (!ann.playerId) continue
@@ -451,7 +338,118 @@ async function main() {
     await prisma.playerMatchStats.createMany({ data: statsData.slice(i, i + chunkSize) })
   }
 
-  console.log('✅ Seeder masivo completado.')
+  // 9. Espíritu de Juego (SOTG)
+  console.log(`🕊️ Evaluando SOTG...`)
+  const spiritData = completedMatches.map(match => ({
+    eventId: match.id,
+    rulesKnowledge: faker.number.int({ min: 1, max: 4 }),
+    foulsAndContact: faker.number.int({ min: 1, max: 4 }),
+    fairMindedness: faker.number.int({ min: 1, max: 4 }),
+    positiveAttitude: faker.number.int({ min: 1, max: 4 }),
+    communication: faker.number.int({ min: 1, max: 4 }),
+  }))
+  for (let i = 0; i < spiritData.length; i += chunkSize) {
+    await prisma.spiritScore.createMany({ data: spiritData.slice(i, i + chunkSize) })
+  }
+
+  // 10. Lesiones
+  console.log(`🏥 Creando ${NUM_INJURIES} lesiones...`)
+  const injuriesData = Array.from({ length: NUM_INJURIES }).map(() => ({
+    playerId: faker.helpers.arrayElement(players).id,
+    type: faker.lorem.words(2),
+    severity: faker.helpers.arrayElement(Object.values(InjurySeverity)),
+    status: faker.helpers.arrayElement(Object.values(InjuryStatus)),
+    startDate: faker.date.past(),
+    description: faker.lorem.sentence()
+  }))
+  for (let i = 0; i < injuriesData.length; i += chunkSize) {
+    await prisma.injury.createMany({ data: injuriesData.slice(i, i + chunkSize) })
+  }
+
+  // 11. Canales y Mensajes
+  console.log(`💬 Creando ${NUM_CHANNELS} canales y mensajes...`)
+  const channelData = Array.from({ length: NUM_CHANNELS }).map(() => ({
+    name: faker.lorem.words(2),
+  }))
+  await prisma.channel.createMany({ data: channelData })
+  const channels = await prisma.channel.findMany()
+
+  const messageData = []
+  for (const c of channels) {
+    for (let i = 0; i < NUM_MESSAGES_PER_CHANNEL; i++) {
+      messageData.push({
+        channelId: c.id,
+        authorId: faker.helpers.arrayElement(players).id,
+        content: faker.lorem.sentences(2),
+        createdAt: faker.date.recent({ days: 60 })
+      })
+    }
+  }
+  for (let i = 0; i < messageData.length; i += chunkSize) {
+    await prisma.message.createMany({ data: messageData.slice(i, i + chunkSize) })
+  }
+
+  // 12. Finanzas
+  console.log(`💰 Creando ${NUM_TRANSACTIONS} transacciones financieras...`)
+  await prisma.account.createMany({
+    data: [{ name: 'Caja Chica', type: AccountType.CASH }, { name: 'Banco Principal', type: AccountType.BANK }]
+  })
+  await prisma.category.createMany({
+    data: [{ name: 'Cuotas', kind: TransactionType.INCOME }, { name: 'Torneos', kind: TransactionType.INCOME }, { name: 'Material', kind: TransactionType.EXPENSE }, { name: 'Canchas', kind: TransactionType.EXPENSE }]
+  })
+  const accounts = await prisma.account.findMany()
+  const categories = await prisma.category.findMany()
+  const expenses = categories.filter(c => c.kind === TransactionType.EXPENSE)
+  const incomes = categories.filter(c => c.kind === TransactionType.INCOME)
+
+  const transactionData = Array.from({ length: NUM_TRANSACTIONS }).map(() => {
+    const isIncome = faker.datatype.boolean()
+    return {
+      accountId: faker.helpers.arrayElement(accounts).id,
+      categoryId: faker.helpers.arrayElement(isIncome ? incomes : expenses).id,
+      type: isIncome ? TransactionType.INCOME : TransactionType.EXPENSE,
+      amountCents: faker.number.int({ min: 1000, max: 100000 }), // $10 a $1000
+      occurredAt: faker.date.past({ years: 1 }),
+      description: faker.lorem.sentence()
+    }
+  })
+  for (let i = 0; i < transactionData.length; i += chunkSize) {
+    await prisma.transaction.createMany({ data: transactionData.slice(i, i + chunkSize) })
+  }
+
+  // 13. Recursos
+  console.log(`📁 Creando ${NUM_RESOURCES} recursos...`)
+  const resourceData = Array.from({ length: NUM_RESOURCES }).map(() => ({
+    title: faker.system.fileName(),
+    description: faker.lorem.sentence(),
+    category: faker.helpers.arrayElement(['Video', 'Documento', 'Reglamento', 'Estrategia']),
+    url: faker.internet.url(),
+  }))
+  await prisma.resource.createMany({ data: resourceData })
+
+  // 14. Jugadas
+  console.log(`📋 Creando ${NUM_PLAYS} jugadas...`)
+  const playData = Array.from({ length: NUM_PLAYS }).map(() => ({
+    name: faker.lorem.words(3),
+    category: faker.helpers.arrayElement(Object.values(PlayCategory)),
+    description: faker.lorem.sentences(2),
+    content: faker.lorem.paragraphs(2),
+  }))
+  await prisma.play.createMany({ data: playData })
+
+  // 15. Noticias y Anuncios
+  console.log(`📰 Creando ${NUM_NEWS} noticias...`)
+  const newsData = Array.from({ length: NUM_NEWS }).map(() => ({
+    title: faker.lorem.sentence(),
+    content: faker.lorem.paragraphs(3),
+    authorId: faker.helpers.arrayElement(players).id,
+    category: faker.helpers.arrayElement(['General', 'Torneos', 'Reuniones', 'Anuncios']),
+    isPublished: true,
+    isPinned: faker.datatype.boolean({ probability: 0.1 }),
+  }))
+  await prisma.newsPost.createMany({ data: newsData })
+
+  console.log('✅ Seeder masivo reestructurado completado con éxito.')
 }
 
 main()

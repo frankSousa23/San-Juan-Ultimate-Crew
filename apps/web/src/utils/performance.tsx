@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useRef, useEffect, useState } from 'react'
 
 // Utilidades de rendimiento

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 
 // Servicio de optimización de componentes

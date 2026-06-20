@@ -3,6 +3,7 @@ import { http } from '../lib/api'
 import { useApi } from '../hooks/useApi'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
+import TournamentStatsView from '../components/TournamentStatsView'
 
 type Stats = {
   players: number
@@ -354,6 +355,8 @@ export default function Statistics() {
               )}
             </div>
           </div>
+          
+          <TournamentStatsView />
         </>
       )}
     </div>

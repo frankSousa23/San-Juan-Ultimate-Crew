@@ -14,6 +14,12 @@ const NUM_RIVALS = 25
 const NUM_TRANSACTIONS = 500
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    console.log('Ambiente de producción detectado. El seeder masivo no se ejecutará aquí.')
+    console.log('Solo configurando datos mínimos si es necesario...')
+    return
+  }
+  
   console.log('🌱 Iniciando seeder MASIVO...')
   const db: any = prisma;
   

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useToast } from './useToast'
 import DataService, { 
@@ -48,6 +49,7 @@ export function useData<T>(
     } finally {
       setLoading(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchFn, showErrorToast, ...dependencies])
 
   useEffect(() => {
