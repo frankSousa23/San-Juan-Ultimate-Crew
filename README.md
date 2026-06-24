@@ -72,15 +72,20 @@ El sistema incluye autenticación JWT opcional con roles (admin, player, guest).
 - **Toggle**: `AUTH_REQUIRED` en `apps/api/.env` (por defecto `false`)
 - **Usuario admin**: `admin@example.com` / `admin123`
 
-## Nota (Windows / PostgreSQL local)
+## Despliegue (Producción)
 
-Si ya tienes PostgreSQL corriendo localmente en Windows, es común que el puerto `5432` esté ocupado.
-Este repo expone Postgres por defecto en `localhost:5433` (ver `docker-compose.yml` y `apps/api/.env.example`).
+Para subir el proyecto a la nube, la configuración mínima requerida es:
+- **Base de Datos:** PostgreSQL administrado (ej. Supabase, Neon, AWS RDS).
+- **Backend:** Plataformas PaaS (Render, Railway, Heroku) inyectando la `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`.
+- **Frontend:** Servicios como Vercel o Netlify inyectando la `VITE_API_URL` que apunte al backend.
+
+**Importante:** En producción, corre `npm run build` y usa `npm run start` en el backend.
 
 ## Documentación
 
-- **Swagger UI**: `http://localhost:4000/api-docs` (cuando la API está corriendo)
-- **Documentación detallada**: Ver `local/docs/`
+- **Swagger UI**: `http://localhost:4000/api-docs` (cuando la API está corriendo). En producción usará la ruta base definida en tu API.
+- **Estrategia Comercial y de Testing:** Ver [`local/docs/DEPLOYMENT_AND_STRATEGY.md`](local/docs/DEPLOYMENT_AND_STRATEGY.md) para consejos sobre Beta Testing, Pruebas de Humo (Smoke tests) y la proyección futura hacia **SaaS Multi-Tenant**.
+- **Documentación adicional detallada**: Ver `local/docs/`
 
 ## Estado del Proyecto
 

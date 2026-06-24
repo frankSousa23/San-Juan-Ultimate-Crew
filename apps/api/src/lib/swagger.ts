@@ -15,13 +15,13 @@ const options: swaggerJsdoc.Options = {
     servers: [
       {
         url: `http://localhost:${env.PORT}`,
-        description: 'Development server',
+        description: 'Development server (Entorno Local)',
       },
       ...(env.NODE_ENV === 'production' && process.env.API_URL
         ? [
             {
               url: process.env.API_URL,
-              description: 'Production server',
+              description: 'Production server (Despliegue/Nube)',
             },
           ]
         : []),
