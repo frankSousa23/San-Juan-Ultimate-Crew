@@ -26,7 +26,7 @@ const router = Router();
  *               items:
  *                 $ref: '#/components/schemas/Player'
  */
-router.get('/', asyncHandler(async (req: Request, res: Response) => {
+router.get('/', requirePermission('roster:view'), asyncHandler(async (req: Request, res: Response) => {
   const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
   const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
 

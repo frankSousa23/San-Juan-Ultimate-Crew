@@ -14,8 +14,10 @@ const router = Router()
 const createAnnotationSchema = z.object({
   eventId: z.number().int().positive(),
   playerId: z.number().int().positive().optional().nullable(), // Nullable para jugadores oponentes
-  type: z.enum(['GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER', 'DROP', 'FOUL', 'TIMEOUT', 'SUBSTITUTION', 'INJURY', 'GENERAL', 'STRATEGY', 'PERFORMANCE']),
+  relatedPlayerId: z.number().int().positive().optional().nullable(),
+  type: z.enum(['GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER', 'DROP']),
   note: z.string().optional(),
+  lineType: z.string().optional(),
   timestamp: z.string().datetime().optional(), // Si no se proporciona, usa ahora
   category: z.string().optional(), // Para FULL_DAY: "OPEN" o "MIXTO"
   // Campos para versus / rivales
@@ -32,7 +34,8 @@ const createAnnotationSchema = z.object({
 const updateAnnotationSchema = createAnnotationSchema.partial().extend({
   eventId: z.number().int().positive().optional(),
   playerId: z.number().int().positive().optional().nullable(),
-  type: z.enum(['GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER', 'DROP', 'FOUL', 'TIMEOUT', 'SUBSTITUTION', 'INJURY', 'GENERAL', 'STRATEGY', 'PERFORMANCE']).optional(),
+  relatedPlayerId: z.number().int().positive().optional().nullable(),
+  type: z.enum(['GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER', 'DROP']).optional(),
 })
 
 const annotationIdSchema = z.object({
@@ -142,7 +145,7 @@ router.get('/:id', requireAuth, validateParams(annotationIdSchema), asyncHandler
  *     summary: Create a new annotation
  *     tags: [Annotations]
  */
-router.post('/', requireAuth, requirePermission('events:manage'), validateBody(createAnnotationSchema), asyncHandler(async (req: Request, res: Response) => {
+router.post('/', requireAuth, requirePermission('annotations:manage'), validateBody(createAnnotationSchema), asyncHandler(async (req: Request, res: Response) => {
   const u = (req as any).user as any
   const userId = u?.sub ? Number(u.sub) : null
 
@@ -229,8 +232,10 @@ router.post('/', requireAuth, requirePermission('events:manage'), validateBody(c
     data: {
       eventId: payload.eventId,
       playerId: payload.playerId ?? null,
+      relatedPlayerId: payload.relatedPlayerId ?? null,
       type: payload.type,
       note: payload.note,
+      lineType: payload.lineType ?? null,
       timestamp,
       category: payload.category,
       createdBy: userId,
@@ -245,22 +250,42 @@ router.post('/', requireAuth, requirePermission('events:manage'), validateBody(c
     },
     include: {
       event: {
-        select: {
-          id: true,
-          title: true,
-          type: true,
-          status: true,
-        }
+        select: { id: true, title: true, type: true, status: true }
       },
       player: {
-        select: {
-          id: true,
-          name: true,
-          number: true,
-        }
+        select: { id: true, name: true, number: true }
       }
     }
   })
+
+  // === Autocalcular Estadísticas ===
+  const updateStats = async (pId: number, field: string, increment: number = 1) => {
+    const stats = await prisma.playerMatchStats.findUnique({
+      where: { playerId_eventId: { playerId: pId, eventId: payload.eventId } }
+    })
+    if (stats) {
+      await prisma.playerMatchStats.update({
+        where: { id: stats.id },
+        data: { [field]: { increment } }
+      })
+    } else {
+      await prisma.playerMatchStats.create({
+        data: { playerId: pId, eventId: payload.eventId, [field]: increment }
+      })
+    }
+  }
+
+  if (payload.playerId) {
+    if (payload.type === 'GOAL') await updateStats(payload.playerId, 'goals')
+    else if (payload.type === 'DEFENSE') await updateStats(payload.playerId, 'defenses')
+    else if (payload.type === 'TURNOVER') await updateStats(payload.playerId, 'turnovers')
+    else if (payload.type === 'DROP') await updateStats(payload.playerId, 'drops')
+  }
+  
+  if (payload.relatedPlayerId && payload.type === 'GOAL') {
+    await updateStats(payload.relatedPlayerId, 'assists')
+  }
+  // ===============================
 
   const audit = createAuditHelper(req)
   await audit.log('CREATE', 'EventAnnotation', annotation.id, {
@@ -279,7 +304,7 @@ router.post('/', requireAuth, requirePermission('events:manage'), validateBody(c
  *     summary: Update an annotation
  *     tags: [Annotations]
  */
-router.put('/:id', requireAuth, requirePermission('events:manage'), validateParams(annotationIdSchema), validateBody(updateAnnotationSchema), asyncHandler(async (req: Request, res: Response) => {
+router.put('/:id', requireAuth, requirePermission('annotations:manage'), validateParams(annotationIdSchema), validateBody(updateAnnotationSchema), asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params as { id: string }
   const payload = req.body
 
@@ -363,7 +388,7 @@ router.put('/:id', requireAuth, requirePermission('events:manage'), validatePara
  *     summary: Delete an annotation
  *     tags: [Annotations]
  */
-router.delete('/:id', requireAuth, requirePermission('events:manage'), validateParams(annotationIdSchema), asyncHandler(async (req: Request, res: Response) => {
+router.delete('/:id', requireAuth, requirePermission('annotations:manage'), validateParams(annotationIdSchema), asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params as { id: string }
 
   const existing = await prisma.eventAnnotation.findUnique({
@@ -377,6 +402,31 @@ router.delete('/:id', requireAuth, requirePermission('events:manage'), validateP
   await prisma.eventAnnotation.delete({
     where: { id: Number(id) }
   })
+
+  // === Revertir Estadísticas ===
+  const updateStats = async (pId: number, field: string, increment: number = -1) => {
+    const stats = await prisma.playerMatchStats.findUnique({
+      where: { playerId_eventId: { playerId: pId, eventId: existing.eventId } }
+    })
+    if (stats) {
+      await prisma.playerMatchStats.update({
+        where: { id: stats.id },
+        data: { [field]: { increment } }
+      })
+    }
+  }
+
+  if (existing.playerId) {
+    if (existing.type === 'GOAL') await updateStats(existing.playerId, 'goals')
+    else if (existing.type === 'DEFENSE') await updateStats(existing.playerId, 'defenses')
+    else if (existing.type === 'TURNOVER') await updateStats(existing.playerId, 'turnovers')
+    else if (existing.type === 'DROP') await updateStats(existing.playerId, 'drops')
+  }
+  
+  if (existing.relatedPlayerId && existing.type === 'GOAL') {
+    await updateStats(existing.relatedPlayerId, 'assists')
+  }
+  // ===============================
 
   const audit = createAuditHelper(req)
   await audit.log('DELETE', 'EventAnnotation', Number(id), {

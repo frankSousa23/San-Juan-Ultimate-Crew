@@ -224,10 +224,14 @@ export default function Events() {
                           toasts.info('No se pudo abrir el canal')
                         }
                       }}>Abrir canal</button>
+                      
+                      {hasPermission('annotations:manage') && (
+                        <button className="text-purple-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => setAnnotEvent(e)}>Anotaciones</button>
+                      )}
+
                       {hasPermission('events:manage') && (
                         <>
                           <button className="text-teal-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => setAttEvent(e)}>Asistencia</button>
-                          <button className="text-purple-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => setAnnotEvent(e)}>Anotaciones</button>
                           <button className="text-amber-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => setEditTarget(e)}>Editar</button>
                           <button className="text-red-600 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => {
                             setConfirmState({

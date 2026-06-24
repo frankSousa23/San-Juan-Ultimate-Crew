@@ -4,22 +4,15 @@ export type AnnotationType =
   | 'DEFENSE'
   | 'TURNOVER'
   | 'DROP'
-  | 'FOUL'
-  | 'TIMEOUT'
-  | 'SUBSTITUTION'
-  | 'INJURY'
-  | 'GENERAL'
-  | 'STRATEGY'
-  | 'PERFORMANCE'
-  | 'CALLAHAN'
-  | 'MVP'
 
 export interface EventAnnotation {
   id: number
   eventId: number
   playerId: number | null
+  relatedPlayerId?: number | null
   type: AnnotationType
   note?: string
+  lineType?: string | null
   timestamp: string
   category?: string // Para FULL_DAY: "OPEN" o "MIXTO"
   createdBy?: number
@@ -48,8 +41,10 @@ export interface EventAnnotation {
 export interface CreateAnnotationInput {
   eventId: number
   playerId?: number | null
+  relatedPlayerId?: number | null
   type: AnnotationType
   note?: string
+  lineType?: string | null
   timestamp?: string
   category?: string
   // Campos para versus
@@ -64,10 +59,12 @@ export interface CreateAnnotationInput {
 export interface UpdateAnnotationInput {
   type?: AnnotationType
   note?: string
+  lineType?: string | null
   timestamp?: string
   category?: string
   eventId?: number
   playerId?: number
+  relatedPlayerId?: number
 }
 
 export interface AnnotationStats {

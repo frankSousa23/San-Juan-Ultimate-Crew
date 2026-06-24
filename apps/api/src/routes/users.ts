@@ -909,19 +909,13 @@ router.post('/:id/approve', requireRole(['admin']), asyncHandler(async (req: Req
     }
   }
   
-  // Get roles: base player role + requested role (if different)
-  const playerRole = await prisma.role.findUnique({ where: { name: 'player' } })
-  if (!playerRole) {
-    return serverError(res, 'Player role not found')
-  }
+  // Get roles
   const primaryRole = await prisma.role.findUnique({ where: { name: role } })
   if (!primaryRole) {
     return serverError(res, 'Role not found')
   }
   
   // Update user status and assign roles:
-  // - Siempre tendrá rol 'player' como base.
-  // - Si el rol solicitado es distinto de 'player', se añade además.
   let finalPlayerId = playerId ?? null
   
   await prisma.$transaction(async (tx) => {
@@ -953,17 +947,10 @@ router.post('/:id/approve', requireRole(['admin']), asyncHandler(async (req: Req
       }
     })
     
-    // Base: rol de jugador
+    // Assign the requested role
     await tx.userRole.create({
-      data: { userId: id, roleId: playerRole.id }
+      data: { userId: id, roleId: primaryRole.id }
     })
-    
-    // Rol adicional solicitado (admin, captain, coach, etc.)
-    if (primaryRole.id !== playerRole.id) {
-      await tx.userRole.create({
-        data: { userId: id, roleId: primaryRole.id }
-      })
-    }
   })
   
   const audit = createAuditHelper(req)

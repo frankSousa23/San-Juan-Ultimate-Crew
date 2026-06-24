@@ -27,6 +27,15 @@ enum EventType {
   FULL_DAY_OPEN
   FULL_DAY_MIXTO
   AMISTOSO
+  MATCH
+}
+
+enum MatchCategory {
+  GROUP_STAGE
+  QUARTER_FINALS
+  SEMI_FINALS
+  FINALS
+  PLACEMENT
 }
 
 enum EventStatus {
@@ -63,15 +72,6 @@ enum AnnotationType {
   DEFENSE
   TURNOVER
   DROP
-  FOUL
-  TIMEOUT
-  SUBSTITUTION
-  INJURY
-  GENERAL
-  STRATEGY
-  PERFORMANCE
-  CALLAHAN
-  MVP
 }
 
 // Finance
@@ -157,6 +157,10 @@ model Event {
   parentId Int?
   parent   Event?  @relation("EventHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   children Event[] @relation("EventHierarchy")
+
+  matchCategory MatchCategory?
+  rivalId       Int?
+  isInternalScrimmage Boolean @default(false)
 
   // Statistics
   matchStats   PlayerMatchStats[]
@@ -265,8 +269,10 @@ model EventAnnotation {
   eventId   Int
   player    Player?        @relation(fields: [playerId], references: [id], onDelete: Cascade)
   playerId  Int? // Nullable para soportar jugadores oponentes
+  relatedPlayerId Int? // Para vincular asistencias al gol
   type      AnnotationType
   note      String? // Descripción detallada de la anotación
+  lineType  String? // O-Line, D-Line
   timestamp DateTime       @default(now()) // Momento en que ocurrió durante el evento
   category  String? // Para FULL_DAY: "OPEN" o "MIXTO", null para otros tipos
   createdBy Int? // Usuario que creó la anotación (opcional, para auditoría)

@@ -430,7 +430,7 @@ export default function Roster() {
           cancelText="Cancelar"
           onCancel={() => setConfirmState(null)}
           onConfirm={async () => {
-            confirmState.onYes()
+            await confirmState.onYes()
             setConfirmState(null)
           }}
         />

@@ -240,7 +240,7 @@ export default function Communications() {
           confirmText="Sí, eliminar"
           cancelText="Cancelar"
           onCancel={() => newsActions.setConfirmState(null)}
-          onConfirm={async () => { newsState.confirmState!.onYes(); newsActions.setConfirmState(null) }}
+          onConfirm={async () => { await newsState.confirmState!.onYes(); newsActions.setConfirmState(null) }}
         />
       )}
     </div>

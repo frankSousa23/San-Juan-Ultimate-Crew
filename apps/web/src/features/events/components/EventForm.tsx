@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { CreateEventInput, EventItem, EventStatus, EventType, UpdateEventInput } from '../../../types/event'
+import { CreateEventInput, EventItem, EventStatus, EventType, UpdateEventInput, MatchCategory } from '../../../types/event'
+import { rivalsApi } from '../../../lib/api'
 
 type Mode = 'create' | 'edit'
 
@@ -10,15 +11,21 @@ interface Props {
   onSubmit: (data: CreateEventInput | UpdateEventInput) => Promise<void>
 }
 
-const typeOptions: EventType[] = ['TRAINING', 'TOURNAMENT', 'SOCIAL', 'WORKSHOP', 'FULL_DAY_OPEN', 'FULL_DAY_MIXTO', 'AMISTOSO']
+const typeOptions: EventType[] = ['TRAINING', 'TOURNAMENT', 'SOCIAL', 'WORKSHOP', 'FULL_DAY_OPEN', 'FULL_DAY_MIXTO', 'AMISTOSO', 'MATCH']
 const statusOptions: EventStatus[] = ['UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED']
+const matchCategoryOptions: MatchCategory[] = ['GROUP_STAGE', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINALS', 'PLACEMENT']
 
 export default function EventForm({ mode, initial, onCancel, onSubmit }: Props) {
   const [form, setForm] = useState<CreateEventInput | UpdateEventInput>({
-    title: '', description: '', type: 'TRAINING', status: 'UPCOMING', location: '', startsAt: '', endsAt: ''
+    title: '', description: '', type: 'TRAINING', status: 'UPCOMING', location: '', startsAt: '', endsAt: '', isInternalScrimmage: false, rivalId: null, matchCategory: null
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [rivals, setRivals] = useState<any[]>([])
+
+  useEffect(() => {
+    rivalsApi.list().then(setRivals).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (mode === 'edit' && initial) {
@@ -30,9 +37,12 @@ export default function EventForm({ mode, initial, onCancel, onSubmit }: Props) 
         location: initial.location ?? '',
         startsAt: initial.startsAt ? initial.startsAt.slice(0,16) : '',
         endsAt: initial.endsAt ? initial.endsAt.slice(0,16) : '',
+        isInternalScrimmage: initial.isInternalScrimmage ?? false,
+        rivalId: initial.rivalId ?? null,
+        matchCategory: initial.matchCategory ?? null,
       })
     } else {
-      setForm({ title: '', description: '', type: 'TRAINING', status: 'UPCOMING', location: '', startsAt: '', endsAt: '' })
+      setForm({ title: '', description: '', type: 'TRAINING', status: 'UPCOMING', location: '', startsAt: '', endsAt: '', isInternalScrimmage: false, rivalId: null, matchCategory: null })
     }
   }, [mode, initial])
 
@@ -62,6 +72,16 @@ export default function EventForm({ mode, initial, onCancel, onSubmit }: Props) 
           }
         })
       }
+      
+      // Limpiar campos irrelevantes
+      if (payload.type !== 'MATCH') {
+        payload.rivalId = null
+        payload.matchCategory = null
+      }
+      if (payload.type !== 'TRAINING' && payload.type !== 'MATCH') {
+        payload.isInternalScrimmage = false
+      }
+
       await onSubmit(payload)
     } catch (err) {
       const error = err as Error
@@ -113,6 +133,57 @@ export default function EventForm({ mode, initial, onCancel, onSubmit }: Props) 
           <label className="block text-sm text-gray-600 mb-1">Lugar</label>
           <input value={form.location || ''} onChange={e => handleChange('location', e.target.value)} className="w-full px-3 py-2 border rounded-lg" placeholder="Ubicación" />
         </div>
+
+        {form.type === 'MATCH' && (
+          <>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Rival Oficial</label>
+              <select 
+                value={form.rivalId || ''} 
+                onChange={e => handleChange('rivalId', e.target.value ? Number(e.target.value) : null)} 
+                className="w-full px-3 py-2 border rounded-lg"
+              >
+                <option value="">Selecciona un Rival (Opcional)</option>
+                {rivals.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Categoría del Partido</label>
+              <select 
+                value={form.matchCategory || ''} 
+                onChange={e => handleChange('matchCategory', e.target.value as MatchCategory)} 
+                className="w-full px-3 py-2 border rounded-lg"
+              >
+                <option value="">Ninguna</option>
+                {matchCategoryOptions.map(c => (
+                  <option key={c} value={c}>
+                    {c === 'GROUP_STAGE' ? 'Fase de Grupos' :
+                     c === 'QUARTER_FINALS' ? 'Cuartos de Final' :
+                     c === 'SEMI_FINALS' ? 'Semi-Final' :
+                     c === 'FINALS' ? 'Final' :
+                     c === 'PLACEMENT' ? 'Partido de Posicionamiento' : c}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
+
+        {(form.type === 'TRAINING' || form.type === 'MATCH') && (
+          <div className="md:col-span-2 flex items-center gap-3 bg-gray-50 p-3 rounded-lg border">
+            <input 
+              type="checkbox" 
+              id="scrimmage"
+              checked={form.isInternalScrimmage || false} 
+              onChange={e => handleChange('isInternalScrimmage', e.target.checked)} 
+              className="w-5 h-5 text-amber-600 rounded cursor-pointer"
+            />
+            <label htmlFor="scrimmage" className="text-sm font-semibold text-gray-800 cursor-pointer">
+              Es un Scrimmage Interno (Entrenamiento Dividido)
+              <p className="text-xs text-gray-500 font-normal">Permitirá llevar el marcador entre dos equipos de nuestros propios jugadores en la app de Anotaciones.</p>
+            </label>
+          </div>
+        )}
         <div className="md:col-span-2">
           <label className="block text-sm text-gray-600 mb-1">Descripción</label>
           <textarea value={form.description || ''} onChange={e => handleChange('description', e.target.value)} className="w-full px-3 py-2 border rounded-lg" placeholder="Detalles"></textarea>

@@ -58,8 +58,8 @@ async function main() {
   console.log('✨ Base de datos vaciada.')
   
   // 1. Roles y Permisos
-  const managePerms = ['finance:manage', 'resources:manage', 'roster:manage', 'events:manage', 'communications:manage', 'injuries:manage', 'rivals:manage', 'plays:manage']
-  const viewPerms = ['roster:view', 'events:view', 'injuries:view', 'rivals:view', 'plays:view', 'resources:view', 'finance:view', 'statistics:view']
+  const managePerms = ['finance:manage', 'resources:manage', 'roster:manage', 'events:manage', 'communications:manage', 'injuries:manage', 'rivals:manage', 'plays:manage', 'annotations:manage']
+  const viewPerms = ['roster:view', 'events:view', 'injuries:view', 'rivals:view', 'plays:view', 'resources:view', 'finance:view', 'statistics:view', 'annotations:view', 'news:view']
   const allPermNames = [...managePerms, ...viewPerms]
   
   console.log('🔑 Creando permisos...')
@@ -68,7 +68,7 @@ async function main() {
     skipDuplicates: true
   })
 
-  const roles = ['admin', 'guest', 'player', 'captain', 'coach', 'treasurer']
+  const roles = ['admin', 'guest', 'player', 'captain', 'coach', 'treasurer', 'marketing']
   console.log('🛡️ Creando roles...')
   await prisma.role.createMany({
     data: roles.map(name => ({ name })),
@@ -87,11 +87,12 @@ async function main() {
   }
 
   await assignPerms('admin', allPermNames)
-  await assignPerms('player', ['communications:manage', 'roster:view', 'injuries:view', 'rivals:view', 'plays:view', 'resources:view', 'statistics:view'])
-  await assignPerms('captain', ['roster:manage', 'events:manage', 'communications:manage', 'injuries:manage', 'rivals:manage', 'plays:manage', 'roster:view', 'injuries:view', 'rivals:view', 'plays:view', 'resources:view', 'events:view', 'statistics:view', 'finance:view'])
-  await assignPerms('coach', ['events:manage', 'communications:manage', 'injuries:manage', 'plays:manage', 'resources:manage', 'roster:view', 'injuries:view', 'plays:view', 'resources:view', 'events:view', 'statistics:view'])
+  await assignPerms('player', ['annotations:manage', 'communications:manage', 'roster:view', 'events:view', 'injuries:view', 'rivals:view', 'plays:view', 'resources:view', 'statistics:view', 'annotations:view'])
+  await assignPerms('captain', ['roster:manage', 'events:manage', 'communications:manage', 'injuries:manage', 'rivals:manage', 'plays:manage', 'annotations:manage', 'roster:view', 'injuries:view', 'rivals:view', 'plays:view', 'resources:view', 'events:view', 'statistics:view', 'finance:view', 'annotations:view'])
+  await assignPerms('coach', ['events:manage', 'communications:manage', 'injuries:manage', 'plays:manage', 'resources:manage', 'roster:manage', 'annotations:manage', 'roster:view', 'injuries:view', 'plays:view', 'resources:view', 'events:view', 'statistics:view', 'annotations:view'])
   await assignPerms('treasurer', ['finance:manage', 'finance:view', 'roster:view', 'events:view', 'statistics:view'])
-  await assignPerms('guest', ['events:view', 'roster:view', 'injuries:view', 'rivals:view', 'plays:view', 'resources:view', 'statistics:view'])
+  await assignPerms('marketing', ['communications:manage', 'events:view', 'roster:view', 'resources:view'])
+  await assignPerms('guest', ['events:view', 'resources:view', 'news:view'])
 
   // 2. Usuarios Base
   console.log('👤 Creando usuarios base...')
@@ -184,7 +185,7 @@ async function main() {
       const numMatches = faker.number.int({ min: 4, max: 8 })
       const matchData = Array.from({ length: numMatches }).map((_, idx) => ({
         title: `Partido ${idx + 1} - ${tournament.title}`,
-        type: EventType.FULL_DAY_OPEN, // Or AMISTOSO
+        type: 'MATCH',
         status: EventStatus.COMPLETED,
         location: tournament.location,
         startsAt: new Date(startsAt.getTime() + 1000 * 60 * 60 * idx * 2), // Match every 2 hours
@@ -254,6 +255,7 @@ async function main() {
     // Escoger entre 14 y 21 jugadores para este partido
     const rosterForMatch = faker.helpers.shuffle(players).slice(0, faker.number.int({ min: 14, max: 21 }))
     const opponentTeam = faker.helpers.arrayElement(rivals)
+    await prisma.event.update({ where: { id: match.id }, data: { rivalId: opponentTeam.id, matchCategory: 'GROUP_STAGE' } })
     
     // Event Participants & Attendance
     for (const p of rosterForMatch) {
@@ -280,15 +282,9 @@ async function main() {
       
       annotationData.push({
         eventId: match.id,
-        type: AnnotationType.GOAL,
+        type: 'GOAL',
         playerId: scorer.id,
-        timestamp: new Date(match.startsAt.getTime() + faker.number.int({min: 1000, max: 3000000})),
-        opponentTeamName: opponentTeam.name,
-      })
-      annotationData.push({
-        eventId: match.id,
-        type: AnnotationType.ASSIST,
-        playerId: assister.id,
+        relatedPlayerId: assister.id,
         timestamp: new Date(match.startsAt.getTime() + faker.number.int({min: 1000, max: 3000000})),
         opponentTeamName: opponentTeam.name,
       })
@@ -299,7 +295,7 @@ async function main() {
     for (let a = 0; a < otherActionsCount; a++) {
       annotationData.push({
         eventId: match.id,
-        type: faker.helpers.arrayElement([AnnotationType.DEFENSE, AnnotationType.TURNOVER, AnnotationType.DROP]),
+        type: faker.helpers.arrayElement(['DEFENSE', 'TURNOVER', 'DROP']),
         playerId: faker.helpers.arrayElement(rosterForMatch).id,
         timestamp: new Date(match.startsAt.getTime() + faker.number.int({min: 1000, max: 3000000})),
         opponentTeamName: opponentTeam.name,
@@ -321,17 +317,20 @@ async function main() {
   console.log(`📊 Generando estadísticas agregadas de partidos (PlayerMatchStats)...`)
   const statsMap = new Map<string, any>()
   for (const ann of annotationData) {
-    if (!ann.playerId) continue
-    const key = `${ann.eventId}_${ann.playerId}`
-    if (!statsMap.has(key)) {
-      statsMap.set(key, { eventId: ann.eventId, playerId: ann.playerId, goals: 0, assists: 0, defenses: 0, turnovers: 0, drops: 0 })
+    if (ann.playerId) {
+      const key = `${ann.eventId}_${ann.playerId}`
+      if (!statsMap.has(key)) statsMap.set(key, { eventId: ann.eventId, playerId: ann.playerId, goals: 0, assists: 0, defenses: 0, turnovers: 0, drops: 0 })
+      const st = statsMap.get(key)
+      if (ann.type === 'GOAL') st.goals++
+      if (ann.type === 'DEFENSE') st.defenses++
+      if (ann.type === 'TURNOVER') st.turnovers++
+      if (ann.type === 'DROP') st.drops++
     }
-    const st = statsMap.get(key)
-    if (ann.type === 'GOAL') st.goals++
-    if (ann.type === 'ASSIST') st.assists++
-    if (ann.type === 'DEFENSE') st.defenses++
-    if (ann.type === 'TURNOVER') st.turnovers++
-    if (ann.type === 'DROP') st.drops++
+    if (ann.relatedPlayerId) {
+      const keyA = `${ann.eventId}_${ann.relatedPlayerId}`
+      if (!statsMap.has(keyA)) statsMap.set(keyA, { eventId: ann.eventId, playerId: ann.relatedPlayerId, goals: 0, assists: 0, defenses: 0, turnovers: 0, drops: 0 })
+      statsMap.get(keyA).assists++
+    }
   }
   const statsData = Array.from(statsMap.values())
   for (let i = 0; i < statsData.length; i += chunkSize) {

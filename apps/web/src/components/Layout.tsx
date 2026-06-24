@@ -17,19 +17,20 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Panel Principal', href: '/', icon: '🏠', roles: [] },
     { name: 'Mi Perfil', href: '/perfil', icon: '👤', roles: [] },
     
-    // Player, Captain, Coach & Admin
-    { name: 'Roster', href: '/roster', icon: '👥', roles: ['player', 'captain', 'coach', 'admin'] },
-    { name: 'Eventos', href: '/eventos', icon: '📅', roles: ['player', 'captain', 'coach', 'admin'] },
+    { name: 'Roster', href: '/roster', icon: '👥', roles: ['player', 'captain', 'coach', 'admin', 'treasurer', 'marketing'] },
+    { name: 'Eventos', href: '/eventos', icon: '📅', roles: ['player', 'captain', 'coach', 'admin', 'treasurer', 'marketing', 'guest'] },
     { name: 'Anotaciones', href: '/anotaciones', icon: '✏️', roles: ['player', 'captain', 'coach', 'admin'] },
+    
     // Communications: accessible to all authenticated users (guest can view)
     { name: 'Comunicación', href: '/comunicacion', icon: '💬', roles: [] },
     // Statistics: accessible to all authenticated users (including guest for demo/showcase)
     { name: 'Estadísticas', href: '/estadisticas', icon: '📊', roles: [] },
+    
     { name: 'Lesiones', href: '/lesiones', icon: '🏥', roles: ['player', 'captain', 'coach', 'admin'] },
-    { name: 'Equipos Rivales', href: '/rivales', icon: '⚔️', roles: ['player', 'captain', 'admin']},
+    { name: 'Equipos Rivales', href: '/rivales', icon: '⚔️', roles: ['player', 'captain', 'admin', 'coach'] },
     { name: 'Jugadas', href: '/jugadas', icon: '🎯', roles: ['player', 'captain', 'coach', 'admin'] },
     { name: 'Roster Torneo', href: '/roster-torneo', icon: '🏆', roles: ['player', 'captain', 'coach', 'admin'] },
-    { name: 'Recursos', href: '/recursos', icon: '📁', roles: ['player', 'coach', 'admin'] },
+    { name: 'Recursos', href: '/recursos', icon: '📁', roles: ['player', 'coach', 'admin', 'marketing', 'guest'] },
     
     // Treasurer & Admin
     { name: 'Finanzas', href: '/finanzas', icon: '💰', roles: ['treasurer', 'admin'] },
