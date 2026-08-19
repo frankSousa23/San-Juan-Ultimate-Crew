@@ -38,13 +38,13 @@ function validateJwtSecret(): string {
 
 export const env = {
   NODE_ENV: getEnv('NODE_ENV', 'development'),
-  PORT: getIntEnv('PORT', 4000),
-  DATABASE_URL: requireEnv('DATABASE_URL'),
+  PORT: getIntEnv('PORT', 3000),
+  DATABASE_URL: getEnv('DATABASE_URL', 'postgresql://sju:sju@localhost:5432/sju_dev?schema=public'),
   AUTH_REQUIRED: getBoolEnv('AUTH_REQUIRED', false),
   JWT_SECRET: validateJwtSecret(),
   JWT_EXPIRES_IN: getEnv('JWT_EXPIRES_IN', '15m'),
   JWT_REFRESH_EXPIRES_IN: getEnv('JWT_REFRESH_EXPIRES_IN', '7d'),
-  CORS_ORIGIN: getEnv('CORS_ORIGIN', 'http://localhost:5173'),
-  FRONTEND_URL: getEnv('FRONTEND_URL', 'http://localhost:5173'),
+  CORS_ORIGIN: getEnv('CORS_ORIGIN', '*'),
+  FRONTEND_URL: getEnv('FRONTEND_URL', 'http://localhost:3000'),
   LOG_LEVEL: getEnv('LOG_LEVEL', 'info'),
 };

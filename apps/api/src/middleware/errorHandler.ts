@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express'
-import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { 
   AppError, 
@@ -26,21 +25,22 @@ export function errorHandler(
   let appError: AppError
 
   // Manejar errores de Prisma
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    switch (error.code) {
+  const anyError = error as any
+  if (anyError?.code && typeof anyError.code === 'string' && anyError.code.startsWith('P')) {
+    switch (anyError.code) {
       case 'P2002':
         appError = new ConflictError('Resource', {
-          target: error.meta?.target,
-          code: error.code,
+          target: anyError.meta?.target,
+          code: anyError.code,
         })
         break
       case 'P2025':
-        appError = new NotFoundError('Record', error.meta?.model as string)
+        appError = new NotFoundError('Record', anyError.meta?.model as string)
         break
       case 'P2003':
         appError = new AppValidationError('Foreign key constraint violation', {
-          code: error.code,
-          field: error.meta?.field_name,
+          code: anyError.code,
+          field: anyError.meta?.field_name,
         })
         break
       default:
@@ -48,7 +48,7 @@ export function errorHandler(
           ErrorCode.DATABASE_ERROR,
           400,
           'Database error',
-          { code: error.code, meta: error.meta }
+          { code: anyError.code, meta: anyError.meta }
         )
     }
   }

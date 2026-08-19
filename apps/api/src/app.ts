@@ -100,7 +100,7 @@ app.use('/api/resources/upload', uploadLimiter);
 const uploadsDir = path.resolve(process.cwd(), 'apps', 'api', 'uploads');
 app.use('/uploads', express.static(uploadsDir));
 
-app.get('/', (_req: Request, res: Response) => res.json({ name: 'San Juan Ultimate Crew API', ok: true }));
+app.get('/api', (_req: Request, res: Response) => res.json({ name: 'San Juan Ultimate Crew API', ok: true }));
 
 // Swagger documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {

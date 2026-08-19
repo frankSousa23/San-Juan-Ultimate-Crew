@@ -10,7 +10,7 @@ import { ResourceItem, CreateResourceInput, UpdateResourceInput } from '../types
 import { EventAnnotation, CreateAnnotationInput, UpdateAnnotationInput, AnnotationStats } from '../types/annotation'
 import { NewsPost, NewsPostFile, CreateNewsPostInput, UpdateNewsPostInput, NewsPostListResponse } from '../types/news'
 
-const baseURL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000'
+const baseURL = (import.meta as any).env?.VITE_API_URL || ''
 
 export const http = axios.create({ baseURL })
 

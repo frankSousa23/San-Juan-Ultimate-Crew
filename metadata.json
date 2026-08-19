@@ -1,0 +1,6 @@
+{
+  "name": "San Juan Ultimate Crew",
+  "description": "Team management platform for San Juan Ultimate Crew with roster, events, finances, stats, and tactical playbook.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
