@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { eventsApi, annotationsApi, playersApi, rivalsApi } from '../lib/api'
+import React, { useState, useEffect, useMemo } from 'react'
+import { eventsApi } from '../lib/api'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
 import LiveAnnotationsTable from '../components/LiveAnnotationsTable'
@@ -15,6 +15,7 @@ export default function Annotations() {
   const [loading, setLoading] = useState(true)
   const [testMode, setTestMode] = useState(false)
   const [testEvent, setTestEvent] = useState<EventItem | null>(null)
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ONGOING' | 'TOURNAMENT'>('ONGOING')
 
   useEffect(() => {
     loadEvents()
@@ -26,7 +27,7 @@ export default function Annotations() {
       const evts = await eventsApi.list()
       setEvents(evts)
       
-      // Si hay eventos activos (ONGOING), seleccionar el primero automáticamente
+      // Auto-seleccionar evento en vivo prioritario si existe
       const ongoingEvent = evts.find(e => e.status === 'ONGOING')
       if (ongoingEvent) {
         setSelectedEvent(ongoingEvent)
@@ -40,21 +41,21 @@ export default function Annotations() {
 
   const createTestEvent = () => {
     const test: EventItem = {
-      id: -1, // ID temporal para modo prueba
-      title: 'Evento de Prueba - Anotaciones',
-      description: 'Este es un evento de prueba para probar el sistema de anotaciones',
-      type: 'TRAINING',
+      id: -1,
+      title: 'Partido de Prueba - Anotaciones en Vivo',
+      description: 'Evento de prueba para validación de pizarra táctica y estadísticas.',
+      type: 'AMISTOSO',
       status: 'ONGOING',
-      location: 'Campo de Prueba',
+      location: 'Cancha de Prueba',
       startsAt: new Date().toISOString(),
-      endsAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 horas después
+      endsAt: new Date(Date.now() + 2 * 3600000).toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
     setTestEvent(test)
     setSelectedEvent(test)
     setTestMode(true)
-    toasts.success('Modo de prueba activado. Las anotaciones se guardarán normalmente.')
+    toasts.success('Modo de prueba activado')
   }
 
   const handleEventSelect = (event: EventItem) => {
@@ -63,41 +64,58 @@ export default function Annotations() {
     setTestEvent(null)
   }
 
+  const filteredEvents = useMemo(() => {
+    if (statusFilter === 'ONGOING') {
+      const ongoing = events.filter(e => e.status === 'ONGOING')
+      return ongoing.length > 0 ? ongoing : events.slice(0, 15)
+    }
+    if (statusFilter === 'TOURNAMENT') {
+      return events.filter(e => e.type === 'TOURNAMENT' || !!e.parentId)
+    }
+    return events.slice(0, 30)
+  }, [events, statusFilter])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-600">Cargando eventos...</div>
+        <div className="text-gray-600 font-bold text-lg animate-pulse">Cargando eventos de anotación...</div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-6 touch-manipulation">
+      {/* Header Principal */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Anotaciones en Tiempo Real</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Sistema de anotaciones interactivo para eventos y entrenamientos
+          <div className="flex items-center gap-2">
+            <span className="text-3xl">🥏</span>
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Anotaciones en Tiempo Real</h1>
+          </div>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1 font-medium">
+            Pizarra táctica interactiva optimizada para tablets, móviles y campo de juego en torneos
           </p>
         </div>
         {canManage && (
           <button
             onClick={createTestEvent}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap"
+            className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-95 text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
           >
-            🧪 Modo de Prueba
+            <span>🧪</span>
+            <span>Simulador de Partido</span>
           </button>
         )}
       </div>
 
       {testMode && (
-        <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-3 sm:p-4">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-            <div className="flex-1">
-              <h3 className="font-semibold text-yellow-900 mb-1 text-sm sm:text-base">⚠️ Modo de Prueba Activo</h3>
-              <p className="text-xs sm:text-sm text-yellow-800">
-                Estás usando el sistema de anotaciones en modo de prueba. Las anotaciones se guardarán normalmente en la base de datos.
-                Puedes probar todas las funcionalidades sin necesidad de tener un evento activo.
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h3 className="font-black text-amber-900 text-sm sm:text-base flex items-center gap-2">
+                <span>⚠️</span> Simulador de Partido de Prueba Activo
+              </h3>
+              <p className="text-xs text-amber-800 mt-0.5">
+                Puedes probar libremente todas las acciones de Goles, Asistencias, Defensas y Turnovers.
               </p>
             </div>
             <button
@@ -106,114 +124,145 @@ export default function Annotations() {
                 setTestEvent(null)
                 setSelectedEvent(null)
               }}
-              className="text-yellow-800 hover:text-yellow-900 font-medium text-xs sm:text-sm whitespace-nowrap px-3 py-1 sm:px-4 sm:py-2 bg-yellow-100 rounded hover:bg-yellow-200 transition-colors"
+              className="px-4 py-2 bg-amber-200 hover:bg-amber-300 text-amber-900 font-black rounded-xl text-xs transition-all"
             >
-              Salir del Modo Prueba
+              Salir de Prueba
             </button>
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Lista de Eventos */}
-        <div className="lg:col-span-1 order-2 lg:order-1">
-          <div className="bg-white rounded-lg shadow p-3 sm:p-4">
-            <h3 className="font-semibold text-gray-800 mb-3 sm:mb-4 text-sm sm:text-base">Seleccionar Evento</h3>
-            
-            {events.length === 0 && !testMode && (
-              <div className="text-center py-8 text-gray-500">
-                <p className="mb-4">No hay eventos disponibles</p>
-                {canManage && (
-                  <button
-                    onClick={createTestEvent}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                  >
-                    Crear Evento de Prueba
-                  </button>
-                )}
-              </div>
-            )}
+      {/* Grid Principal */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Selector de Evento */}
+        <div className="lg:col-span-1 space-y-4">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-black text-gray-900 text-base">Seleccionar Partido</h3>
+              <span className="text-xs font-bold text-gray-500">{filteredEvents.length} listados</span>
+            </div>
 
-            <div className="space-y-2 max-h-96 overflow-y-auto">
+            {/* Filtros de estado */}
+            <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+              <button
+                onClick={() => setStatusFilter('ONGOING')}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition-all ${
+                  statusFilter === 'ONGOING' ? 'bg-white text-indigo-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                🔴 En Vivo
+              </button>
+              <button
+                onClick={() => setStatusFilter('TOURNAMENT')}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition-all ${
+                  statusFilter === 'TOURNAMENT' ? 'bg-white text-indigo-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                🏆 Torneo
+              </button>
+              <button
+                onClick={() => setStatusFilter('ALL')}
+                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-black transition-all ${
+                  statusFilter === 'ALL' ? 'bg-white text-indigo-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Todos
+              </button>
+            </div>
+
+            {/* Lista de Partidos */}
+            <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
               {testEvent && (
                 <button
                   onClick={() => handleEventSelect(testEvent)}
-                  className={`w-full text-left p-3 rounded-lg border-2 transition-colors ${
+                  className={`w-full text-left p-3.5 rounded-xl border-2 transition-all active:scale-98 ${
                     selectedEvent?.id === testEvent.id
-                      ? 'border-purple-500 bg-purple-50'
+                      ? 'border-purple-600 bg-purple-50/80 shadow-sm'
                       : 'border-gray-200 hover:border-gray-300 bg-white'
                   }`}
                 >
-                  <div className="font-medium text-gray-800">{testEvent.title}</div>
-                  <div className="text-xs text-gray-500 mt-1">🧪 Modo Prueba</div>
-                  <div className="text-xs text-gray-500">{testEvent.type}</div>
+                  <div className="font-black text-gray-900 text-sm">{testEvent.title}</div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs font-black bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full">🧪 Simulación</span>
+                    <span className="text-xs text-gray-500 font-medium">{testEvent.location}</span>
+                  </div>
                 </button>
               )}
 
-              {events.map(event => (
-                <button
-                  key={event.id}
-                  onClick={() => handleEventSelect(event)}
-                  className={`w-full text-left p-3 rounded-lg border-2 transition-colors ${
-                    selectedEvent?.id === event.id
-                      ? 'border-indigo-500 bg-indigo-50'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }`}
-                >
-                  <div className="font-medium text-gray-800">{event.title}</div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={`text-xs px-2 py-0.5 rounded ${
-                      event.status === 'ONGOING' ? 'bg-green-100 text-green-700' :
-                      event.status === 'UPCOMING' ? 'bg-blue-100 text-blue-700' :
-                      event.status === 'COMPLETED' ? 'bg-gray-100 text-gray-700' :
-                      'bg-red-100 text-red-700'
-                    }`}>
-                      {event.status}
-                    </span>
-                    <span className="text-xs text-gray-500">{event.type}</span>
-                  </div>
-                  {event.startsAt && (
-                    <div className="text-xs text-gray-500 mt-1">
-                      {new Date(event.startsAt).toLocaleDateString('es-ES', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+              {filteredEvents.map(ev => {
+                const isSelected = selectedEvent?.id === ev.id
+                return (
+                  <button
+                    key={ev.id}
+                    onClick={() => handleEventSelect(ev)}
+                    className={`w-full text-left p-3.5 rounded-xl border-2 transition-all active:scale-98 ${
+                      isSelected
+                        ? 'border-indigo-600 bg-indigo-50/80 shadow-md ring-2 ring-indigo-300'
+                        : 'border-gray-200 hover:border-indigo-300 bg-white hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="font-black text-gray-900 text-sm sm:text-base leading-snug">{ev.title}</div>
+                    
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <span className={`text-xs font-black px-2 py-0.5 rounded-full ${
+                        ev.status === 'ONGOING' ? 'bg-red-100 text-red-700 animate-pulse' :
+                        ev.status === 'UPCOMING' ? 'bg-blue-100 text-blue-700' :
+                        ev.status === 'COMPLETED' ? 'bg-gray-100 text-gray-700' : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        {ev.status === 'ONGOING' ? '🔴 EN VIVO' : ev.status}
+                      </span>
+                      <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">
+                        {ev.type}
+                      </span>
+                      {ev.matchCategory && (
+                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                          {ev.matchCategory}
+                        </span>
+                      )}
                     </div>
-                  )}
-                </button>
-              ))}
+                  </button>
+                )
+              })}
+
+              {filteredEvents.length === 0 && !testEvent && (
+                <div className="text-center py-8 text-gray-400 text-sm font-medium">
+                  No hay partidos para el filtro seleccionado.
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Tabla de Anotaciones */}
-        <div className="lg:col-span-2 order-1 lg:order-2">
+        {/* Panel de Vista Previa o Pizarra */}
+        <div className="lg:col-span-2">
           {selectedEvent ? (
-            <LiveAnnotationsTable
-              event={selectedEvent}
-              onClose={() => setSelectedEvent(null)}
-              embedded={false}
-            />
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center space-y-4">
+              <div className="text-5xl">📋</div>
+              <div>
+                <h3 className="text-xl font-black text-gray-900">{selectedEvent.title}</h3>
+                <p className="text-sm text-gray-500 mt-1">{selectedEvent.description || 'Pizarra táctica lista para el partido.'}</p>
+              </div>
+              <button
+                onClick={() => setSelectedEvent(selectedEvent)}
+                className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 active:scale-95 text-white font-black text-lg rounded-2xl shadow-lg transition-all"
+              >
+                ⚡ ABRIR PIZARRA TÁCTIL EN PANTALLA COMPLETA
+              </button>
+
+              <LiveAnnotationsTable
+                event={selectedEvent}
+                onClose={() => setSelectedEvent(null)}
+                embedded={false}
+              />
+            </div>
           ) : (
-            <div className="bg-white rounded-lg shadow p-6 sm:p-12 text-center">
-              <div className="text-4xl sm:text-6xl mb-4">📝</div>
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">
-                Selecciona un Evento
-              </h3>
-              <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
-                Elige un evento de la lista para comenzar a anotar estadísticas en tiempo real
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 sm:p-12 text-center space-y-4">
+              <div className="text-5xl">🥏</div>
+              <h3 className="text-lg sm:text-xl font-black text-gray-800">Selecciona un Partido para Anotar</h3>
+              <p className="text-sm text-gray-500 max-w-md mx-auto">
+                Elige un partido en vivo de la lista de la izquierda o inicia el simulador de prueba para comenzar a registrar puntos y estadísticas.
               </p>
-              {canManage && (
-                <button
-                  onClick={createTestEvent}
-                  className="px-4 sm:px-6 py-2 sm:py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium text-sm sm:text-base"
-                >
-                  🧪 Activar Modo de Prueba
-                </button>
-              )}
             </div>
           )}
         </div>
@@ -221,4 +270,3 @@ export default function Annotations() {
     </div>
   )
 }
-

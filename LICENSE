@@ -1,6 +1,6 @@
 # MIT License
 
-Copyright (c) 2025
+Copyright (c) 2025-2026 Frank Sousa & San Juan Ultimate Crew Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -9,8 +9,15 @@ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. The above copyright notice and this permission notice shall be included in all
+   copies or substantial portions of the Software.
+
+2. Attribution Requirement: If you use, adapt, fork, or deploy this project or any of
+   its derivative works, you must provide clear attribution and a link to the original
+   repository: https://github.com/frankSousa23/San-Juan-Ultimate-Crew
+
+3. Community Contributions: Contributions, improvements, and pull requests to enhance
+   this platform for the global Ultimate Frisbee / Flying Disc community are warmly welcomed and appreciated.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,

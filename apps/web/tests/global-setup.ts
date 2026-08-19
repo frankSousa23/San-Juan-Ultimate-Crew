@@ -19,26 +19,26 @@ async function waitForHealth(url: string, timeoutMs = 90_000, intervalMs = 1000)
 }
 
 async function tryAdminLogin(): Promise<boolean> {
-  try {
-    const res = await fetch('http://localhost:4000/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'admin@example.com', password: 'admin123' }),
-    })
-    if (!res.ok) {
-      console.warn(`[globalSetup] Admin login failed with status ${res.status}`)
-      return false
-    }
-    const data = await res.json().catch(() => null)
-    const hasToken = Boolean(data?.token)
-    if (!hasToken) {
-      console.warn('[globalSetup] Admin login response missing token')
-    }
-    return hasToken
-  } catch (error) {
-    console.warn('[globalSetup] Admin login error:', error)
-    return false
+  const credentials = [
+    { email: 'admin@sju.com', password: '123456' },
+    { email: 'admin@example.com', password: 'admin123' },
+    { email: 'admin@sju.com', password: 'password123' },
+  ]
+  for (const cred of credentials) {
+    try {
+      const res = await fetch('http://localhost:4000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cred),
+      })
+      if (res.ok) {
+        const data = await res.json().catch(() => null)
+        if (data?.token) return true
+      }
+    } catch {}
   }
+  console.warn('[globalSetup] Admin login failed for all credentials')
+  return false
 }
 
 async function runNpmScriptIn(dir: string, script: string) {
@@ -136,7 +136,9 @@ export default async function globalSetup(config: FullConfig) {
     await fs.mkdir(authDir, { recursive: true })
 
     // Admin storage state
-    const adminToken = await getTokenOrNull('admin@example.com', 'admin123')
+    let adminToken = await getTokenOrNull('admin@sju.com', '123456')
+    if (!adminToken) adminToken = await getTokenOrNull('admin@example.com', 'admin123')
+    if (!adminToken) adminToken = await getTokenOrNull('admin@sju.com', 'password123')
     if (adminToken) {
       const adminPath = path.join(authDir, 'admin.json')
       await writeStorageStateForToken(baseURL, adminPath, adminToken)
@@ -146,9 +148,9 @@ export default async function globalSetup(config: FullConfig) {
     }
 
     // Guest storage state
-    const guestEmail = 'guest@example.com'
-    const guestPass = 'admin123'
-    const guestToken = await getTokenOrNull(guestEmail, guestPass)
+    let guestToken = await getTokenOrNull('guest@example.com', '123456')
+    if (!guestToken) guestToken = await getTokenOrNull('guest@example.com', 'admin123')
+    if (!guestToken) guestToken = await getTokenOrNull('guest@example.com', 'password123')
     if (guestToken) {
       const guestPath = path.join(authDir, 'guest.json')
       await writeStorageStateForToken(baseURL, guestPath, guestToken)

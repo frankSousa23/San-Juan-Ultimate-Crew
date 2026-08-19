@@ -18,8 +18,13 @@ describe('Event Participants API', () => {
   })
 
   it('bootstraps: gets events and players', async () => {
-    const evs = await request(app).get('/api/events').expect(200)
-    const pls = await request(app).get('/api/players').expect(200)
+    let evReq = request(app).get('/api/events')
+    if (authHeader) evReq = evReq.set('Authorization', authHeader)
+    const evs = await evReq.expect(200)
+
+    let plReq = request(app).get('/api/players')
+    if (authHeader) plReq = plReq.set('Authorization', authHeader)
+    const pls = await plReq.expect(200)
     expect(Array.isArray(evs.body)).toBe(true)
     expect(Array.isArray(pls.body)).toBe(true)
     expect(evs.body.length).toBeGreaterThan(0)

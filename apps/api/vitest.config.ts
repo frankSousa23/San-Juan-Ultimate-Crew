@@ -9,11 +9,7 @@ export default defineConfig({
     testTimeout: 15000,
     hookTimeout: 60000, // Give setup hooks more time for DB operations
     teardownTimeout: 15000,
-    pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: true, // Run tests sequentially to avoid DB conflicts
-      },
-    },
+    fileParallelism: false,
+    maxWorkers: 1,
   },
 })

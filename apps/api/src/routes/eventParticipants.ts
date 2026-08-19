@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { z } from 'zod'
-import { requireRole, requirePermission } from './auth.js'
+import { requirePermission } from './auth.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import type { Prisma } from '@prisma/client'
 import { success, updated, deleted, validationError, notFound } from '../lib/response.js'

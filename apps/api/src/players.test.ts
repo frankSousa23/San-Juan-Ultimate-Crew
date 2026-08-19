@@ -28,7 +28,9 @@ describe('Players CRUD', () => {
   })
 
   it('should list players and include the created one', async () => {
-    const r = await request(app).get('/api/players').expect(200)
+    let req = request(app).get('/api/players')
+    if (authHeader) req = req.set('Authorization', authHeader)
+    const r = await req.expect(200)
     expect(Array.isArray(r.body)).toBe(true)
     if (createdId) {
       expect(r.body.some((p: any) => p.id === createdId)).toBe(true)
@@ -48,7 +50,9 @@ describe('Players CRUD', () => {
     let req = request(app).delete(`/api/players/${createdId}`)
     if (authHeader) req = req.set('Authorization', authHeader)
     await req.expect(204)
-    const r = await request(app).get('/api/players').expect(200)
+    let getReq = request(app).get('/api/players')
+    if (authHeader) getReq = getReq.set('Authorization', authHeader)
+    const r = await getReq.expect(200)
     expect(r.body.some((p: any) => p.id === createdId)).toBe(false)
   })
 })

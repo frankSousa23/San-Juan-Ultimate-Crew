@@ -27,9 +27,8 @@ describe('Players self-or-admin guard', () => {
     if (!AUTH_ON || !playerToken) return
     const me = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${playerToken}`)
     if (me.status !== 200 || !me.body?.user?.playerId) return
-    selfPlayerId = me.body.user.playerId
-    const list = await request(app).get('/api/players')
-    const others = (list.body as any[]).map(p => p.id).filter((id: number) => id !== selfPlayerId)
+    const list = await request(app).get('/api/players').set('Authorization', `Bearer ${playerToken}`)
+    const others = (Array.isArray(list.body) ? list.body : []).map((p: any) => p.id).filter((id: number) => id !== selfPlayerId)
     otherPlayerId = others[0] ?? null
   })
 

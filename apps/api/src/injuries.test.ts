@@ -18,8 +18,10 @@ describe('Injuries API', () => {
     }
 
     // Get or create a player for testing
-    const playersRes = await request(app).get('/api/players')
-    if (playersRes.body.length > 0) {
+    let getReq = request(app).get('/api/players')
+    if (authHeader) getReq = getReq.set('Authorization', authHeader)
+    const playersRes = await getReq
+    if (playersRes.status === 200 && Array.isArray(playersRes.body) && playersRes.body.length > 0) {
       playerId = playersRes.body[0].id
     } else {
       let req = request(app).post('/api/players')

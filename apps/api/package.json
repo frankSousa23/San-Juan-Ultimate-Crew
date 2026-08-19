@@ -20,10 +20,10 @@
     "format:check": "prettier --check \"src/**/*.ts\"",
     "smoke:finance": "tsx ../../local/scripts/api/smoke-finance.ts",
     "smoke:e2e": "tsx ../../local/scripts/api/smoke-e2e.ts",
-    "test:auth": "cross-env AUTH_REQUIRED=true node ../../node_modules/vitest/vitest.mjs run src/auth.guard.test.ts",
-    "test": "node ../../node_modules/vitest/vitest.mjs run",
-    "test:all:auth": "cross-env AUTH_REQUIRED=true node ../../node_modules/vitest/vitest.mjs run",
-    "test:watch": "node ../../node_modules/vitest/vitest.mjs"
+    "test:auth": "cross-env AUTH_REQUIRED=true vitest run src/auth.guard.test.ts",
+    "test": "vitest run",
+    "test:all:auth": "cross-env AUTH_REQUIRED=true vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

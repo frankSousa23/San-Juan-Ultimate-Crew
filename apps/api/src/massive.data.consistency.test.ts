@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import request from 'supertest'
 import { app } from './app.js'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from './lib/prisma.js'
 
-const prisma = new PrismaClient()
 let adminToken: string
 
 describe.skipIf(process.env.TEST_MASSIVE !== 'true')('Massive Data Consistency Tests', () => {

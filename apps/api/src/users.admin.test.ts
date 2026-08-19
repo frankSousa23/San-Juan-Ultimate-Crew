@@ -42,7 +42,8 @@ describe('Admin users endpoints', () => {
     const targetUser = users.find(u => u.playerId == null)
     if (!targetUser) return
     const linkedIds = new Set(users.map(u => u.playerId).filter(Boolean))
-    const playersRes = await request(app).get('/api/players')
+    const playersRes = await request(app).get('/api/players').set('Authorization', `Bearer ${adminToken}`)
+    if (!Array.isArray(playersRes.body)) return
     const player = (playersRes.body as any[]).find(p => !linkedIds.has(p.id))
     if (!player) return
     const link = await request(app)

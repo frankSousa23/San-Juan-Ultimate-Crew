@@ -66,13 +66,65 @@ beforeAll(async () => {
       execSync('npx tsx prisma/seed.ts', { 
         stdio: 'ignore',
         env: { ...process.env },
-        timeout: 15000
+        timeout: 30000
       })
     }
   } catch (error) {
     // Seed may fail if data exists, continue
   }
+
+  await ensureRolesAndPermissions()
 }, 60000)
+
+async function ensureRolesAndPermissions() {
+  const managePerms = ['finance:manage', 'resources:manage', 'roster:manage', 'events:manage', 'communications:manage', 'injuries:manage', 'rivals:manage', 'plays:manage', 'annotations:manage', 'attendance:manage']
+  const viewPerms = ['roster:view', 'events:view', 'injuries:view', 'rivals:view', 'plays:view', 'resources:view', 'finance:view', 'statistics:view', 'annotations:view', 'attendance:view']
+  const allPermNames = [...managePerms, ...viewPerms]
+  
+  for (const name of allPermNames) {
+    await prisma.permission.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    })
+  }
+
+  const roleNames = ['admin', 'guest', 'player', 'captain', 'coach', 'treasurer']
+  for (const name of roleNames) {
+    await prisma.role.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    })
+  }
+
+  const dbRoles = await prisma.role.findMany()
+  const roleMap = Object.fromEntries(dbRoles.map(r => [r.name, r.id]))
+  const dbPerms = await prisma.permission.findMany()
+  const permMap = Object.fromEntries(dbPerms.map(p => [p.name, p.id]))
+
+  const assignPerms = async (roleName: string, perms: string[]) => {
+    const roleId = roleMap[roleName]
+    if (!roleId) return
+    for (const p of perms) {
+      const permissionId = permMap[p]
+      if (permissionId) {
+        await prisma.rolePermission.upsert({
+          where: { roleId_permissionId: { roleId, permissionId } },
+          update: {},
+          create: { roleId, permissionId }
+        })
+      }
+    }
+  }
+
+  await assignPerms('admin', allPermNames)
+  await assignPerms('player', ['communications:manage', 'roster:view', 'injuries:view', 'rivals:view', 'plays:view', 'resources:view', 'events:view', 'statistics:view', 'attendance:view', 'annotations:view'])
+  await assignPerms('captain', ['roster:manage', 'events:manage', 'communications:manage', 'injuries:manage', 'rivals:manage', 'plays:manage', 'roster:view', 'injuries:view', 'rivals:view', 'plays:view', 'resources:view', 'events:view', 'statistics:view', 'finance:view', 'attendance:manage', 'attendance:view', 'annotations:view', 'annotations:manage'])
+  await assignPerms('coach', ['events:manage', 'communications:manage', 'injuries:manage', 'plays:manage', 'resources:manage', 'roster:view', 'injuries:view', 'plays:view', 'resources:view', 'events:view', 'statistics:view', 'attendance:manage', 'attendance:view', 'annotations:view', 'annotations:manage'])
+  await assignPerms('treasurer', ['finance:manage', 'finance:view', 'roster:view', 'events:view', 'statistics:view'])
+  await assignPerms('guest', ['events:view', 'roster:view', 'injuries:view', 'rivals:view', 'plays:view', 'resources:view', 'statistics:view', 'annotations:view'])
+}
 
 afterAll(async () => {
   await prisma.$disconnect()
@@ -100,12 +152,13 @@ async function cleanupTestData() {
   }
   await prisma.roleRequest.deleteMany()
   
-  // Get seed users to preserve their roles
+  // Get seed users and workflow users to preserve their roles across multi-step tests
   const seedUsers = await prisma.user.findMany({
     where: {
-      email: {
-        in: ['admin@sju.com', 'guest@example.com', 'player@example.com']
-      }
+      OR: [
+        { email: { in: ['admin@sju.com', 'guest@example.com', 'player@example.com', 'captain@example.com', 'coach@example.com', 'treasurer@example.com'] } },
+        { email: { contains: 'workflow+' } },
+      ]
     },
     select: { id: true }
   })
@@ -128,58 +181,35 @@ async function cleanupTestData() {
   await prisma.user.deleteMany({
     where: {
       email: {
-        not: 'admin@sju.com',
-        contains: 'test'
+        notIn: ['admin@sju.com', 'guest@example.com', 'player@example.com', 'captain@example.com', 'coach@example.com', 'treasurer@example.com'],
+        contains: 'tmp-test-',
       }
     }
   })
   
-  // Ensure seed users have their roles (re-seed if needed)
-  // Use upsert to avoid unique constraint errors
-  const adminUser = await prisma.user.findUnique({ where: { email: 'admin@sju.com' } })
-  if (adminUser) {
-    const adminRole = await prisma.role.findUnique({ where: { name: 'admin' } })
-    if (adminRole) {
-      await prisma.userRole.upsert({
-        where: { userId_roleId: { userId: adminUser.id, roleId: adminRole.id } },
-        update: {},
-        create: { userId: adminUser.id, roleId: adminRole.id }
-      })
-    }
-  }
-  
-  const guestUser = await prisma.user.findUnique({ where: { email: 'guest@example.com' } })
-  if (guestUser) {
-    const guestRole = await prisma.role.findUnique({ where: { name: 'guest' } })
-    const playerRole = await prisma.role.findUnique({ where: { name: 'player' } })
-    if (guestRole) {
-      // Remove any player role from guest user first
-      if (playerRole) {
-        await prisma.userRole.deleteMany({
-          where: {
-            userId: guestUser.id,
-            roleId: playerRole.id
-          }
-        }).catch(() => {})
+  // Ensure all core seed users have their roles intact
+  const coreRolesMap = [
+    { email: 'admin@sju.com', roles: ['admin', 'player'] },
+    { email: 'captain@example.com', roles: ['captain', 'player'] },
+    { email: 'coach@example.com', roles: ['coach', 'player'] },
+    { email: 'treasurer@example.com', roles: ['treasurer', 'player'] },
+    { email: 'player@example.com', roles: ['player'] },
+    { email: 'guest@example.com', roles: ['guest'] },
+  ]
+
+  for (const item of coreRolesMap) {
+    const usr = await prisma.user.findUnique({ where: { email: item.email } })
+    if (usr) {
+      for (const rName of item.roles) {
+        const r = await prisma.role.findUnique({ where: { name: rName } })
+        if (r) {
+          await prisma.userRole.upsert({
+            where: { userId_roleId: { userId: usr.id, roleId: r.id } },
+            update: {},
+            create: { userId: usr.id, roleId: r.id }
+          }).catch(() => {})
+        }
       }
-      // Ensure guest only has guest role
-      await prisma.userRole.upsert({
-        where: { userId_roleId: { userId: guestUser.id, roleId: guestRole.id } },
-        update: {},
-        create: { userId: guestUser.id, roleId: guestRole.id }
-      })
-    }
-  }
-  
-  const playerUser = await prisma.user.findUnique({ where: { email: 'player@example.com' } })
-  if (playerUser) {
-    const playerRole = await prisma.role.findUnique({ where: { name: 'player' } })
-    if (playerRole) {
-      await prisma.userRole.upsert({
-        where: { userId_roleId: { userId: playerUser.id, roleId: playerRole.id } },
-        update: {},
-        create: { userId: playerUser.id, roleId: playerRole.id }
-      })
     }
   }
 }
