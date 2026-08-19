@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { useStats } from '../hooks/useData'
 import { transactionsApi } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
+import SystemManualModal from '../components/SystemManualModal'
+import { downloadSystemManualPdf } from '../lib/generateManualPdf'
 
 interface FinanceSummary {
   income: number
@@ -15,6 +17,8 @@ export default function Dashboard() {
   const { stats, loading: statsLoading } = useStats()
   const [financeSummary, setFinanceSummary] = useState<FinanceSummary | null>(null)
   const [financeLoading, setFinanceLoading] = useState(true)
+  const [showManualModal, setShowManualModal] = useState(false)
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
 
   useEffect(() => {
     async function loadFinanceSummary() {
@@ -81,6 +85,49 @@ export default function Dashboard() {
            'Vista pública del sistema'}
         </p>
       </div>
+
+      {/* Banner de Modo Invitado */}
+      {isGuest && (
+        <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 rounded-2xl shadow-lg p-5 sm:p-6 text-white">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🌟</span>
+                <span className="text-xs font-bold uppercase bg-white/20 px-2.5 py-0.5 rounded-full backdrop-blur-sm">
+                  Modo Invitado / Demostración
+                </span>
+              </div>
+              <h2 className="text-lg sm:text-xl font-bold">¡Bienvenido a San Juan Ultimate Club!</h2>
+              <p className="text-xs sm:text-sm text-emerald-100 max-w-2xl leading-relaxed">
+                Estás navegando en modo de muestra (solo lectura). Puedes consultar el <strong>Roster</strong> de jugadores,
+                revisar el <strong>Calendario de Eventos</strong>, ver <strong>Estadísticas</strong>, estudiar el <strong>Playbook de Jugadas</strong> y leer o descargar el <strong>Manual Oficial en PDF</strong>.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setShowManualModal(true)}
+                className="px-4 py-2 bg-white text-emerald-900 hover:bg-emerald-50 active:scale-95 font-bold text-xs sm:text-sm rounded-xl shadow transition"
+              >
+                📘 Ver Manual Interactivo
+              </button>
+              <button
+                onClick={() => {
+                  setIsDownloadingPdf(true)
+                  try {
+                    downloadSystemManualPdf()
+                  } finally {
+                    setTimeout(() => setIsDownloadingPdf(false), 800)
+                  }
+                }}
+                disabled={isDownloadingPdf}
+                className="px-3.5 py-2 bg-emerald-950/40 hover:bg-emerald-950/60 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl border border-emerald-400/30 transition"
+              >
+                {isDownloadingPdf ? 'Generando...' : '📥 PDF'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Jugadores - Visible para todos excepto guest sin permisos */}
@@ -197,8 +244,8 @@ export default function Dashboard() {
       <div className="bg-white rounded-lg shadow p-4 sm:p-6">
         <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-4">Accesos Rápidos</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-          {/* Roster - Visible para players, captains, coaches, admin */}
-          {(hasPermission('roster:view') || isAdmin || isPlayer) && (
+          {/* Roster - Visible para players, captains, coaches, admin, guest */}
+          {(hasPermission('roster:view') || isAdmin || isPlayer || isGuest) && (
             <Link to="/roster" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
               <div className="text-xl sm:text-2xl mb-1 sm:mb-2">👥</div>
               <div className="text-xs sm:text-sm font-medium">Roster</div>
@@ -245,24 +292,24 @@ export default function Dashboard() {
             </Link>
           )}
 
-          {/* Rivales - Visible para players, captains, admin (coach NO tiene acceso) */}
-          {(hasPermission('rivals:view') || isAdmin || isPlayer) && !isCoach && (
+          {/* Rivales - Visible para players, captains, admin, guest (coach NO tiene acceso) */}
+          {(hasPermission('rivals:view') || isAdmin || isPlayer || isGuest) && !isCoach && (
             <Link to="/rivales" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
               <div className="text-xl sm:text-2xl mb-1 sm:mb-2">⚔️</div>
               <div className="text-xs sm:text-sm font-medium">Equipos Rivales</div>
             </Link>
           )}
 
-          {/* Jugadas - Visible para players, captains, coaches, admin */}
-          {(hasPermission('plays:view') || isAdmin || isPlayer) && (
+          {/* Jugadas - Visible para players, captains, coaches, admin, guest */}
+          {(hasPermission('plays:view') || isAdmin || isPlayer || isGuest) && (
             <Link to="/jugadas" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
               <div className="text-xl sm:text-2xl mb-1 sm:mb-2">🎯</div>
               <div className="text-xs sm:text-sm font-medium">Jugadas</div>
             </Link>
           )}
 
-          {/* Recursos - Visible para players, coaches, admin */}
-          {(hasPermission('resources:view') || isAdmin || isPlayer) && (
+          {/* Recursos - Visible para players, coaches, admin, guest */}
+          {(hasPermission('resources:view') || isAdmin || isPlayer || isGuest) && (
             <Link to="/recursos" className="p-3 sm:p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors">
               <div className="text-xl sm:text-2xl mb-1 sm:mb-2">📁</div>
               <div className="text-xs sm:text-sm font-medium">Recursos</div>
@@ -290,6 +337,9 @@ export default function Dashboard() {
           </Link>
         </div>
       </div>
+
+      {/* Modal del Manual del Sistema */}
+      <SystemManualModal isOpen={showManualModal} onClose={() => setShowManualModal(false)} />
     </div>
   )
 }

@@ -10,9 +10,76 @@ import { ResourceItem, CreateResourceInput, UpdateResourceInput } from '../types
 import { EventAnnotation, CreateAnnotationInput, UpdateAnnotationInput, AnnotationStats } from '../types/annotation'
 import { NewsPost, NewsPostFile, CreateNewsPostInput, UpdateNewsPostInput, NewsPostListResponse } from '../types/news'
 
-const baseURL = (import.meta as any).env?.VITE_API_URL || ''
+function buildUrl(url: string, params?: Record<string, any>) {
+  if (!params) return url
+  const searchParams = new URLSearchParams()
+  for (const [key, val] of Object.entries(params)) {
+    if (val !== undefined && val !== null) {
+      searchParams.append(key, String(val))
+    }
+  }
+  const qs = searchParams.toString()
+  return qs ? `${url}${url.includes('?') ? '&' : '?'}${qs}` : url
+}
 
-export const http = axios.create({ baseURL })
+// Native fetch backed HTTP client replacing axios across the whole application
+export const http = {
+  get: async <T = any>(url: string, config?: { params?: any; headers?: any; responseType?: string }) => {
+    const fullUrl = buildUrl(url, config?.params)
+    if (config?.responseType === 'blob') {
+      const token = getAuthToken()
+      const headers: Record<string, string> = { ...(config?.headers || {}) }
+      if (token) headers['Authorization'] = `Bearer ${token}`
+      const res = await fetch(fullUrl, { method: 'GET', headers })
+      const blob = await res.blob()
+      return { data: blob as unknown as T }
+    }
+    const data = await request<T>(fullUrl, { method: 'GET', headers: config?.headers })
+    return { data }
+  },
+  post: async <T = any>(url: string, body?: any, config?: { params?: any; headers?: any }) => {
+    const fullUrl = buildUrl(url, config?.params)
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
+    if (isFormData) {
+      const token = getAuthToken()
+      const headers: Record<string, string> = { ...(config?.headers || {}) }
+      if (token) headers['Authorization'] = `Bearer ${token}`
+      const res = await fetch(fullUrl, { method: 'POST', headers, body })
+      const data = await res.json()
+      return { data: data as T }
+    }
+    const data = await request<T>(fullUrl, { method: 'POST', headers: config?.headers, body: body !== undefined ? JSON.stringify(body) : undefined })
+    return { data }
+  },
+  put: async <T = any>(url: string, body?: any, config?: { params?: any; headers?: any }) => {
+    const fullUrl = buildUrl(url, config?.params)
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
+    if (isFormData) {
+      const token = getAuthToken()
+      const headers: Record<string, string> = { ...(config?.headers || {}) }
+      if (token) headers['Authorization'] = `Bearer ${token}`
+      const res = await fetch(fullUrl, { method: 'PUT', headers, body })
+      const data = await res.json()
+      return { data: data as T }
+    }
+    const data = await request<T>(fullUrl, { method: 'PUT', headers: config?.headers, body: body !== undefined ? JSON.stringify(body) : undefined })
+    return { data }
+  },
+  patch: async <T = any>(url: string, body?: any, config?: { params?: any; headers?: any }) => {
+    const fullUrl = buildUrl(url, config?.params)
+    const data = await request<T>(fullUrl, { method: 'PATCH', headers: config?.headers, body: body !== undefined ? JSON.stringify(body) : undefined })
+    return { data }
+  },
+  delete: async <T = any>(url: string, config?: { params?: any; headers?: any }) => {
+    const fullUrl = buildUrl(url, config?.params)
+    const data = await request<T>(fullUrl, { method: 'DELETE', headers: config?.headers })
+    return { data }
+  },
+  interceptors: {
+    request: { use: () => {} },
+    response: { use: () => {} },
+  }
+}
 
 // Auth token management
 const TOKEN_KEY = 'sjuc.auth.token'
@@ -26,6 +93,50 @@ export function setAuthToken(token?: string) {
 export function getAuthToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)
 }
+
+// Native fetch helper that works reliably across iframe, cross-origin and local environments
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = getAuthToken()
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    ...(options.headers as Record<string, string> || {}),
+  }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
+  try {
+    const res = await fetch(path, {
+      ...options,
+      headers,
+    })
+
+    const text = await res.text()
+    let data: any = {}
+    try {
+      data = text ? JSON.parse(text) : {}
+    } catch {
+      data = { message: text }
+    }
+
+    if (!res.ok) {
+      const errorMsg = data.error || data.message || `Error HTTP ${res.status}`
+      const err: any = new Error(errorMsg)
+      err.response = { status: res.status, data }
+      throw err
+    }
+
+    return data as T
+  } catch (err: any) {
+    if (err.response) throw err
+    // If fetch failed before response, wrap with clear message
+    const wrappedErr: any = new Error(err.message || 'Error de conexión con el servidor')
+    wrappedErr.response = { status: 0, data: { error: err.message || 'Error de conexión' } }
+    throw wrappedErr
+  }
+}
+
 http.interceptors.request.use((config) => {
   const token = getAuthToken()
   if (token) {
@@ -39,61 +150,65 @@ http.interceptors.request.use((config) => {
 http.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Only handle 401 (Unauthorized), not 404 (Not Found)
     if (error.response?.status === 401) {
-      // Token expired or invalid - clear it
       setAuthToken()
-      // Only redirect if we're not already on login/register/forgot-password/reset-password pages
-      // AND if the request was not from AuthContext (which handles its own errors)
       const currentPath = window.location.pathname
       const isAuthPage = currentPath.includes('/login') || 
                         currentPath.includes('/register') || 
                         currentPath.includes('/forgot-password') || 
                         currentPath.includes('/reset-password')
       
-      // Don't redirect if:
-      // 1. Already on auth pages
-      // 2. The error is from /api/auth/me (AuthContext handles this)
-      // 3. The error is from a login attempt (Login page handles this)
       const isAuthEndpoint = error.config?.url?.includes('/api/auth/me') || 
                             error.config?.url?.includes('/api/auth/login')
       
       if (!isAuthPage && !isAuthEndpoint) {
-        // Use setTimeout to avoid navigation during render
         setTimeout(() => {
           window.location.href = '/login'
         }, 100)
       }
     }
-    // For 404 errors, just reject without clearing token or redirecting
-    // 404 means endpoint doesn't exist, not that auth failed
     return Promise.reject(error)
   }
 )
 
-// Auth API
+// Auth API using native fetch for maximum reliability in iframes
 export const authApi = {
-  login: async (email: string, password: string): Promise<{ token: string; user: { id: number; email: string; name?: string; roles?: string[]; playerId?: number | null; status?: 'PENDING' | 'APPROVED' | 'REJECTED' } }> => (
-    await http.post('/api/auth/login', { email, password })
-  ).data,
-  register: async (email: string, password: string, name?: string, willBePlayer?: boolean, playerData?: { number: number; position: 'HANDLER' | 'CUTTER' | 'HYBRID'; status?: 'ACTIVE' | 'INJURED' | 'INACTIVE'; heightCm?: number; experience?: string }): Promise<{ message: string; user: { id: number; email: string; name?: string; status: string; playerId?: number | null } }> => (
-    await http.post('/api/auth/register', { email, password, name, willBePlayer, playerData })
-  ).data,
-  me: async (): Promise<{ user?: { id: number; email: string; name?: string; roles?: string[]; playerId?: number | null; status?: 'PENDING' | 'APPROVED' | 'REJECTED' }; authDisabled?: boolean }> => (
-    await http.get('/api/auth/me')
-  ).data,
-  logout: async (): Promise<{ ok: boolean }> => (
-    await http.post('/api/auth/logout')
-  ).data,
-  forgotPassword: async (email: string): Promise<{ message: string; token?: string }> => (
-    await http.post('/api/auth/forgot-password', { email })
-  ).data,
-  resetPassword: async (token: string, password: string): Promise<{ message: string }> => (
-    await http.post('/api/auth/reset-password', { token, password })
-  ).data,
-  checkStatus: async (email: string): Promise<{ exists: boolean; status?: 'PENDING' | 'APPROVED' | 'REJECTED'; createdAt?: string }> => (
-    await http.post('/api/auth/check-status', { email })
-  ).data,
+  login: async (email: string, password: string): Promise<{ token: string; user: { id: number; email: string; name?: string; roles?: string[]; playerId?: number | null; status?: 'PENDING' | 'APPROVED' | 'REJECTED' } }> => {
+    return request('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    })
+  },
+  register: async (email: string, password: string, name?: string, willBePlayer?: boolean, playerData?: { number: number; position: 'HANDLER' | 'CUTTER' | 'HYBRID'; status?: 'ACTIVE' | 'INJURED' | 'INACTIVE'; heightCm?: number; experience?: string }): Promise<{ message: string; user: { id: number; email: string; name?: string; status: string; playerId?: number | null } }> => {
+    return request('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, name, willBePlayer, playerData }),
+    })
+  },
+  me: async (): Promise<{ user?: { id: number; email: string; name?: string; roles?: string[]; playerId?: number | null; status?: 'PENDING' | 'APPROVED' | 'REJECTED' }; authDisabled?: boolean }> => {
+    return request('/api/auth/me', { method: 'GET' })
+  },
+  logout: async (): Promise<{ ok: boolean }> => {
+    return request('/api/auth/logout', { method: 'POST' })
+  },
+  forgotPassword: async (email: string): Promise<{ message: string; token?: string }> => {
+    return request('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
+  },
+  resetPassword: async (token: string, password: string): Promise<{ message: string }> => {
+    return request('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    })
+  },
+  checkStatus: async (email: string): Promise<{ exists: boolean; status?: 'PENDING' | 'APPROVED' | 'REJECTED'; createdAt?: string }> => {
+    return request('/api/auth/check-status', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
+  },
 }
 
 export const playersApi = {

@@ -9,6 +9,7 @@ import type { Prisma } from '@prisma/client'
 import { createAuditHelper } from '../lib/audit.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import { success, created, updated, deleted, paginated, validationError, notFound } from '../lib/response.js'
+import { isGuestRequest, GUEST_RESOURCES } from '../lib/guestDemoData.js'
 
 const router = Router()
 
@@ -64,6 +65,14 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   }
   
   const { q, category } = parsed.data
+
+  if (isGuestRequest(req)) {
+    let filtered = GUEST_RESOURCES
+    if (category) filtered = filtered.filter(r => r.category === category)
+    if (q) filtered = filtered.filter(r => r.title.toLowerCase().includes(q.toLowerCase()) || (r.description && r.description.toLowerCase().includes(q.toLowerCase())))
+    return success(res, filtered)
+  }
+
   const where: ResourceWhereInput = {}
   
   if (category) where.category = category
@@ -102,7 +111,12 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
  *       500:
  *         description: Failed to list categories
  */
-router.get('/categories', asyncHandler(async (_req: Request, res: Response) => {
+router.get('/categories', asyncHandler(async (req: Request, res: Response) => {
+  if (isGuestRequest(req)) {
+    const cats = Array.from(new Set(GUEST_RESOURCES.map(r => r.category))).filter(Boolean)
+    return success(res, cats)
+  }
+
   const rows = await prisma.resource.findMany({
     where: { 
       AND: [
@@ -179,6 +193,15 @@ router.get('/paged', asyncHandler(async (req: Request, res: Response) => {
   }
   
   const { q, category, order, limit, offset } = parsed.data
+
+  if (isGuestRequest(req)) {
+    let filtered = GUEST_RESOURCES
+    if (category) filtered = filtered.filter(r => r.category === category)
+    if (q) filtered = filtered.filter(r => r.title.toLowerCase().includes(q.toLowerCase()) || (r.description && r.description.toLowerCase().includes(q.toLowerCase())))
+    const items = filtered.slice(offset, offset + limit)
+    return paginated(res, items, filtered.length, limit, offset)
+  }
+
   const where: ResourceWhereInput = {}
   
   if (category) where.category = category

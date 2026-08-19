@@ -7,6 +7,7 @@ import { success, created, badRequest, notFound } from '../lib/response.js'
 import { requireAuth, requirePermission } from './auth.js'
 import { validateBody, validateParams } from '../middleware/validation.js'
 import { createAuditHelper } from '../lib/audit.js'
+import { isGuestRequest, GUEST_EVENT_ANNOTATIONS, GUEST_EVENTS } from '../lib/guestDemoData.js'
 
 const router = Router()
 
@@ -15,7 +16,7 @@ const createAnnotationSchema = z.object({
   eventId: z.number().int().positive(),
   playerId: z.number().int().positive().optional().nullable(), // Nullable para jugadores oponentes
   relatedPlayerId: z.number().int().positive().optional().nullable(),
-  type: z.enum(['GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER', 'DROP']),
+  type: z.enum(['GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER']),
   note: z.string().optional(),
   lineType: z.string().optional(),
   timestamp: z.string().datetime().optional(), // Si no se proporciona, usa ahora
@@ -35,7 +36,7 @@ const updateAnnotationSchema = createAnnotationSchema.partial().extend({
   eventId: z.number().int().positive().optional(),
   playerId: z.number().int().positive().optional().nullable(),
   relatedPlayerId: z.number().int().positive().optional().nullable(),
-  type: z.enum(['GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER', 'DROP']).optional(),
+  type: z.enum(['GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER']).optional(),
 })
 
 const annotationIdSchema = z.object({
@@ -67,6 +68,13 @@ router.get('/', requireAuth, asyncHandler(async (req: Request, res: Response) =>
   const eventId = req.query.eventId ? Number(req.query.eventId) : undefined
   const playerId = req.query.playerId ? Number(req.query.playerId) : undefined
   const rivalId = req.query.rivalId ? Number(req.query.rivalId) : undefined
+
+  if (isGuestRequest(req)) {
+    let items = GUEST_EVENT_ANNOTATIONS
+    if (eventId) items = items.filter(a => a.eventId === eventId)
+    if (playerId) items = items.filter(a => a.playerId === playerId)
+    return success(res, items)
+  }
 
   const where: any = {}
   if (eventId) where.eventId = eventId
@@ -279,7 +287,6 @@ router.post('/', requireAuth, requirePermission('annotations:manage'), validateB
     if (payload.type === 'GOAL') await updateStats(payload.playerId, 'goals')
     else if (payload.type === 'DEFENSE') await updateStats(payload.playerId, 'defenses')
     else if (payload.type === 'TURNOVER') await updateStats(payload.playerId, 'turnovers')
-    else if (payload.type === 'DROP') await updateStats(payload.playerId, 'drops')
   }
   
   if (payload.relatedPlayerId && payload.type === 'GOAL') {
@@ -420,7 +427,6 @@ router.delete('/:id', requireAuth, requirePermission('annotations:manage'), vali
     if (existing.type === 'GOAL') await updateStats(existing.playerId, 'goals')
     else if (existing.type === 'DEFENSE') await updateStats(existing.playerId, 'defenses')
     else if (existing.type === 'TURNOVER') await updateStats(existing.playerId, 'turnovers')
-    else if (existing.type === 'DROP') await updateStats(existing.playerId, 'drops')
   }
   
   if (existing.relatedPlayerId && existing.type === 'GOAL') {
@@ -446,6 +452,43 @@ router.delete('/:id', requireAuth, requirePermission('annotations:manage'), vali
  */
 router.get('/event/:eventId/stats', requireAuth, asyncHandler(async (req: Request, res: Response) => {
   const eventId = Number(req.params.eventId)
+
+  if (isGuestRequest(req)) {
+    const event = GUEST_EVENTS.find(e => e.id === eventId) || { id: eventId, title: 'Evento SJUC', type: 'TOURNAMENT' }
+    const annotations = GUEST_EVENT_ANNOTATIONS.filter(a => a.eventId === eventId)
+    const statsByType = annotations.reduce((acc, ann) => {
+      acc[ann.type] = (acc[ann.type] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+
+    const statsByPlayer = annotations
+      .filter(ann => ann.playerId !== null)
+      .reduce((acc, ann) => {
+        const playerId = ann.playerId!
+        if (!acc[playerId]) {
+          acc[playerId] = {
+            player: ann.player,
+            total: 0,
+            byType: {} as Record<string, number>
+          }
+        }
+        acc[playerId].total++
+        acc[playerId].byType[ann.type] = (acc[playerId].byType[ann.type] || 0) + 1
+        return acc
+      }, {} as Record<number, { player: any; total: number; byType: Record<string, number> }>)
+
+    return success(res, {
+      event: {
+        id: event.id,
+        title: event.title,
+        type: event.type,
+      },
+      total: annotations.length,
+      byType: statsByType,
+      byPlayer: Object.values(statsByPlayer),
+      byCategory: {},
+    })
+  }
 
   const event = await prisma.event.findUnique({
     where: { id: eventId }

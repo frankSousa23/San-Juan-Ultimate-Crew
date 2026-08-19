@@ -5,6 +5,7 @@ import { requirePermission } from './auth.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import type { Prisma } from '@prisma/client'
 import { success, updated, deleted, validationError, notFound } from '../lib/response.js'
+import { isGuestRequest, GUEST_EVENT_PARTICIPANTS } from '../lib/guestDemoData.js'
 
 const router = Router()
 
@@ -40,6 +41,12 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const parsed = listQuerySchema.safeParse(req.query)
   if (!parsed.success) return validationError(res, 'Invalid query parameters', parsed.error.issues)
   const { eventId } = parsed.data
+
+  if (isGuestRequest(req)) {
+    const items = eventId ? GUEST_EVENT_PARTICIPANTS.filter(p => p.eventId === eventId) : GUEST_EVENT_PARTICIPANTS
+    return success(res, items)
+  }
+
   const where: Prisma.EventParticipantWhereInput = {}
   if (eventId) where.eventId = eventId
   const items = await prisma.eventParticipant.findMany({

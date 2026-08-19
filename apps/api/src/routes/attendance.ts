@@ -4,6 +4,7 @@ import { requirePermission } from './auth.js'
 import { z } from 'zod'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import { success, updated, deleted, validationError, notFound } from '../lib/response.js'
+import { isGuestRequest, GUEST_ATTENDANCES } from '../lib/guestDemoData.js'
 
 const router = Router()
 
@@ -43,6 +44,11 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   }
   
   const { eventId } = parsed.data
+  if (isGuestRequest(req)) {
+    const records = GUEST_ATTENDANCES.filter(a => a.eventId === eventId)
+    return success(res, records)
+  }
+
   const records = await prisma.attendance.findMany({
     where: { eventId },
     include: { player: true },

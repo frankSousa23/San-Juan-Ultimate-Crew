@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { eventsApi } from '../lib/api'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
@@ -6,9 +7,11 @@ import LiveAnnotationsTable from '../components/LiveAnnotationsTable'
 import { EventItem } from '../types/event'
 
 export default function Annotations() {
-  const { hasPermission } = useAuth()
+  const { user, hasPermission, hasRole } = useAuth()
   const toasts = useToast()
-  const canManage = hasPermission('events:manage')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const isGuest = hasRole('guest') || user?.email === 'guest@sjuc.com'
+  const canManage = hasPermission('annotations:manage') || hasPermission('events:manage') || hasRole('admin') || hasRole('captain') || hasRole('coach') || hasRole('directiva') || hasRole('annotator') || isGuest
   
   const [events, setEvents] = useState<EventItem[]>([])
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null)
@@ -27,10 +30,22 @@ export default function Annotations() {
       const evts = await eventsApi.list()
       setEvents(evts)
       
+      // Auto-seleccionar según query param eventId si viene en la URL
+      const paramEventId = searchParams.get('eventId') ? Number(searchParams.get('eventId')) : null
+      if (paramEventId) {
+        const found = evts.find(e => e.id === paramEventId)
+        if (found) {
+          setSelectedEvent(found)
+          return
+        }
+      }
+
       // Auto-seleccionar evento en vivo prioritario si existe
       const ongoingEvent = evts.find(e => e.status === 'ONGOING')
       if (ongoingEvent) {
         setSelectedEvent(ongoingEvent)
+      } else if (evts.length > 0) {
+        setSelectedEvent(evts[0])
       }
     } catch (err: any) {
       toasts.error('No se pudieron cargar los eventos')

@@ -23,15 +23,15 @@ interface PlayerStats {
   assists: number
   interceptions: number
   turnovers: number
-  drops: number
 }
 
 type LineFilter = 'ALL' | 'O-LINE' | 'D-LINE' | 'ACTIVE'
 
 export default function LiveAnnotationsTable({ event, onClose, embedded = false }: LiveAnnotationsTableProps) {
-  const { user, hasPermission } = useAuth()
+  const { user, hasPermission, hasRole } = useAuth()
   const toasts = useToast()
-  const canManage = hasPermission('events:manage')
+  const isGuest = hasRole('guest') || user?.email === 'guest@sjuc.com'
+  const canManage = hasPermission('annotations:manage') || hasPermission('events:manage') || hasRole('admin') || hasRole('captain') || hasRole('coach') || hasRole('directiva') || hasRole('annotator') || isGuest || event.id < 0
   
   const [annotations, setAnnotations] = useState<EventAnnotation[]>([])
   const [players, setPlayers] = useState<Player[]>([])
@@ -69,12 +69,36 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
 
   useEffect(() => {
     loadData()
-    const interval = setInterval(loadData, 4000)
-    return () => clearInterval(interval)
+    if (event.id > 0) {
+      const interval = setInterval(loadData, 4000)
+      return () => clearInterval(interval)
+    }
   }, [event.id])
 
   const loadData = async () => {
     try {
+      if (event.id < 0) {
+        // Simulador de prueba / Modo Sandbox
+        let pls: Player[] = []
+        try {
+          pls = await playersApi.list()
+        } catch {
+          pls = []
+        }
+        if (pls.length === 0) {
+          pls = [
+            { id: 101, name: 'Carlos Mendoza (Capitán)', number: 7, position: 'HANDLER', status: 'ACTIVE' } as any,
+            { id: 102, name: 'Alejandro Ramos', number: 10, position: 'CUTTER', status: 'ACTIVE' } as any,
+            { id: 103, name: 'Gabriela Silva', number: 14, position: 'HYBRID', status: 'ACTIVE' } as any,
+            { id: 104, name: 'David Peña', number: 23, position: 'CUTTER', status: 'ACTIVE' } as any,
+            { id: 105, name: 'Valeria Rivas', number: 88, position: 'HANDLER', status: 'ACTIVE' } as any,
+          ]
+        }
+        setPlayers(pls)
+        setLoading(false)
+        return
+      }
+
       const [anns, pls] = await Promise.all([
         annotationsApi.list({ eventId: event.id }),
         playersApi.list(),
@@ -118,9 +142,8 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
         teamSide: 'HOME',
         goals: playerAnns.filter(a => a.type === 'GOAL').length,
         assists,
-        interceptions: playerAnns.filter(a => a.type === 'DEFENSE').length,
+        interceptions: playerAnns.filter(a => a.type === 'DEFENSE' || a.type === 'CALLAHAN').length,
         turnovers: playerAnns.filter(a => a.type === 'TURNOVER').length,
-        drops: playerAnns.filter(a => a.type === 'DROP').length,
       })
     })
 
@@ -139,9 +162,8 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
           teamSide: 'AWAY',
           goals: playerAnns.filter(a => a.type === 'GOAL').length,
           assists,
-          interceptions: playerAnns.filter(a => a.type === 'DEFENSE').length,
+          interceptions: playerAnns.filter(a => a.type === 'DEFENSE' || a.type === 'CALLAHAN').length,
           turnovers: playerAnns.filter(a => a.type === 'TURNOVER').length,
-          drops: playerAnns.filter(a => a.type === 'DROP').length,
         })
       })
     } else if (isVersus) {
@@ -157,9 +179,8 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
           teamSide: 'AWAY',
           goals: playerAnns.filter(a => a.type === 'GOAL').length,
           assists: 0,
-          interceptions: playerAnns.filter(a => a.type === 'DEFENSE').length,
+          interceptions: playerAnns.filter(a => a.type === 'DEFENSE' || a.type === 'CALLAHAN').length,
           turnovers: playerAnns.filter(a => a.type === 'TURNOVER').length,
-          drops: playerAnns.filter(a => a.type === 'DROP').length,
         })
       })
     }
@@ -197,6 +218,39 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
     if (!canManage) return
     
     try {
+      const typeLabel = type === 'GOAL' ? '⚽ ¡GOL ANOTADO!' : type === 'DEFENSE' ? '🛡️ ¡DEFENSA (D) REGISTRADA!' : '❌ TURNOVER REGISTRADO'
+
+      if (event.id < 0) {
+        // En modo simulación / sandbox, manejamos el estado de manera reactiva local
+        const pObj = playerId ? players.find(p => p.id === playerId) : undefined
+        const newScoreHome = type === 'GOAL' && (teamSide === 'HOME' || !teamSide) ? scoreHome + 1 : scoreHome
+        const newScoreAway = type === 'GOAL' && teamSide === 'AWAY' ? scoreAway + 1 : scoreAway
+
+        const fakeAnn: EventAnnotation = {
+          id: Date.now() + Math.floor(Math.random() * 1000),
+          eventId: event.id,
+          type,
+          playerId: playerId || null,
+          player: pObj ? { id: pObj.id, name: pObj.name, number: pObj.number } : undefined,
+          relatedPlayerId: relatedPlayerId || null,
+          opponentPlayerName: playerName || null,
+          opponentPlayerNumber: playerNumber || null,
+          opponentTeamName: opponentTeamName || null,
+          teamSide: teamSide || 'HOME',
+          timestamp: new Date().toISOString(),
+          scoreHome: newScoreHome,
+          scoreAway: newScoreAway,
+        }
+
+        setAnnotations(prev => [fakeAnn, ...prev])
+        if (type === 'GOAL') {
+          if (teamSide === 'HOME' || !teamSide) setScoreHome(prev => prev + 1)
+          else setScoreAway(prev => prev + 1)
+        }
+        toasts.success(typeLabel)
+        return
+      }
+
       const payload: CreateAnnotationInput = {
         eventId: event.id,
         type,
@@ -232,7 +286,6 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
       await annotationsApi.create(payload)
       await loadData()
       
-      const typeLabel = type === 'GOAL' ? '⚽ ¡GOL ANOTADO!' : type === 'DEFENSE' ? '🛡️ ¡DEFENSA (D) REGISTRADA!' : type === 'TURNOVER' ? '❌ TURNOVER REGISTRADO' : '⏬ DROP REGISTRADO'
       toasts.success(typeLabel)
     } catch (err: any) {
       toasts.error(err?.response?.data?.error || 'No se pudo registrar la anotación')
@@ -243,6 +296,20 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
   const removeAnnotation = async (annotationId: number, type: AnnotationType) => {
     if (!canManage) return
     try {
+      if (event.id < 0) {
+        const ann = annotations.find(a => a.id === annotationId)
+        setAnnotations(prev => prev.filter(a => a.id !== annotationId))
+        if (type === 'GOAL') {
+          if (ann?.teamSide === 'HOME' || (!ann?.teamSide && !ann?.opponentTeamName)) {
+            setScoreHome(prev => Math.max(0, prev - 1))
+          } else if (ann?.teamSide === 'AWAY') {
+            setScoreAway(prev => Math.max(0, prev - 1))
+          }
+        }
+        toasts.success('Anotación eliminada')
+        return
+      }
+
       await annotationsApi.remove(annotationId)
       if (type === 'GOAL') {
         const ann = annotations.find(a => a.id === annotationId)
@@ -651,9 +718,9 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
                       <span className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-base shadow-sm ${
                         ann.type === 'GOAL' ? 'bg-green-500 text-white' :
                         ann.type === 'DEFENSE' ? 'bg-purple-500 text-white' :
-                        ann.type === 'TURNOVER' ? 'bg-red-500 text-white' : 'bg-orange-500 text-white'
+                        'bg-red-500 text-white'
                       }`}>
-                        {ann.type === 'GOAL' ? '⚽' : ann.type === 'DEFENSE' ? '🛡️' : ann.type === 'TURNOVER' ? '❌' : '⏬'}
+                        {ann.type === 'GOAL' ? '⚽' : ann.type === 'DEFENSE' ? '🛡️' : '❌'}
                       </span>
                       <div>
                         <div className="font-black text-gray-900 text-sm sm:text-base flex items-center gap-2">
@@ -665,7 +732,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
                           <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                             ann.type === 'GOAL' ? 'bg-green-200 text-green-800' :
                             ann.type === 'DEFENSE' ? 'bg-purple-200 text-purple-800' :
-                            ann.type === 'TURNOVER' ? 'bg-red-200 text-red-800' : 'bg-orange-200 text-orange-800'
+                            'bg-red-200 text-red-800'
                           }`}>
                             {ann.type}
                           </span>
@@ -698,7 +765,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
               })}
               {annotations.length === 0 && (
                 <div className="text-center py-8 text-gray-400 font-medium">
-                  Aún no hay anotaciones en este partido. ¡Presiona GOL, DEF, TURN o DROP en los jugadores arriba para comenzar!
+                  Aún no hay anotaciones en este partido. ¡Presiona GOL, DEF o TURNOVER en los jugadores arriba para comenzar!
                 </div>
               )}
             </div>
@@ -788,60 +855,52 @@ function renderTacticalPlayerList(
               
               {/* Badges de Estadísticas */}
               <div className="flex items-center gap-1.5 text-xs font-black">
-                <span className={`px-2 py-0.5 rounded-md ${stat.goals > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
+                <span className={`px-2 py-0.5 rounded-md ${stat.goals > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`} title="Goles anotados">
                   G:{stat.goals}
                 </span>
-                <span className={`px-2 py-0.5 rounded-md ${stat.assists > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500'}`}>
+                <span className={`px-2 py-0.5 rounded-md ${stat.assists > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500'}`} title="Asistencias de gol">
                   A:{stat.assists}
                 </span>
-                <span className={`px-2 py-0.5 rounded-md ${stat.interceptions > 0 ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-500'}`}>
+                <span className={`px-2 py-0.5 rounded-md ${stat.interceptions > 0 ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-500'}`} title="Intercepciones / Defensas">
                   D:{stat.interceptions}
                 </span>
-                {(stat.turnovers > 0 || stat.drops > 0) && (
-                  <span className="px-1.5 py-0.5 rounded-md bg-red-50 text-red-700">
-                    T:{stat.turnovers}
-                  </span>
-                )}
+                <span className={`px-2 py-0.5 rounded-md ${stat.turnovers > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-500'}`} title="Turnovers (Pérdidas / Caídas)">
+                  T:{stat.turnovers}
+                </span>
               </div>
             </div>
 
-            {/* Fila 2: Botones Táctiles de Acción Rápida */}
+            {/* Fila 2: Botones Táctiles de Acción Rápida (Gol, Intercepción/Defensa, Turnover) */}
             {canManage && (
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {/* Botón GOL */}
                 <button 
                   onClick={() => handleGoalClick(stat.playerId, stat.playerName, stat.playerNumber, side)} 
-                  className="h-12 sm:h-14 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-xl font-black text-sm sm:text-base shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5 border-b-4 border-green-700 active:border-b-0"
+                  className="h-12 sm:h-14 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-xl font-black text-sm sm:text-base shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5 border-b-4 border-green-800 active:border-b-0"
+                  title="Anotar Gol y seleccionar asistente"
                 >
-                  <span>⚽</span>
+                  <span className="text-lg">⚽</span>
                   <span>GOL</span>
                 </button>
 
-                {/* Botón DEF */}
+                {/* Botón DEF (Intercepción / Recuperación) */}
                 <button 
                   onClick={() => quickAddAnnotation(stat.playerId, stat.playerName, stat.playerNumber, 'DEFENSE', side)} 
                   className="h-12 sm:h-14 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white rounded-xl font-black text-sm sm:text-base shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5 border-b-4 border-purple-800 active:border-b-0"
+                  title="Registrar Intercepción / Defensa ganada"
                 >
-                  <span>🛡️</span>
+                  <span className="text-lg">🛡️</span>
                   <span>DEF</span>
                 </button>
 
-                {/* Botón TURN */}
+                {/* Botón TURNOVER (Pérdida / Caída / Mal pase) */}
                 <button 
                   onClick={() => quickAddAnnotation(stat.playerId, stat.playerName, stat.playerNumber, 'TURNOVER', side)} 
-                  className="h-12 sm:h-14 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-xl font-black text-sm sm:text-base shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1 border-b-4 border-red-700 active:border-b-0"
+                  className="h-12 sm:h-14 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-xl font-black text-sm sm:text-base shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5 border-b-4 border-red-800 active:border-b-0"
+                  title="Registrar Turnover (Pérdida de disco, caída o mal pase)"
                 >
-                  <span>❌</span>
-                  <span>TURN</span>
-                </button>
-
-                {/* Botón DROP */}
-                <button 
-                  onClick={() => quickAddAnnotation(stat.playerId, stat.playerName, stat.playerNumber, 'DROP', side)} 
-                  className="h-12 sm:h-14 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white rounded-xl font-black text-sm sm:text-base shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1 border-b-4 border-orange-700 active:border-b-0"
-                >
-                  <span>⏬</span>
-                  <span>DROP</span>
+                  <span className="text-lg">❌</span>
+                  <span>TURNOVER</span>
                 </button>
               </div>
             )}

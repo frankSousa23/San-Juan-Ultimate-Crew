@@ -79,22 +79,22 @@ function AppRoutes() {
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         
-        {/* Player, Captain, Coach & Admin Routes */}
-        <Route path="/roster" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin']}><Roster /></ProtectedRoute>} />
-        <Route path="/eventos" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin']}><Events /></ProtectedRoute>} />
-        <Route path="/anotaciones" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin']}><Annotations /></ProtectedRoute>} />
+        {/* Player, Captain, Coach, Directiva, Annotator & Admin Routes */}
+        <Route path="/roster" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'guest']}><Roster /></ProtectedRoute>} />
+        <Route path="/eventos" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'guest']}><Events /></ProtectedRoute>} />
+        <Route path="/anotaciones" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'guest']}><Annotations /></ProtectedRoute>} />
         {/* Communications: accessible to all authenticated users, but with different permissions */}
         <Route path="/comunicacion" element={<ProtectedRoute><Communications /></ProtectedRoute>} />
         {/* Statistics: accessible to all authenticated users (including guest for demo/showcase) */}
         <Route path="/estadisticas" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
-        <Route path="/lesiones" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin']}><Injuries /></ProtectedRoute>} />
-        <Route path="/rivales" element={<ProtectedRoute requiredRole={['player', 'captain', 'admin']}><Rivals /></ProtectedRoute>} />
-        <Route path="/jugadas" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin']}><Plays /></ProtectedRoute>} />
-        <Route path="/roster-torneo" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin']}><RosterTorneo /></ProtectedRoute>} />
-        <Route path="/recursos" element={<ProtectedRoute requiredRole={['player', 'coach', 'admin']}><Resources /></ProtectedRoute>} />
+        <Route path="/lesiones" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'guest']}><Injuries /></ProtectedRoute>} />
+        <Route path="/rivales" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'guest']}><Rivals /></ProtectedRoute>} />
+        <Route path="/jugadas" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'guest']}><Plays /></ProtectedRoute>} />
+        <Route path="/roster-torneo" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'guest']}><RosterTorneo /></ProtectedRoute>} />
+        <Route path="/recursos" element={<ProtectedRoute requiredRole={['player', 'coach', 'admin', 'directiva', 'captain', 'guest']}><Resources /></ProtectedRoute>} />
 
         {/* Treasurer & Admin Routes */}
-        <Route path="/finanzas" element={<ProtectedRoute requiredRole={['treasurer', 'admin']}><Finances /></ProtectedRoute>} />
+        <Route path="/finanzas" element={<ProtectedRoute requiredRole={['treasurer', 'admin', 'directiva']}><Finances /></ProtectedRoute>} />
         <Route path="/admin/usuarios" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
         <Route path="/admin/monitoring" element={<ProtectedRoute requiredRole="admin"><SystemMonitoring /></ProtectedRoute>} />
       </Routes>

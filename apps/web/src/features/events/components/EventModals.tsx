@@ -1,4 +1,5 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import EventForm from './EventForm'
 import { EventItem } from '../../../types/event'
 
@@ -7,7 +8,7 @@ interface EventModalsProps {
   editTarget: EventItem | null
   setCreateOpen: (val: boolean) => void
   setEditTarget: (val: EventItem | null) => void
-  createEvent: (data: any) => Promise<void>
+  createEvent: (data: any) => Promise<any>
   updateEvent: (id: number, data: any) => Promise<void>
 }
 
@@ -19,6 +20,15 @@ export function EventModals({
   createEvent,
   updateEvent
 }: EventModalsProps) {
+  const navigate = useNavigate()
+
+  const handleCreateAndAnnotate = async (data: any) => {
+    const created = await createEvent(data)
+    if (created && created.id) {
+      navigate(`/anotaciones?eventId=${created.id}`)
+    }
+  }
+
   return (
     <>
       {createOpen && (
@@ -33,6 +43,7 @@ export function EventModals({
                 initial={null}
                 onCancel={() => setCreateOpen(false)}
                 onSubmit={(data) => createEvent(data)}
+                onSubmitAndAnnotate={handleCreateAndAnnotate}
               />
             </div>
           </div>

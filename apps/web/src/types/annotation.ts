@@ -3,7 +3,6 @@ export type AnnotationType =
   | 'ASSIST'
   | 'DEFENSE'
   | 'TURNOVER'
-  | 'DROP'
 
 export interface EventAnnotation {
   id: number

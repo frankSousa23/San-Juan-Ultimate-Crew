@@ -5,6 +5,7 @@ import { z } from 'zod'
 import type { Prisma } from '@prisma/client'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import { success, created, updated, deleted, paginated, validationError, notFound } from '../lib/response.js'
+import { isGuestRequest, GUEST_INJURIES } from '../lib/guestDemoData.js'
 
 const router = Router()
 
@@ -36,7 +37,10 @@ const updateSchema = createSchema.partial()
  *               items:
  *                 $ref: '#/components/schemas/Injury'
  */
-router.get('/', asyncHandler(async (_req: Request, res: Response) => {
+router.get('/', asyncHandler(async (req: Request, res: Response) => {
+  if (isGuestRequest(req)) {
+    return success(res, GUEST_INJURIES)
+  }
   const items = await prisma.injury.findMany({ include: { player: true }, orderBy: { startDate: 'desc' } })
   return success(res, items)
 }))
@@ -120,6 +124,16 @@ router.get('/paged', asyncHandler(async (req: Request, res: Response) => {
   }
   
   const { playerId, severity, status, limit, offset } = parsed.data
+
+  if (isGuestRequest(req)) {
+    let filtered = GUEST_INJURIES
+    if (playerId) filtered = filtered.filter(i => i.playerId === playerId)
+    if (severity) filtered = filtered.filter(i => i.severity === severity)
+    if (status) filtered = filtered.filter(i => i.status === status)
+    const items = filtered.slice(offset, offset + limit)
+    return paginated(res, items, filtered.length, limit, offset)
+  }
+
   const where: Prisma.InjuryWhereInput = {}
   if (playerId) where.playerId = playerId
   if (severity) where.severity = severity

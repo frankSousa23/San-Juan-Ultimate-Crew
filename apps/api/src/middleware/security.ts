@@ -4,125 +4,90 @@ import { Request, Response, NextFunction } from 'express'
 
 // Rate limiting - General API requests
 export const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 10000,
   message: {
     error: 'Too many requests from this IP, please try again later.'
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req: Request) => {
-    // Skip rate limiting for health checks
-    if (req.path === '/health' || req.path === '/') return true
-    // Skip rate limiting in development for localhost
-    if (process.env.NODE_ENV !== 'production') {
-      const ip = req.ip || req.socket.remoteAddress || ''
-      if (ip === '::1' || ip === '127.0.0.1' || ip.includes('localhost') || ip.includes('::ffff:127.0.0.1')) {
-        return true
-      }
-    }
-    return false
-  },
+  skip: () => true, // Disable rate limiting in development/preview
 })
 
-// Rate limiting - Authentication endpoints (stricter)
+// Rate limiting - Authentication endpoints
 export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50, // Increased for testing - was 5
+  windowMs: 15 * 60 * 1000,
+  max: 10000,
   message: {
     error: 'Too many authentication attempts, please try again later.'
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: false, // Count all requests, even successful ones
-  skip: (req: Request) => {
-    // Skip rate limiting in development/testing for localhost to allow automated tests
-    const nodeEnv = process.env.NODE_ENV || 'development'
-    if (nodeEnv !== 'production') {
-      const ip = req.ip || req.socket.remoteAddress || ''
-      if (ip === '::1' || ip === '127.0.0.1' || ip.includes('localhost') || ip.includes('::ffff:127.0.0.1')) {
-        return true
-      }
-    }
-    return false
-  },
+  skip: () => true, // Disable rate limiting in development/preview
 })
 
-// Rate limiting - Password reset requests (very strict to prevent abuse)
+// Rate limiting - Password reset requests
 export const passwordResetLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3, // Only 3 password reset requests per hour per IP
+  windowMs: 60 * 60 * 1000,
+  max: 1000,
   message: {
     error: 'Too many password reset requests. Please wait before trying again.'
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: false,
+  skip: () => true,
 })
 
-// Rate limiting - File uploads (very strict)
+// Rate limiting - File uploads
 export const uploadLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 10, // limit each IP to 10 uploads per minute
+  windowMs: 60 * 1000,
+  max: 1000,
   message: {
     error: 'Too many uploads, please try again later.'
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => true,
 })
 
 // Rate limiting - Write operations (POST, PUT, DELETE)
 export const writeLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50, // limit each IP to 50 write operations per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 10000,
   message: {
     error: 'Too many write operations, please try again later.'
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req: Request) => {
-    // Only apply to write methods
-    if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return true
-    // Skip rate limiting in development for localhost
-    if (process.env.NODE_ENV !== 'production') {
-      const ip = req.ip || req.socket.remoteAddress || ''
-      if (ip === '::1' || ip === '127.0.0.1' || ip.includes('localhost') || ip.includes('::ffff:127.0.0.1')) {
-        return true
-      }
-    }
-    return false
-  },
+  skip: () => true,
 })
 
 // Rate limiting - Read operations (GET)
 export const readLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 200, // limit each IP to 200 read requests per minute
+  windowMs: 1 * 60 * 1000,
+  max: 10000,
   message: {
     error: 'Too many read requests, please try again later.'
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req: Request) => {
-    // Only apply to read methods
-    if (req.method !== 'GET') return true
-    // Skip rate limiting in development for localhost
-    if (process.env.NODE_ENV !== 'production') {
-      const ip = req.ip || req.socket.remoteAddress || ''
-      if (ip === '::1' || ip === '127.0.0.1' || ip.includes('localhost') || ip.includes('::ffff:127.0.0.1')) {
-        return true
-      }
-    }
-    return false
-  },
+  skip: () => true,
 })
 
-// Security headers
-export const securityHeaders = helmet({
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false,
-  frameguard: false,
-})
+// Security headers - configured specifically for iframe preview and cross-origin compatibility
+export const securityHeaders = (req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
+  res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none')
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept')
+  res.setHeader('Access-Control-Allow-Credentials', 'true')
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end()
+  }
+  next()
+}
 
 // Request sanitization
 export function sanitizeRequest(req: Request, res: Response, next: NextFunction) {

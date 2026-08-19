@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import SystemManualModal from './SystemManualModal'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -8,6 +9,7 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [manualOpen, setManualOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout, hasRole } = useAuth()
@@ -17,23 +19,23 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Panel Principal', href: '/', icon: '🏠', roles: [] },
     { name: 'Mi Perfil', href: '/perfil', icon: '👤', roles: [] },
     
-    { name: 'Roster', href: '/roster', icon: '👥', roles: ['player', 'captain', 'coach', 'admin', 'treasurer', 'marketing'] },
-    { name: 'Eventos', href: '/eventos', icon: '📅', roles: ['player', 'captain', 'coach', 'admin', 'treasurer', 'marketing', 'guest'] },
-    { name: 'Anotaciones', href: '/anotaciones', icon: '✏️', roles: ['player', 'captain', 'coach', 'admin'] },
+    { name: 'Roster', href: '/roster', icon: '👥', roles: ['player', 'captain', 'coach', 'admin', 'treasurer', 'marketing', 'directiva', 'annotator', 'guest'] },
+    { name: 'Eventos', href: '/eventos', icon: '📅', roles: ['player', 'captain', 'coach', 'admin', 'treasurer', 'marketing', 'guest', 'directiva', 'annotator'] },
+    { name: 'Anotaciones', href: '/anotaciones', icon: '✏️', roles: ['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'guest'] },
     
     // Communications: accessible to all authenticated users (guest can view)
     { name: 'Comunicación', href: '/comunicacion', icon: '💬', roles: [] },
     // Statistics: accessible to all authenticated users (including guest for demo/showcase)
     { name: 'Estadísticas', href: '/estadisticas', icon: '📊', roles: [] },
     
-    { name: 'Lesiones', href: '/lesiones', icon: '🏥', roles: ['player', 'captain', 'coach', 'admin'] },
-    { name: 'Equipos Rivales', href: '/rivales', icon: '⚔️', roles: ['player', 'captain', 'admin', 'coach'] },
-    { name: 'Jugadas', href: '/jugadas', icon: '🎯', roles: ['player', 'captain', 'coach', 'admin'] },
-    { name: 'Roster Torneo', href: '/roster-torneo', icon: '🏆', roles: ['player', 'captain', 'coach', 'admin'] },
-    { name: 'Recursos', href: '/recursos', icon: '📁', roles: ['player', 'coach', 'admin', 'marketing', 'guest'] },
+    { name: 'Lesiones', href: '/lesiones', icon: '🏥', roles: ['player', 'captain', 'coach', 'admin', 'directiva', 'guest'] },
+    { name: 'Equipos Rivales', href: '/rivales', icon: '⚔️', roles: ['player', 'captain', 'admin', 'coach', 'directiva', 'annotator', 'guest'] },
+    { name: 'Jugadas', href: '/jugadas', icon: '🎯', roles: ['player', 'captain', 'coach', 'admin', 'directiva', 'guest'] },
+    { name: 'Roster Torneo', href: '/roster-torneo', icon: '🏆', roles: ['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'guest'] },
+    { name: 'Recursos', href: '/recursos', icon: '📁', roles: ['player', 'coach', 'admin', 'marketing', 'guest', 'directiva', 'captain'] },
     
     // Treasurer & Admin
-    { name: 'Finanzas', href: '/finanzas', icon: '💰', roles: ['treasurer', 'admin'] },
+    { name: 'Finanzas', href: '/finanzas', icon: '💰', roles: ['treasurer', 'admin', 'directiva'] },
     
     // Admin Only
     { name: 'Admin Usuarios', href: '/admin/usuarios', icon: '🔧', roles: ['admin'] },
@@ -149,8 +151,34 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </h2>
           </div>
           
-          <div className="flex items-center space-x-4">
-             {/* Header actions can go here */}
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <button
+              onClick={() => setManualOpen(true)}
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs sm:text-sm font-bold rounded-lg border border-blue-200 transition active:scale-95"
+              title="Ver manual y guía oficial del sistema"
+            >
+              <span>📘</span>
+              <span className="hidden sm:inline">Manual SJUC</span>
+              <span className="text-[10px] bg-blue-200 text-blue-900 px-1.5 py-0.2 rounded font-mono">PDF</span>
+            </button>
+
+            {user ? (
+              <button
+                onClick={logout}
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs sm:text-sm font-bold rounded-lg border border-rose-200 transition active:scale-95"
+                title="Cerrar sesión en el sistema"
+              >
+                <span>🚪</span>
+                <span>Salir</span>
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold rounded-lg shadow transition active:scale-95"
+              >
+                <span>Iniciar Sesión</span>
+              </Link>
+            )}
           </div>
         </header>
 
@@ -161,6 +189,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </main>
       </div>
+
+      {/* Modal del Manual del Sistema */}
+      <SystemManualModal isOpen={manualOpen} onClose={() => setManualOpen(false)} />
 
       {/* Overlay for mobile */}
       {sidebarOpen && (

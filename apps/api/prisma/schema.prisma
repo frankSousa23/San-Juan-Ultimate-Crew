@@ -71,7 +71,6 @@ enum AnnotationType {
   ASSIST
   DEFENSE
   TURNOVER
-  DROP
 }
 
 // Finance
@@ -201,7 +200,6 @@ model PlayerMatchStats {
   assists      Int @default(0)
   defenses     Int @default(0)
   turnovers    Int @default(0)
-  drops        Int @default(0)
   pointsPlayed Int @default(0)
 
   createdAt DateTime @default(now())

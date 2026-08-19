@@ -277,7 +277,7 @@ const htmlContent = `
   <p>Optimizada especialmente para uso táctil en el campo de juego durante torneos y partidos oficiales:</p>
   <ul>
     <li><strong>Marcador Sticky Superior:</strong> Marcador gigante en vivo siempre visible al scrollear.</li>
-    <li><strong>Botones Táctiles Inmediatos:</strong> GOL (con selector de asistente o Callahan en 1 toque), DEFENSA (D), TURNOVER y DROP.</li>
+    <li><strong>Botones Táctiles Inmediatos:</strong> GOL (con selector de asistente o Callahan en 1 toque), DEFENSA (D) y TURNOVER.</li>
     <li><strong>Filtro por Líneas Tácticas:</strong> O-Line (Ofensiva), D-Line (Defensiva) y Flex.</li>
   </ul>
 

@@ -12,8 +12,6 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma db push",
     "prisma:seed": "tsx prisma/seed.ts",
-    "prisma:seed:clean": "tsx prisma/seed.clean.ts",
-    "prisma:seed:massive": "tsx prisma/seed.massive.ts",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.ts\"",

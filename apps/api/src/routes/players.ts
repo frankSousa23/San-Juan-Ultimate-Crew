@@ -7,6 +7,7 @@ import { validateBody, validateParams } from '../middleware/validation.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { createAuditHelper } from '../lib/audit.js';
 import { success, created, updated, deleted, notFound } from '../lib/response.js';
+import { isGuestRequest, GUEST_PLAYERS, GUEST_MATCH_STATS } from '../lib/guestDemoData.js';
 
 const router = Router();
 
@@ -27,6 +28,17 @@ const router = Router();
  *                 $ref: '#/components/schemas/Player'
  */
 router.get('/', requirePermission('roster:view'), asyncHandler(async (req: Request, res: Response) => {
+  if (isGuestRequest(req)) {
+    const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
+    if (page && !isNaN(page)) {
+      const skip = (page - 1) * limit;
+      const paginated = GUEST_PLAYERS.slice(skip, skip + limit);
+      return success(res, { data: paginated, total: GUEST_PLAYERS.length, page, totalPages: Math.ceil(GUEST_PLAYERS.length / limit) });
+    }
+    return success(res, GUEST_PLAYERS);
+  }
+
   const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
   const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
 
@@ -216,6 +228,18 @@ router.delete('/:id', requirePermission('roster:manage'), validateParams(playerI
   return deleted(res);
 }));
 
+router.get('/:id', requirePermission('roster:view'), asyncHandler(async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  if (isGuestRequest(req)) {
+    const p = GUEST_PLAYERS.find(pl => pl.id === id);
+    if (!p) return notFound(res, 'Player not found');
+    return success(res, p);
+  }
+  const player = await prisma.player.findUnique({ where: { id } });
+  if (!player) return notFound(res, 'Player not found');
+  return success(res, player);
+}));
+
 /**
  * @swagger
  * /api/players/{id}/stats:
@@ -236,6 +260,23 @@ router.delete('/:id', requirePermission('roster:manage'), validateParams(playerI
  */
 router.get('/:id/stats', asyncHandler(async (req: Request, res: Response) => {
   const id = Number(req.params.id);
+  if (isGuestRequest(req)) {
+    const stat = GUEST_MATCH_STATS.find(s => s.playerId === id);
+    if (stat) {
+      const plusMinus = (stat.goals + stat.assists + stat.defenses) - (stat.turnovers + stat.drops);
+      return success(res, {
+        goals: stat.goals,
+        assists: stat.assists,
+        defenses: stat.defenses,
+        turnovers: stat.turnovers,
+        drops: stat.drops,
+        pointsPlayed: stat.pointsPlayed,
+        plusMinus,
+      });
+    }
+    return success(res, { goals: 0, assists: 0, defenses: 0, turnovers: 0, drops: 0, pointsPlayed: 0, plusMinus: 0 });
+  }
+
   const stats = await prisma.playerMatchStats.aggregate({
     where: { playerId: id },
     _sum: {

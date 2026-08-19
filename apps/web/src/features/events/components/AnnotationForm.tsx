@@ -28,7 +28,7 @@ export function AnnotationForm({
   const [category, setCategory] = useState<string>(initial?.category || '')
 
   const annotationTypes: AnnotationType[] = [
-    'GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER', 'DROP', 'CALLAHAN', 'MVP', 'FOUL',
+    'GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER', 'CALLAHAN', 'MVP', 'FOUL',
     'TIMEOUT', 'SUBSTITUTION', 'INJURY', 'GENERAL', 'STRATEGY', 'PERFORMANCE'
   ]
 
@@ -70,20 +70,19 @@ export function AnnotationForm({
           >
             {annotationTypes.map(t => (
               <option key={t} value={t}>
-                {t === 'GOAL' ? 'GOL' :
-                 t === 'ASSIST' ? 'AST' :
-                 t === 'DEFENSE' ? 'INT' :
-                 t === 'TURNOVER' ? 'TURN' :
-                 t === 'DROP' ? 'DROP' :
-                 t === 'CALLAHAN' ? 'CALL' :
-                 t === 'MVP' ? 'MVP' :
-                 t === 'FOUL' ? 'Falta' :
-                 t === 'TIMEOUT' ? 'Tiempo muerto' :
-                 t === 'SUBSTITUTION' ? 'Sustitución' :
-                 t === 'INJURY' ? 'Lesión' :
-                 t === 'GENERAL' ? 'General' :
-                 t === 'STRATEGY' ? 'Estrategia' :
-                 t === 'PERFORMANCE' ? 'Rendimiento' : t}
+                {t === 'GOAL' ? '⚽ Gol' :
+                 t === 'ASSIST' ? '🎯 Asistencia' :
+                 t === 'DEFENSE' ? '🛡️ Intercepción (Defensa)' :
+                 t === 'TURNOVER' ? '❌ Turnover (Pérdida / Caída)' :
+                 t === 'CALLAHAN' ? '🌟 Gol Callahan' :
+                 t === 'MVP' ? '👑 MVP' :
+                 t === 'FOUL' ? '⚠️ Falta' :
+                 t === 'TIMEOUT' ? '⏱️ Tiempo muerto' :
+                 t === 'SUBSTITUTION' ? '🔄 Sustitución' :
+                 t === 'INJURY' ? '🩹 Lesión' :
+                 t === 'GENERAL' ? '📝 General' :
+                 t === 'STRATEGY' ? '🧠 Estrategia' :
+                 t === 'PERFORMANCE' ? '📊 Rendimiento' : t}
               </option>
             ))}
           </select>

@@ -35,7 +35,11 @@ const statusBadge: Record<EventStatus, string> = {
 export default function Events() {
   const toasts = useToast()
   const navigate = useNavigate()
-  const { hasPermission } = useAuth()
+  const { user, hasPermission, hasRole } = useAuth()
+  const isGuest = hasRole('guest') || user?.email === 'guest@sjuc.com'
+  const canManageEvents = hasPermission('events:manage') || hasRole('admin') || hasRole('captain') || hasRole('coach') || isGuest
+  const canAnnotate = hasPermission('annotations:manage') || hasPermission('events:manage') || hasRole('admin') || hasRole('captain') || hasRole('coach') || hasRole('annotator') || isGuest
+  
   const { state, actions } = useEvents()
   const {
     events, tab, typeFilter, statusFilter, q, limit, page,
@@ -77,8 +81,8 @@ export default function Events() {
       )}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Sistema de Eventos</h2>
-        {hasPermission('events:manage') && (
-          <button onClick={() => setCreateOpen(true)} className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 whitespace-nowrap text-sm sm:text-base">+ Crear Evento</button>
+        {canManageEvents && (
+          <button onClick={() => setCreateOpen(true)} className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 whitespace-nowrap text-sm sm:text-base shadow font-semibold">+ Crear Evento</button>
         )}
       </div>
 
@@ -225,15 +229,15 @@ export default function Events() {
                         }
                       }}>Abrir canal</button>
                       
-                      {hasPermission('annotations:manage') && (
-                        <button className="text-purple-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => setAnnotEvent(e)}>Anotaciones</button>
+                      {canAnnotate && (
+                        <button className="text-purple-700 hover:underline text-xs sm:text-sm whitespace-nowrap font-medium" onClick={() => setAnnotEvent(e)}>🥏 Anotaciones</button>
                       )}
 
-                      {hasPermission('events:manage') && (
+                      {canManageEvents && (
                         <>
-                          <button className="text-teal-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => setAttEvent(e)}>Asistencia</button>
-                          <button className="text-amber-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => setEditTarget(e)}>Editar</button>
-                          <button className="text-red-600 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => {
+                          <button className="text-teal-700 hover:underline text-xs sm:text-sm whitespace-nowrap font-medium" onClick={() => setAttEvent(e)}>📋 Asistencia</button>
+                          <button className="text-amber-700 hover:underline text-xs sm:text-sm whitespace-nowrap font-medium" onClick={() => setEditTarget(e)}>Editar</button>
+                          <button className="text-red-600 hover:underline text-xs sm:text-sm whitespace-nowrap font-medium" onClick={() => {
                             setConfirmState({
                               eventId: e.id,
                               title: 'Confirmar eliminación',
@@ -266,11 +270,11 @@ export default function Events() {
                               <div className="flex flex-wrap items-center gap-2">
                                 <span className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${statusBadge[child.status]}`}>{child.status}</span>
                                 <div className="text-xs text-gray-600 whitespace-nowrap">{child.startsAt ? new Date(child.startsAt).toLocaleString() : ''}</div>
-                                {hasPermission('events:manage') && (
-                                  <>
-                                    <button className="text-teal-700 hover:underline text-xs whitespace-nowrap" onClick={() => setAttEvent(child as any)}>Asistencia</button>
-                                    <button className="text-purple-700 hover:underline text-xs whitespace-nowrap" onClick={() => setAnnotEvent(child as any)}>Anotaciones</button>
-                                  </>
+                                {canManageEvents && (
+                                  <button className="text-teal-700 hover:underline text-xs whitespace-nowrap" onClick={() => setAttEvent(child as any)}>Asistencia</button>
+                                )}
+                                {canAnnotate && (
+                                  <button className="text-purple-700 hover:underline text-xs whitespace-nowrap font-medium" onClick={() => setAnnotEvent(child as any)}>🥏 Anotaciones</button>
                                 )}
                               </div>
                             </div>
@@ -409,22 +413,61 @@ export default function Events() {
                   {selectedDateEvents.events.map(ev => (
                     <div 
                       key={ev.id} 
-                      className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer transition-colors"
-                      onClick={() => {
-                        setSelectedDateEvents(null)
-                        setEditTarget(ev)
-                      }}
+                      className="border rounded-lg p-3 hover:bg-gray-50 transition-colors flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
                     >
-                      <div className="font-semibold text-gray-800">{ev.title}</div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {new Date(ev.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        {ev.endsAt && ` - ${new Date(ev.endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                      <div 
+                        className="flex-1 cursor-pointer"
+                        onClick={() => {
+                          setSelectedDateEvents(null)
+                          setEditTarget(ev)
+                        }}
+                      >
+                        <div className="font-semibold text-gray-800">{ev.title}</div>
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          {new Date(ev.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {ev.endsAt && ` - ${new Date(ev.endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${statusBadge[ev.status]}`}>
+                            {ev.status}
+                          </span>
+                          <span className="text-xs text-gray-600">{typeLabel[ev.type]}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className={`text-xs px-2 py-1 rounded-full ${statusBadge[ev.status]}`}>
-                          {ev.status}
-                        </span>
-                        <span className="text-xs text-gray-600">{typeLabel[ev.type]}</span>
+                      <div className="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
+                        {canAnnotate && (
+                          <button
+                            onClick={() => {
+                              setSelectedDateEvents(null)
+                              setAnnotEvent(ev)
+                            }}
+                            className="px-2.5 py-1 text-xs font-semibold bg-purple-100 text-purple-800 hover:bg-purple-200 rounded-md transition"
+                          >
+                            🥏 Anotar
+                          </button>
+                        )}
+                        {canManageEvents && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setSelectedDateEvents(null)
+                                setAttEvent(ev)
+                              }}
+                              className="px-2.5 py-1 text-xs font-semibold bg-teal-100 text-teal-800 hover:bg-teal-200 rounded-md transition"
+                            >
+                              📋 Asistencia
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedDateEvents(null)
+                                setEditTarget(ev)
+                              }}
+                              className="px-2.5 py-1 text-xs font-semibold bg-amber-100 text-amber-800 hover:bg-amber-200 rounded-md transition"
+                            >
+                              ✏️ Editar
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -673,16 +716,16 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
   const [stats, setStats] = useState<any>(null)
   const [viewMode, setViewMode] = useState<'list' | 'table'>('list')
   const toasts = useToast()
-  const { hasPermission } = useAuth()
-
-  const canManage = hasPermission('events:manage')
+  const navigate = useNavigate()
+  const { user, hasPermission, hasRole } = useAuth()
+  const isGuest = hasRole('guest') || user?.email === 'guest@sjuc.com'
+  const canManage = hasPermission('annotations:manage') || hasPermission('events:manage') || hasRole('admin') || hasRole('captain') || hasRole('coach') || hasRole('annotator') || isGuest
 
   const annotationTypeLabels: Record<AnnotationType, string> = {
     GOAL: 'Gol',
     ASSIST: 'Asistencia',
     DEFENSE: 'Defensa',
     TURNOVER: 'Pérdida',
-    DROP: 'Caída',
     FOUL: 'Falta',
     TIMEOUT: 'Tiempo muerto',
     SUBSTITUTION: 'Sustitución',
@@ -697,7 +740,6 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
     ASSIST: 'bg-blue-100 text-blue-800',
     DEFENSE: 'bg-purple-100 text-purple-800',
     TURNOVER: 'bg-red-100 text-red-800',
-    DROP: 'bg-orange-100 text-orange-800',
     FOUL: 'bg-yellow-100 text-yellow-800',
     TIMEOUT: 'bg-gray-100 text-gray-800',
     SUBSTITUTION: 'bg-indigo-100 text-indigo-800',
@@ -779,26 +821,38 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
               <div className="text-base sm:text-lg font-bold">Anotaciones — {eventItem.title}</div>
               <div className="text-xs sm:text-sm opacity-90">{typeLabel[eventItem.type]}</div>
             </div>
-            {canManage && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-colors ${
-                    viewMode === 'list' ? 'bg-white text-purple-600' : 'bg-purple-500 text-white hover:bg-purple-400'
-                  }`}
-                >
-                  Lista
-                </button>
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-colors ${
-                    viewMode === 'table' ? 'bg-white text-purple-600' : 'bg-purple-500 text-white hover:bg-purple-400'
-                  }`}
-                >
-                  Tabla
-                </button>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  onClose()
+                  navigate(`/anotaciones?eventId=${eventItem.id}`)
+                }}
+                className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm font-bold shadow flex items-center gap-1 transition"
+                title="Abrir en vista de anotaciones táctiles completas"
+              >
+                <span>🥏 Pizarra Completa</span>
+              </button>
+              {canManage && (
+                <>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-colors ${
+                      viewMode === 'list' ? 'bg-white text-purple-600' : 'bg-purple-500 text-white hover:bg-purple-400'
+                    }`}
+                  >
+                    Lista
+                  </button>
+                  <button
+                    onClick={() => setViewMode('table')}
+                    className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition-colors ${
+                      viewMode === 'table' ? 'bg-white text-purple-600' : 'bg-purple-500 text-white hover:bg-purple-400'
+                    }`}
+                  >
+                    Pizarra Rápida
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
         

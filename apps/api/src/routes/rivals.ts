@@ -5,6 +5,7 @@ import { z } from 'zod'
 import type { Prisma } from '@prisma/client'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import { success, created, updated, deleted, paginated, validationError, notFound } from '../lib/response.js'
+import { isGuestRequest, GUEST_RIVALS } from '../lib/guestDemoData.js'
 
 const router = Router()
 
@@ -34,7 +35,10 @@ const updateSchema = createSchema.partial()
  *               items:
  *                 $ref: '#/components/schemas/Rival'
  */
-router.get('/', asyncHandler(async (_req: Request, res: Response) => {
+router.get('/', asyncHandler(async (req: Request, res: Response) => {
+  if (isGuestRequest(req)) {
+    return success(res, GUEST_RIVALS)
+  }
   const items = await prisma.rival.findMany({ orderBy: { createdAt: 'desc' } })
   return success(res, items)
 }))
@@ -104,6 +108,15 @@ router.get('/paged', asyncHandler(async (req: Request, res: Response) => {
   }
   
   const { q, limit, offset } = parsed.data
+  if (isGuestRequest(req)) {
+    let filtered = GUEST_RIVALS
+    if (q) {
+      filtered = filtered.filter(r => r.name.toLowerCase().includes(q.toLowerCase()))
+    }
+    const items = filtered.slice(offset, offset + limit)
+    return paginated(res, items, filtered.length, limit, offset)
+  }
+
   const where: Prisma.RivalWhereInput = q ? { name: { contains: q, mode: 'insensitive' } } : {}
   
   const [total, items] = await Promise.all([

@@ -32,6 +32,7 @@ import newsRouter from './routes/news.js';
 import path from 'path';
 
 export const app = express();
+app.set('trust proxy', 1);
 
 // Security middleware
 app.use(securityHeaders);

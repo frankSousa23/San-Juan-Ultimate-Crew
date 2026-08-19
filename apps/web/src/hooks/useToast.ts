@@ -9,21 +9,26 @@ export interface Toast {
 }
 
 export function useToast() {
-  const showSuccessToast = (message: string, title?: string) => {
+  const success = (message: string, title?: string) => {
     toast.success(`${title ? title + ': ' : ''}${message}`)
   }
 
-  const showErrorToast = (message: string, title?: string) => {
+  const error = (message: string, title?: string) => {
     toast.error(`${title ? title + ': ' : ''}${message}`)
   }
 
-  const showWarningToast = (message: string, title?: string) => {
+  const warning = (message: string, title?: string) => {
     toast(`${title ? title + ': ' : ''}${message}`, { icon: '⚠️' })
   }
 
-  const showInfoToast = (message: string, title?: string) => {
+  const info = (message: string, title?: string) => {
     toast(`${title ? title + ': ' : ''}${message}`, { icon: 'ℹ️' })
   }
+
+  const showSuccessToast = success
+  const showErrorToast = error
+  const showWarningToast = warning
+  const showInfoToast = info
 
   const clearAllToasts = () => {
     toast.dismiss()
@@ -36,6 +41,10 @@ export function useToast() {
 
   return {
     toasts,
+    success,
+    error,
+    warning,
+    info,
     addToast,
     removeToast,
     showSuccessToast,

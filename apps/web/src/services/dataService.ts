@@ -1,31 +1,107 @@
-import axios from 'axios'
+// Auth token management
+function getAuthToken(): string | null {
+  return localStorage.getItem('sjuc.auth.token')
+}
 
-const api = axios.create({
-  baseURL: (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000/api',
-  headers: {
+function buildUrl(url: string, params?: Record<string, any>) {
+  if (!params) return url
+  const searchParams = new URLSearchParams()
+  for (const [key, val] of Object.entries(params)) {
+    if (val !== undefined && val !== null) {
+      searchParams.append(key, String(val))
+    }
+  }
+  const qs = searchParams.toString()
+  return qs ? `${url}${url.includes('?') ? '&' : '?'}${qs}` : url
+}
+
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = getAuthToken()
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-  },
-  withCredentials: true, // Allow sending cookies with CORS requests
-})
-
-// Add interceptor to include token
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('sjuc.auth.token')
+    'Accept': 'application/json',
+    ...(options.headers as Record<string, string> || {}),
+  }
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+    headers['Authorization'] = `Bearer ${token}`
   }
-  return config
-})
 
-// Add response interceptor to handle errors gracefully
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // Don't throw for 404 errors - let the calling code handle it
-    // This prevents unnecessary error propagation
-    return Promise.reject(error)
+  try {
+    const res = await fetch(path, {
+      ...options,
+      headers,
+    })
+
+    const text = await res.text()
+    let data: any = {}
+    try {
+      data = text ? JSON.parse(text) : {}
+    } catch {
+      data = { message: text }
+    }
+
+    if (!res.ok) {
+      const errorMsg = data.error || data.message || `Error HTTP ${res.status}`
+      const err: any = new Error(errorMsg)
+      err.response = { status: res.status, data }
+      throw err
+    }
+
+    return data as T
+  } catch (err: any) {
+    if (err.response) throw err
+    const wrappedErr: any = new Error(err.message || 'Error de conexión con el servidor')
+    wrappedErr.response = { status: 0, data: { error: err.message || 'Error de conexión' } }
+    throw wrappedErr
   }
-)
+}
+
+function formatApiUrl(url: string): string {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  if (url.startsWith('/api')) return url
+  return `/api${url.startsWith('/') ? url : '/' + url}`
+}
+
+const api = {
+  get: async <T = any>(url: string, config?: any) => {
+    const fullUrl = buildUrl(formatApiUrl(url), config?.params)
+    const data = await request<T>(fullUrl, { method: 'GET', headers: config?.headers })
+    return { data }
+  },
+  post: async <T = any>(url: string, body?: any, config?: any) => {
+    const fullUrl = buildUrl(formatApiUrl(url), config?.params)
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
+    if (isFormData) {
+      const token = getAuthToken()
+      const headers: Record<string, string> = { ...(config?.headers || {}) }
+      if (token) headers['Authorization'] = `Bearer ${token}`
+      const res = await fetch(fullUrl, { method: 'POST', headers, body })
+      const data = await res.json()
+      return { data: data as T }
+    }
+    const data = await request<T>(fullUrl, { method: 'POST', headers: config?.headers, body: body ? JSON.stringify(body) : undefined })
+    return { data }
+  },
+  put: async <T = any>(url: string, body?: any, config?: any) => {
+    const fullUrl = buildUrl(formatApiUrl(url), config?.params)
+    const data = await request<T>(fullUrl, { method: 'PUT', headers: config?.headers, body: body ? JSON.stringify(body) : undefined })
+    return { data }
+  },
+  patch: async <T = any>(url: string, body?: any, config?: any) => {
+    const fullUrl = buildUrl(formatApiUrl(url), config?.params)
+    const data = await request<T>(fullUrl, { method: 'PATCH', headers: config?.headers, body: body ? JSON.stringify(body) : undefined })
+    return { data }
+  },
+  delete: async <T = any>(url: string, config?: any) => {
+    const fullUrl = buildUrl(formatApiUrl(url), config?.params)
+    const data = await request<T>(fullUrl, { method: 'DELETE', headers: config?.headers })
+    return { data }
+  },
+  interceptors: {
+    request: { use: () => {} },
+    response: { use: () => {} },
+  }
+}
 
 
 // Types

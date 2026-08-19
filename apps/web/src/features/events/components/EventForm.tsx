@@ -9,13 +9,14 @@ interface Props {
   initial?: EventItem | null
   onCancel: () => void
   onSubmit: (data: CreateEventInput | UpdateEventInput) => Promise<void>
+  onSubmitAndAnnotate?: (data: CreateEventInput | UpdateEventInput) => Promise<void>
 }
 
 const typeOptions: EventType[] = ['TRAINING', 'TOURNAMENT', 'SOCIAL', 'WORKSHOP', 'FULL_DAY_OPEN', 'FULL_DAY_MIXTO', 'AMISTOSO', 'MATCH']
 const statusOptions: EventStatus[] = ['UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED']
 const matchCategoryOptions: MatchCategory[] = ['GROUP_STAGE', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINALS', 'PLACEMENT']
 
-export default function EventForm({ mode, initial, onCancel, onSubmit }: Props) {
+export default function EventForm({ mode, initial, onCancel, onSubmit, onSubmitAndAnnotate }: Props) {
   const [form, setForm] = useState<CreateEventInput | UpdateEventInput>({
     title: '', description: '', type: 'TRAINING', status: 'UPCOMING', location: '', startsAt: '', endsAt: '', isInternalScrimmage: false, rivalId: null, matchCategory: null
   })
@@ -51,38 +52,57 @@ export default function EventForm({ mode, initial, onCancel, onSubmit }: Props) 
     v: (CreateEventInput & UpdateEventInput)[K]
   ) => setForm(prev => ({ ...prev, [k]: v }))
 
+  const buildPayload = (): CreateEventInput | UpdateEventInput => {
+    const payload: CreateEventInput | UpdateEventInput = { ...form }
+    if (payload.startsAt) {
+      payload.startsAt = new Date(payload.startsAt as string).toISOString()
+    }
+    if (payload.endsAt) {
+      payload.endsAt = new Date(payload.endsAt as string).toISOString()
+    }
+    if (mode === 'edit') {
+      Object.keys(payload).forEach(k => {
+        const key = k as keyof typeof payload
+        if (payload[key] === '' || payload[key] === undefined) {
+          delete (payload as Record<string, unknown>)[key]
+        }
+      })
+    }
+    
+    // Limpiar campos irrelevantes
+    if (payload.type !== 'MATCH') {
+      payload.rivalId = null
+      payload.matchCategory = null
+    }
+    if (payload.type !== 'TRAINING' && payload.type !== 'MATCH') {
+      payload.isInternalScrimmage = false
+    }
+
+    return payload
+  }
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setSubmitting(true)
     try {
-      const payload: CreateEventInput | UpdateEventInput = { ...form }
-      // Convert datetime-local to ISO for API
-      if (payload.startsAt) {
-        payload.startsAt = new Date(payload.startsAt as string).toISOString()
-      }
-      if (payload.endsAt) {
-        payload.endsAt = new Date(payload.endsAt as string).toISOString()
-      }
-      if (mode === 'edit') {
-        Object.keys(payload).forEach(k => {
-          const key = k as keyof typeof payload
-          if (payload[key] === '' || payload[key] === undefined) {
-            delete (payload as Record<string, unknown>)[key]
-          }
-        })
-      }
-      
-      // Limpiar campos irrelevantes
-      if (payload.type !== 'MATCH') {
-        payload.rivalId = null
-        payload.matchCategory = null
-      }
-      if (payload.type !== 'TRAINING' && payload.type !== 'MATCH') {
-        payload.isInternalScrimmage = false
-      }
-
+      const payload = buildPayload()
       await onSubmit(payload)
+    } catch (err) {
+      const error = err as Error
+      setError(error?.message || 'Error al enviar el formulario')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleCreateAndAnnotate = async () => {
+    if (!onSubmitAndAnnotate) return
+    setError(null)
+    setSubmitting(true)
+    try {
+      const payload = buildPayload()
+      await onSubmitAndAnnotate(payload)
     } catch (err) {
       const error = err as Error
       setError(error?.message || 'Error al enviar el formulario')
@@ -189,9 +209,24 @@ export default function EventForm({ mode, initial, onCancel, onSubmit }: Props) 
           <textarea value={form.description || ''} onChange={e => handleChange('description', e.target.value)} className="w-full px-3 py-2 border rounded-lg" placeholder="Detalles"></textarea>
         </div>
       </div>
-      <div className="flex gap-2 pt-2">
-        <button disabled={submitting} type="submit" className="flex-1 bg-amber-600 text-white py-2 rounded-lg hover:bg-amber-700 disabled:opacity-60">{mode === 'create' ? 'Crear' : 'Guardar'}</button>
-        <button type="button" onClick={onCancel} className="flex-1 bg-gray-100 text-gray-800 py-2 rounded-lg hover:bg-gray-200">Cancelar</button>
+      <div className="flex flex-col sm:flex-row gap-2 pt-2">
+        <button disabled={submitting} type="submit" className="flex-1 bg-amber-600 text-white py-2 px-3 rounded-lg hover:bg-amber-700 font-bold text-sm disabled:opacity-60 transition">
+          {mode === 'create' ? 'Crear Evento' : 'Guardar Cambios'}
+        </button>
+        {mode === 'create' && onSubmitAndAnnotate && (
+          <button 
+            disabled={submitting} 
+            type="button" 
+            onClick={handleCreateAndAnnotate} 
+            className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2 px-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 font-bold text-sm disabled:opacity-60 shadow transition flex items-center justify-center gap-1.5"
+          >
+            <span>🥏</span>
+            <span>Crear y Anotar</span>
+          </button>
+        )}
+        <button type="button" onClick={onCancel} className="px-4 bg-gray-100 text-gray-800 py-2 rounded-lg hover:bg-gray-200 font-medium text-sm transition">
+          Cancelar
+        </button>
       </div>
     </form>
   )

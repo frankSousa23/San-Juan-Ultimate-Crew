@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import { prisma } from '../lib/prisma.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import { success, unauthorized } from '../lib/response.js'
+import { isGuestRequest, GUEST_PLAYERS, GUEST_EVENTS, GUEST_MATCH_STATS } from '../lib/guestDemoData.js'
 
 const router = Router()
 
@@ -70,6 +71,28 @@ interface EventTypeGroup {
 }
 
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
+  if (isGuestRequest(req)) {
+    return success(res, {
+      players: GUEST_PLAYERS.length,
+      events: GUEST_EVENTS.length,
+      messages: 0,
+      upcomingEvents: GUEST_EVENTS.filter(e => e.status === 'UPCOMING'),
+      attendance: [
+        { status: 'present', count: 22 },
+        { status: 'late', count: 1 },
+        { status: 'absent', count: 2 },
+      ],
+      eventsByType: [
+        { type: 'TOURNAMENT', count: 2 },
+        { type: 'TRAINING', count: 1 },
+        { type: 'WORKSHOP', count: 1 },
+      ],
+      activePlayers: 11,
+      completedEvents: 2,
+      viewType: 'guest' as const,
+    })
+  }
+
   // Try to get user from token if present (optional auth)
   let u = (req as Request & { user?: { sub: string } }).user
   if (!u?.sub) {
@@ -538,6 +561,19 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
 router.get('/tournament/:id', asyncHandler(async (req: Request, res: Response) => {
   const tournamentId = Number(req.params.id);
   if (isNaN(tournamentId)) return unauthorized(res, 'Invalid tournament ID');
+
+  if (isGuestRequest(req)) {
+    const totalGoals = GUEST_MATCH_STATS.reduce((acc, curr) => acc + curr.goals, 0);
+    const totalAssists = GUEST_MATCH_STATS.reduce((acc, curr) => acc + curr.assists, 0);
+    const totalDefenses = GUEST_MATCH_STATS.reduce((acc, curr) => acc + curr.defenses, 0);
+    return success(res, {
+      matchesPlayed: 1,
+      goals: totalGoals,
+      assists: totalAssists,
+      defenses: totalDefenses,
+      playerStats: GUEST_MATCH_STATS,
+    });
+  }
 
   const matches = await prisma.event.findMany({
     where: { parentId: tournamentId },

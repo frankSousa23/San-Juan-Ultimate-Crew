@@ -6,6 +6,7 @@ import { validateBody, validateParams } from '../middleware/validation.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { createAuditHelper } from '../lib/audit.js';
 import { success, created, updated, deleted, notFound } from '../lib/response.js';
+import { isGuestRequest, GUEST_EVENTS } from '../lib/guestDemoData.js';
 
 const router = Router();
 
@@ -26,6 +27,17 @@ const router = Router();
  *                 $ref: '#/components/schemas/Event'
  */
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
+  if (isGuestRequest(req)) {
+    const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
+    if (page && !isNaN(page)) {
+      const skip = (page - 1) * limit;
+      const paginated = GUEST_EVENTS.slice(skip, skip + limit);
+      return success(res, { data: paginated, total: GUEST_EVENTS.length, page, totalPages: Math.ceil(GUEST_EVENTS.length / limit) });
+    }
+    return success(res, GUEST_EVENTS);
+  }
+
   const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
   const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
 
@@ -40,6 +52,18 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
 
   const events = await prisma.event.findMany({ orderBy: { startsAt: 'desc' }, include: { children: true } });
   return success(res, events);
+}));
+
+router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  if (isGuestRequest(req)) {
+    const ev = GUEST_EVENTS.find(e => e.id === id);
+    if (!ev) return notFound(res, 'Event not found');
+    return success(res, ev);
+  }
+  const event = await prisma.event.findUnique({ where: { id }, include: { children: true } });
+  if (!event) return notFound(res, 'Event not found');
+  return success(res, event);
 }));
 
 const createEventSchema = z.object({

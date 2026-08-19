@@ -5,6 +5,7 @@ import { z } from 'zod'
 import type { Prisma } from '@prisma/client'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import { success, created, updated, deleted, paginated, validationError, notFound } from '../lib/response.js'
+import { isGuestRequest, GUEST_PLAYS } from '../lib/guestDemoData.js'
 
 const router = Router()
 
@@ -73,6 +74,14 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   }
   
   const { category, q } = parsed.data
+
+  if (isGuestRequest(req)) {
+    let filtered = GUEST_PLAYS
+    if (category) filtered = filtered.filter(p => p.category === category)
+    if (q) filtered = filtered.filter(p => p.name.toLowerCase().includes(q.toLowerCase()))
+    return success(res, filtered)
+  }
+
   const where: Prisma.PlayWhereInput = {}
   
   if (category) {
@@ -150,6 +159,15 @@ router.get('/paged', asyncHandler(async (req: Request, res: Response) => {
   }
   
   const { q, category, limit, offset } = parsed.data
+
+  if (isGuestRequest(req)) {
+    let filtered = GUEST_PLAYS
+    if (category) filtered = filtered.filter(p => p.category === category)
+    if (q) filtered = filtered.filter(p => p.name.toLowerCase().includes(q.toLowerCase()))
+    const items = filtered.slice(offset, offset + limit)
+    return paginated(res, items, filtered.length, limit, offset)
+  }
+
   const where: Prisma.PlayWhereInput = {}
   
   if (category) where.category = category

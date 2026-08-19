@@ -92,7 +92,7 @@ const options: swaggerJsdoc.Options = {
             eventId: { type: 'integer' },
             playerId: { type: 'integer', nullable: true },
             relatedPlayerId: { type: 'integer', nullable: true, description: 'ID del jugador asistente en jugada de gol' },
-            type: { type: 'string', enum: ['GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER', 'DROP'] },
+            type: { type: 'string', enum: ['GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER'] },
             lineType: { type: 'string', nullable: true, description: 'O-Line, D-Line o Flex' },
             teamSide: { type: 'string', enum: ['HOME', 'AWAY'], nullable: true },
             scoreHome: { type: 'integer', nullable: true },

@@ -5,11 +5,15 @@ import { useToast } from '../hooks/useToast'
 import { useApi } from '../hooks/useApi'
 import { useAuth } from '../contexts/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
+import SystemManualModal from '../components/SystemManualModal'
+import { downloadSystemManualPdf } from '../lib/generateManualPdf'
 import type { ResourceItem } from '../types/resource'
 
 export default function Resources() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [items, setItems] = useState<ResourceItem[]>([])
+  const [showManualModal, setShowManualModal] = useState(false)
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
   const [q, setQ] = useState('')
   const [category, setCategory] = useState('')
   const [sortMode, setSortMode] = useState<'createdAtDesc' | 'titleAsc'>('createdAtDesc')
@@ -202,6 +206,57 @@ export default function Resources() {
 
   return (
     <div className="space-y-6">
+      {/* Tarjeta Destacada: Manual del Usuario y Guía de Operaciones SJUC (PDF Oficial) */}
+      <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 rounded-2xl shadow-xl border border-blue-900/50 p-5 sm:p-7 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-2 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">📘</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/30">
+                Documento Oficial SJUC 2026
+              </span>
+              <span className="text-xs font-semibold text-blue-300 bg-blue-500/20 px-2.5 py-0.5 rounded-full border border-blue-400/30">
+                PDF Completo
+              </span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              Manual del Usuario & Guía de Roles y Permisos
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Guía maestra detallada del sistema: matriz de roles (Admin, Capitán, Coach, Tesorero, Jugador, Invitado),
+              flujo de aprobación de cuentas y explicación paso a paso de cada módulo con capturas de pantalla.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 shrink-0">
+            <button
+              onClick={() => setShowManualModal(true)}
+              className="w-full sm:w-auto px-4 py-2.5 bg-white/10 hover:bg-white/20 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/20 shadow transition flex items-center justify-center gap-2"
+            >
+              <span>👁️ Ver Manual Interactivo</span>
+            </button>
+            <button
+              onClick={() => {
+                setIsDownloadingPdf(true)
+                try {
+                  downloadSystemManualPdf()
+                  toasts.success('Descargando Manual_Completo_SJUC_2026.pdf')
+                } catch (err) {
+                  console.error(err)
+                } finally {
+                  setTimeout(() => setIsDownloadingPdf(false), 800)
+                }
+              }}
+              disabled={isDownloadingPdf}
+              className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg transition flex items-center justify-center gap-2"
+            >
+              <span>{isDownloadingPdf ? 'Generando PDF...' : '📥 Descargar PDF'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {error && (
         <div className="p-2 bg-red-100 text-red-700 rounded flex items-center justify-between">
           <div className="text-sm truncate pr-2">{error}</div>
@@ -545,6 +600,9 @@ export default function Resources() {
           onConfirm={async () => { await confirmState.onYes(); setConfirmState(null) }}
         />
       )}
+
+      {/* Modal del Manual del Sistema Oficial */}
+      <SystemManualModal isOpen={showManualModal} onClose={() => setShowManualModal(false)} />
 
       {preview && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setPreview(null)}>

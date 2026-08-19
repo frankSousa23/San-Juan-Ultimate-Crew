@@ -21,15 +21,18 @@ function signToken(payload: object) {
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  if (!AUTH_REQUIRED) return next()
   const auth = req.headers.authorization || ''
   const [, token] = auth.split(' ')
-  if (!token) return res.status(401).json({ error: 'Unauthorized' })
+  if (!token) {
+    if (!AUTH_REQUIRED) return next()
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any
     ;(req as any).user = decoded
     return next()
   } catch (err: any) {
+    if (!AUTH_REQUIRED) return next()
     // Provide more specific error messages
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Token expired. Please log in again.' })
@@ -474,7 +477,9 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
   const token = signToken({ sub: user.id, email: user.email })
   const audit = createAuditHelper(req)
   await audit.log('LOGIN', 'User', user.id, { email: user.email })
-  const roleNames = Array.isArray(user.roles) ? user.roles.map((ur: any) => ur.role?.name).filter(Boolean) : []
+  const userData = await getUserWithPermissions(user.id)
+  const roleNames = userData?.roles || (Array.isArray(user.roles) ? user.roles.map((ur: any) => ur.role?.name).filter(Boolean) : [])
+  const permissions = userData?.permissions || []
   return success(res, { 
     token, 
     user: { 
@@ -482,6 +487,7 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
       email: user.email, 
       name: user.name, 
       roles: roleNames, 
+      permissions,
       playerId: user.playerId ?? null,
       status: user.status 
     } 
@@ -565,12 +571,11 @@ router.post('/check-status', asyncHandler(async (req: Request, res: Response) =>
  *         description: Unauthorized
  */
 router.get('/me', requireAuth, asyncHandler(async (req: Request, res: Response) => {
-  if (!AUTH_REQUIRED) {
-    return success(res, { authDisabled: true })
-  }
-  
   const u = (req as any).user as any
   if (!u?.sub) {
+    if (!AUTH_REQUIRED) {
+      return success(res, { authDisabled: true })
+    }
     return unauthorized(res, 'Unauthorized')
   }
   
