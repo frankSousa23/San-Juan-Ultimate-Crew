@@ -23,6 +23,7 @@ import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import AdminUsers from './pages/AdminUsers'
 import SystemMonitoring from './pages/SystemMonitoring'
+import About from './pages/About'
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ 
@@ -78,6 +79,7 @@ function AppRoutes() {
         {/* Public or Semi-Public Routes - accessible to all authenticated users */}
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} />
         
         {/* Player, Captain, Coach, Directiva, Annotator & Admin Routes */}
         <Route path="/roster" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'guest']}><Roster /></ProtectedRoute>} />

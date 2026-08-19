@@ -4,7 +4,7 @@ import { app } from './app.js'
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
 
 describe('Admin set roles validation', () => {
-  const admin = { email: 'admin@sju.com', password: '123456' }
+  const admin = { email: 'frankalfonso1988@gmail.com', password: '123456' }
   let adminToken: string | null = null
   let guestUser: any = null
 
@@ -17,7 +17,7 @@ describe('Admin set roles validation', () => {
     adminToken = la.body.token
     const list = await request(app).get('/api/users').set('Authorization', `Bearer ${adminToken}`)
     if (list.status !== 200) return
-    guestUser = (list.body as any[]).find(u => u.email === 'guest@example.com')
+    guestUser = (list.body as any[]).find(u => u.email === 'guest@sigedivo.com')
   })
 
   it('rejects invalid role names', async () => {

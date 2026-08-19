@@ -22,7 +22,7 @@ describe('Roles and Permissions - Functional Tests', () => {
     // Login as admin
     const adminLogin = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'admin@sju.com', password: '123456' })
+      .send({ email: 'frankalfonso1988@gmail.com', password: '123456' })
     if (adminLogin.status === 200) {
       adminToken = adminLogin.body.token
       adminUser = adminLogin.body.user
@@ -31,7 +31,7 @@ describe('Roles and Permissions - Functional Tests', () => {
     // Login as player
     const playerLogin = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'player@example.com', password: '123456' })
+      .send({ email: 'player@sigedivo.com', password: '123456' })
     if (playerLogin.status === 200) {
       playerToken = playerLogin.body.token
       playerUser = playerLogin.body.user
@@ -40,7 +40,7 @@ describe('Roles and Permissions - Functional Tests', () => {
     // Login as guest
     const guestLogin = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'guest@example.com', password: '123456' })
+      .send({ email: 'guest@sigedivo.com', password: '123456' })
     if (guestLogin.status === 200) {
       guestToken = guestLogin.body.token
       guestUser = guestLogin.body.user

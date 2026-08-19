@@ -82,7 +82,7 @@ export const http = {
 }
 
 // Auth token management
-const TOKEN_KEY = 'sjuc.auth.token'
+const TOKEN_KEY = 'sigedivo.auth.token'
 export function setAuthToken(token?: string) {
   if (token) {
     localStorage.setItem(TOKEN_KEY, token)

@@ -5,7 +5,7 @@ async function ensureApiAndAuthEnabled(_page: any) {}
 test('new user registers; admin approves; user can login', async ({ page }) => {
   await ensureApiAndAuthEnabled(page)
   
-  const email = `newuser${Date.now()}@example.com`
+  const email = `newuser${Date.now()}@sigedivo.com`
   const password = 'password123'
   
   // 1. Register new user
@@ -22,11 +22,11 @@ test('new user registers; admin approves; user can login', async ({ page }) => {
 
   // 3. Login as admin via API
   const loginAdmin = await page.request.post('http://localhost:4000/api/auth/login', { 
-    data: { email: 'admin@example.com', password: 'admin123' } 
+    data: { email: 'frankalfonso1988@gmail.com', password: 'admin123' } 
   })
   const tokenAdmin = (await loginAdmin.json())?.token
   if (!tokenAdmin) { test.skip(); return; }
-  await page.addInitScript((t) => localStorage.setItem('sjuc.auth.token', t as string), tokenAdmin)
+  await page.addInitScript((t) => localStorage.setItem('sigedivo.auth.token', t as string), tokenAdmin)
 
   // 4. Admin approves the user
   await page.goto('/admin/usuarios')
@@ -57,7 +57,7 @@ test('new user registers; admin approves; user can login', async ({ page }) => {
   await expect(row).toHaveCount(0)
 
   // 5. Logout admin
-  await page.addInitScript(() => localStorage.removeItem('sjuc.auth.token'))
+  await page.addInitScript(() => localStorage.removeItem('sigedivo.auth.token'))
 
   // 6. Login again as new user (should succeed now)
   const loginSuccess = await page.request.post('http://localhost:4000/api/auth/login', { 

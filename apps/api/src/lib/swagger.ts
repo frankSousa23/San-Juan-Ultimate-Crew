@@ -5,11 +5,11 @@ const options: swaggerJsdoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'San Juan Ultimate Crew — API Oficial del Disco Volador',
+      title: 'SIGEDIVO (Sistema de Gestión para el Disco Volador) — API Oficial del Disco Volador',
       version: '1.0.0',
       description: 'API REST para la gestión deportiva, estadísticas en vivo, pizarra táctica de torneos, finanzas y administración de clubes de Ultimate Frisbee / Disco Volador.\n\n**Autor:** Frank Sousa (`frankSousa23`) — San Juan de los Morros, Estado Guárico, Venezuela.\n**Impulsando:** Asociación Guariqueña del Disco Volador (AGDV) | En apoyo a la Federación del Disco Volador de Venezuela (FDVV) y la Asociación Aragüeña del Disco Volador (AADV).',
       contact: {
-        name: 'Frank Sousa (San Juan Ultimate Crew)',
+        name: 'Frank Sousa (SIGEDIVO (Sistema de Gestión para el Disco Volador))',
         url: 'https://github.com/frankSousa23/San-Juan-Ultimate-Crew',
       },
       license: {

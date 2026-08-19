@@ -14,13 +14,13 @@ async function runSecurityAudit() {
   
   try {
     const guestRes = await axios.post(`${API_URL}/auth/login`, {
-      email: 'guest@example.com',
+      email: 'guest@sigedivo.com',
       password: 'admin123' // La que seteamos en el seed
     });
     guestToken = guestRes.data.token;
     
     const adminRes = await axios.post(`${API_URL}/auth/login`, {
-      email: 'admin@example.com',
+      email: 'frankalfonso1988@gmail.com',
       password: 'admin123'
     });
     adminToken = adminRes.data.token;
@@ -46,9 +46,9 @@ async function runSecurityAudit() {
   console.log('\n--- PRUEBA 1: Escalada de Privilegios (Escalation) ---');
   console.log('Intentando que el Guest asigne permisos de Admin a sí mismo...');
   
-  // Asumimos que ID 3 es el guest (guest@example.com)
+  // Asumimos que ID 3 es el guest (guest@sigedivo.com)
   const usersRes = await adminClient.get(`${API_URL}/users`);
-  const guestUser = usersRes.data.data?.find((u: any) => u.email === 'guest@example.com');
+  const guestUser = usersRes.data.data?.find((u: any) => u.email === 'guest@sigedivo.com');
   
   if (guestUser) {
     const updateRoleRes = await guestClient.put(`${API_URL}/users/${guestUser.id}/roles`, {

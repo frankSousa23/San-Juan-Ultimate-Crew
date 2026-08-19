@@ -45,6 +45,20 @@ enum EventStatus {
   CANCELLED
 }
 
+// Global System Feedback
+model Feedback {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id])
+  name      String?
+  email     String?
+  category  String   // e.g., 'BUG', 'FEATURE', 'UX', 'GENERAL'
+  message   String
+  createdAt DateTime @default(now())
+
+  @@map("feedbacks")
+}
+
 // Injuries
 enum InjurySeverity {
   MILD
@@ -486,6 +500,7 @@ model User {
   decidedRequests RoleRequest[]        @relation("RoleRequestDecider")
   auditLogs       AuditLog[]
   passwordResets  PasswordResetToken[]
+  feedbacks       Feedback[]
 
   @@unique([playerId])
   @@index([status])

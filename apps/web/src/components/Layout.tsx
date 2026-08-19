@@ -18,6 +18,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     // Public/All authenticated users
     { name: 'Panel Principal', href: '/', icon: '🏠', roles: [] },
     { name: 'Mi Perfil', href: '/perfil', icon: '👤', roles: [] },
+    { name: 'Acerca de / Feedback', href: '/about', icon: 'ℹ️', roles: [] },
     
     { name: 'Roster', href: '/roster', icon: '👥', roles: ['player', 'captain', 'coach', 'admin', 'treasurer', 'marketing', 'directiva', 'annotator', 'guest'] },
     { name: 'Eventos', href: '/eventos', icon: '📅', roles: ['player', 'captain', 'coach', 'admin', 'treasurer', 'marketing', 'guest', 'directiva', 'annotator'] },
@@ -62,7 +63,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } lg:translate-x-0 flex flex-col h-screen overflow-hidden`}>
         <div className="flex items-center justify-between h-16 px-4 border-b bg-gray-900 text-white">
-          <h1 className="text-xl font-bold">San Juan Ultimate</h1>
+          <h1 className="text-xl font-bold">SIGEDIVO</h1>
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden text-gray-300 hover:text-white"
@@ -147,7 +148,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               <span className="text-xl">☰</span>
             </button>
             <h2 className="text-lg font-semibold text-gray-800 truncate">
-              {navigation.find(n => isActive(n.href))?.name || 'San Juan Ultimate Crew'}
+              {navigation.find(n => isActive(n.href))?.name || 'SIGEDIVO (Sistema de Gestión para el Disco Volador)'}
             </h2>
           </div>
           
@@ -158,7 +159,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               title="Ver manual y guía oficial del sistema"
             >
               <span>📘</span>
-              <span className="hidden sm:inline">Manual SJUC</span>
+              <span className="hidden sm:inline">Manual del Sistema</span>
               <span className="text-[10px] bg-blue-200 text-blue-900 px-1.5 py-0.2 rounded font-mono">PDF</span>
             </button>
 

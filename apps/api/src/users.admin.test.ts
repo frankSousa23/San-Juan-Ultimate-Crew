@@ -4,7 +4,7 @@ import { app } from './app.js'
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
 
 describe('Admin users endpoints', () => {
-  const adminCreds = { email: 'admin@sju.com', password: '123456' }
+  const adminCreds = { email: 'frankalfonso1988@gmail.com', password: '123456' }
   let adminToken: string | null = null
 
   it('login as admin', async () => {
@@ -26,7 +26,7 @@ describe('Admin users endpoints', () => {
   it('set roles for guest user to include player (idempotent)', async () => {
     if (!AUTH_ON || !adminToken) return
     const list = await request(app).get('/api/users').set('Authorization', `Bearer ${adminToken}`)
-    const guest = (list.body as any[]).find(u => u.email === 'guest@example.com')
+    const guest = (list.body as any[]).find(u => u.email === 'guest@sigedivo.com')
     if (!guest) return
     const set = await request(app)
       .put(`/api/users/${guest.id}/roles`)

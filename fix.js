@@ -8,8 +8,8 @@ function walk(dir) {
       walk(p);
     } else if (p.endsWith('.ts')) {
       let c = fs.readFileSync(p, 'utf8');
-      if (c.includes('admin@example.com') || c.includes('admin123')) {
-        fs.writeFileSync(p, c.replace(/admin@example\.com/g, 'admin@sju.com').replace(/admin123/g, '123456'));
+      if (c.includes('frankalfonso1988@gmail.com') || c.includes('admin123')) {
+        fs.writeFileSync(p, c.replace(/admin@example\.com/g, 'frankalfonso1988@gmail.com').replace(/admin123/g, '123456'));
         console.log('Updated ' + p);
       }
     }

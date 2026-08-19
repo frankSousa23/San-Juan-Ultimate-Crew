@@ -454,7 +454,7 @@ router.get('/event/:eventId/stats', requireAuth, asyncHandler(async (req: Reques
   const eventId = Number(req.params.eventId)
 
   if (isGuestRequest(req)) {
-    const event = GUEST_EVENTS.find(e => e.id === eventId) || { id: eventId, title: 'Evento SJUC', type: 'TOURNAMENT' }
+    const event = GUEST_EVENTS.find(e => e.id === eventId) || { id: eventId, title: 'Evento SIGEDIVO', type: 'TOURNAMENT' }
     const annotations = GUEST_EVENT_ANNOTATIONS.filter(a => a.eventId === eventId)
     const statsByType = annotations.reduce((acc, ann) => {
       acc[ann.type] = (acc[ann.type] || 0) + 1

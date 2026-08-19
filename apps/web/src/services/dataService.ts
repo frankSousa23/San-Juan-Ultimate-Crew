@@ -1,6 +1,6 @@
 // Auth token management
 function getAuthToken(): string | null {
-  return localStorage.getItem('sjuc.auth.token')
+  return localStorage.getItem('sigedivo.auth.token')
 }
 
 function buildUrl(url: string, params?: Record<string, any>) {
@@ -285,7 +285,7 @@ export class DataService {
     const response = await api.post<AuthResponse>('/auth/login', { email, password })
     // Save token to localStorage
     if (response.data.token) {
-      localStorage.setItem('sjuc.auth.token', response.data.token)
+      localStorage.setItem('sigedivo.auth.token', response.data.token)
     }
     return response.data
   }
@@ -293,7 +293,7 @@ export class DataService {
   static async logout(): Promise<void> {
     await api.post('/auth/logout')
     // Clear token from localStorage
-    localStorage.removeItem('sjuc.auth.token')
+    localStorage.removeItem('sigedivo.auth.token')
   }
 
   static async getCurrentUser(): Promise<User> {

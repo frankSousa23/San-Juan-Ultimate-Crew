@@ -20,7 +20,7 @@ export function generateSystemManualPdf(): jsPDF {
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(8)
     doc.setTextColor(255, 255, 255)
-    doc.text('SAN JUAN ULTIMATE CLUB (SJUC) • SISTEMA DE GESTIÓN OFICIAL', margin, 7.5)
+    doc.text('SIGEDIVO (SISTEMA DE GESTIÓN PARA EL DISCO VOLADOR) • MANUAL OFICIAL', margin, 7.5)
     doc.text(title.toUpperCase(), pageWidth - margin, 7.5, { align: 'right' })
   }
 
@@ -31,7 +31,7 @@ export function generateSystemManualPdf(): jsPDF {
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(100, 116, 139)
-    doc.text('Manual de Operaciones, Roles y Permisos • SJUC 2026', margin, pageHeight - 7)
+    doc.text('Manual de Operaciones, Roles y Permisos • SIGEDIVO 2026', margin, pageHeight - 7)
     doc.text(`Página ${pageNumber}`, pageWidth - margin, pageHeight - 7, { align: 'right' })
     pageNumber++
   }
@@ -88,7 +88,7 @@ export function generateSystemManualPdf(): jsPDF {
   doc.setFont('helvetica', 'normal')
   const summaryText = [
     'Este documento constituye el manual de referencia oficial para todos los miembros, directivos,',
-    'capitanes, entrenadores, anotadores e invitados de San Juan Ultimate Club (SJUC).',
+    'capitanes, entrenadores, anotadores e invitados del sistema SIGEDIVO.',
     '',
     'Contiene el desglose exhaustivo de la arquitectura de acceso, la matriz de roles y permisos,',
     'la explicación funcional detallada de cada vista del sistema y el protocolo de aprobación',
@@ -111,8 +111,8 @@ export function generateSystemManualPdf(): jsPDF {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
   doc.setTextColor(51, 65, 85)
-  doc.text('• Administrador Inicial (admin@sjuc.com): Pre-aprobado para gestión, configuración y aprobación.', margin + 12, 175)
-  doc.text('• Usuario Invitado (guest@sjuc.com): Modo muestra y solo lectura visible en la pantalla de login.', margin + 12, 182)
+  doc.text('• Administrador Inicial (frankalfonso1988@gmail.com): Pre-aprobado para gestión, configuración y aprobación.', margin + 12, 175)
+  doc.text('• Usuario Invitado (guest@sigedivo.com): Modo muestra y solo lectura visible en la pantalla de login.', margin + 12, 182)
   doc.text('• Nuevos Registros: Todos los nuevos usuarios inician en estado PENDIENTE hasta ser aprobados.', margin + 12, 189)
   doc.text('• Privacidad del Admin: El acceso administrativo no se expone públicamente en el login.', margin + 12, 196)
 
@@ -132,7 +132,7 @@ export function generateSystemManualPdf(): jsPDF {
   doc.setFont('helvetica', 'bold')
   doc.text('ORGANIZACIÓN:', margin, 249)
   doc.setFont('helvetica', 'normal')
-  doc.text('San Juan Ultimate Club (SJUC) • Puerto Rico / Internacional', margin + 48, 249)
+  doc.text('SIGEDIVO • Sistema Global de Gestión para el Disco Volador', margin + 48, 249)
 
   addFooter()
 
@@ -151,7 +151,7 @@ export function generateSystemManualPdf(): jsPDF {
   doc.setFontSize(9.5)
   doc.setTextColor(51, 65, 85)
   doc.text(
-    'El sistema SJUC implementa un modelo de Control de Acceso Basado en Roles (RBAC) estricto para proteger la información del club y garantizar que cada integrante cuente con las herramientas adecuadas a su función.',
+    'El sistema SIGEDIVO implementa un modelo de Control de Acceso Basado en Roles (RBAC) estricto para proteger la información del club y garantizar que cada integrante cuente con las herramientas adecuadas a su función.',
     margin,
     30,
     { maxWidth: contentWidth }
@@ -280,7 +280,7 @@ export function generateSystemManualPdf(): jsPDF {
     {
       title: '3.1 Roster del Equipo & Jugadores (/roster)',
       desc: 'Catálogo de jugadores del club. Permite gestionar dorsales (números de camiseta), posiciones oficiales (Handler, Cutter, Hybrid), datos antropométricos (estatura en cm), trayectoria y estado deportivo (Activo, Lesionado, Suspendido).',
-      mockup: '[ ROSTER SJUC ] | #1 Franco Sousa (Handler - 182cm) | #2 Carlos Mendoza (Cutter) | #3 Eduardo Silva (Hybrid)',
+      mockup: '[ ROSTER DEL EQUIPO ] | #1 Franco Sousa (Handler - 182cm) | #2 Carlos Mendoza (Cutter) | #3 Eduardo Silva (Hybrid)',
     },
     {
       title: '3.2 Calendario, Eventos & Viento (/eventos)',
@@ -290,7 +290,7 @@ export function generateSystemManualPdf(): jsPDF {
     {
       title: '3.3 Anotaciones en Vivo & Estadísticas de Partido (/eventos/:id/anotaciones)',
       desc: 'Módulo interactivo en tiempo real para capitanes y anotadores. Permite registrar goles, asistencias, bloqueos/defensas, pérdidas (turnovers), drops y evaluar el Spirit of the Game (SOTG) del equipo rival según la rúbrica internacional WFDF.',
-      mockup: '[ LIVE SCORE ] SJUC 15 - 11 Dragones | Botones de 1 Clic: [+GOL] [+ASIST] [+DEFENSA] [-TURNOVER] [SOTG]',
+      mockup: '[ LIVE SCORE ] Equipo Local 15 - 11 Dragones | Botones de 1 Clic: [+GOL] [+ASIST] [+DEFENSA] [-TURNOVER] [SOTG]',
     },
     {
       title: '3.4 Finanzas & Libro Contable (/finanzas)',
@@ -396,7 +396,7 @@ export function generateSystemManualPdf(): jsPDF {
   doc.setFontSize(8.5)
   doc.setTextColor(20, 83, 45)
   const guestLines = [
-    '• Acceso Inmediato en Login: Cualquier persona puede ingresar con 1 clic como Invitado (guest@sjuc.com).',
+    '• Acceso Inmediato en Login: Cualquier persona puede ingresar con 1 clic como Invitado (guest@sigedivo.com).',
     '• Vistas Disponibles en Modo Muestra: Consulta del Roster general, Calendario de eventos públicos,',
     '  Estadísticas de anotaciones, Biblioteca de jugadas tácticas y Descarga del Manual Oficial.',
     '• Permisos Restringidos: El rol Invitado cuenta con permisos de SOLO LECTURA. No puede alterar datos,',
@@ -431,7 +431,7 @@ export function generateSystemManualPdf(): jsPDF {
     },
     {
       q: '¿Qué hacer si olvidé mi contraseña?',
-      a: 'Puedes acceder a la opción "¿Olvidaste tu contraseña?" en el formulario de login para solicitar un restablecimiento o contactar directamente al Administrador del club (admin@sjuc.com).',
+      a: 'Puedes acceder a la opción "¿Olvidaste tu contraseña?" en el formulario de login para solicitar un restablecimiento o contactar directamente al Administrador del club (frankalfonso1988@gmail.com).',
     },
     {
       q: '¿Cómo se evalúa el Espíritu de Juego (SOTG)?',
@@ -471,7 +471,7 @@ export function generateSystemManualPdf(): jsPDF {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
   doc.setTextColor(224, 231, 255)
-  doc.text('Email de Contacto Oficial: contacto@sjuc.com | administracion@sjuc.com', margin + 6, fY + 27)
+  doc.text('Email de Contacto Oficial: contacto@sigedivo.com | administracion@sigedivo.com', margin + 6, fY + 27)
   doc.text('Sede Deportiva: Complejo Deportivo San Juan • Cancha Principal 1', margin + 6, fY + 34)
   doc.text('Horarios de Entrenamiento: Martes y Jueves 19:00 - 21:30 | Sábados 08:30 - 12:00', margin + 6, fY + 41)
   doc.text('Reglamento Oficial: World Flying Disc Federation (WFDF) 2025-2028', margin + 6, fY + 48)
@@ -483,5 +483,5 @@ export function generateSystemManualPdf(): jsPDF {
 
 export function downloadSystemManualPdf() {
   const doc = generateSystemManualPdf()
-  doc.save('Manual_Completo_SJUC_2026.pdf')
+  doc.save('Manual_Completo_SIGEDIVO_2026.pdf')
 }

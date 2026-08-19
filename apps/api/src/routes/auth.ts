@@ -219,8 +219,8 @@ export function requireSelfOrAdminForPlayer() {
     ;(req as any).user = u
     const user = await prisma.user.findUnique({ where: { id: Number(u.sub) }, include: { roles: { include: { role: true } } } })
     if (!user) return res.status(401).json({ error: 'Unauthorized' })
-    const isAdmin = user.roles.some((ur: any) => ur.role?.name === 'admin')
-    if (isAdmin) return next()
+    const isEncargado = user.roles.some((ur: any) => ['admin', 'captain', 'coach'].includes(ur.role?.name))
+    if (isEncargado) return next()
     const targetId = Number(req.params.id)
     if (!Number.isInteger(targetId)) return res.status(400).json({ error: 'Invalid id' })
     if (user.playerId === targetId) return next()

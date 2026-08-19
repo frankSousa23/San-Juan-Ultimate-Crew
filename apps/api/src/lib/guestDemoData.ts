@@ -3,7 +3,7 @@ import { Request } from 'express'
 
 export function isGuestRequest(req: Request): boolean {
   const user = (req as any).user
-  if (user?.email === 'guest@sjuc.com') return true
+  if (user?.email === 'guest@sigedivo.com') return true
   const roles = (req as any).userRoles
   if (Array.isArray(roles) && roles.includes('guest') && !roles.includes('admin')) return true
   
@@ -13,7 +13,7 @@ export function isGuestRequest(req: Request): boolean {
   if (token) {
     try {
       const decoded = jwt.decode(token) as any
-      if (decoded?.email === 'guest@sjuc.com') return true
+      if (decoded?.email === 'guest@sigedivo.com') return true
     } catch {
       // ignore
     }
@@ -21,7 +21,7 @@ export function isGuestRequest(req: Request): boolean {
   return false
 }
 
-// 1. Jugadores de Muestra (San Juan Ultimate Club)
+// 1. Jugadores de Muestra (Equipo Local)
 export const GUEST_PLAYERS = [
   {
     id: 1,
@@ -30,7 +30,7 @@ export const GUEST_PLAYERS = [
     position: 'HANDLER',
     status: 'ACTIVE',
     heightCm: 182,
-    experience: '7 años en San Juan Ultimate • Especialista en Backhand Huck y visión de campo',
+    experience: '7 años en el equipo • Especialista en Backhand Huck y visión de campo',
     createdAt: new Date('2025-01-10T10:00:00Z'),
     updatedAt: new Date('2025-01-10T10:00:00Z'),
   },
@@ -41,7 +41,7 @@ export const GUEST_PLAYERS = [
     position: 'CUTTER',
     status: 'ACTIVE',
     heightCm: 185,
-    experience: '5 años en San Juan Ultimate • Corte profundo y recepción en endzone',
+    experience: '5 años en el equipo • Corte profundo y recepción en endzone',
     createdAt: new Date('2025-01-10T10:00:00Z'),
     updatedAt: new Date('2025-01-10T10:00:00Z'),
   },
@@ -52,7 +52,7 @@ export const GUEST_PLAYERS = [
     position: 'HYBRID',
     status: 'ACTIVE',
     heightCm: 178,
-    experience: '8 años en San Juan Ultimate • Estrategia de zona y manejo de tiempos',
+    experience: '8 años en el equipo • Estrategia de zona y manejo de tiempos',
     createdAt: new Date('2025-01-10T10:00:00Z'),
     updatedAt: new Date('2025-01-10T10:00:00Z'),
   },
@@ -63,7 +63,7 @@ export const GUEST_PLAYERS = [
     position: 'HANDLER',
     status: 'ACTIVE',
     heightCm: 175,
-    experience: '4 años en San Juan Ultimate • Pases rápidos de rompimiento (Break mark)',
+    experience: '4 años en el equipo • Pases rápidos de rompimiento (Break mark)',
     createdAt: new Date('2025-01-10T10:00:00Z'),
     updatedAt: new Date('2025-01-10T10:00:00Z'),
   },
@@ -74,7 +74,7 @@ export const GUEST_PLAYERS = [
     position: 'CUTTER',
     status: 'ACTIVE',
     heightCm: 188,
-    experience: '3 años en San Juan Ultimate • Dominio aéreo en saltos disputados',
+    experience: '3 años en el equipo • Dominio aéreo en saltos disputados',
     createdAt: new Date('2025-01-10T10:00:00Z'),
     updatedAt: new Date('2025-01-10T10:00:00Z'),
   },
@@ -85,7 +85,7 @@ export const GUEST_PLAYERS = [
     position: 'HYBRID',
     status: 'ACTIVE',
     heightCm: 180,
-    experience: '2 años en San Juan Ultimate • Agilidad en cortes de descarga',
+    experience: '2 años en el equipo • Agilidad en cortes de descarga',
     createdAt: new Date('2025-01-10T10:00:00Z'),
     updatedAt: new Date('2025-01-10T10:00:00Z'),
   },
@@ -96,7 +96,7 @@ export const GUEST_PLAYERS = [
     position: 'CUTTER',
     status: 'ACTIVE',
     heightCm: 183,
-    experience: '4 años en San Juan Ultimate • Especialista en bloqueo defensivo (Layout D)',
+    experience: '4 años en el equipo • Especialista en bloqueo defensivo (Layout D)',
     createdAt: new Date('2025-01-10T10:00:00Z'),
     updatedAt: new Date('2025-01-10T10:00:00Z'),
   },
@@ -107,7 +107,7 @@ export const GUEST_PLAYERS = [
     position: 'HANDLER',
     status: 'ACTIVE',
     heightCm: 176,
-    experience: '5 años en San Juan Ultimate • Lanzamientos Hammer y Scoober de precisión',
+    experience: '5 años en el equipo • Lanzamientos Hammer y Scoober de precisión',
     createdAt: new Date('2025-01-10T10:00:00Z'),
     updatedAt: new Date('2025-01-10T10:00:00Z'),
   },
@@ -118,7 +118,7 @@ export const GUEST_PLAYERS = [
     position: 'HYBRID',
     status: 'ACTIVE',
     heightCm: 181,
-    experience: '3 años en San Juan Ultimate • Continuidad de juego en Vert Stack',
+    experience: '3 años en el equipo • Continuidad de juego en Vert Stack',
     createdAt: new Date('2025-01-10T10:00:00Z'),
     updatedAt: new Date('2025-01-10T10:00:00Z'),
   },
@@ -129,7 +129,7 @@ export const GUEST_PLAYERS = [
     position: 'HANDLER',
     status: 'ACTIVE',
     heightCm: 170,
-    experience: '6 años en San Juan Ultimate • Precisión en lanzamientos Inside-Out y liderazgo',
+    experience: '6 años en el equipo • Precisión en lanzamientos Inside-Out y liderazgo',
     createdAt: new Date('2025-01-10T10:00:00Z'),
     updatedAt: new Date('2025-01-10T10:00:00Z'),
   },
@@ -140,7 +140,7 @@ export const GUEST_PLAYERS = [
     position: 'CUTTER',
     status: 'ACTIVE',
     heightCm: 168,
-    experience: '4 años en San Juan Ultimate • Velocidad y desmarques en línea de banda',
+    experience: '4 años en el equipo • Velocidad y desmarques en línea de banda',
     createdAt: new Date('2025-01-10T10:00:00Z'),
     updatedAt: new Date('2025-01-10T10:00:00Z'),
   },
@@ -151,7 +151,7 @@ export const GUEST_PLAYERS = [
     position: 'CUTTER',
     status: 'INJURED',
     heightCm: 184,
-    experience: '3 años en San Juan Ultimate • Marcación de presión en copa defensiva',
+    experience: '3 años en el equipo • Marcación de presión en copa defensiva',
     createdAt: new Date('2025-01-10T10:00:00Z'),
     updatedAt: new Date('2025-01-10T10:00:00Z'),
   },
@@ -163,7 +163,7 @@ export const GUEST_EVENTS = [
   {
     id: 101,
     title: 'Torneo Nacional de Ultimate 2026 - Gran Final vs Dragones de Valencia',
-    description: 'Partido oficial de final del Torneo Apertura. Victoria épica de San Juan Ultimate Club 15 a 13.',
+    description: 'Partido oficial de final del Torneo Apertura. Victoria épica de nuestro equipo 15 a 13.',
     type: 'TOURNAMENT',
     status: 'COMPLETED',
     location: 'Complejo Deportivo Central • Cancha 1',
@@ -182,7 +182,7 @@ export const GUEST_EVENTS = [
     description: 'Sesión intensiva de cortes primarios, swings a campo abierto y defensa hombre a hombre.',
     type: 'TRAINING',
     status: 'COMPLETED',
-    location: 'Cancha Principal SJUC • Sede Norte',
+    location: 'Cancha Principal • Sede Norte',
     startsAt: new Date(now.getTime() - 86400000 * 2).toISOString(),
     endsAt: new Date(now.getTime() - 86400000 * 2 + 7200000).toISOString(),
     windSpeed: 10,
@@ -212,7 +212,7 @@ export const GUEST_EVENTS = [
     description: 'Taller abierto para el perfeccionamiento de lanzamientos largos con viento y posicionamiento en copa 3-3-1.',
     type: 'WORKSHOP',
     status: 'UPCOMING',
-    location: 'Cancha SJUC • Sede Norte',
+    location: 'Cancha • Sede Norte',
     startsAt: new Date(now.getTime() + 86400000 * 7).toISOString(),
     endsAt: new Date(now.getTime() + 86400000 * 7 + 10800000).toISOString(),
     windSpeed: 8,
@@ -293,7 +293,7 @@ export const GUEST_RIVAL_PLAYERS = [
   { id: 3, rivalId: 201, name: 'Sebastián Lugo (Handler Zurdo)', number: 11, position: 'HANDLER' },
 ]
 
-// 6. Anotaciones del Partido de Final (Evento 101 - SJUC 15 vs Dragones 13)
+// 6. Anotaciones del Partido de Final (Evento 101 - Equipo Local 15 vs Dragones 13)
 export const GUEST_EVENT_ANNOTATIONS = [
   {
     id: 1,
@@ -519,11 +519,11 @@ export const GUEST_INJURIES = [
 export const GUEST_RESOURCES = [
   {
     id: 501,
-    title: '📘 Manual del Usuario y Guía de Operaciones SJUC (PDF Oficial)',
+    title: '📘 Manual del Usuario y Guía de Operaciones SIGEDIVO (PDF Oficial)',
     category: 'Manuales y Operaciones',
     description: 'Manual completo interactivo con la matriz de roles y permisos, arquitectura y explicación detallada con capturas de pantalla de todas las vistas del sistema.',
     url: '#manual-viewer',
-    fileName: 'Manual_Completo_SJUC_2026.pdf',
+    fileName: 'Manual_Completo_SIGEDIVO_2026.pdf',
     mimeType: 'application/pdf',
     size: 2854000,
     createdAt: new Date('2025-01-01T10:00:00Z'),

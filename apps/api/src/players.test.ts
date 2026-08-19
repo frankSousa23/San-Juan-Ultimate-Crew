@@ -10,7 +10,7 @@ describe('Players CRUD', () => {
     if (AUTH_ON) {
       const login = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'admin@sju.com', password: '123456' })
+        .send({ email: 'frankalfonso1988@gmail.com', password: '123456' })
       const token = (login.body && login.body.token) || ''
       authHeader = token ? `Bearer ${token}` : undefined
     }

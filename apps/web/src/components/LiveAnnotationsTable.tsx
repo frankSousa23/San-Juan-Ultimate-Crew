@@ -30,7 +30,7 @@ type LineFilter = 'ALL' | 'O-LINE' | 'D-LINE' | 'ACTIVE'
 export default function LiveAnnotationsTable({ event, onClose, embedded = false }: LiveAnnotationsTableProps) {
   const { user, hasPermission, hasRole } = useAuth()
   const toasts = useToast()
-  const isGuest = hasRole('guest') || user?.email === 'guest@sjuc.com'
+  const isGuest = hasRole('guest') || user?.email === 'guest@sigedivo.com'
   const canManage = hasPermission('annotations:manage') || hasPermission('events:manage') || hasRole('admin') || hasRole('captain') || hasRole('coach') || hasRole('directiva') || hasRole('annotator') || isGuest || event.id < 0
   
   const [annotations, setAnnotations] = useState<EventAnnotation[]>([])
@@ -56,7 +56,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
   const isInternal = event.isInternalScrimmage || false
   const [isVersus, setIsVersus] = useState(!!event.rivalId || isInternal)
   const [opponentTeamName, setOpponentTeamName] = useState(isInternal ? 'Equipo Oscuro' : 'Equipo Rival')
-  const [homeTeamName, setHomeTeamName] = useState(isInternal ? 'Equipo Claro' : 'San Juan Ultimate Crew')
+  const [homeTeamName, setHomeTeamName] = useState(isInternal ? 'Equipo Claro' : 'SIGEDIVO (Sistema de Gestión para el Disco Volador)')
   
   // Jugadores oponentes (para versus externo)
   const [opponentPlayers, setOpponentPlayers] = useState<Array<{ name: string; number: number }>>([])
@@ -776,7 +776,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
       {/* 4. FOOTER */}
       <div className="p-3 sm:p-4 bg-white border-t border-gray-200 flex justify-between items-center z-10">
         <div className="text-xs text-gray-500 font-medium hidden sm:block">
-          Modo Torneo y Pizarra Táctil activa • San Juan Ultimate Crew
+          Modo Torneo y Pizarra Táctil activa • SIGEDIVO (Sistema de Gestión para el Disco Volador)
         </div>
         <button 
           onClick={onClose} 

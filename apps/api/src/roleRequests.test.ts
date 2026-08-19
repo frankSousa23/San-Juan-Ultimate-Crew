@@ -4,8 +4,8 @@ import { app } from './app.js'
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
 
 describe('Role requests workflow', () => {
-  const adminCreds = { email: 'admin@sju.com', password: '123456' }
-  const guestCreds = { email: 'guest@example.com', password: '123456' }
+  const adminCreds = { email: 'frankalfonso1988@gmail.com', password: '123456' }
+  const guestCreds = { email: 'guest@sigedivo.com', password: '123456' }
 
   let adminToken: string | null = null
   let guestToken: string | null = null

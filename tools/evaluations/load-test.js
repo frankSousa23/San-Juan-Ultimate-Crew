@@ -12,7 +12,7 @@ async function runLoadTest() {
     const authData = JSON.parse(fs.readFileSync(authStatePath, 'utf8'));
     // En Playwright localStorage, el token está guardado. Buscamos el token:
     const origin = authData.origins[0];
-    const tokenItem = origin.localStorage.find(i => i.name === 'sjuc.auth.token');
+    const tokenItem = origin.localStorage.find(i => i.name === 'sigedivo.auth.token');
     if (tokenItem) {
       token = tokenItem.value;
       console.log('✅ Token de Admin obtenido para las peticiones autenticadas.');

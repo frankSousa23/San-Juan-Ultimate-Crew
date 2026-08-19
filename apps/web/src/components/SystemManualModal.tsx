@@ -45,7 +45,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
             </div>
             <div>
               <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                Manual del Usuario & Guía de Operaciones SJUC
+                Manual del Usuario & Guía de Operaciones SIGEDIVO
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                   PDF Oficial 2026
                 </span>
@@ -317,8 +317,8 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
                     <h4 className="font-bold text-slate-900 text-sm">Restauración y Usuarios Base</h4>
                     <p className="text-xs text-slate-600 mt-0.5">
                       Al reiniciar o restaurar el sistema, únicamente se inicializan dos cuentas pre-aprobadas:
-                      el <strong>Super Administrador</strong> (<code className="bg-slate-100 px-1 py-0.5 rounded text-blue-700">admin@sjuc.com</code>)
-                      y el <strong>Invitado de Muestra</strong> (<code className="bg-slate-100 px-1 py-0.5 rounded text-blue-700">guest@sjuc.com</code>).
+                      el <strong>Super Administrador</strong> (<code className="bg-slate-100 px-1 py-0.5 rounded text-blue-700">frankalfonso1988@gmail.com</code>)
+                      y el <strong>Invitado de Muestra</strong> (<code className="bg-slate-100 px-1 py-0.5 rounded text-blue-700">guest@sigedivo.com</code>).
                       El rol Admin no se exhibe en la pantalla de login para proteger las credenciales administrativas.
                     </p>
                   </div>
@@ -376,7 +376,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
                   🖥️ Guía de Vistas del Sistema con Capturas y Esquemas
                 </h3>
                 <p className="text-xs text-slate-600">
-                  A continuación se detalla el funcionamiento y la interfaz de cada módulo de la plataforma SJUC.
+                  A continuación se detalla el funcionamiento y la interfaz de cada módulo de la plataforma SIGEDIVO.
                 </p>
               </div>
 
@@ -395,7 +395,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
                   {/* Simulated Screen Mockup */}
                   <div className="bg-slate-950 text-slate-200 rounded-lg p-3 font-mono text-xs border border-slate-800 space-y-1.5">
                     <div className="text-slate-400 border-b border-slate-800 pb-1 flex justify-between">
-                      <span>[VISTA: ROSTER SJUC]</span>
+                      <span>[VISTA: ROSTER SIGEDIVO]</span>
                       <span className="text-emerald-400">Total: 8 Jugadores Activos</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
@@ -543,7 +543,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
             <div className="space-y-4">
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-900">
                 <h3 className="font-bold text-base mb-1">
-                  <span>❓</span> Preguntas Frecuentes y Soporte Técnico SJUC
+                  <span>❓</span> Preguntas Frecuentes y Soporte Técnico SIGEDIVO
                 </h3>
                 <p className="text-xs text-slate-600">
                   Respuestas rápidas a las consultas más habituales sobre la plataforma.
@@ -568,7 +568,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
                 <div className="p-3.5 rounded-xl border border-slate-200 bg-white">
                   <h4 className="font-bold text-sm text-slate-900">¿Cómo contactar al cuerpo técnico o directiva?</h4>
                   <p className="text-xs text-slate-600 mt-1">
-                    Puedes escribir a <code className="bg-slate-100 px-1 py-0.5 rounded text-blue-700 font-bold">contacto@sjuc.com</code> o acercarte a los entrenamientos oficiales los martes y jueves a las 19:00 en la Cancha Principal 1.
+                    Puedes escribir a <code className="bg-slate-100 px-1 py-0.5 rounded text-blue-700 font-bold">contacto@sigedivo.com</code> o acercarte a los entrenamientos oficiales los martes y jueves a las 19:00 en la Cancha Principal 1.
                   </p>
                 </div>
               </div>
@@ -581,7 +581,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
         <div className="bg-slate-50 border-t border-slate-200 px-5 py-3 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-500 font-medium">
-              San Juan Ultimate Club © 2026 • Documento Oficial
+              SIGEDIVO © 2026 • Documento Oficial
             </span>
             {user && (
               <span className="text-[11px] bg-slate-200 text-slate-700 font-semibold px-2 py-0.5 rounded-md">

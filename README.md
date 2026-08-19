@@ -1,4 +1,4 @@
-# 🥏 San Juan Ultimate Crew — Plataforma de Gestión Deportiva del Disco Volador
+# 🥏 SIGEDIVO (Sistema de Gestión para el Disco Volador) — Plataforma de Gestión Deportiva del Disco Volador
 
 ![CI](https://github.com/frankSousa23/San-Juan-Ultimate-Crew/actions/workflows/ci.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
@@ -28,7 +28,7 @@ Este proyecto es software libre y de código abierto bajo la **[Licencia MIT](LI
 - **Uso Libre y Gratuito:** Cualquier club deportivo, liga, federación, colegio, universidad o desarrollador en Venezuela y el mundo puede utilizar, desplegar y adaptar este sistema libremente.
 - **Atribución Obligatoria:** Todo uso, bifurcación (*fork*) o proyecto derivado debe incluir el reconocimiento explícito y el enlace al repositorio oficial:
   > **Repositorio Oficial:** [https://github.com/frankSousa23/San-Juan-Ultimate-Crew](https://github.com/frankSousa23/San-Juan-Ultimate-Crew)  
-  > **Autor:** Frank Sousa (`frankSousa23`) & San Juan Ultimate Crew.
+  > **Autor:** Frank Sousa (`frankSousa23`) & SIGEDIVO (Sistema de Gestión para el Disco Volador).
 - **Aportes y Mejoras Comunitarias:** ¡Toda contribución es bienvenida! Si deseas proponer nuevas funcionalidades, optimizaciones o reportar mejoras, te invitamos a abrir un *Pull Request* o *Issue*.
 
 ---
@@ -42,7 +42,7 @@ Este proyecto es software libre y de código abierto bajo la **[Licencia MIT](LI
   - ⚽ **Goles** con asignación táctil del asistente (`relatedPlayerId`).
   - ⚡ **Acceso Directo:** "Sin Asistencia / Callahan / Error Rival" en 1 toque.
   - 🛡️ **Defensas (D)** e intercepciones.
-  - ❌ **Pérdidas (Turnovers)** y ⏬ **Drops**.
+  - ❌ **Pérdidas (Turnovers)**.
 - **Modos de Juego:**
   - **Modo Torneo / Versus:** Enfrentamientos oficiales contra equipos rivales con scouting de jugadores.
   - **Modo Scrimmage Interno:** Partidos de práctica entre Equipo Claro vs Equipo Oscuro.
@@ -118,12 +118,12 @@ npm run dev
 
 | Usuario | Contraseña | Rol | Descripción |
 | :--- | :--- | :--- | :--- |
-| `admin@sju.com` | `123456` | `admin`, `player` | Administrador General (Dorsal #1) |
-| `captain@example.com` | `123456` | `captain`, `player` | Capitán Ofensivo (Dorsal #2) |
-| `coach@example.com` | `123456` | `coach`, `player` | Entrenador Táctico (Dorsal #3) |
-| `treasurer@example.com` | `123456` | `treasurer`, `player` | Tesorero del Club (Dorsal #4) |
-| `player@example.com` | `123456` | `player` | Jugador Titular (Dorsal #5) |
-| `guest@example.com` | `123456` | `guest` | Refuerzo / Observador (Dorsal #6) |
+| `frankalfonso1988@gmail.com` | `123456` | `admin`, `player` | Administrador General (Dorsal #1) |
+| `captain@sigedivo.com` | `123456` | `captain`, `player` | Capitán Ofensivo (Dorsal #2) |
+| `coach@sigedivo.com` | `123456` | `coach`, `player` | Entrenador Táctico (Dorsal #3) |
+| `treasurer@sigedivo.com` | `123456` | `treasurer`, `player` | Tesorero del Club (Dorsal #4) |
+| `player@sigedivo.com` | `123456` | `player` | Jugador Titular (Dorsal #5) |
+| `guest@sigedivo.com` | `123456` | `guest` | Refuerzo / Observador (Dorsal #6) |
 
 ---
 

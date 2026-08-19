@@ -16,7 +16,7 @@ async function captureAll() {
   const adminLoginRes = await fetch(`${API_URL}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: 'admin@sju.com', password: '123456' })
+    body: JSON.stringify({ email: 'frankalfonso1988@gmail.com', password: '123456' })
   })
   const adminData = await adminLoginRes.json()
   const adminToken = adminData.token
@@ -25,7 +25,7 @@ async function captureAll() {
   const captainLoginRes = await fetch(`${API_URL}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: 'captain@example.com', password: '123456' })
+    body: JSON.stringify({ email: 'captain@sigedivo.com', password: '123456' })
   })
   const captainData = await captainLoginRes.json()
   const captainToken = captainData.token
@@ -45,7 +45,7 @@ async function captureAll() {
   // CONTEXTO AUTENTICADO COMO ADMIN
   const authContext = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 })
   await authContext.addInitScript(({ token, user }) => {
-    localStorage.setItem('sjuc.auth.token', token)
+    localStorage.setItem('sigedivo.auth.token', token)
     localStorage.setItem('token', token)
     localStorage.setItem('user', user)
   }, { token: adminToken, user: adminUser })
@@ -138,7 +138,7 @@ async function captureAll() {
     isMobile: true
   })
   await mobileContext.addInitScript(({ token, user }) => {
-    localStorage.setItem('sjuc.auth.token', token)
+    localStorage.setItem('sigedivo.auth.token', token)
     localStorage.setItem('token', token)
     localStorage.setItem('user', user)
   }, { token: captainToken, user: captainUser })

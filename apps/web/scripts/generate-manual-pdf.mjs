@@ -21,7 +21,7 @@ const htmlContent = `
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Manual Completo del Sistema - San Juan Ultimate Crew</title>
+  <title>Manual Completo del Sistema - SIGEDIVO (Sistema de Gestión para el Disco Volador)</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
     
@@ -179,11 +179,13 @@ const htmlContent = `
   <!-- PORTADA -->
   <div class="cover-page">
     <div class="cover-badge">RELEASE v1.0.0 OPEN SOURCE</div>
-    <div class="cover-title">🏆 San Juan Ultimate Crew</div>
+    <div class="cover-title">🏆 SIGEDIVO (Sistema de Gestión para el Disco Volador)</div>
     <div class="cover-subtitle">Manual Completo del Sistema, Guía de Usuario y Documentación Técnica</div>
     <p style="color: #cbd5e1; max-width: 500px; text-align: center;">Plataforma integral de gestión deportiva, estadísticas, live scoring táctil para torneos, finanzas y gobernanza del Disco Volador.</p>
     <div class="cover-meta">
-      <strong>Autor:</strong> Frank Sousa (<code>@frankSousa23</code>)<br>
+      <strong>Autor:</strong> Frank Sousa<br>
+      <strong>Contacto:</strong> frankalfonso1988@gmail.com<br>
+      <strong>Trayectoria:</strong> Jugador de Ultimate Frisbee por más de 15 años<br>
       <strong>Ubicación:</strong> San Juan de los Morros, Estado Guárico, Venezuela<br>
       <strong>Impulsando:</strong> Asociación Guariqueña del Disco Volador (AGDV)<br>
       <strong>En apoyo a:</strong> Federación del Disco Volador de Venezuela (FDVV) & Asociación Aragüeña del Disco Volador (AADV)<br>
@@ -193,7 +195,7 @@ const htmlContent = `
 
   <!-- SECCIÓN 1 -->
   <h1>1. Introducción y Contexto Deportivo</h1>
-  <p>El sistema <strong>San Juan Ultimate Crew</strong> es una solución tecnológica integral de software libre creada para modernizar, digitalizar y optimizar la administración, táctica y competencia en el <strong>Ultimate Frisbee / Disco Volador</strong>.</p>
+  <p>El sistema <strong>SIGEDIVO (Sistema de Gestión para el Disco Volador)</strong> es una solución tecnológica integral de software libre creada para modernizar, digitalizar y optimizar la administración, táctica y competencia en el <strong>Ultimate Frisbee / Disco Volador</strong>.</p>
   <p>Desarrollada por <strong>Frank Sousa</strong> tras más de 15 años de trayectoria compitiendo en ligas y torneos en Aragua, Carabobo, Yaracuy y diversas regiones de Venezuela, este proyecto tiene el objetivo primordial de impulsar y fundar la <strong>Asociación Guariqueña del Disco Volador (AGDV)</strong> en San Juan de los Morros y dotar a la comunidad deportiva nacional e internacional de una herramienta de clase mundial.</p>
 
   <!-- SECCIÓN 2 -->
@@ -212,37 +214,37 @@ const htmlContent = `
     <tbody>
       <tr>
         <td><strong>Admin</strong></td>
-        <td><code>admin@sju.com</code></td>
-        <td>#1 Franco Sousa</td>
+        <td><code>frankalfonso1988@gmail.com</code></td>
+        <td>#1 Frank Sousa</td>
         <td>Superusuario: Control total, gestión de usuarios, finanzas y auditoría.</td>
       </tr>
       <tr>
         <td><strong>Captain</strong></td>
-        <td><code>captain@example.com</code></td>
+        <td><code>captain@sigedivo.com</code></td>
         <td>#2 Carlos Mendoza</td>
         <td>Capitán: Convocatorias O/D-Line, Live Scoring en vivo, asistencias y rivales.</td>
       </tr>
       <tr>
         <td><strong>Coach</strong></td>
-        <td><code>coach@example.com</code></td>
+        <td><code>coach@sigedivo.com</code></td>
         <td>#3 Eduardo Silva</td>
         <td>Entrenador: Libro de jugadas, pizarra táctica y recursos técnicos.</td>
       </tr>
       <tr>
         <td><strong>Treasurer</strong></td>
-        <td><code>treasurer@example.com</code></td>
+        <td><code>treasurer@sigedivo.com</code></td>
         <td>#4 Alejandro Ramos</td>
         <td>Tesorero: Cuentas bancarias, caja, transacciones y balances.</td>
       </tr>
       <tr>
         <td><strong>Player</strong></td>
-        <td><code>player@example.com</code></td>
+        <td><code>player@sigedivo.com</code></td>
         <td>#5 Gabriel Torres</td>
         <td>Jugador: Roster, estadísticas, asistencia y mensajería en canales.</td>
       </tr>
       <tr>
         <td><strong>Guest</strong></td>
-        <td><code>guest@example.com</code></td>
+        <td><code>guest@sigedivo.com</code></td>
         <td>#6 Daniel Salazar</td>
         <td>Invitado: Modo lectura de roster y estadísticas globales.</td>
       </tr>

@@ -4,8 +4,8 @@ import { app } from './app.js'
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
 
 describe('Role request approve with player linking', () => {
-  const admin = { email: 'admin@sju.com', password: '123456' }
-  const email = `newuser+${Date.now()}@example.com`
+  const admin = { email: 'frankalfonso1988@gmail.com', password: '123456' }
+  const email = `newuser+${Date.now()}@sigedivo.com`
   const password = '123456'
 
   let adminToken: string | null = null

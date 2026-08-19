@@ -7,14 +7,14 @@ test('player can edit self but not others; admin can edit any', async ({ page })
   const ts = Date.now()
 
   // Login as player via API and set token
-  const loginPlayer = await page.request.post('http://localhost:4000/api/auth/login', { data: { email: 'player@example.com', password: 'admin123' } })
+  const loginPlayer = await page.request.post('http://localhost:4000/api/auth/login', { data: { email: 'player@sigedivo.com', password: 'admin123' } })
   const loginData = await loginPlayer.json()
   const tokenPlayer = loginData?.token
   if (!tokenPlayer) { console.log('skip token'); test.skip(); return; }
-  await page.addInitScript((t) => localStorage.setItem('sjuc.auth.token', t as string), tokenPlayer)
+  await page.addInitScript((t) => localStorage.setItem('sigedivo.auth.token', t as string), tokenPlayer)
   
   // Ensure admin token to fix data if needed
-  const adminLoginReq = await page.request.post('http://localhost:4000/api/auth/login', { data: { email: 'admin@example.com', password: 'admin123' } })
+  const adminLoginReq = await page.request.post('http://localhost:4000/api/auth/login', { data: { email: 'frankalfonso1988@gmail.com', password: 'admin123' } })
   const adminToken = (await adminLoginReq.json()).token
 
   // Get dynamic player numbers
@@ -97,11 +97,11 @@ test('player can edit self but not others; admin can edit any', async ({ page })
   await page.getByRole('button', { name: 'Cerrar' }).click()
 
   // Login as admin via API
-  await page.addInitScript(() => localStorage.removeItem('sjuc.auth.token'))
-  const loginAdmin = await page.request.post('http://localhost:4000/api/auth/login', { data: { email: 'admin@example.com', password: 'admin123' } })
+  await page.addInitScript(() => localStorage.removeItem('sigedivo.auth.token'))
+  const loginAdmin = await page.request.post('http://localhost:4000/api/auth/login', { data: { email: 'frankalfonso1988@gmail.com', password: 'admin123' } })
   const tokenAdmin = (await loginAdmin.json())?.token
   if (!tokenAdmin) { test.skip(); return; }
-  await page.addInitScript((t) => localStorage.setItem('sjuc.auth.token', t as string), tokenAdmin)
+  await page.addInitScript((t) => localStorage.setItem('sigedivo.auth.token', t as string), tokenAdmin)
 
   await page.goto('/roster')
   await page.getByPlaceholder('Buscar jugador...').fill(otherNumberText.replace('#', ''))

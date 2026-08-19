@@ -10,7 +10,7 @@ describe('API basic routes', () => {
   it('GET / should return name and ok', async () => {
     const r = await request(app).get('/')
     expect(r.status).toBe(200)
-    expect(r.body?.name).toBe('San Juan Ultimate Crew API')
+    expect(r.body?.name).toBe('SIGEDIVO (Sistema de Gestión para el Disco Volador) API')
     expect(r.body?.ok).toBe(true)
   })
 })

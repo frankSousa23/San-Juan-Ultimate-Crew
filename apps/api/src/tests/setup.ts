@@ -156,7 +156,7 @@ async function cleanupTestData() {
   const seedUsers = await prisma.user.findMany({
     where: {
       OR: [
-        { email: { in: ['admin@sju.com', 'guest@example.com', 'player@example.com', 'captain@example.com', 'coach@example.com', 'treasurer@example.com'] } },
+        { email: { in: ['frankalfonso1988@gmail.com', 'guest@sigedivo.com', 'player@sigedivo.com', 'captain@sigedivo.com', 'coach@sigedivo.com', 'treasurer@sigedivo.com'] } },
         { email: { contains: 'workflow+' } },
       ]
     },
@@ -181,7 +181,7 @@ async function cleanupTestData() {
   await prisma.user.deleteMany({
     where: {
       email: {
-        notIn: ['admin@sju.com', 'guest@example.com', 'player@example.com', 'captain@example.com', 'coach@example.com', 'treasurer@example.com'],
+        notIn: ['frankalfonso1988@gmail.com', 'guest@sigedivo.com', 'player@sigedivo.com', 'captain@sigedivo.com', 'coach@sigedivo.com', 'treasurer@sigedivo.com'],
         contains: 'tmp-test-',
       }
     }
@@ -189,12 +189,12 @@ async function cleanupTestData() {
   
   // Ensure all core seed users have their roles intact
   const coreRolesMap = [
-    { email: 'admin@sju.com', roles: ['admin', 'player'] },
-    { email: 'captain@example.com', roles: ['captain', 'player'] },
-    { email: 'coach@example.com', roles: ['coach', 'player'] },
-    { email: 'treasurer@example.com', roles: ['treasurer', 'player'] },
-    { email: 'player@example.com', roles: ['player'] },
-    { email: 'guest@example.com', roles: ['guest'] },
+    { email: 'frankalfonso1988@gmail.com', roles: ['admin', 'player'] },
+    { email: 'captain@sigedivo.com', roles: ['captain', 'player'] },
+    { email: 'coach@sigedivo.com', roles: ['coach', 'player'] },
+    { email: 'treasurer@sigedivo.com', roles: ['treasurer', 'player'] },
+    { email: 'player@sigedivo.com', roles: ['player'] },
+    { email: 'guest@sigedivo.com', roles: ['guest'] },
   ]
 
   for (const item of coreRolesMap) {
@@ -273,7 +273,7 @@ export async function createTestEvent(title?: string) {
 }
 
 export async function createTestUser(email?: string) {
-  const testEmail = email || `test-${Date.now()}@example.com`
+  const testEmail = email || `test-${Date.now()}@sigedivo.com`
   return await prisma.user.create({
     data: {
       email: testEmail,

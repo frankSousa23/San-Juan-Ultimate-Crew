@@ -81,7 +81,7 @@ export default function Dashboard() {
            isCaptain ? 'Gestión del equipo y eventos' :
            isCoach ? 'Gestión de entrenamientos y recursos' :
            isTreasurer ? 'Gestión financiera del equipo' :
-           isPlayer ? 'Bienvenido al sistema de gestión de San Juan Ultimate' :
+           isPlayer ? 'Bienvenido al sistema de gestión deportiva' :
            'Vista pública del sistema'}
         </p>
       </div>
@@ -97,7 +97,7 @@ export default function Dashboard() {
                   Modo Invitado / Demostración
                 </span>
               </div>
-              <h2 className="text-lg sm:text-xl font-bold">¡Bienvenido a San Juan Ultimate Club!</h2>
+              <h2 className="text-lg sm:text-xl font-bold">¡Bienvenido a SIGEDIVO (Sistema de Gestión para el Disco Volador)!</h2>
               <p className="text-xs sm:text-sm text-emerald-100 max-w-2xl leading-relaxed">
                 Estás navegando en modo de muestra (solo lectura). Puedes consultar el <strong>Roster</strong> de jugadores,
                 revisar el <strong>Calendario de Eventos</strong>, ver <strong>Estadísticas</strong>, estudiar el <strong>Playbook de Jugadas</strong> y leer o descargar el <strong>Manual Oficial en PDF</strong>.

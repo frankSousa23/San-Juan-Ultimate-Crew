@@ -4,8 +4,8 @@ import { app } from './app.js'
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
 
 describe('Role requests denial flow', () => {
-  const admin = { email: 'admin@sju.com', password: '123456' }
-  const guest = { email: 'guest@example.com', password: '123456' }
+  const admin = { email: 'frankalfonso1988@gmail.com', password: '123456' }
+  const guest = { email: 'guest@sigedivo.com', password: '123456' }
   let adminToken: string | null = null
   let guestToken: string | null = null
 
@@ -36,7 +36,7 @@ describe('Role requests denial flow', () => {
         .get('/api/users/role-requests?status=PENDING')
         .set('Authorization', `Bearer ${adminToken}`)
       const items = list.body as any[]
-      const mine = items.find(r => r.user?.email === 'guest@example.com')
+      const mine = items.find(r => r.user?.email === 'guest@sigedivo.com')
       id = mine?.id
     }
     if (!id) return

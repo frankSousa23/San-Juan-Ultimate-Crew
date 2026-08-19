@@ -65,7 +65,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Server] San Juan Ultimate Crew running at http://0.0.0.0:${PORT}`);
+    console.log(`[Server] SIGEDIVO (Sistema de Gestión para el Disco Volador) running at http://0.0.0.0:${PORT}`);
   });
 }
 

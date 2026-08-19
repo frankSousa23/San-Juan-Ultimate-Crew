@@ -1,6 +1,6 @@
 {
-  "name": "San Juan Ultimate Crew",
-  "description": "Team management platform for San Juan Ultimate Crew with roster, events, finances, stats, and tactical playbook.",
+  "name": "SIGEDIVO (Sistema de Gestión para el Disco Volador)",
+  "description": "Team management platform for SIGEDIVO (Sistema de Gestión para el Disco Volador) with roster, events, finances, stats, and tactical playbook.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

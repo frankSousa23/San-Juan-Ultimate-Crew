@@ -10,7 +10,7 @@ export default function Annotations() {
   const { user, hasPermission, hasRole } = useAuth()
   const toasts = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
-  const isGuest = hasRole('guest') || user?.email === 'guest@sjuc.com'
+  const isGuest = hasRole('guest') || user?.email === 'guest@sigedivo.com'
   const canManage = hasPermission('annotations:manage') || hasPermission('events:manage') || hasRole('admin') || hasRole('captain') || hasRole('coach') || hasRole('directiva') || hasRole('annotator') || isGuest
   
   const [events, setEvents] = useState<EventItem[]>([])

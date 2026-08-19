@@ -11,11 +11,11 @@ export const Login: React.FC = () => {
   const [params] = useSearchParams()
 
   async function handleGuestLogin() {
-    setEmail('guest@sjuc.com')
+    setEmail('guest@sigedivo.com')
     setPassword('123456')
     setError(null)
     try {
-      await login('guest@sjuc.com', '123456')
+      await login('guest@sigedivo.com', '123456')
       const next = params.get('next') || '/'
       navigate(next, { replace: true })
     } catch (err: any) {
@@ -56,7 +56,7 @@ export const Login: React.FC = () => {
       <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-5 sm:p-8">
         <div className="text-center mb-6">
           <div className="text-4xl mb-2">🥏</div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">San Juan Ultimate Club</h2>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">SIGEDIVO</h2>
           <p className="text-sm text-gray-600 mt-1 font-medium">Plataforma de Gestión Deportiva y Operaciones</p>
         </div>
 
@@ -74,7 +74,7 @@ export const Login: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
-                ¿Quieres explorar el sistema sin registrarte? Ingresa con el rol <strong>Invitado (guest@sjuc.com)</strong> para ver el Roster, Calendario, Estadísticas, Pizarrón Táctico y el Manual Oficial en PDF.
+                ¿Quieres explorar el sistema sin registrarte? Ingresa con el rol <strong>Invitado (guest@sigedivo.com)</strong> para ver el Roster, Calendario, Estadísticas, Pizarrón Táctico y el Manual Oficial en PDF.
               </p>
               <button
                 type="button"

@@ -20,9 +20,9 @@ async function waitForHealth(url: string, timeoutMs = 90_000, intervalMs = 1000)
 
 async function tryAdminLogin(): Promise<boolean> {
   const credentials = [
-    { email: 'admin@sju.com', password: '123456' },
-    { email: 'admin@example.com', password: 'admin123' },
-    { email: 'admin@sju.com', password: 'password123' },
+    { email: 'frankalfonso1988@gmail.com', password: '123456' },
+    { email: 'frankalfonso1988@gmail.com', password: 'admin123' },
+    { email: 'frankalfonso1988@gmail.com', password: 'password123' },
   ]
   for (const cred of credentials) {
     try {
@@ -88,7 +88,7 @@ async function writeStorageStateForToken(baseURL: string, storagePath: string, t
   const page = await context.newPage()
   // Ensure localStorage key exists for the app origin
   await page.addInitScript((t) => {
-    try { localStorage.setItem('sjuc.auth.token', t as string) } catch {}
+    try { localStorage.setItem('sigedivo.auth.token', t as string) } catch {}
   }, token)
   await page.goto(baseURL, { waitUntil: 'domcontentloaded' })
   await context.storageState({ path: storagePath })
@@ -136,9 +136,9 @@ export default async function globalSetup(config: FullConfig) {
     await fs.mkdir(authDir, { recursive: true })
 
     // Admin storage state
-    let adminToken = await getTokenOrNull('admin@sju.com', '123456')
-    if (!adminToken) adminToken = await getTokenOrNull('admin@example.com', 'admin123')
-    if (!adminToken) adminToken = await getTokenOrNull('admin@sju.com', 'password123')
+    let adminToken = await getTokenOrNull('frankalfonso1988@gmail.com', '123456')
+    if (!adminToken) adminToken = await getTokenOrNull('frankalfonso1988@gmail.com', 'admin123')
+    if (!adminToken) adminToken = await getTokenOrNull('frankalfonso1988@gmail.com', 'password123')
     if (adminToken) {
       const adminPath = path.join(authDir, 'admin.json')
       await writeStorageStateForToken(baseURL, adminPath, adminToken)
@@ -148,9 +148,9 @@ export default async function globalSetup(config: FullConfig) {
     }
 
     // Guest storage state
-    let guestToken = await getTokenOrNull('guest@example.com', '123456')
-    if (!guestToken) guestToken = await getTokenOrNull('guest@example.com', 'admin123')
-    if (!guestToken) guestToken = await getTokenOrNull('guest@example.com', 'password123')
+    let guestToken = await getTokenOrNull('guest@sigedivo.com', '123456')
+    if (!guestToken) guestToken = await getTokenOrNull('guest@sigedivo.com', 'admin123')
+    if (!guestToken) guestToken = await getTokenOrNull('guest@sigedivo.com', 'password123')
     if (guestToken) {
       const guestPath = path.join(authDir, 'guest.json')
       await writeStorageStateForToken(baseURL, guestPath, guestToken)

@@ -7,10 +7,10 @@ test('authenticated user can create and delete a resource', async ({ page }) => 
   // API readiness handled by globalSetup
 
   // Login via API and set real token before navigation
-  const login = await page.request.post('http://localhost:4000/api/auth/login', { data: { email: 'admin@example.com', password: 'admin123' } })
+  const login = await page.request.post('http://localhost:4000/api/auth/login', { data: { email: 'frankalfonso1988@gmail.com', password: 'admin123' } })
   const token = (await login.json())?.token
   if (!token) { test.skip(); return; }
-  await page.addInitScript((t) => localStorage.setItem('sjuc.auth.token', t as string), token)
+  await page.addInitScript((t) => localStorage.setItem('sigedivo.auth.token', t as string), token)
 
   // Go to Resources
   await page.goto('/recursos')

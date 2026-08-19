@@ -12,7 +12,7 @@ test('profile page loads and shows session state', async ({ page }) => {
       body: JSON.stringify({
         user: {
           id: 99,
-          email: 'test@example.com',
+          email: 'test@sigedivo.com',
           roles: ['player'],
           name: 'Test User'
         }
@@ -23,7 +23,7 @@ test('profile page loads and shows session state', async ({ page }) => {
   const token = 'fake-jwt-token-for-ui-testing'
   // Start on homepage to set storage
   await page.goto('/')
-  await page.addInitScript((t) => localStorage.setItem('sjuc.auth.token', t as string), token)
+  await page.addInitScript((t) => localStorage.setItem('sigedivo.auth.token', t as string), token)
   await page.goto('/perfil')
   await expect(page.getByRole('heading', { name: /Mi Perfil/i }).first()).toBeVisible({ timeout: 10000 })
   // We don't assert specific user fields since AUTH may be disabled in local env

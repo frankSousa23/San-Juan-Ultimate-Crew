@@ -12,7 +12,7 @@ describe('Complete Workflow: Registration, Approval, Login, and Permissions', ()
   it('admin can login', async () => {
     if (!AUTH_ON) return
     const res = await request(app).post('/api/auth/login').send({
-      email: 'admin@sju.com',
+      email: 'frankalfonso1988@gmail.com',
       password: '123456'
     })
     if (res.status === 200) {
@@ -22,7 +22,7 @@ describe('Complete Workflow: Registration, Approval, Login, and Permissions', ()
   })
 
   it('new user can register and gets PENDING status', async () => {
-    const email = `workflow+${Date.now()}@example.com`
+    const email = `workflow+${Date.now()}@sigedivo.com`
     const res = await request(app)
       .post('/api/auth/register')
       .send({ email, password: 'password123', name: 'Workflow Test User' })
@@ -149,7 +149,7 @@ describe('Complete Workflow: Registration, Approval, Login, and Permissions', ()
   it('admin can approve another pending user', async () => {
     if (!AUTH_ON || !adminToken) return
     
-    const email = `workflow2+${Date.now()}@example.com`
+    const email = `workflow2+${Date.now()}@sigedivo.com`
     const registerRes = await request(app)
       .post('/api/auth/register')
       .send({ email, password: 'password123', name: 'Workflow Test User 2' })
@@ -185,7 +185,7 @@ describe('Complete Workflow: Registration, Approval, Login, and Permissions', ()
     
     const loginRes = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'guest@example.com', password: '123456' })
+      .send({ email: 'guest@sigedivo.com', password: '123456' })
     
     if (loginRes.status !== 200) return
     const guestToken = loginRes.body.token

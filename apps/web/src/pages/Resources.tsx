@@ -206,7 +206,7 @@ export default function Resources() {
 
   return (
     <div className="space-y-6">
-      {/* Tarjeta Destacada: Manual del Usuario y Guía de Operaciones SJUC (PDF Oficial) */}
+      {/* Tarjeta Destacada: Manual del Usuario y Guía de Operaciones SIGEDIVO (PDF Oficial) */}
       <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 rounded-2xl shadow-xl border border-blue-900/50 p-5 sm:p-7 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
@@ -214,7 +214,7 @@ export default function Resources() {
             <div className="flex items-center gap-2">
               <span className="text-xl">📘</span>
               <span className="text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/30">
-                Documento Oficial SJUC 2026
+                Documento Oficial SIGEDIVO 2026
               </span>
               <span className="text-xs font-semibold text-blue-300 bg-blue-500/20 px-2.5 py-0.5 rounded-full border border-blue-400/30">
                 PDF Completo
@@ -241,7 +241,7 @@ export default function Resources() {
                 setIsDownloadingPdf(true)
                 try {
                   downloadSystemManualPdf()
-                  toasts.success('Descargando Manual_Completo_SJUC_2026.pdf')
+                  toasts.success('Descargando Manual_Completo_SIGEDIVO_2026.pdf')
                 } catch (err) {
                   console.error(err)
                 } finally {

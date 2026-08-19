@@ -29,6 +29,7 @@ import usersRouter from './routes/users.js';
 import auditRouter from './routes/audit.js';
 import annotationsRouter from './routes/annotations.js';
 import newsRouter from './routes/news.js';
+import { feedbackRouter } from './routes/feedback.js';
 import path from 'path';
 
 export const app = express();
@@ -85,6 +86,7 @@ app.use('/api/event-participants', eventParticipantsRouter);
 app.use('/api/resources', resourcesRouter);
 app.use('/api/annotations', annotationsRouter);
 app.use('/api/news', newsRouter);
+app.use('/api/feedback', feedbackRouter);
 // Apply specific rate limiting to auth routes
 app.use('/api/auth', authLimiter);
 // Apply stricter rate limiting to password reset endpoints
@@ -101,12 +103,12 @@ app.use('/api/resources/upload', uploadLimiter);
 const uploadsDir = path.resolve(process.cwd(), 'apps', 'api', 'uploads');
 app.use('/uploads', express.static(uploadsDir));
 
-app.get('/api', (_req: Request, res: Response) => res.json({ name: 'San Juan Ultimate Crew API', ok: true }));
+app.get('/api', (_req: Request, res: Response) => res.json({ name: 'SIGEDIVO (Sistema de Gestión para el Disco Volador) API', ok: true }));
 
 // Swagger documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'San Juan Ultimate Crew API Documentation',
+  customSiteTitle: 'SIGEDIVO (Sistema de Gestión para el Disco Volador) API Documentation',
 }));
 
 // Error handling middleware (must be last)

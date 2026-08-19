@@ -5,7 +5,7 @@ import { prisma } from './tests/setup.js'
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
 
 describe('Registration and Approval Flow', () => {
-  const admin = { email: 'admin@sju.com', password: '123456' }
+  const admin = { email: 'frankalfonso1988@gmail.com', password: '123456' }
   let adminToken: string | null = null
 
   it('admin can login', async () => {
@@ -17,7 +17,7 @@ describe('Registration and Approval Flow', () => {
   })
 
   it('new user can register and gets PENDING status', async () => {
-    const email = `newuser+${Date.now()}@example.com`
+    const email = `newuser+${Date.now()}@sigedivo.com`
     const res = await request(app)
       .post('/api/auth/register')
       .send({ email, password: 'password123', name: 'Test User' })
@@ -28,7 +28,7 @@ describe('Registration and Approval Flow', () => {
   })
 
   it('pending user cannot login', async () => {
-    const email = `pending+${Date.now()}@example.com`
+    const email = `pending+${Date.now()}@sigedivo.com`
     await request(app)
       .post('/api/auth/register')
       .send({ email, password: 'password123', name: 'Pending User' })
@@ -44,7 +44,7 @@ describe('Registration and Approval Flow', () => {
   it('admin can approve pending user', async () => {
     if (!AUTH_ON || !adminToken) return
     
-    const email = `approve+${Date.now()}@example.com`
+    const email = `approve+${Date.now()}@sigedivo.com`
     const registerRes = await request(app)
       .post('/api/auth/register')
       .send({ email, password: 'password123', name: 'To Approve' })
@@ -83,7 +83,7 @@ describe('Registration and Approval Flow', () => {
   it('admin can reject pending user', async () => {
     if (!AUTH_ON || !adminToken) return
     
-    const email = `reject+${Date.now()}@example.com`
+    const email = `reject+${Date.now()}@sigedivo.com`
     const registerRes = await request(app)
       .post('/api/auth/register')
       .send({ email, password: 'password123', name: 'To Reject' })
@@ -109,7 +109,7 @@ describe('Registration and Approval Flow', () => {
   it('admin can list pending users', async () => {
     if (!AUTH_ON || !adminToken) return
     
-    const email = `list+${Date.now()}@example.com`
+    const email = `list+${Date.now()}@sigedivo.com`
     await request(app)
       .post('/api/auth/register')
       .send({ email, password: 'password123' })
@@ -127,7 +127,7 @@ describe('Registration and Approval Flow', () => {
   it('rejected user can re-register and get PENDING status again', async () => {
     if (!AUTH_ON || !adminToken) return
     
-    const email = `reregister+${Date.now()}@example.com`
+    const email = `reregister+${Date.now()}@sigedivo.com`
     const password = 'password123'
     
     // Register
@@ -156,7 +156,7 @@ describe('Registration and Approval Flow', () => {
 
 describe('Password Reset Flow', () => {
   it('can request password reset', async () => {
-    const email = 'admin@sju.com'
+    const email = 'frankalfonso1988@gmail.com'
     const res = await request(app)
       .post('/api/auth/forgot-password')
       .send({ email })
@@ -167,7 +167,7 @@ describe('Password Reset Flow', () => {
 
   it('can reset password with valid token', async () => {
     // First create a user
-    const email = `reset+${Date.now()}@example.com`
+    const email = `reset+${Date.now()}@sigedivo.com`
     const password = 'oldpassword123'
     await request(app)
       .post('/api/auth/register')
@@ -175,7 +175,7 @@ describe('Password Reset Flow', () => {
     
     // Approve user (if auth is on)
     if (AUTH_ON) {
-      const admin = { email: 'admin@sju.com', password: '123456' }
+      const admin = { email: 'frankalfonso1988@gmail.com', password: '123456' }
       const loginRes = await request(app).post('/api/auth/login').send(admin)
       if (loginRes.status === 200) {
         const adminToken = loginRes.body.token

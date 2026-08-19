@@ -99,6 +99,7 @@ class InMemoryDB {
   roleRequests: any[] = [];
   auditLogs: any[] = [];
   passwordResetTokens: any[] = [];
+  feedbacks: any[] = [];
 
   private nextId: Record<string, number> = {};
 
@@ -170,8 +171,8 @@ class InMemoryDB {
 
     // 4. Users (Únicamente 2 usuarios iniciales pre-aprobados: Super Admin e Invitado)
     const coreUsers = [
-      { id: 1, email: 'admin@sjuc.com', name: 'Administrador General', role: 'admin', playerId: null },
-      { id: 2, email: 'guest@sjuc.com', name: 'Invitado / Demostración', role: 'guest', playerId: null },
+      { id: 1, email: 'frankalfonso1988@gmail.com', name: 'Administrador General', role: 'admin', playerId: null },
+      { id: 2, email: 'guest@sigedivo.com', name: 'Invitado / Demostración', role: 'guest', playerId: null },
     ];
 
     this.users = coreUsers.map((u) => ({
@@ -732,6 +733,7 @@ export const mockPrisma: any = {
   roleRequest: createModelHandler('roleRequest', () => dbInstance.roleRequests),
   auditLog: createModelHandler('auditLog', () => dbInstance.auditLogs),
   passwordResetToken: createModelHandler('passwordResetToken', () => dbInstance.passwordResetTokens),
+  feedback: createModelHandler('feedback', () => dbInstance.feedbacks),
 
   $transaction: async (arg: any) => {
     if (typeof arg === 'function') {

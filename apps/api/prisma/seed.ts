@@ -9,7 +9,7 @@ const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
-  console.log('🌱 Iniciando restauración y seeder limpio de San Juan Ultimate Club...')
+  console.log('🌱 Iniciando restauración y seeder limpio de SIGEDIVO...')
 
   // 0. Limpiar base de datos
   console.log('🧹 Vaciando tablas previas...')
@@ -80,8 +80,8 @@ async function main() {
   const passwordHash = await bcrypt.hash('123456', 10)
 
   const initialUsers = [
-    { email: 'admin@sjuc.com', name: 'Administrador General SJUC', role: 'admin', playerId: null },
-    { email: 'guest@sjuc.com', name: 'Invitado / Demostración', role: 'guest', playerId: null },
+    { email: 'frankalfonso1988@gmail.com', name: 'Frank Sousa (Admin Global)', role: 'admin', playerId: null },
+    { email: 'guest@sigedivo.com', name: 'Invitado / Demostración', role: 'guest', playerId: null },
   ]
 
   for (const u of initialUsers) {
@@ -98,7 +98,7 @@ async function main() {
   }
 
   console.log('✅ Restauración limpia completada. Sistema totalmente vacío.')
-  console.log('🔑 Usuarios activos: Admin (admin@sjuc.com) e Invitado (guest@sjuc.com)')
+  console.log('🔑 Usuarios activos: Admin (frankalfonso1988@gmail.com) e Invitado (guest@sigedivo.com)')
 }
 
 main()

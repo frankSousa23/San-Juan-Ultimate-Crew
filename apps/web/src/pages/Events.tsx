@@ -36,7 +36,7 @@ export default function Events() {
   const toasts = useToast()
   const navigate = useNavigate()
   const { user, hasPermission, hasRole } = useAuth()
-  const isGuest = hasRole('guest') || user?.email === 'guest@sjuc.com'
+  const isGuest = hasRole('guest') || user?.email === 'guest@sigedivo.com'
   const canManageEvents = hasPermission('events:manage') || hasRole('admin') || hasRole('captain') || hasRole('coach') || isGuest
   const canAnnotate = hasPermission('annotations:manage') || hasPermission('events:manage') || hasRole('admin') || hasRole('captain') || hasRole('coach') || hasRole('annotator') || isGuest
   
@@ -718,7 +718,7 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
   const toasts = useToast()
   const navigate = useNavigate()
   const { user, hasPermission, hasRole } = useAuth()
-  const isGuest = hasRole('guest') || user?.email === 'guest@sjuc.com'
+  const isGuest = hasRole('guest') || user?.email === 'guest@sigedivo.com'
   const canManage = hasPermission('annotations:manage') || hasPermission('events:manage') || hasRole('admin') || hasRole('captain') || hasRole('coach') || hasRole('annotator') || isGuest
 
   const annotationTypeLabels: Record<AnnotationType, string> = {

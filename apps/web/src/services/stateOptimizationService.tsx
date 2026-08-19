@@ -172,7 +172,7 @@ export class StateOptimizationService {
         id: 'node-1',
         path: 'user',
         type: 'object',
-        value: { id: 1, name: 'John Doe', email: 'john@example.com' },
+        value: { id: 1, name: 'John Doe', email: 'john@sigedivo.com' },
         size: 150,
         isOptimized: true,
         isMemoized: true,
