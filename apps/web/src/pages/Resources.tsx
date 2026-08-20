@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
 import SystemManualModal from '../components/SystemManualModal'
 import { downloadSystemManualPdf } from '../lib/generateManualPdf'
+import { RESOURCE_DOCS, generateResourcePdf, downloadResourcePdf } from '../lib/generateResourcePdfs'
 import type { ResourceItem } from '../types/resource'
 
 export default function Resources() {
@@ -35,6 +36,7 @@ export default function Resources() {
   const [catOptions, setCatOptions] = useState<string[]>([])
   const toasts = useToast()
   const [preview, setPreview] = useState<ResourceItem | null>(null)
+  const [generatedPdfBlobUrl, setGeneratedPdfBlobUrl] = useState<string | null>(null)
   const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
   const [debounceTimer, setDebounceTimer] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -56,7 +58,11 @@ export default function Resources() {
   )
 
   const { execute: loadCategories } = useApi(resourcesApi.categories, {
-    onSuccess: (data) => setCatOptions(data),
+    onSuccess: (data) => {
+      if (Array.isArray(data)) {
+        setCatOptions(Array.from(new Set(data.filter(Boolean))))
+      }
+    },
     showErrorToast: true
   })
 
@@ -441,7 +447,9 @@ export default function Resources() {
   </div>
   )}
       <datalist id="resource-categories">
-        {catOptions.map(c => <option key={c} value={c} />)}
+        {Array.from(new Set(catOptions.filter(Boolean))).map((c, i) => (
+          <option key={`cat-opt-${c}-${i}`} value={c} />
+        ))}
       </datalist>
 
       {/* Summary + page size selector */}
@@ -490,7 +498,25 @@ export default function Resources() {
       </div>
 
       <div className="bg-white rounded shadow divide-y">
-        {sortedItems.map(it => (
+        {sortedItems.map(it => {
+          const hasBuiltinDoc = !!RESOURCE_DOCS[it.id] || (it.id >= 501 && it.id <= 505)
+          const docKey = RESOURCE_DOCS[it.id] ? it.id : (it.id >= 501 && it.id <= 505 ? it.id - 500 : null)
+          const hasUrl = Boolean(it.url && it.url !== '#' && it.url.startsWith('http'))
+
+          const handleOpenOrDownload = () => {
+            if (docKey) {
+              downloadResourcePdf(docKey, it.fileName || `${it.title}.pdf`)
+              toasts.success(`Descargando ${it.title}`)
+            } else if (it.storagePath) {
+              window.open(`${http.defaults.baseURL}${it.storagePath}`, '_blank')
+            } else if (hasUrl) {
+              window.open(it.url, '_blank')
+            } else {
+              toasts.info('Recurso informativo del sistema')
+            }
+          }
+
+          return (
           <div key={it.id} className="p-3 flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
               <input type="checkbox" className="mt-1" checked={selected.includes(it.id)} onChange={() => toggleSelected(it.id)} />
@@ -507,17 +533,23 @@ export default function Resources() {
                     {it.storagePath && it.mimeType?.startsWith('image/') && (
                       <img src={`${http.defaults.baseURL}${it.storagePath}`} alt="thumb" className="w-10 h-10 object-cover rounded" />
                     )}
-                    {it.storagePath ? (
-                      <div className="font-medium"><a className="text-indigo-600 hover:underline" href={`${http.defaults.baseURL}${it.storagePath}`} target="_blank" rel="noreferrer">{it.title}</a></div>
-                    ) : (
-                      <div className="font-medium"><a className="text-indigo-600 hover:underline" href={it.url} target="_blank" rel="noreferrer">{it.title}</a></div>
-                    )}
+                    <div className="font-medium">
+                      {hasUrl ? (
+                        <a className="text-indigo-600 hover:underline" href={it.url} target="_blank" rel="noreferrer">{it.title}</a>
+                      ) : it.storagePath ? (
+                        <a className="text-indigo-600 hover:underline" href={`${http.defaults.baseURL}${it.storagePath}`} target="_blank" rel="noreferrer">{it.title}</a>
+                      ) : (
+                        <button type="button" onClick={handleOpenOrDownload} className="text-indigo-600 hover:underline text-left font-medium">
+                          {it.title}
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="text-xs text-gray-500">
                     {it.category || '—'} · {it.description || ''}
-                    {it.storagePath && (
+                    {it.fileName && (
                       <>
-                        {' '}· {it.fileName || 'archivo'}{it.size ? ` (${formatBytes(it.size)})` : ''}{it.mimeType ? ` · ${it.mimeType}` : ''}
+                        {' '}· <span className="font-mono text-slate-600">{it.fileName}</span>{it.size ? ` (${formatBytes(it.size)})` : ''}
                       </>
                     )}
                   </div>
@@ -534,26 +566,63 @@ export default function Resources() {
                 </>
               ) : (
                 <>
-                  {it.storagePath && (
-                    <button className="px-2 py-1 rounded bg-gray-200" onClick={() => {
+                  {docKey ? (
+                    <>
+                      <button
+                        className="px-2.5 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium text-xs border border-indigo-200 flex items-center gap-1"
+                        onClick={() => {
+                          const doc = generateResourcePdf(docKey)
+                          const blob = doc.output('blob')
+                          const blobUrl = URL.createObjectURL(blob)
+                          setGeneratedPdfBlobUrl(blobUrl)
+                          setPreview(it)
+                        }}
+                      >
+                        👁️ Ver Documento
+                      </button>
+                      <button
+                        className="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs shadow-sm flex items-center gap-1"
+                        onClick={() => {
+                          downloadResourcePdf(docKey, it.fileName || `${it.title}.pdf`)
+                          toasts.success(`Descargando ${it.title}`)
+                        }}
+                      >
+                        📥 Descargar PDF
+                      </button>
+                    </>
+                  ) : it.storagePath ? (
+                    <button className="px-2 py-1 rounded bg-gray-200 text-xs" onClick={() => {
                       const isImg = it.mimeType?.startsWith('image/')
                       const isPdf = (it.mimeType || '').includes('pdf')
                       if (isImg || isPdf) setPreview(it)
                       else window.open(`${http.defaults.baseURL}${it.storagePath}`, '_blank')
                     }}>Vista previa</button>
+                  ) : null}
+
+                  {hasUrl && (
+                    <a
+                      href={it.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium border border-slate-200 flex items-center gap-1"
+                    >
+                      🔗 Abrir Enlace
+                    </a>
                   )}
-                  <button className="px-2 py-1 rounded bg-gray-200" onClick={async () => {
-                    const link = it.storagePath ? `${http.defaults.baseURL}${it.storagePath}` : (it.url || '')
+
+                  <button className="px-2 py-1 rounded bg-gray-200 text-xs" onClick={async () => {
+                    const link = hasUrl ? it.url : (it.storagePath ? `${http.defaults.baseURL}${it.storagePath}` : window.location.href)
                     if (!link) return
                     try {
                       await navigator.clipboard.writeText(link)
                       toasts.info('Enlace copiado al portapapeles')
                     } catch {}
                   }}>Copiar enlace</button>
+
                   {hasPermission('resources:manage') && (
                   <>
-                  <button className="px-2 py-1 rounded bg-gray-200" onClick={() => startEdit(it)}>Editar</button>
-                  <button className="px-2 py-1 rounded bg-rose-600 text-white" onClick={() => {
+                  <button className="px-2 py-1 rounded bg-gray-200 text-xs" onClick={() => startEdit(it)}>Editar</button>
+                  <button className="px-2 py-1 rounded bg-rose-600 text-white text-xs" onClick={() => {
                     setConfirmState({
                       message: '¿Eliminar este recurso? Esta acción no se puede deshacer.',
                       onYes: async () => { await deleteResource(it.id) }
@@ -565,7 +634,8 @@ export default function Resources() {
               )}
             </div>
           </div>
-        ))}
+          )
+        })}
         {items.length === 0 && <div className="p-3 text-sm text-gray-500">Sin recursos</div>}
       </div>
       {offset < total && (
@@ -605,20 +675,51 @@ export default function Resources() {
       <SystemManualModal isOpen={showManualModal} onClose={() => setShowManualModal(false)} />
 
       {preview && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setPreview(null)}>
-          <div className="bg-white rounded shadow max-w-4xl w-full max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-3 py-2 border-b">
-              <div className="font-medium truncate pr-2">{preview.title}</div>
-              <button className="px-2 py-1 rounded bg-gray-200" onClick={() => setPreview(null)}>Cerrar</button>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => {
+          if (generatedPdfBlobUrl) {
+            URL.revokeObjectURL(generatedPdfBlobUrl)
+            setGeneratedPdfBlobUrl(null)
+          }
+          setPreview(null)
+        }}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b bg-slate-900 text-white">
+              <div className="font-bold truncate pr-2 flex items-center gap-2">
+                <span>📄</span>
+                <span>{preview.title}</span>
+              </div>
+              <button
+                className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium border border-slate-700 transition"
+                onClick={() => {
+                  if (generatedPdfBlobUrl) {
+                    URL.revokeObjectURL(generatedPdfBlobUrl)
+                    setGeneratedPdfBlobUrl(null)
+                  }
+                  setPreview(null)
+                }}
+              >
+                ✕ Cerrar
+              </button>
             </div>
-            <div className="p-3">
-              {preview.mimeType?.startsWith('image/') ? (
-                <img src={`${http.defaults.baseURL}${preview.storagePath}`} alt={preview.title} className="max-w-full h-auto" />
+            <div className="p-4 flex-1 overflow-auto bg-slate-50 flex flex-col items-center justify-center">
+              {generatedPdfBlobUrl ? (
+                <iframe title="pdf" src={generatedPdfBlobUrl} className="w-full h-[70vh] rounded-lg border shadow-inner bg-white" />
+              ) : preview.mimeType?.startsWith('image/') ? (
+                <img src={`${http.defaults.baseURL}${preview.storagePath}`} alt={preview.title} className="max-w-full max-h-[70vh] object-contain rounded-lg shadow" />
               ) : (preview.mimeType || '').includes('pdf') ? (
-                <iframe title="pdf" src={`${http.defaults.baseURL}${preview.storagePath}`} className="w-full h-[70vh] border" />
+                <iframe title="pdf" src={`${http.defaults.baseURL}${preview.storagePath}`} className="w-full h-[70vh] rounded-lg border shadow-inner bg-white" />
               ) : (
-                <div className="text-sm">
-                  Tipo no previsualizable. <a className="text-indigo-600 underline" href={`${http.defaults.baseURL}${preview.storagePath}`} target="_blank" rel="noreferrer">Abrir archivo</a>
+                <div className="text-center p-8 bg-white rounded-xl shadow-sm border">
+                  <p className="text-base font-semibold text-slate-800 mb-2">Previsualización no disponible directamente</p>
+                  <p className="text-sm text-slate-500 mb-4">Puedes abrir o descargar el documento oficial desde el enlace directo:</p>
+                  <a
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow transition"
+                    href={preview.storagePath ? `${http.defaults.baseURL}${preview.storagePath}` : preview.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    🔗 Abrir recurso externo
+                  </a>
                 </div>
               )}
             </div>

@@ -70,11 +70,11 @@ export default function EventForm({ mode, initial, onCancel, onSubmit, onSubmitA
     }
     
     // Limpiar campos irrelevantes
-    if (payload.type !== 'MATCH') {
+    if (payload.type !== 'MATCH' && payload.type !== 'AMISTOSO' && payload.type !== 'TOURNAMENT') {
       payload.rivalId = null
       payload.matchCategory = null
     }
-    if (payload.type !== 'TRAINING' && payload.type !== 'MATCH') {
+    if (payload.type !== 'TRAINING' && payload.type !== 'MATCH' && payload.type !== 'AMISTOSO' && payload.type !== 'TOURNAMENT') {
       payload.isInternalScrimmage = false
     }
 
@@ -155,27 +155,29 @@ export default function EventForm({ mode, initial, onCancel, onSubmit, onSubmitA
           <input value={form.location || ''} onChange={e => handleChange('location', e.target.value)} className="w-full px-3 py-2 border rounded-lg" placeholder="Ubicación" />
         </div>
 
-        {form.type === 'MATCH' && (
+        {(form.type === 'MATCH' || form.type === 'AMISTOSO' || form.type === 'TOURNAMENT') && (
           <>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Rival Oficial</label>
+              <label className="block text-sm text-gray-600 mb-1">
+                {form.type === 'AMISTOSO' ? 'Equipo Rival o Amigo (Opcional)' : 'Rival / Oponente'}
+              </label>
               <select 
                 value={form.rivalId || ''} 
                 onChange={e => handleChange('rivalId', e.target.value ? Number(e.target.value) : null)} 
                 className="w-full px-3 py-2 border rounded-lg"
               >
-                <option value="">Selecciona un Rival (Opcional)</option>
+                <option value="">{form.type === 'AMISTOSO' ? 'Sin Rival Oficial (o Partido Dividido)' : 'Selecciona un Rival (Opcional)'}</option>
                 {rivals.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Categoría del Partido</label>
+              <label className="block text-sm text-gray-600 mb-1">Fase / Categoría</label>
               <select 
                 value={form.matchCategory || ''} 
                 onChange={e => handleChange('matchCategory', e.target.value as MatchCategory)} 
                 className="w-full px-3 py-2 border rounded-lg"
               >
-                <option value="">Ninguna</option>
+                <option value="">Ninguna / Partido Regular</option>
                 {matchCategoryOptions.map(c => (
                   <option key={c} value={c}>
                     {c === 'GROUP_STAGE' ? 'Fase de Grupos' :
@@ -190,7 +192,7 @@ export default function EventForm({ mode, initial, onCancel, onSubmit, onSubmitA
           </>
         )}
 
-        {(form.type === 'TRAINING' || form.type === 'MATCH') && (
+        {(form.type === 'TRAINING' || form.type === 'MATCH' || form.type === 'AMISTOSO' || form.type === 'TOURNAMENT') && (
           <div className="md:col-span-2 flex items-center gap-3 bg-gray-50 p-3 rounded-lg border">
             <input 
               type="checkbox" 
@@ -200,8 +202,8 @@ export default function EventForm({ mode, initial, onCancel, onSubmit, onSubmitA
               className="w-5 h-5 text-amber-600 rounded cursor-pointer"
             />
             <label htmlFor="scrimmage" className="text-sm font-semibold text-gray-800 cursor-pointer">
-              Es un Scrimmage Interno (Entrenamiento Dividido)
-              <p className="text-xs text-gray-500 font-normal">Permitirá llevar el marcador entre dos equipos de nuestros propios jugadores en la app de Anotaciones.</p>
+              Es un Scrimmage Interno / Partido entre Escuadras (Claro vs Oscuro)
+              <p className="text-xs text-gray-500 font-normal">Permitirá llevar el marcador y estadísticas entre dos alineaciones de nuestros propios jugadores o equipos divididos en la Pizarra de Anotaciones.</p>
             </label>
           </div>
         )}

@@ -172,54 +172,82 @@ export const GUEST_MATCH_STATS = GUEST_PLAYERS.map(pl => {
 })
 
 export const GUEST_PLAYS = [
-  { id: 301, name: 'Vertical Stack - Break Flow', category: 'OFFENSE', description: 'Ataque clásico en pila vertical.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
-  { id: 302, name: 'Horizontal Stack - Doble Corte', category: 'OFFENSE', description: 'Formación horizontal con 3 manejadores y 4 cortadores.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
-  { id: 303, name: 'Defensa de Zona 3-3-1 (Cup)', category: 'DEFENSE', description: 'Estrategia defensiva de copa.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
-  { id: 304, name: 'Force Sideline & Trap', category: 'DEFENSE', description: 'Marcación hombre a hombre forzando a la línea.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
-  { id: 305, name: 'Drill Endzone 3v3', category: 'DRILL', description: 'Ejercicio de espacio reducido.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
-  { id: 306, name: 'Hexagon Offense', category: 'OFFENSE', description: 'Ofensiva fluida basada en principios de hexágono para mover el disco velozmente.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
-  { id: 307, name: 'Defensa Bracket (Switch)', category: 'DEFENSE', description: 'Defensa con cambios automáticos (switches) sobre los cortadores principales en stack vertical.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
-  { id: 308, name: 'Drill de Marcación 1v1', category: 'DRILL', description: 'Mejora del posicionamiento defensivo ante cortes agresivos.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
+  { id: 301, name: 'Vertical Stack Estándar (Cortes Open y Break Side)', category: 'OFFENSE', description: 'Formación clásica en columna vertical. Cortadores atacan sucesivamente desde el fondo hacia el lado abierto o lado cerrado con resets rápidos en stall 6.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
+  { id: 302, name: 'Horizontal Stack (H-Stack) con Variación Deep Iso', category: 'OFFENSE', description: 'Formación en línea transversal con 3 handlers y 4 cutters. Genera pasillos abiertos en carriles centrales e incorpora corte profundo aislado para receptores veloces.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
+  { id: 303, name: 'Defensa en Zona Cup (3-3-1 Cup Defense)', category: 'DEFENSE', description: 'Sistema de copa de 3 defensas (Mark, Middle, Point), 3 intermedios (Short Deep y Wings) y 1 Deep-Deep. Excelente para frenar ataques en días de viento.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
+  { id: 304, name: 'Defensa Dome / Clam (Cúpula Modular)', category: 'DEFENSE', description: 'Esquema defensivo híbrido en domo que colapsa el centro del campo contra stacks verticales, forzando tiros difíciles hacia las bandas e induciendo stall outs.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
+  { id: 305, name: 'Variación Endzone Iso (Aislamiento de Anotación)', category: 'OFFENSE', description: 'Jugada en zona roja (últimos 15 metros). Cutters despejan al lado débil dejando espacio libre de 1 contra 1 para el cortador principal.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
+  { id: 306, name: 'Drill de Lanzamientos con Presión (Dump-Swing)', category: 'DRILL', description: 'Ejercicio dinámico de 3 atletas para mecanizar pases en movimiento, cambio rápido de frente (swing) y desahogo con pivoteo bajo marca estricta.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
 ]
 
 export const GUEST_INJURIES = [
-  { id: 401, playerId: 12, type: 'Esguince de Tobillo Grado II', severity: 'MODERATE', status: 'RECOVERING', startDate: new Date(now.getTime() - 86400000 * 12).toISOString(), endDate: new Date(now.getTime() + 86400000 * 10).toISOString(), description: 'Torcedura durante entrenamiento.', player: GUEST_PLAYERS[11], createdAt: new Date('2025-01-10T10:00:00Z'), updatedAt: new Date('2025-01-10T10:00:00Z') },
+  { id: 401, playerId: 12, type: 'Esguince de Tobillo Grado II', severity: 'MODERATE', status: 'RECOVERING', startDate: new Date(now.getTime() - 86400000 * 12).toISOString(), endDate: new Date(now.getTime() + 86400000 * 10).toISOString(), description: 'Torcedura en aterrizaje de salto.', player: GUEST_PLAYERS[11], createdAt: new Date('2025-01-10T10:00:00Z'), updatedAt: new Date('2025-01-10T10:00:00Z') },
   { id: 402, playerId: 21, type: 'Rotura de Ligamento Cruzado', severity: 'SEVERE', status: 'RECOVERING', startDate: new Date(now.getTime() - 86400000 * 45).toISOString(), description: 'Cirugía exitosa, en rehabilitación activa de 6 a 9 meses.', player: GUEST_PLAYERS[20], createdAt: new Date('2025-01-10T10:00:00Z'), updatedAt: new Date('2025-01-10T10:00:00Z') },
   { id: 403, playerId: 6, type: 'Tendinitis Patelar', severity: 'MILD', status: 'HEALED', startDate: new Date(now.getTime() - 86400000 * 60).toISOString(), endDate: new Date(now.getTime() - 86400000 * 30).toISOString(), description: 'Rodilla del saltador, recuperado con reposo y fisioterapia.', player: GUEST_PLAYERS[5], createdAt: new Date('2025-01-10T10:00:00Z'), updatedAt: new Date('2025-01-10T10:00:00Z') },
-  { id: 404, playerId: 9, type: 'Desgarro Isquiotibial', severity: 'MODERATE', status: 'RECOVERING', startDate: new Date(now.getTime() - 86400000 * 5).toISOString(), endDate: new Date(now.getTime() + 86400000 * 20).toISOString(), description: 'Ocurrido en un plancha defensiva. Reposo por 3 semanas.', player: GUEST_PLAYERS[8], createdAt: new Date('2025-01-10T10:00:00Z'), updatedAt: new Date('2025-01-10T10:00:00Z') },
+  { id: 404, playerId: 9, type: 'Desgarro Isquiotibial', severity: 'MODERATE', status: 'RECOVERING', startDate: new Date(now.getTime() - 86400000 * 5).toISOString(), endDate: new Date(now.getTime() + 86400000 * 20).toISOString(), description: 'Ocurrido en una plancha defensiva. Reposo por 3 semanas.', player: GUEST_PLAYERS[8], createdAt: new Date('2025-01-10T10:00:00Z'), updatedAt: new Date('2025-01-10T10:00:00Z') },
 ]
 
 export const GUEST_RESOURCES = [
-  { id: 501, title: '📘 Manual Oficial SIGEDIVO', category: 'Manuales y Operaciones', description: 'Manual completo interactivo con la matriz de roles y permisos.', url: '#', fileName: 'Manual.pdf', size: 2854000, createdAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 502, title: 'Reglamento Oficial WFDF', category: 'Reglamento', description: 'Reglamento traducido oficial de la Federación.', url: 'https://rules.wfdf.org', fileName: 'Reglas.pdf', size: 1450000, createdAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 503, title: 'Guía de Espíritu de Juego (SOTG)', category: 'Espíritu de Juego', description: 'Criterios y rúbrica oficial.', url: 'https://spirit.wfdf.org', fileName: 'SOTG.pdf', size: 890000, createdAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 504, title: 'Plan de Preparación Física', category: 'Entrenamiento Físico', description: 'Rutina de movilidad articular.', url: '#', fileName: 'Prep.pdf', size: 1120000, createdAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 505, title: 'Guía Nutricional para Torneos', category: 'Salud', description: 'Alimentación óptima.', url: '#', fileName: 'Nutricion.pdf', size: 540000, createdAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 506, title: 'Ejercicios de Movilidad Articular', category: 'Entrenamiento Físico', description: 'Estiramientos dinámicos.', url: '#', fileName: 'Movilidad.pdf', size: 1890000, createdAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 501, title: 'Reglamento Oficial de Ultimate WFDF 2021-2024 / 2025 (Español)', category: 'Reglamento y Normativas', description: 'Reglas oficiales de la World Flying Disc Federation: no contacto, stall count de 10s, autogestión de faltas y dimensiones de campo 100x37m.', url: 'https://rules.wfdf.sport/', fileName: 'Reglas_Oficiales_WFDF_Ultimate.pdf', size: 1850000, createdAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 502, title: 'Manual de Espíritu de Juego (Spirit of the Game - SOTG)', category: 'Espíritu de Juego', description: 'Criterios y rúbrica oficial de la WFDF para la puntuación SOTG: Conocimiento de reglas, faltas y contacto, imparcialidad, actitud positiva y comunicación.', url: 'https://wfdf.sport/organisation/spirit-of-the-game/', fileName: 'Guia_Oficial_Espiritu_de_Juego_SOTG.pdf', size: 920000, createdAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 503, title: 'Guía Oficial de Señales de Mano WFDF', category: 'Reglamento y Normativas', description: 'Señales gestuales universales de jugadores: In/Out, Falta, Pick, Travel, Stall Out, Delay y Gol.', url: 'https://rules.wfdf.sport/', fileName: 'Senales_de_Mano_WFDF.pdf', size: 1250000, createdAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 504, title: 'Manual Técnico de Lanzamientos Fundamentales', category: 'Entrenamiento Técnico', description: 'Mecánica de agarres y lanzamientos: Backhand (Revés), Forehand/Flick (Sidearm), Hammer (Martillo), Scoober y pivoteo con pie de apoyo.', url: 'https://wfdf.sport/', fileName: 'Manual_Lanzamientos_Ultimate.pdf', size: 2100000, createdAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 505, title: 'Guía de Nutrición e Hidratación para Torneos de Fin de Semana', category: 'Salud y Bienestar', description: 'Protocolos de recarga de electrolitos, ingesta calórica entre partidos consecutivos y prevención de calambres bajo calor intenso.', url: 'https://wfdf.sport/', fileName: 'Nutricion_e_Hidratacion_Ultimate.pdf', size: 780000, createdAt: new Date('2025-01-01T10:00:00Z') },
 ]
 
 export const GUEST_ACCOUNTS = [
-  { id: 1, name: 'Caja Chica (Efectivo)', type: 'CASH', balanceCents: 15000, description: 'Efectivo para hidratación y gastos menores.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 2, name: 'Cuenta Banco Z (Torneos)', type: 'BANK', balanceCents: 125000, description: 'Fondo principal del equipo.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 1, name: 'Caja Chica (Efectivo / USD)', type: 'CASH', balanceCents: 15000, description: 'Fondos en efectivo para hidratación, hielo y gastos menores de cancha.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 2, name: 'Cuenta Bancaria / Pago Móvil / Zelle', type: 'BANK', balanceCents: 125000, description: 'Cuenta bancaria para cuotas mensuales de atletas, inscripciones y patrocinios.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
 ]
 
 export const GUEST_CATEGORIES = [
-  { id: 1, name: 'Mensualidad Jugadores', kind: 'INCOME', description: 'Pago mensual de cuotas.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 2, name: 'Patrocinadores', kind: 'INCOME', description: 'Ingresos por sponsors.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 3, name: 'Inscripción Torneos', kind: 'EXPENSE', description: 'Pago de bid fees.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 4, name: 'Hidratación y Médico', kind: 'EXPENSE', description: 'Agua, hielo, botiquín.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 1, name: 'Cuotas de Membresía Mensual', kind: 'INCOME', description: 'Pago de mensualidades y mantenimiento deportivo de atletas.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 2, name: 'Venta de Discos Oficiales 175g', kind: 'INCOME', description: 'Venta de discos oficiales Discraft Ultra-Star de competencia.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 3, name: 'Patrocinios y Donaciones', kind: 'INCOME', description: 'Aportes de aliados y patrocinadores del club.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 4, name: 'Compra de Discos y Conos', kind: 'EXPENSE', description: 'Adquisición de material técnico reglamentario.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 5, name: 'Hidratación y Primeros Auxilios', kind: 'EXPENSE', description: 'Botellones de agua, hielo, vendas y botiquín.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 6, name: 'Inscripción a Torneo Nacional', kind: 'EXPENSE', description: 'Pago de Bid Fee y cuotas de participación en torneos.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
 ]
 
 export const GUEST_TRANSACTIONS = [
-  { id: 1, type: 'INCOME', amountCents: 20000, description: 'Mensualidades Enero', occurredAt: new Date(now.getTime() - 86400000 * 20).toISOString(), accountId: 2, categoryId: 1, createdBy: 1, account: GUEST_ACCOUNTS[1], category: GUEST_CATEGORIES[0], creator: GUEST_PLAYERS[0], createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 2, type: 'INCOME', amountCents: 50000, description: 'Sponsor: Tienda Deportiva', occurredAt: new Date(now.getTime() - 86400000 * 15).toISOString(), accountId: 2, categoryId: 2, createdBy: 1, account: GUEST_ACCOUNTS[1], category: GUEST_CATEGORIES[1], creator: GUEST_PLAYERS[0], createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 3, type: 'EXPENSE', amountCents: 15000, description: 'Inscripción Copa Nacional', occurredAt: new Date(now.getTime() - 86400000 * 10).toISOString(), accountId: 2, categoryId: 3, createdBy: 1, account: GUEST_ACCOUNTS[1], category: GUEST_CATEGORIES[2], creator: GUEST_PLAYERS[0], createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 4, type: 'EXPENSE', amountCents: 2500, description: 'Botellas de agua y hielo', occurredAt: new Date(now.getTime() - 86400000 * 4).toISOString(), accountId: 1, categoryId: 4, createdBy: 1, account: GUEST_ACCOUNTS[0], category: GUEST_CATEGORIES[3], creator: GUEST_PLAYERS[0], createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 5, type: 'TRANSFER', amountCents: 5000, description: 'Retiro para caja chica', occurredAt: new Date(now.getTime() - 86400000 * 2).toISOString(), accountId: 2, toAccountId: 1, categoryId: null, createdBy: 1, account: GUEST_ACCOUNTS[1], toAccount: GUEST_ACCOUNTS[0], category: null, creator: GUEST_PLAYERS[0], createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 1, type: 'INCOME', amountCents: 10000, description: 'Cobro de cuotas mensuales de atletas (Enero)', occurredAt: new Date(now.getTime() - 86400000 * 18).toISOString(), accountId: 2, categoryId: 1, createdBy: 1, account: GUEST_ACCOUNTS[1], category: GUEST_CATEGORIES[0], creator: GUEST_PLAYERS[0], createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 2, type: 'INCOME', amountCents: 7500, description: 'Venta de 5 discos oficiales Discraft Ultra-Star 175g', occurredAt: new Date(now.getTime() - 86400000 * 12).toISOString(), accountId: 2, categoryId: 2, createdBy: 1, account: GUEST_ACCOUNTS[1], category: GUEST_CATEGORIES[1], creator: GUEST_PLAYERS[0], createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 3, type: 'EXPENSE', amountCents: 12000, description: 'Compra de lote de 10 discos oficiales de competencia', occurredAt: new Date(now.getTime() - 86400000 * 10).toISOString(), accountId: 2, categoryId: 4, createdBy: 1, account: GUEST_ACCOUNTS[1], category: GUEST_CATEGORIES[3], creator: GUEST_PLAYERS[0], createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 4, type: 'EXPENSE', amountCents: 1850, description: 'Agua potable y bolsas de hielo para entrenamiento de fin de semana', occurredAt: new Date(now.getTime() - 86400000 * 5).toISOString(), accountId: 1, categoryId: 5, createdBy: 1, account: GUEST_ACCOUNTS[0], category: GUEST_CATEGORIES[4], creator: GUEST_PLAYERS[0], createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
+  { id: 5, type: 'EXPENSE', amountCents: 15000, description: 'Anticipo de Bid Fee - Copa Nacional de Ultimate Frisbee', occurredAt: new Date(now.getTime() - 86400000 * 3).toISOString(), accountId: 2, categoryId: 6, createdBy: 1, account: GUEST_ACCOUNTS[1], category: GUEST_CATEGORIES[5], creator: GUEST_PLAYERS[0], createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
 ]
 
 export const GUEST_POSTS = [
-  { id: 1, title: '¡Campeones de la Copa Nacional 2026!', content: 'Felicidades a todo el equipo por el increíble esfuerzo. Demostramos nuestro mejor nivel en la final. El entrenamiento está rindiendo frutos.', isImportant: true, createdAt: new Date(now.getTime() - 86400000 * 3).toISOString(), updatedAt: new Date(now.getTime() - 86400000 * 3).toISOString(), author: GUEST_PLAYERS[0] },
-  { id: 2, title: 'Nuevo Horario de Entrenamiento', content: 'A partir de la próxima semana, agregaremos pliometría los días miércoles a las 19:00 hrs. Favor llevar calzado adecuado.', isImportant: false, createdAt: new Date(now.getTime() - 86400000 * 8).toISOString(), updatedAt: new Date(now.getTime() - 86400000 * 8).toISOString(), author: GUEST_PLAYERS[2] },
-  { id: 3, title: 'Cuotas del mes', content: 'Recuerden que las mensualidades deben depositarse antes del día 5. Hablen con el tesorero si tienen dudas.', isImportant: false, createdAt: new Date(now.getTime() - 86400000 * 18).toISOString(), updatedAt: new Date(now.getTime() - 86400000 * 18).toISOString(), author: GUEST_PLAYERS[1] },
+  {
+    id: 1,
+    title: '🏆 ¡Bienvenidos a SIGEDIVO - San Juan Ultimate Crew! Guía Rápida del Sistema',
+    content: `¡Saludos a todos los atletas y miembros de **San Juan Ultimate Crew**!
+
+Esta plataforma ha sido diseñada para optimizar nuestra gestión deportiva, táctica y organizativa. A continuación, les compartimos los puntos clave para el uso diario:
+
+1. **📅 Calendario y Convocatorias (RSVP)**: Ingresen a la sección de *Eventos* para confirmar su disponibilidad (Asistiré / Pendiente / No podré) antes de cada entrenamiento y partido. Esto permite a los entrenadores y capitanes definir las líneas de juego (Línea O / Línea D).
+2. **📋 Pizarra Táctica (Playbook)**: Consulten las jugadas oficiales (*Vertical Stack*, *Horizontal Stack*, *Defensa en Zona Cup* y *Dome*) para llegar al campo con la estrategia clara.
+3. **💰 Transparencia Financiera**: En el módulo de *Finanzas* pueden revisar el balance general del club, aportes de membresía, compra de discos reglamentarios y presupuesto de torneos.
+4. **📚 Recursos y Reglamento**: En la sección de *Recursos* tienen acceso al reglamento oficial de la **WFDF**, la guía de **Espíritu de Juego (SOTG)** y manuales de preparación técnica.
+5. **💬 Canales de Chat**: Manténganse conectados en los canales de mensajería para coordinar traslados y resolver dudas con capitanes y cuerpo técnico.
+
+*¡A darlo todo en la cancha con el mejor Espíritu de Juego!*`,
+    isImportant: true,
+    isPinned: true,
+    category: 'Anuncios',
+    createdAt: new Date(now.getTime() - 86400000 * 1).toISOString(),
+    updatedAt: new Date(now.getTime() - 86400000 * 1).toISOString(),
+    author: GUEST_PLAYERS[0]
+  },
+  {
+    id: 2,
+    title: '🥏 Taller de Lanzamientos: Perfeccionamiento de Forehand y Lanzamientos Invertidos',
+    content: 'En las próximas sesiones dedicaremos un bloque especial al pulido del pase de derecha (Forehand / Flick), Hammer y Scoober para romper marcas en zona. Revisen el material complementario en la sección de Recursos.',
+    isImportant: false,
+    isPinned: false,
+    category: 'Entrenamiento',
+    createdAt: new Date(now.getTime() - 86400000 * 4).toISOString(),
+    updatedAt: new Date(now.getTime() - 86400000 * 4).toISOString(),
+    author: GUEST_PLAYERS[2]
+  },
 ]

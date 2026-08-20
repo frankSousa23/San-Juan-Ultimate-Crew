@@ -399,6 +399,26 @@ export const rivalsApi = {
   create: async (payload: any): Promise<any> => (await http.post('/api/rivals', payload)).data,
   update: async (id: number, payload: any): Promise<any> => (await http.put(`/api/rivals/${id}`, payload)).data,
   remove: async (id: number): Promise<void> => { await http.delete(`/api/rivals/${id}`) },
+  listPlayers: async (rivalId: number): Promise<Array<{ id: number; rivalId: number; name: string; number: number; position?: string; notes?: string }>> => {
+    try {
+      const res = await http.get(`/api/rivals/${rivalId}/players`)
+      const data = res.data
+      if (Array.isArray(data)) return data
+      if (data && Array.isArray((data as any).data)) return (data as any).data
+      return []
+    } catch {
+      return []
+    }
+  },
+  createPlayer: async (rivalId: number, payload: { name: string; number: number; position?: string; notes?: string }): Promise<any> => (
+    await http.post(`/api/rivals/${rivalId}/players`, payload)
+  ).data,
+  updatePlayer: async (rivalId: number, playerId: number, payload: { name?: string; number?: number; position?: string; notes?: string }): Promise<any> => (
+    await http.put(`/api/rivals/${rivalId}/players/${playerId}`, payload)
+  ).data,
+  deletePlayer: async (rivalId: number, playerId: number): Promise<void> => {
+    await http.delete(`/api/rivals/${rivalId}/players/${playerId}`)
+  },
   getStats: async (id: number): Promise<{
     rival: { id: number; name: string }
     totalAnnotations: number

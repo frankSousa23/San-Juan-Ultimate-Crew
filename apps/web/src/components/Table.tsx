@@ -246,6 +246,7 @@ export function DataTable<T extends Record<string, any>>({
   selectedItems = [],
   onSelectionChange
 }: DataTableProps<T>) {
+  const safeData = Array.isArray(data) ? data : []
   const [selected, setSelected] = React.useState<T[]>(selectedItems)
 
   React.useEffect(() => {
@@ -253,7 +254,7 @@ export function DataTable<T extends Record<string, any>>({
   }, [selectedItems])
 
   const handleSelectAll = () => {
-    const newSelected = selected.length === data.length ? [] : [...data]
+    const newSelected = selected.length === safeData.length ? [] : [...safeData]
     setSelected(newSelected)
     onSelectionChange?.(newSelected)
   }
@@ -267,8 +268,8 @@ export function DataTable<T extends Record<string, any>>({
   }
 
   const isSelected = (item: T) => selected.includes(item)
-  const isAllSelected = selected.length === data.length && data.length > 0
-  const isIndeterminate = selected.length > 0 && selected.length < data.length
+  const isAllSelected = selected.length === safeData.length && safeData.length > 0
+  const isIndeterminate = selected.length > 0 && selected.length < safeData.length
 
   // Add selection column if selectable
   const tableColumns = selectable

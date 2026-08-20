@@ -28,13 +28,16 @@ export default function TournamentStatsView() {
 
   useEffect(() => {
     // Fetch tournaments
-    eventsApi.list().then(res => {
-      const ts = res.filter(e => e.type === 'TOURNAMENT').sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime());
-      setTournaments(ts);
-      if (ts.length > 0) {
-        setSelectedTournament(ts[0].id);
-      }
-    });
+    eventsApi.list()
+      .then(res => {
+        if (!Array.isArray(res)) return;
+        const ts = res.filter(e => e && e.type === 'TOURNAMENT').sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime());
+        setTournaments(ts);
+        if (ts.length > 0) {
+          setSelectedTournament(ts[0].id);
+        }
+      })
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -42,7 +45,9 @@ export default function TournamentStatsView() {
     setLoading(true);
     http.get<TournamentStatsResponse>(`/api/stats/tournament/${selectedTournament}`)
       .then(res => {
-        setStats(res.data);
+        if (res && res.data) {
+          setStats(res.data);
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false));

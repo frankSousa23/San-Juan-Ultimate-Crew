@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { http } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
+import { downloadSystemManualPdf } from '../lib/generateManualPdf'
 
 export default function About() {
   const { user } = useAuth()
@@ -12,6 +13,16 @@ export default function About() {
   })
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
+
+  const handleDownloadPdf = () => {
+    try {
+      setIsDownloadingPdf(true)
+      downloadSystemManualPdf('Manual_Operaciones_SIGEDIVO.pdf')
+    } finally {
+      setIsDownloadingPdf(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,7 +33,7 @@ export default function About() {
       setFormData(prev => ({ ...prev, message: '' }))
       setTimeout(() => setStatus('idle'), 3000)
     } catch (error: any) {
-      const errMsg = error.response?.data?.error || 'Ocurrió un error al enviar el feedback.'
+      const errMsg = error?.response?.data?.error || error?.message || 'Ocurrió un error al enviar el feedback.'
       console.error(error)
       setStatus('error')
       setErrorMessage(typeof errMsg === 'string' ? errMsg : 'Ocurrió un error al enviar el feedback.')
@@ -53,18 +64,17 @@ export default function About() {
         {/* Botón Descarga de Guía PDF */}
         <div className="mt-6 pt-6 border-t border-white/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h4 className="font-bold text-white text-base">📄 Documentación y Guía de Roles en PDF</h4>
-            <p className="text-xs text-blue-200">Descarga el resumen estructurado de roles, permisos, matriz de vistas y flujos de decisión.</p>
+            <h4 className="font-bold text-white text-base">📄 Documentación Oficial y Guía de Roles en PDF</h4>
+            <p className="text-xs text-blue-200">Descarga el manual completo de SIGEDIVO: roles, permisos, matriz de vistas, flujos de aprobación y buenas prácticas.</p>
           </div>
-          <a
-            href="/Roles_y_Permisos_San_Juan_Ultimate_Crew.pdf"
-            download="Roles_y_Permisos_San_Juan_Ultimate_Crew.pdf"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold px-5 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition text-sm whitespace-nowrap"
+          <button
+            type="button"
+            onClick={handleDownloadPdf}
+            disabled={isDownloadingPdf}
+            className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-slate-900 font-bold px-5 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition text-sm whitespace-nowrap cursor-pointer"
           >
-            <span>📥</span> Descargar PDF
-          </a>
+            <span>📥</span> {isDownloadingPdf ? 'Generando PDF...' : 'Descargar PDF'}
+          </button>
         </div>
       </div>
 

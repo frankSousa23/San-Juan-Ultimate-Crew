@@ -30,6 +30,23 @@ export function useToast() {
   const showWarningToast = warning
   const showInfoToast = info
 
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+    switch (type) {
+      case 'success':
+        toast.success(message)
+        break
+      case 'error':
+        toast.error(message)
+        break
+      case 'warning':
+        toast(message, { icon: '⚠️' })
+        break
+      default:
+        toast(message, { icon: 'ℹ️' })
+        break
+    }
+  }
+
   const clearAllToasts = () => {
     toast.dismiss()
   }
@@ -47,6 +64,7 @@ export function useToast() {
     info,
     addToast,
     removeToast,
+    showToast,
     showSuccessToast,
     showErrorToast,
     showWarningToast,

@@ -73,12 +73,6 @@ export function NewsSection({
                 + Nueva Noticia
               </button>
             )}
-            <button
-              onClick={onRefresh}
-              className="px-3 py-1 border rounded-lg hover:bg-gray-50 transition-colors text-sm"
-            >
-              🔄 Actualizar
-            </button>
           </div>
         </div>
 

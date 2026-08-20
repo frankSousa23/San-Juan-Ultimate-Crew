@@ -38,6 +38,8 @@ export const Chart: React.FC<ChartProps> = ({
     canvas.width = canvas.offsetWidth
     canvas.height = canvas.offsetHeight
 
+    if (!data || typeof data !== 'object') return
+
     // Simple chart rendering based on type
     switch (type) {
       case 'line':
@@ -70,11 +72,12 @@ export const Chart: React.FC<ChartProps> = ({
   }, [type, data, options])
 
   const renderLineChart = (ctx: CanvasRenderingContext2D, data: any, _options: any) => {
-    if (!data.datasets || !data.datasets[0]) return
+    if (!data || !data.datasets || !Array.isArray(data.datasets) || !data.datasets[0]) return
 
     const dataset = data.datasets[0]
+    if (!dataset) return
     const labels = data.labels || []
-    const values = dataset.data || []
+    const values = Array.isArray(dataset.data) ? dataset.data : []
 
     if (values.length === 0) return
 
@@ -126,10 +129,11 @@ export const Chart: React.FC<ChartProps> = ({
   }
 
   const renderBarChart = (ctx: CanvasRenderingContext2D, data: any, _options: any) => {
-    if (!data.datasets || !data.datasets[0]) return
+    if (!data || !data.datasets || !Array.isArray(data.datasets) || !data.datasets[0]) return
 
     const dataset = data.datasets[0]
-    const values = dataset.data || []
+    if (!dataset) return
+    const values = Array.isArray(dataset.data) ? dataset.data : []
 
     if (values.length === 0) return
 
@@ -153,10 +157,11 @@ export const Chart: React.FC<ChartProps> = ({
   }
 
   const renderPieChart = (ctx: CanvasRenderingContext2D, data: any, _options: any) => {
-    if (!data.datasets || !data.datasets[0]) return
+    if (!data || !data.datasets || !Array.isArray(data.datasets) || !data.datasets[0]) return
 
     const dataset = data.datasets[0]
-    const values = dataset.data || []
+    if (!dataset) return
+    const values = Array.isArray(dataset.data) ? dataset.data : []
     const labels = data.labels || []
 
     if (values.length === 0) return
@@ -188,10 +193,11 @@ export const Chart: React.FC<ChartProps> = ({
   }
 
   const renderDoughnutChart = (ctx: CanvasRenderingContext2D, data: any, _options: any) => {
-    if (!data.datasets || !data.datasets[0]) return
+    if (!data || !data.datasets || !Array.isArray(data.datasets) || !data.datasets[0]) return
 
     const dataset = data.datasets[0]
-    const values = dataset.data || []
+    if (!dataset) return
+    const values = Array.isArray(dataset.data) ? dataset.data : []
     const labels = data.labels || []
 
     if (values.length === 0) return
@@ -224,10 +230,11 @@ export const Chart: React.FC<ChartProps> = ({
   }
 
   const renderAreaChart = (ctx: CanvasRenderingContext2D, data: any, _options: any) => {
-    if (!data.datasets || !data.datasets[0]) return
+    if (!data || !data.datasets || !Array.isArray(data.datasets) || !data.datasets[0]) return
 
     const dataset = data.datasets[0]
-    const values = dataset.data || []
+    if (!dataset) return
+    const values = Array.isArray(dataset.data) ? dataset.data : []
 
     if (values.length === 0) return
 
@@ -279,10 +286,11 @@ export const Chart: React.FC<ChartProps> = ({
   }
 
   const renderScatterChart = (ctx: CanvasRenderingContext2D, data: any, _options: any) => {
-    if (!data.datasets || !data.datasets[0]) return
+    if (!data || !data.datasets || !Array.isArray(data.datasets) || !data.datasets[0]) return
 
     const dataset = data.datasets[0]
-    const points = dataset.data || []
+    if (!dataset) return
+    const points = Array.isArray(dataset.data) ? dataset.data : []
 
     if (points.length === 0) return
 
@@ -290,22 +298,23 @@ export const Chart: React.FC<ChartProps> = ({
     const chartWidth = ctx.canvas.width - 2 * padding
     const chartHeight = ctx.canvas.height - 2 * padding
 
-    const xValues = points.map((point: any) => point.x)
-    const yValues = points.map((point: any) => point.y)
+    const xValues = points.map((point: any) => point?.x || 0)
+    const yValues = points.map((point: any) => point?.y || 0)
 
     const maxX = Math.max(...xValues)
     const minX = Math.min(...xValues)
     const maxY = Math.max(...yValues)
     const minY = Math.min(...yValues)
 
-    const xRange = maxX - minX
-    const yRange = maxY - minY
+    const xRange = maxX - minX || 1
+    const yRange = maxY - minY || 1
 
     // Draw points
     ctx.fillStyle = dataset.backgroundColor || '#3b82f6'
     points.forEach((point: any) => {
-      const x = padding + ((point.x - minX) / xRange) * chartWidth
-      const y = ctx.canvas.height - padding - ((point.y - minY) / yRange) * chartHeight
+      if (!point) return
+      const x = padding + (((point.x || 0) - minX) / xRange) * chartWidth
+      const y = ctx.canvas.height - padding - (((point.y || 0) - minY) / yRange) * chartHeight
 
       ctx.beginPath()
       ctx.arc(x, y, 4, 0, 2 * Math.PI)
@@ -319,11 +328,11 @@ export const Chart: React.FC<ChartProps> = ({
     const centerY = ctx.canvas.height / 2
     const radius = Math.min(centerX, centerY) - 40
 
-    const values = data.datasets?.[0]?.data || []
+    const values = (data && data.datasets && Array.isArray(data.datasets) && data.datasets[0] && Array.isArray(data.datasets[0].data)) ? data.datasets[0].data : []
 
     if (values.length === 0) return
 
-    const maxValue = Math.max(...values)
+    const maxValue = Math.max(...values) || 1
     const angleStep = (2 * Math.PI) / values.length
 
     // Draw radar grid
@@ -378,7 +387,7 @@ export const Chart: React.FC<ChartProps> = ({
     const centerY = ctx.canvas.height / 2
     const radius = Math.min(centerX, centerY) - 40
 
-    const values = data.datasets?.[0]?.data || []
+    const values = (data && data.datasets && Array.isArray(data.datasets) && data.datasets[0] && Array.isArray(data.datasets[0].data)) ? data.datasets[0].data : []
 
     if (values.length === 0) return
 

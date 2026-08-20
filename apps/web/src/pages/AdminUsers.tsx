@@ -240,12 +240,6 @@ export default function AdminUsers() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h2 className="text-2xl font-bold text-gray-800">Admin: Usuarios</h2>
-        <button
-          onClick={() => { load(); loadPendingUsers() }}
-          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm whitespace-nowrap"
-        >
-          🔄 Actualizar
-        </button>
       </div>
       {error && <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded p-3 text-sm">{error}</div>}
       

@@ -81,8 +81,27 @@ export default function Plays() {
   }, [])
   const filtered = useMemo(() => items, [items])
 
-  const openCreate = () => { setEdit(null); setForm({ name: '', category: 'OFFENSE', description: '', diagramUrl: '', content: '' }); setModalOpen(true) }
-  const openEdit = (it: PlayItem) => { setEdit(it); setForm({ ...it }); setModalOpen(true) }
+  const openCreate = () => {
+    setEdit(null)
+    setForm({ name: '', category: 'OFFENSE', description: '', diagramUrl: '', content: '' })
+    setShowPreview(false)
+    setPreviewHtml('')
+    setModalOpen(true)
+  }
+
+  const openEdit = (it: PlayItem) => {
+    setEdit(it)
+    setForm({
+      name: it.name || '',
+      category: it.category || 'OFFENSE',
+      description: it.description || '',
+      diagramUrl: it.diagramUrl || '',
+      content: it.content || '',
+    })
+    setShowPreview(false)
+    setPreviewHtml('')
+    setModalOpen(true)
+  }
 
   const save = async () => {
     const payload: any = { ...form }
@@ -242,11 +261,11 @@ export default function Plays() {
             <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="md:col-span-2">
                 <label className="block text-sm text-gray-600 mb-1">Nombre</label>
-                <input value={form.name} onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
+                <input value={form.name || ''} onChange={e => setForm((f: any) => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Categoría</label>
-                <select value={form.category} onChange={e => setForm((f: any) => ({ ...f, category: e.target.value }))} className="w-full px-3 py-2 border rounded-lg">
+                <select value={form.category || 'OFFENSE'} onChange={e => setForm((f: any) => ({ ...f, category: e.target.value }))} className="w-full px-3 py-2 border rounded-lg">
                   <option value="OFFENSE">Ofensiva</option>
                   <option value="DEFENSE">Defensiva</option>
                   <option value="DRILL">Drill</option>
@@ -254,15 +273,15 @@ export default function Plays() {
               </div>
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Diagrama (URL)</label>
-                <input value={form.diagramUrl} onChange={e => setForm((f: any) => ({ ...f, diagramUrl: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
+                <input value={form.diagramUrl || ''} onChange={e => setForm((f: any) => ({ ...f, diagramUrl: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm text-gray-600 mb-1">Descripción</label>
-                <input value={form.description} onChange={e => setForm((f: any) => ({ ...f, description: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
+                <input value={form.description || ''} onChange={e => setForm((f: any) => ({ ...f, description: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm text-gray-600 mb-1">Contenido</label>
-                <textarea rows={6} value={form.content} onChange={e => setForm((f: any) => ({ ...f, content: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
+                <textarea rows={6} value={form.content || ''} onChange={e => setForm((f: any) => ({ ...f, content: e.target.value }))} className="w-full px-3 py-2 border rounded-lg" />
                 <div className="mt-2 flex items-center gap-2">
                   <button type="button" onClick={async () => {
                     setShowPreview(p => !p)

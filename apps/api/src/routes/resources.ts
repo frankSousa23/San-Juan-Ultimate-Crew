@@ -128,7 +128,7 @@ router.get('/categories', asyncHandler(async (req: Request, res: Response) => {
     select: { category: true },
     orderBy: { category: 'asc' },
   })
-  const categories = rows.map(r => r.category).filter((cat): cat is string => Boolean(cat))
+  const categories = Array.from(new Set(rows.map(r => r.category).filter((cat): cat is string => Boolean(cat))))
   return success(res, categories)
 }))
 

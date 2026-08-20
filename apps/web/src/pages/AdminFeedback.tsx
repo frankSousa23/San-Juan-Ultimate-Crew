@@ -20,15 +20,21 @@ interface Feedback {
 
 export default function AdminFeedback() {
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([])
-  const { loading, execute } = useApi()
-  const { showToast } = useToast()
+  const [loading, setLoading] = useState(false)
+  const toasts = useToast()
 
   const loadFeedbacks = async () => {
-    const res = await execute(() => http.get('/api/feedback'))
-    if (res.data) {
-      setFeedbacks(res.data)
-    } else if (res.error) {
-      showToast('Error al cargar el feedback: ' + res.error.message, 'error')
+    setLoading(true)
+    try {
+      const res = await http.get<Feedback[]>('/api/feedback')
+      if (res && res.data) {
+        setFeedbacks(Array.isArray(res.data) ? res.data : [])
+      }
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.error || err?.message || 'Error al cargar feedback'
+      toasts.error('Error al cargar el feedback: ' + errorMsg)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -60,13 +66,6 @@ export default function AdminFeedback() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Feedback de Usuarios</h1>
-        <button 
-          onClick={loadFeedbacks}
-          disabled={loading}
-          className="bg-white px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-        >
-          {loading ? 'Cargando...' : '🔄 Actualizar'}
-        </button>
       </div>
 
       <div className="bg-white shadow rounded-lg overflow-hidden">

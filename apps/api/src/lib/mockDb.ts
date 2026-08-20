@@ -219,35 +219,232 @@ class InMemoryDB {
     this.spiritScores = [];
     this.nextId['spiritScore'] = 1;
 
-    // 11. Finanzas: Cuentas, Categorías y Transacciones - TOTALMENTE VACÍO
-    this.accounts = [];
-    this.nextId['account'] = 1;
-    this.categories = [];
-    this.nextId['category'] = 1;
-    this.transactions = [];
-    this.nextId['transaction'] = 1;
+    // 11. Finanzas: Cuentas, Categorías y Transacciones de Ejemplo Realista
+    this.accounts = [
+      { id: 1, name: 'Caja Chica (Efectivo / USD)', type: 'CASH', balanceCents: 15000, description: 'Fondos en efectivo para hidratación, hielo y gastos menores de cancha.', createdAt: new Date() },
+      { id: 2, name: 'Cuenta Bancaria / Pago Móvil / Zelle', type: 'BANK', balanceCents: 125000, description: 'Cuenta bancaria para cuotas mensuales de atletas, inscripciones y patrocinios.', createdAt: new Date() },
+    ];
+    this.nextId['account'] = 3;
 
-    // 12. Jugadas Tácticas (Playbook) - TOTALMENTE VACÍO
-    this.plays = [];
-    this.nextId['play'] = 1;
+    this.categories = [
+      { id: 1, name: 'Cuotas de Membresía Mensual', kind: 'INCOME', description: 'Pago de mensualidades y mantenimiento deportivo de atletas.', createdAt: new Date() },
+      { id: 2, name: 'Venta de Discos Oficiales 175g', kind: 'INCOME', description: 'Venta de discos oficiales Discraft Ultra-Star de competencia.', createdAt: new Date() },
+      { id: 3, name: 'Patrocinios y Donaciones', kind: 'INCOME', description: 'Aportes de aliados y patrocinadores del club.', createdAt: new Date() },
+      { id: 4, name: 'Compra de Discos y Conos', kind: 'EXPENSE', description: 'Adquisición de material técnico reglamentario.', createdAt: new Date() },
+      { id: 5, name: 'Hidratación y Primeros Auxilios', kind: 'EXPENSE', description: 'Botellones de agua, hielo, vendas y botiquín.', createdAt: new Date() },
+      { id: 6, name: 'Inscripción a Torneo Nacional', kind: 'EXPENSE', description: 'Pago de Bid Fee y cuotas de participación en torneos.', createdAt: new Date() },
+    ];
+    this.nextId['category'] = 7;
 
-    // 13. Lesiones - TOTALMENTE VACÍO
+    this.transactions = [
+      { id: 1, type: 'INCOME', amountCents: 10000, description: 'Cobro de cuotas mensuales de atletas (Enero)', occurredAt: new Date(Date.now() - 86400000 * 18), accountId: 2, categoryId: 1, createdBy: 1, createdAt: new Date() },
+      { id: 2, type: 'INCOME', amountCents: 7500, description: 'Venta de 5 discos oficiales Discraft Ultra-Star 175g', occurredAt: new Date(Date.now() - 86400000 * 12), accountId: 2, categoryId: 2, createdBy: 1, createdAt: new Date() },
+      { id: 3, type: 'EXPENSE', amountCents: 12000, description: 'Compra de lote de 10 discos oficiales de competencia', occurredAt: new Date(Date.now() - 86400000 * 10), accountId: 2, categoryId: 4, createdBy: 1, createdAt: new Date() },
+      { id: 4, type: 'EXPENSE', amountCents: 1850, description: 'Agua potable y bolsas de hielo para entrenamiento de fin de semana', occurredAt: new Date(Date.now() - 86400000 * 5), accountId: 1, categoryId: 5, createdBy: 1, createdAt: new Date() },
+      { id: 5, type: 'EXPENSE', amountCents: 15000, description: 'Anticipo de Bid Fee - Copa Nacional de Ultimate Frisbee', occurredAt: new Date(Date.now() - 86400000 * 3), accountId: 2, categoryId: 6, createdBy: 1, createdAt: new Date() },
+    ];
+    this.nextId['transaction'] = 6;
+
+    // 12. Jugadas Tácticas (Playbook) - Ultimate Frisbee / Disco Volador
+    this.plays = [
+      {
+        id: 1,
+        name: 'Vertical Stack Estándar (Cortes Open y Break Side)',
+        category: 'OFFENSE',
+        description: 'Formación clásica en columna vertical en el centro del campo con 2-3 handlers y 4 cutters. Los cortadores atacan sucesivamente desde el fondo del stack hacia el lado abierto (open side) o lado cerrado (break side).',
+        diagramUrl: null,
+        content: `### Vertical Stack (V-Stack)
+- **Estructura**: 2 o 3 Armadores (Handlers) en la base y 4 Cortadores (Cutters) alineados en fila vertical a 15-20 metros de distancia.
+- **Dinámica**:
+  1. El último cortador en la fila inicia el corte principal (corte hacia adentro o corte profundo).
+  2. Si no recibe, despeja de inmediato y vuelve a la fila para no obstruir el carril.
+  3. El segundo en la fila inicia el siguiente corte.
+- **Resets**: Los handlers realizan pases de desahogo (dumps) al llegar a la cuenta de stall 6.`,
+        createdAt: new Date(),
+      },
+      {
+        id: 2,
+        name: 'Horizontal Stack (H-Stack) con Variación Deep Iso',
+        category: 'OFFENSE',
+        description: 'Formación en línea transversal con 3 handlers y 4 cortadores distribuidos a lo ancho de la cancha. Genera pasillos abiertos e incorpora la variante de corte profundo aislado (Deep Iso) para receptores rápidos.',
+        diagramUrl: null,
+        content: `### Horizontal Stack (H-Stack)
+- **Estructura**: 3 Handlers (Center, Left, Right) y 4 Cutters alineados en horizontal ocupando los 4 carriles (Left Wing, Left Middle, Right Middle, Right Wing).
+- **Variación Deep Iso**:
+  - Los cortadores laterales limpian hacia las bandas mientras uno de los medios ataca en velocidad el fondo para un pase largo (huck).
+- **Ventaja**: Crea grandes pasillos de pase para jugadas uno contra uno.`,
+        createdAt: new Date(),
+      },
+      {
+        id: 3,
+        name: 'Defensa en Zona Cup (3-3-1 Cup Defense)',
+        category: 'DEFENSE',
+        description: 'Sistema defensivo clásico de copa contra viento o ataques rápidos. Una copa de 3 defensas (Mark, Middle, Point) contiene el disco, 3 defensas intermedios (Short Deep y dos Wings) cubren pases medios, y 1 Deep-Deep protege el fondo.',
+        diagramUrl: null,
+        content: `### Defensa en Zona Cup (3-3-1)
+- **Copa (3 jugadores)**: Point (bloquea pases frontales), Middle (evita pases cruzados) y Mark (presiona lanzamientos).
+- **Línea Media (3 jugadores)**:
+  - Short Deep: Corta pases sobre la copa (hammers y scoobers).
+  - Left & Right Wings: Presionan pases hacia las líneas laterales.
+- **Deep-Deep (1 jugador)**: Último hombre cubriendo cualquier pase largo (huck).`,
+        createdAt: new Date(),
+      },
+      {
+        id: 4,
+        name: 'Defensa Dome / Clam (Cúpula Modular)',
+        category: 'DEFENSE',
+        description: 'Sistema defensivo híbrido en cúpula (Dome) protegiendo el centro del campo contra stacks verticales, forzando pases incómodos hacia las líneas laterales e induciendo errores de stall out.',
+        diagramUrl: null,
+        content: `### Defensa Dome / Clam
+- **Objetivo**: Colapsar el medio campo e impedir cortes directos al pecho.
+- **Distribución**: Los defensores forman un domo semicircular alrededor del stack rival.
+- **Efectividad**: Altamente recomendada contra equipos dependientes de manejadores centrales.`,
+        createdAt: new Date(),
+      },
+      {
+        id: 5,
+        name: 'Variación Endzone Iso (Aislamiento de Anotación)',
+        category: 'OFFENSE',
+        description: 'Jugada táctica para los últimos 15 metros. Los cortadores secundarios despejan al lado débil creando un espacio de 1 contra 1 para el cutter principal en la zona de gol.',
+        diagramUrl: null,
+        content: `### Endzone Iso (Zona Roja)
+- **Posicionamiento**: 3 cortadores se abren hacia el lado break para vaciar el espacio de anotación.
+- **Ejecución**: El cortador principal realiza un cambio de dirección violento hacia el cono frontal para recibir un pase de muñeca bajo o flick rápido.`,
+        createdAt: new Date(),
+      },
+      {
+        id: 6,
+        name: 'Drill de Lanzamientos con Presión (Dump-Swing & 3-Man Weave)',
+        category: 'DRILL',
+        description: 'Ejercicio dinámico de 3 atletas para entrenar pases en movimiento, cambio de lado rápido del disco (swing) y reset defensivo en stall alto.',
+        diagramUrl: null,
+        content: `### Drill Dump-Swing
+- **Objetivo**: Mecanizar el desahogo de disco cuando el lanzador llega a stall 6.
+- **Duración**: 15 minutos en calentamiento con foco en pivoteo y pase de revés/flick bajo.`,
+        createdAt: new Date(),
+      },
+    ];
+    this.nextId['play'] = 7;
+
+    // 13. Lesiones
     this.injuries = [];
     this.nextId['injury'] = 1;
 
-    // 14. Canales y Mensajes - TOTALMENTE VACÍO
-    this.channels = [];
-    this.nextId['channel'] = 1;
-    this.messages = [];
-    this.nextId['message'] = 1;
+    // 14. Canales y Mensajes de Comunicación
+    this.channels = [
+      { id: 1, name: 'Anuncios Generales', eventId: null, createdAt: new Date() },
+      { id: 2, name: 'Línea Táctica y Entrenamientos', eventId: null, createdAt: new Date() },
+    ];
+    this.nextId['channel'] = 3;
 
-    // 15. Noticias y Recursos - TOTALMENTE VACÍO
-    this.newsPosts = [];
-    this.nextId['newsPost'] = 1;
+    this.messages = [
+      { id: 1, channelId: 1, authorId: null, content: '¡Bienvenidos a SIGEDIVO San Juan Ultimate Crew! Utilicen este canal para enterarse de los comunicados oficiales, eventos y directrices del club.', createdAt: new Date() },
+      { id: 2, channelId: 2, authorId: null, content: 'Recuerden revisar el Playbook táctico (Vertical Stack y Zona Cup) antes de la práctica del fin de semana.', createdAt: new Date() },
+    ];
+    this.nextId['message'] = 3;
+
+    // 15. Noticias y Recursos de Disco Volador / Ultimate Frisbee
+    this.newsPosts = [
+      {
+        id: 1,
+        title: '🏆 ¡Bienvenidos a SIGEDIVO - San Juan Ultimate Crew! Guía Rápida del Sistema',
+        content: `¡Saludos a todos los atletas y miembros de **San Juan Ultimate Crew**!
+
+Esta plataforma ha sido diseñada para optimizar nuestra gestión deportiva, táctica y organizativa. A continuación, les compartimos los puntos clave para el uso diario:
+
+1. **📅 Calendario y Convocatorias (RSVP)**: Ingresen a la sección de *Eventos* para confirmar su disponibilidad (Asistiré / Pendiente / No podré) antes de cada entrenamiento y partido. Esto permite a los entrenadores y capitanes definir las líneas de juego (Línea O / Línea D).
+2. **📋 Pizarra Táctica (Playbook)**: Consulten las jugadas oficiales (*Vertical Stack*, *Horizontal Stack*, *Defensa en Zona Cup* y *Dome*) para llegar al campo con la estrategia clara.
+3. **💰 Transparencia Financiera**: En el módulo de *Finanzas* pueden revisar el balance general del club, aportes de membresía, compra de discos reglamentarios y presupuesto de torneos.
+4. **📚 Recursos y Reglamento**: En la sección de *Recursos* tienen acceso al reglamento oficial de la **WFDF**, la guía de **Espíritu de Juego (SOTG)** y manuales de preparación técnica.
+5. **💬 Canales de Chat**: Manténganse conectados en los canales de mensajería para coordinar traslados y resolver dudas con capitanes y cuerpo técnico.
+
+*¡A darlo todo en la cancha con el mejor Espíritu de Juego!*`,
+        authorId: null,
+        isPinned: true,
+        isPublished: true,
+        category: 'Anuncios',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 2,
+        title: '🥏 Taller de Lanzamientos: Perfeccionamiento de Forehand y Lanzamientos Invertidos',
+        content: `En las próximas sesiones dedicaremos un bloque especial al pulido del pase de derecha (Forehand / Flick), Hammer y Scoober para romper marcas en zona. Revisen el material complementario en la sección de Recursos.`,
+        authorId: null,
+        isPinned: false,
+        isPublished: true,
+        category: 'Entrenamiento',
+        createdAt: new Date(Date.now() - 86400000 * 2),
+        updatedAt: new Date(Date.now() - 86400000 * 2),
+      },
+    ];
+    this.nextId['newsPost'] = 3;
     this.newsPostFiles = [];
     this.nextId['newsPostFile'] = 1;
-    this.resources = [];
-    this.nextId['resource'] = 1;
+
+    this.resources = [
+      {
+        id: 1,
+        title: 'Reglamento Oficial de Ultimate WFDF 2021-2024 / 2025 (Español)',
+        category: 'Reglamento y Normativas',
+        description: 'Reglas oficiales de la World Flying Disc Federation: no contacto físico, conteo de stall de 10 segundos, autogestión de faltas y dimensiones de campo (100x37m).',
+        url: 'https://rules.wfdf.sport/',
+        fileName: 'Reglas_Oficiales_WFDF_Ultimate.pdf',
+        mimeType: 'application/pdf',
+        size: 1850000,
+        storagePath: null,
+        createdAt: new Date(),
+      },
+      {
+        id: 2,
+        title: 'Manual de Espíritu de Juego (Spirit of the Game - SOTG)',
+        category: 'Espíritu de Juego',
+        description: 'Criterios y rúbrica oficial de la WFDF para la puntuación SOTG: Conocimiento de reglas, faltas y contacto, imparcialidad, actitud positiva y comunicación.',
+        url: 'https://wfdf.sport/organisation/spirit-of-the-game/',
+        fileName: 'Guia_Oficial_Espiritu_de_Juego_SOTG.pdf',
+        mimeType: 'application/pdf',
+        size: 920000,
+        storagePath: null,
+        createdAt: new Date(),
+      },
+      {
+        id: 3,
+        title: 'Guía Oficial de Señales de Mano WFDF',
+        category: 'Reglamento y Normativas',
+        description: 'Señales gestuales estándar para llamadas en cancha: In/Out, Falta, Pick, Travel, Stall Out, Delay y Gol.',
+        url: 'https://rules.wfdf.sport/',
+        fileName: 'Senales_de_Mano_WFDF.pdf',
+        mimeType: 'application/pdf',
+        size: 1250000,
+        storagePath: null,
+        createdAt: new Date(),
+      },
+      {
+        id: 4,
+        title: 'Manual Técnico de Lanzamientos Fundamentales',
+        category: 'Entrenamiento Técnico',
+        description: 'Mecánica de agarres y lanzamientos: Backhand (Revés), Forehand/Flick (Sidearm), Hammer (Martillo), Scoober y pivoteo con pie de apoyo.',
+        url: 'https://wfdf.sport/',
+        fileName: 'Manual_Lanzamientos_Ultimate.pdf',
+        mimeType: 'application/pdf',
+        size: 2100000,
+        storagePath: null,
+        createdAt: new Date(),
+      },
+      {
+        id: 5,
+        title: 'Guía de Nutrición e Hidratación para Torneos de Fin de Semana',
+        category: 'Salud y Bienestar',
+        description: 'Protocolos de recarga de electrolitos, ingesta calórica entre partidos consecutivos y prevención de calambres bajo calor intenso.',
+        url: 'https://wfdf.sport/',
+        fileName: 'Nutricion_e_Hidratacion_Ultimate.pdf',
+        mimeType: 'application/pdf',
+        size: 780000,
+        storagePath: null,
+        createdAt: new Date(),
+      },
+    ];
+    this.nextId['resource'] = 6;
     this.roleRequests = [];
     this.nextId['roleRequest'] = 1;
     this.auditLogs = [];
