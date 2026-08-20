@@ -1,3 +1,12 @@
+import rateLimit from 'express-rate-limit'
+
+const feedbackRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3,
+  message: { error: 'Demasiadas solicitudes de feedback. Por favor intenta de nuevo más tarde.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
 import { Router } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { z } from 'zod'
@@ -12,7 +21,7 @@ const createFeedbackSchema = z.object({
   message: z.string().min(1)
 })
 
-router.post('/', async (req: any, res) => {
+router.post('/', feedbackRateLimiter, async (req: any, res) => {
   try {
     const data = createFeedbackSchema.parse(req.body)
     

@@ -18,7 +18,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     // Public/All authenticated users
     { name: 'Panel Principal', href: '/', icon: '🏠', roles: [] },
     { name: 'Mi Perfil', href: '/perfil', icon: '👤', roles: [] },
-    { name: 'Acerca de / Feedback', href: '/about', icon: 'ℹ️', roles: [] },
     
     { name: 'Roster', href: '/roster', icon: '👥', roles: ['player', 'captain', 'coach', 'admin', 'treasurer', 'marketing', 'directiva', 'annotator', 'guest'] },
     { name: 'Eventos', href: '/eventos', icon: '📅', roles: ['player', 'captain', 'coach', 'admin', 'treasurer', 'marketing', 'guest', 'directiva', 'annotator'] },
@@ -40,6 +39,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     // Admin Only
     { name: 'Admin Usuarios', href: '/admin/usuarios', icon: '🔧', roles: ['admin'] },
     { name: 'Monitoreo', href: '/admin/monitoring', icon: '💻', roles: ['admin'] },
+    { name: 'Acerca de / Feedback', href: '/about', icon: 'ℹ️', roles: [] },
   ]
 
   const isActive = (href: string) => {
@@ -147,7 +147,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               <span className="text-xl">☰</span>
             </button>
             <h2 className="text-lg font-semibold text-gray-800 truncate">
-              {navigation.find(n => isActive(n.href))?.name || 'SIGEDIVO (Sistema de Gestión para el Disco Volador)'}
+              {navigation.find(n => isActive(n.href))?.name || 'SIGEDIVO'}
             </h2>
           </div>
           

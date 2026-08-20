@@ -77,18 +77,19 @@ async function main() {
 
   // 3. Usuarios Iniciales (ÚNICAMENTE 2 USUARIOS PRE-APROBADOS: ADMIN Y GUEST)
   console.log('👤 Creando únicamente los 2 usuarios iniciales autorizados (Admin y Guest)...')
-  const passwordHash = await bcrypt.hash('123456', 10)
+  const passwordHashGuest = await bcrypt.hash('123456', 10)
+  const passwordHashAdmin = await bcrypt.hash('passWORD23', 10)
 
   const initialUsers = [
-    { email: 'frankalfonso1988@gmail.com', name: 'Frank Sousa (Admin Global)', role: 'admin', playerId: null },
-    { email: 'guest@sigedivo.com', name: 'Invitado / Demostración', role: 'guest', playerId: null },
+    { email: 'frankalfonso1988@gmail.com', name: 'Frank Sousa', role: 'admin', playerId: null, pass: passwordHashAdmin },
+    { email: 'guest@sigedivo.com', name: 'Invitado / Demostración', role: 'guest', playerId: null, pass: passwordHashGuest },
   ]
 
   for (const u of initialUsers) {
     const user = await prisma.user.upsert({
       where: { email: u.email },
-      update: { passwordHash, status: 'APPROVED', playerId: u.playerId, name: u.name },
-      create: { email: u.email, name: u.name, passwordHash, status: 'APPROVED', playerId: u.playerId }
+      update: { passwordHash: u.pass, status: 'APPROVED', playerId: u.playerId, name: u.name },
+      create: { email: u.email, name: u.name, passwordHash: u.pass, status: 'APPROVED', playerId: u.playerId }
     })
     await prisma.userRole.upsert({
       where: { userId_roleId: { userId: user.id, roleId: roleMap[u.role] } },

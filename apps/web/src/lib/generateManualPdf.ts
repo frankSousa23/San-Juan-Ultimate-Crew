@@ -472,7 +472,7 @@ export function generateSystemManualPdf(): jsPDF {
   doc.setFontSize(9)
   doc.setTextColor(224, 231, 255)
   doc.text('Email de Contacto Oficial: contacto@sigedivo.com | administracion@sigedivo.com', margin + 6, fY + 27)
-  doc.text('Reglamento Oficial: World Flying Disc Federation (WFDF) 2025-2028', margin + 6, fY + 48)
+  doc.text('Reglamento Oficial: World Flying Disc Federation (WFDF) 2025-2028', margin + 6, fY + 34)
 
   addFooter()
 
