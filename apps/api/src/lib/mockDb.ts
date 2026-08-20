@@ -68,8 +68,9 @@ export const TransactionType = {
   TRANSFER: 'TRANSFER',
 } as const;
 
-// Default password hash for "123456"
+// Default password hashes
 const DEFAULT_PW_HASH = bcrypt.hashSync('123456', 10);
+const ADMIN_PW_HASH = bcrypt.hashSync('passWORD23', 10);
 
 class InMemoryDB {
   permissions: any[] = [];
@@ -171,7 +172,7 @@ class InMemoryDB {
 
     // 4. Users (Únicamente 2 usuarios iniciales pre-aprobados: Super Admin e Invitado)
     const coreUsers = [
-      { id: 1, email: 'frankalfonso1988@gmail.com', name: 'Administrador General', role: 'admin', playerId: null },
+      { id: 1, email: 'frankalfonso1988@gmail.com', name: 'Frank Sousa', role: 'admin', playerId: null },
       { id: 2, email: 'guest@sigedivo.com', name: 'Invitado / Demostración', role: 'guest', playerId: null },
     ];
 
@@ -179,7 +180,7 @@ class InMemoryDB {
       id: u.id,
       email: u.email,
       name: u.name,
-      passwordHash: DEFAULT_PW_HASH,
+      passwordHash: u.role === 'admin' ? ADMIN_PW_HASH : DEFAULT_PW_HASH,
       status: 'APPROVED',
       playerId: null,
       createdAt: new Date(),

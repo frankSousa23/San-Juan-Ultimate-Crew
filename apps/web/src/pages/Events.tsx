@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { eventsApi, channelsApi, attendanceApi, playersApi, annotationsApi } from '../lib/api'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import EventForm from '../components/EventForm'
+import TournamentStatsView from '../components/TournamentStatsView'
 import LiveAnnotationsTable from '../components/LiveAnnotationsTable'
 import TournamentBracket from '../components/TournamentBracket'
 import { EventItem, EventType, EventStatus } from '../types/event'
@@ -378,7 +378,9 @@ export default function Events() {
             </div>
           )}
           {tab === 'stats' && (
-            <div className="text-gray-600">Estadísticas de eventos próximamente.</div>
+            <div className="space-y-6">
+              <TournamentStatsView />
+            </div>
           )}
         </div>
       </div>

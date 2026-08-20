@@ -64,7 +64,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
   const isInternal = event.isInternalScrimmage || false
   const [isVersus, setIsVersus] = useState(!!event.rivalId || isInternal)
   const [opponentTeamName, setOpponentTeamName] = useState(isInternal ? 'Equipo Oscuro' : 'Equipo Rival')
-  const [homeTeamName, setHomeTeamName] = useState(isInternal ? 'Equipo Claro' : 'SIGEDIVO (Sistema de Gestión para el Disco Volador)')
+  const [homeTeamName, setHomeTeamName] = useState(isInternal ? 'Equipo Claro' : 'SIGEDIVO')
   
   // Jugadores oponentes (para versus externo)
   const [opponentPlayers, setOpponentPlayers] = useState<Array<{ name: string; number: number }>>([])
@@ -716,7 +716,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
       {/* 4. FOOTER */}
       <div className="p-3 sm:p-4 bg-white border-t border-gray-200 flex justify-between items-center z-10">
         <div className="text-xs text-gray-500 font-medium hidden sm:block">
-          Modo Torneo y Pizarra Táctil activa • SIGEDIVO (Sistema de Gestión para el Disco Volador)
+          Modo Torneo y Pizarra Táctil activa • SIGEDIVO
         </div>
         <button 
           onClick={onClose} 

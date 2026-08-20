@@ -379,11 +379,26 @@ export async function exportPlaysCsv(params?: { q?: string; category?: string })
   return new Blob([csv], { type: 'text/csv;charset=utf-8;' })
 }
 
-// Rivals paged + CSV
+// Rivals paged + CSV + CRUD
 export const rivalsApi = {
+  list: async (): Promise<any[]> => {
+    try {
+      const res = await http.get('/api/rivals')
+      const data = res.data
+      if (Array.isArray(data)) return data
+      if (data && Array.isArray((data as any).data)) return (data as any).data
+      if (data && Array.isArray((data as any).items)) return (data as any).items
+      return []
+    } catch {
+      return []
+    }
+  },
   listPaged: async (params?: { q?: string; limit?: number; offset?: number }): Promise<{ items: any[]; total: number; limit: number; offset: number }> => (
     await http.get('/api/rivals/paged', { params })
   ).data,
+  create: async (payload: any): Promise<any> => (await http.post('/api/rivals', payload)).data,
+  update: async (id: number, payload: any): Promise<any> => (await http.put(`/api/rivals/${id}`, payload)).data,
+  remove: async (id: number): Promise<void> => { await http.delete(`/api/rivals/${id}`) },
   getStats: async (id: number): Promise<{
     rival: { id: number; name: string }
     totalAnnotations: number

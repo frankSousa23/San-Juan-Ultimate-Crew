@@ -42,7 +42,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <p className="mt-2 text-sm text-gray-500">
                 Ha ocurrido un error inesperado. Por favor, recarga la página.
               </p>
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {(import.meta.env.DEV || Boolean(this.state.error)) && this.state.error && (
                 <details className="mt-4 text-left">
                   <summary className="cursor-pointer text-sm text-gray-600">Detalles del error</summary>
                   <pre className="mt-2 text-xs text-red-600 bg-red-50 p-2 rounded overflow-auto">

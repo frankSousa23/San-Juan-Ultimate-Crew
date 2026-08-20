@@ -38,6 +38,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     
     // Admin Only
     { name: 'Admin Usuarios', href: '/admin/usuarios', icon: '🔧', roles: ['admin'] },
+    { name: 'Feedback Recibido', href: '/admin/feedback', icon: '📬', roles: ['admin'] },
     { name: 'Monitoreo', href: '/admin/monitoring', icon: '💻', roles: ['admin'] },
     { name: 'Acerca de / Feedback', href: '/about', icon: 'ℹ️', roles: [] },
   ]

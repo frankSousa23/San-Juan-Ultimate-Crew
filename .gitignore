@@ -47,9 +47,8 @@ reports/
 *.local.*
 logs/
 
-# Documentation (moved to local/)
-docs/*.md
-!docs/README.md
+# Documentation (Official markdown in docs/ stays in repo)
+# local/ is used for local-only scratchpads and development logs
 
 # Scripts de desarrollo
 # `scripts/` es parte del repo (reproducibilidad). `local/` ya se ignora arriba.
@@ -99,7 +98,7 @@ testsprite_tests/
 
 # Generated Artifacts & Backups
 swagger-postman.json
-backups/-e 
+backups/ 
 # Database
 *.db
 *.sqlite

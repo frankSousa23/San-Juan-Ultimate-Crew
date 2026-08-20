@@ -286,6 +286,7 @@ router.post('/', requireAuth, requireAnnotationAccess, validateBody(createAnnota
 
   if (payload.playerId) {
     if (payload.type === 'GOAL') await updateStats(payload.playerId, 'goals')
+    else if (payload.type === 'ASSIST') await updateStats(payload.playerId, 'assists')
     else if (payload.type === 'DEFENSE') await updateStats(payload.playerId, 'defenses')
     else if (payload.type === 'TURNOVER') await updateStats(payload.playerId, 'turnovers')
   }
@@ -426,6 +427,7 @@ router.delete('/:id', requireAuth, requireAnnotationAccess, validateParams(annot
 
   if (existing.playerId) {
     if (existing.type === 'GOAL') await updateStats(existing.playerId, 'goals')
+    else if (existing.type === 'ASSIST') await updateStats(existing.playerId, 'assists')
     else if (existing.type === 'DEFENSE') await updateStats(existing.playerId, 'defenses')
     else if (existing.type === 'TURNOVER') await updateStats(existing.playerId, 'turnovers')
   }

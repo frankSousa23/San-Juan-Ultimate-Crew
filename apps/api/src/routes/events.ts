@@ -68,15 +68,18 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
 
 const createEventSchema = z.object({
   title: z.string().min(1),
-  description: z.string().optional(),
-  type: z.enum(['TRAINING', 'TOURNAMENT', 'SOCIAL', 'WORKSHOP', 'FULL_DAY_OPEN', 'FULL_DAY_MIXTO', 'AMISTOSO']),
+  description: z.string().optional().nullable(),
+  type: z.enum(['TRAINING', 'TOURNAMENT', 'SOCIAL', 'WORKSHOP', 'FULL_DAY_OPEN', 'FULL_DAY_MIXTO', 'AMISTOSO', 'MATCH']),
   status: z.enum(['UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED']).optional().default('UPCOMING'),
-  location: z.string().optional(),
+  location: z.string().optional().nullable(),
   startsAt: z.string().datetime(),
-  endsAt: z.string().datetime().optional(),
+  endsAt: z.string().datetime().optional().nullable(),
   parentId: z.number().optional().nullable(),
   windSpeed: z.number().optional().nullable(),
   windDirection: z.string().optional().nullable(),
+  matchCategory: z.enum(['GROUP_STAGE', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINALS', 'PLACEMENT']).optional().nullable(),
+  rivalId: z.number().optional().nullable(),
+  isInternalScrimmage: z.boolean().optional(),
 });
 
 const updateEventSchema = createEventSchema.partial();

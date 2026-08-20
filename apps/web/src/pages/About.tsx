@@ -11,6 +11,7 @@ export default function About() {
     message: ''
   })
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
+  const [errorMessage, setErrorMessage] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -20,9 +21,11 @@ export default function About() {
       setStatus('success')
       setFormData(prev => ({ ...prev, message: '' }))
       setTimeout(() => setStatus('idle'), 3000)
-    } catch (error) {
+    } catch (error: any) {
+      const errMsg = error.response?.data?.error || 'Ocurrió un error al enviar el feedback.'
       console.error(error)
       setStatus('error')
+      setErrorMessage(typeof errMsg === 'string' ? errMsg : 'Ocurrió un error al enviar el feedback.')
     }
   }
 
@@ -119,7 +122,7 @@ export default function About() {
           </button>
           
           {status === 'error' && (
-            <p className="text-red-500 text-sm mt-2 font-medium">Hubo un error al enviar tu mensaje. Intenta nuevamente.</p>
+            <p className="text-red-500 text-sm mt-2 font-medium">{errorMessage}</p>
           )}
         </form>
       </div>
