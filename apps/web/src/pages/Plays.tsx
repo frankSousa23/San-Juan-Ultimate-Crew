@@ -178,7 +178,7 @@ export default function Plays() {
                 {filtered.map(it => (
                   <tr key={it.id} className="border-t">
                     <td className="px-2 sm:px-4 py-2 font-medium">{it.name}</td>
-                    <td className="px-2 sm:px-4 py-2">{it.category}</td>
+                    <td className="px-2 sm:px-4 py-2">{it.category === 'OFFENSE' ? 'Ofensiva' : it.category === 'DEFENSE' ? 'Defensiva' : 'Drill'}</td>
                     <td className="px-2 sm:px-4 py-2 hidden md:table-cell">{it.description || ''}</td>
                     <td className="px-2 sm:px-4 py-2 hidden lg:table-cell">
                       {it.diagramUrl ? (

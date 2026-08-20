@@ -5,8 +5,10 @@ import { eventsApi, playersApi, eventParticipantsApi, exportEventParticipantsCsv
 import type { EventItem } from '../types/event'
 import type { Player } from '../types/player'
 import { useToast } from '../hooks/useToast'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function RosterTorneo() {
+  const { hasPermission } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [events, setEvents] = useState<EventItem[]>([])
   const [players, setPlayers] = useState<Player[]>([])
@@ -20,7 +22,7 @@ export default function RosterTorneo() {
   const [pstatus, setPstatus] = useState<string>('')
   const [sortKey, setSortKey] = useState<'number' | 'name'>('number')
   const [confirmState, setConfirmState] = useState<{ title?: string; message: string; onYes: () => Promise<void> } | null>(null)
-  const authed = !!getAuthToken()
+  const authed = !!getAuthToken() && hasPermission('roster:manage')
 
   useEffect(() => {
     if (!error) return
@@ -322,7 +324,7 @@ export default function RosterTorneo() {
                       <input
                         className="border rounded px-2 py-1 text-sm"
                         defaultValue={p.role ?? ''}
-                        placeholder="ej. Handler, Cutter"
+                        placeholder="ej. Manejador, Cortador"
                         onBlur={(e) => updateRole(p.playerId, e.target.value)}
                         disabled={loading}
                       />

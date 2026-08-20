@@ -188,8 +188,8 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
                     </span>
                   </div>
                   <p className="text-xs text-blue-950">
-                    Gestiona el roster de torneos, define líneas (O-Line y D-Line), convoca jugadores, registra
-                    anotaciones en vivo durante partidos y evalúa el Spirit of the Game (SOTG).
+                    Gestiona el roster de torneos, define líneas (Línea O y Línea D), convoca jugadores, registra
+                    anotaciones en vivo durante partidos y evalúa el Espíritu de Juego (SOTG).
                   </p>
                   <div className="text-[11px] font-mono text-blue-800 bg-white/80 p-2 rounded-lg border border-blue-200">
                     <strong>Permisos:</strong> roster:manage, events:manage, annotations:manage, attendance:manage, plays:manage, rivals:manage, injuries:manage
@@ -389,7 +389,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
                 <div className="p-4 space-y-3">
                   <p className="text-xs text-slate-700">
                     Permite visualizar y administrar a todos los jugadores activos del club. Incluye filtros por posición
-                    (<strong>Handler</strong>: lanzador principal, <strong>Cutter</strong>: receptor de pases largos, <strong>Hybrid</strong>: polivalente),
+                    (<strong>Manejador</strong>: lanzador principal, <strong>Cortador</strong>: receptor de pases largos, <strong>Híbrido</strong>: polivalente),
                     estatura física en centímetros, experiencia previa y estado médico.
                   </p>
                   {/* Simulated Screen Mockup */}
@@ -401,17 +401,17 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
                       <div className="bg-slate-900 p-2 rounded border border-slate-800">
                         <span className="text-amber-400 font-bold">#1 Franco Sousa</span>
-                        <div className="text-slate-400">Posición: HANDLER | 182 cm</div>
+                        <div className="text-slate-400">Posición: MANEJADOR | 182 cm</div>
                         <div className="text-xs text-emerald-400">Estado: ACTIVO • Capitán</div>
                       </div>
                       <div className="bg-slate-900 p-2 rounded border border-slate-800">
                         <span className="text-amber-400 font-bold">#2 Carlos Mendoza</span>
-                        <div className="text-slate-400">Posición: CUTTER | 185 cm</div>
-                        <div className="text-xs text-emerald-400">Estado: ACTIVO • O-Line</div>
+                        <div className="text-slate-400">Posición: CORTADOR | 185 cm</div>
+                        <div className="text-xs text-emerald-400">Estado: ACTIVO • Línea O</div>
                       </div>
                       <div className="bg-slate-900 p-2 rounded border border-slate-800">
                         <span className="text-amber-400 font-bold">#3 Eduardo Silva</span>
-                        <div className="text-slate-400">Posición: HYBRID | 178 cm</div>
+                        <div className="text-slate-400">Posición: HÍBRIDO | 178 cm</div>
                         <div className="text-xs text-emerald-400">Estado: ACTIVO • Coach</div>
                       </div>
                     </div>
@@ -433,7 +433,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
                   {/* Simulated Screen Mockup */}
                   <div className="bg-slate-950 text-slate-200 rounded-lg p-3 font-mono text-xs border border-slate-800 space-y-2">
                     <div className="flex items-center justify-between text-center bg-slate-900 p-2 rounded border border-slate-800">
-                      <div className="text-blue-400 font-bold text-sm">SAN JUAN ULTIMATE (15)</div>
+                      <div className="text-blue-400 font-bold text-sm">EQUIPO LOCAL (15)</div>
                       <div className="text-slate-500 font-bold text-xs">VS</div>
                       <div className="text-red-400 font-bold text-sm">DRAGONES VALENCIA (11)</div>
                     </div>
@@ -461,7 +461,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
                   <div className="bg-slate-950 text-slate-200 rounded-lg p-3 font-mono text-xs border border-slate-800 space-y-1">
                     <div className="text-emerald-400 font-bold">[ESTRATEGIA] Vertical Stack - Break Flow</div>
                     <div className="text-slate-300 text-[11px]">
-                      1. Handlers dominan el centro • 2. Cutter 1 rompe en diagonal al lado abierto • 3. Pase huck a la zona de gol
+                      1. Manejadores dominan el centro • 2. Cortador 1 rompe en diagonal al lado abierto • 3. Pase huck a la zona de gol
                     </div>
                   </div>
                 </div>

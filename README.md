@@ -167,3 +167,8 @@ npm run check
 ## 📄 Licencia
 
 Distribuido bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más información.
+-e 
+## 📚 Documentación Técnica Adicional
+
+- [Diagrama de Flujo de Datos](./docs/FLUJO_DE_DATOS.md): Ciclo de vida y arquitectura del sistema.
+- [Recomendaciones de Mejora](./docs/RECOMENDACIONES.md): Hoja de ruta para escalabilidad en la nube, marcadores en tiempo real (WebSockets) y modo Offline.

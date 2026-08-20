@@ -23,8 +23,10 @@ const typeLabel: Record<EventType, string> = {
   FULL_DAY_OPEN: 'Full Day Open',
   FULL_DAY_MIXTO: 'Full Day Mixto',
   AMISTOSO: 'Amistoso',
+  MATCH: 'Partido Oficial',
 }
 
+const STATUS_LABELS: Record<EventStatus, string> = { UPCOMING: 'Próximo', ONGOING: 'En Curso', COMPLETED: 'Completado', CANCELLED: 'Cancelado' };
 const statusBadge: Record<EventStatus, string> = {
   UPCOMING: 'bg-blue-100 text-blue-700',
   ONGOING: 'bg-green-100 text-green-700',
@@ -37,8 +39,17 @@ export default function Events() {
   const navigate = useNavigate()
   const { user, hasPermission, hasRole } = useAuth()
   const isGuest = hasRole('guest') || user?.email === 'guest@sigedivo.com'
-  const canManageEvents = hasPermission('events:manage') || hasRole('admin') || hasRole('captain') || hasRole('coach') || isGuest
-  const canAnnotate = hasPermission('annotations:manage') || hasPermission('events:manage') || hasRole('admin') || hasRole('captain') || hasRole('coach') || hasRole('annotator') || isGuest
+  const canManageEvents = hasPermission('events:manage') || hasRole('admin') || hasRole('captain') || hasRole('coach') || hasRole('directiva')
+
+  const canUserAnnotate = (e: EventItem) => {
+    if (hasRole('admin') || hasRole('directiva') || hasPermission('events:manage') || hasPermission('annotations:manage')) return true;
+    if (hasRole('coach') || hasRole('captain') || hasRole('annotator')) return true;
+    if (hasRole('player')) {
+      const strictTypes = ['TOURNAMENT', 'FULL_DAY_OPEN', 'FULL_DAY_MIXTO', 'MATCH'];
+      return !strictTypes.includes(e.type);
+    }
+    return false;
+  }
   
   const { state, actions } = useEvents()
   const {
@@ -215,7 +226,7 @@ export default function Events() {
                       <div className="text-xs text-gray-500">{typeLabel[e.type]}</div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                      <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${statusBadge[e.status]}`}>{e.status}</span>
+                      <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${statusBadge[e.status]}`}>{STATUS_LABELS[e.status]}</span>
                       <div className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">{e.startsAt ? new Date(e.startsAt).toLocaleString() : ''}</div>
                       <button className="text-purple-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={async () => {
                         try {
@@ -229,7 +240,7 @@ export default function Events() {
                         }
                       }}>Abrir canal</button>
                       
-                      {canAnnotate && (
+                      {canUserAnnotate(e) && (
                         <button className="text-purple-700 hover:underline text-xs sm:text-sm whitespace-nowrap font-medium" onClick={() => setAnnotEvent(e)}>🥏 Anotaciones</button>
                       )}
 
@@ -268,12 +279,12 @@ export default function Events() {
                                 <div className="text-xs text-gray-500">{typeLabel[child.type] || child.type}</div>
                               </div>
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${statusBadge[child.status]}`}>{child.status}</span>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${statusBadge[child.status]}`}>{STATUS_LABELS[child.status]}</span>
                                 <div className="text-xs text-gray-600 whitespace-nowrap">{child.startsAt ? new Date(child.startsAt).toLocaleString() : ''}</div>
                                 {canManageEvents && (
                                   <button className="text-teal-700 hover:underline text-xs whitespace-nowrap" onClick={() => setAttEvent(child as any)}>Asistencia</button>
                                 )}
-                                {canAnnotate && (
+                                {canUserAnnotate(child as any) && (
                                   <button className="text-purple-700 hover:underline text-xs whitespace-nowrap font-medium" onClick={() => setAnnotEvent(child as any)}>🥏 Anotaciones</button>
                                 )}
                               </div>
@@ -435,7 +446,7 @@ export default function Events() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
-                        {canAnnotate && (
+                        {canUserAnnotate(ev) && (
                           <button
                             onClick={() => {
                               setSelectedDateEvents(null)
@@ -719,7 +730,16 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
   const navigate = useNavigate()
   const { user, hasPermission, hasRole } = useAuth()
   const isGuest = hasRole('guest') || user?.email === 'guest@sigedivo.com'
-  const canManage = hasPermission('annotations:manage') || hasPermission('events:manage') || hasRole('admin') || hasRole('captain') || hasRole('coach') || hasRole('annotator') || isGuest
+  
+  const canManage = (() => {
+    if (hasRole('admin') || hasRole('directiva') || hasPermission('events:manage') || hasPermission('annotations:manage')) return true;
+    if (hasRole('coach') || hasRole('captain') || hasRole('annotator')) return true;
+    if (hasRole('player')) {
+      const strictTypes = ['TOURNAMENT', 'FULL_DAY_OPEN', 'FULL_DAY_MIXTO', 'MATCH'];
+      return !strictTypes.includes(eventItem.type);
+    }
+    return false;
+  })()
 
   const annotationTypeLabels: Record<AnnotationType, string> = {
     GOAL: 'Gol',

@@ -274,8 +274,8 @@ export default function Injuries() {
                   <tr key={it.id} className="border-t">
                     <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{it.player ? `#${it.player.number} ${it.player.name}` : it.playerId}</td>
                     <td className="px-2 sm:px-4 py-2">{it.type}</td>
-                    <td className="px-2 sm:px-4 py-2">{it.severity}</td>
-                    <td className="px-2 sm:px-4 py-2">{it.status}</td>
+                    <td className="px-2 sm:px-4 py-2">{it.severity === 'MILD' ? 'Leve' : it.severity === 'MODERATE' ? 'Moderada' : 'Grave'}</td>
+                    <td className="px-2 sm:px-4 py-2">{it.status === 'ACTIVE' ? 'Activa' : it.status === 'RECOVERING' ? 'En Recuperación' : 'Resuelta'}</td>
                     <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{new Date(it.startDate).toLocaleDateString()}</td>
                     <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{it.endDate ? new Date(it.endDate).toLocaleDateString() : ''}</td>
                     <td className="px-2 sm:px-4 py-2 text-right">

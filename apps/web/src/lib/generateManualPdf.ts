@@ -61,7 +61,7 @@ export function generateSystemManualPdf(): jsPDF {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(26)
   doc.setTextColor(255, 255, 255)
-  doc.text('SAN JUAN ULTIMATE CLUB', margin, 35)
+  doc.text('SIGEDIVO', margin, 35)
 
   doc.setFontSize(13)
   doc.setFont('helvetica', 'normal')
@@ -168,7 +168,7 @@ export function generateSystemManualPdf(): jsPDF {
     {
       name: 'Capitán (captain)',
       badge: 'Liderazgo Deportivo',
-      desc: 'Responsable de la convocatoria, alineaciones (O-Line y D-Line), estrategias en juego, toma de estadísticas en vivo y espíritu de juego (SOTG).',
+      desc: 'Responsable de la convocatoria, alineaciones (Línea O y Línea D), estrategias en juego, toma de estadísticas en vivo y espíritu de juego (SOTG).',
       perms: 'roster:manage, events:manage, attendance:manage, annotations:manage, plays:manage, rivals:manage, injuries:manage, communications:manage',
     },
     {
@@ -186,7 +186,7 @@ export function generateSystemManualPdf(): jsPDF {
     {
       name: 'Anotador / Mesa Técnica (annotator)',
       badge: 'Estadísticas Oficiales',
-      desc: 'Registro en tiempo real de eventos de partido: goles, asistencias, defensas, drops, turnovers, tiempos fuera y evaluación de Spirit of the Game.',
+      desc: 'Registro en tiempo real de eventos de partido: goles, asistencias, defensas, caídas, pérdidas, tiempos fuera y evaluación de Espíritu de Juego.',
       perms: 'annotations:manage, annotations:view, statistics:view, events:view, roster:view, rivals:view',
     },
     {
@@ -279,8 +279,8 @@ export function generateSystemManualPdf(): jsPDF {
   const modulesPart1 = [
     {
       title: '3.1 Roster del Equipo & Jugadores (/roster)',
-      desc: 'Catálogo de jugadores del club. Permite gestionar dorsales (números de camiseta), posiciones oficiales (Handler, Cutter, Hybrid), datos antropométricos (estatura en cm), trayectoria y estado deportivo (Activo, Lesionado, Suspendido).',
-      mockup: '[ ROSTER DEL EQUIPO ] | #1 Franco Sousa (Handler - 182cm) | #2 Carlos Mendoza (Cutter) | #3 Eduardo Silva (Hybrid)',
+      desc: 'Catálogo de jugadores del club. Permite gestionar dorsales (números de camiseta), posiciones oficiales (Manejador, Cortador, Híbrido), datos antropométricos (estatura en cm), trayectoria y estado deportivo (Activo, Lesionado, Suspendido).',
+      mockup: '[ ROSTER DEL EQUIPO ] | #1 Franco Sousa (Manejador - 182cm) | #2 Carlos Mendoza (Cortador) | #3 Eduardo Silva (Híbrido)',
     },
     {
       title: '3.2 Calendario, Eventos & Viento (/eventos)',
@@ -289,8 +289,8 @@ export function generateSystemManualPdf(): jsPDF {
     },
     {
       title: '3.3 Anotaciones en Vivo & Estadísticas de Partido (/eventos/:id/anotaciones)',
-      desc: 'Módulo interactivo en tiempo real para capitanes y anotadores. Permite registrar goles, asistencias, bloqueos/defensas, pérdidas (turnovers), drops y evaluar el Spirit of the Game (SOTG) del equipo rival según la rúbrica internacional WFDF.',
-      mockup: '[ LIVE SCORE ] Equipo Local 15 - 11 Dragones | Botones de 1 Clic: [+GOL] [+ASIST] [+DEFENSA] [-TURNOVER] [SOTG]',
+      desc: 'Módulo interactivo en tiempo real para capitanes y anotadores. Permite registrar goles, asistencias, bloqueos/defensas, pérdidas, caídas y evaluar el Espíritu de Juego (SOTG) del equipo rival según la rúbrica internacional WFDF.',
+      mockup: '[ LIVE SCORE ] Equipo Local 15 - 11 Dragones | Botones de 1 Clic: [+GOL] [+ASIST] [+DEFENSA] [-PÉRDIDA] [SOTG]',
     },
     {
       title: '3.4 Finanzas & Libro Contable (/finanzas)',
@@ -335,7 +335,7 @@ export function generateSystemManualPdf(): jsPDF {
     {
       title: '3.5 Pizarrón Táctico & Playbook (/jugadas)',
       desc: 'Biblioteca de jugadas y formaciones tácticas: Vertical Stack (Break Flow), Horizontal Stack (Isolación central) y Defensas de Zona (3-3-1 Cup). Incluye descripciones paso a paso, roles por posición y directrices para situaciones de viento en contra y a favor.',
-      mockup: '[ TÁCTICA ] Vertical Stack - Break Flow | Offense | 1. Handlers centro -> 2. Corte diagonal -> 3. Huck largo',
+      mockup: '[ TÁCTICA ] Vertical Stack - Break Flow | Ofensiva | 1. Manejadores centro -> 2. Corte diagonal -> 3. Pase largo',
     },
     {
       title: '3.6 Scouting de Equipos Rivales (/rivales)',
@@ -466,14 +466,12 @@ export function generateSystemManualPdf(): jsPDF {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(12)
   doc.setTextColor(255, 255, 255)
-  doc.text('SAN JUAN ULTIMATE CLUB • CUERPO TÉCNICO Y DIRECTIVA', margin + 6, fY + 18)
+  doc.text('SIGEDIVO • CUERPO TÉCNICO Y DIRECTIVA', margin + 6, fY + 18)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
   doc.setTextColor(224, 231, 255)
   doc.text('Email de Contacto Oficial: contacto@sigedivo.com | administracion@sigedivo.com', margin + 6, fY + 27)
-  doc.text('Sede Deportiva: Complejo Deportivo San Juan • Cancha Principal 1', margin + 6, fY + 34)
-  doc.text('Horarios de Entrenamiento: Martes y Jueves 19:00 - 21:30 | Sábados 08:30 - 12:00', margin + 6, fY + 41)
   doc.text('Reglamento Oficial: World Flying Disc Federation (WFDF) 2025-2028', margin + 6, fY + 48)
 
   addFooter()

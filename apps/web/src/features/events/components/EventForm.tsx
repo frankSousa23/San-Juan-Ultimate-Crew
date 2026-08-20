@@ -130,7 +130,8 @@ export default function EventForm({ mode, initial, onCancel, onSubmit, onSubmitA
                  t === 'WORKSHOP' ? 'Taller' :
                  t === 'FULL_DAY_OPEN' ? 'Full Day Open' :
                  t === 'FULL_DAY_MIXTO' ? 'Full Day Mixto' :
-                 t === 'AMISTOSO' ? 'Amistoso' : t}
+                 t === 'AMISTOSO' ? 'Amistoso' :
+                 t === 'MATCH' ? 'Partido Oficial' : t}
               </option>
             ))}
           </select>

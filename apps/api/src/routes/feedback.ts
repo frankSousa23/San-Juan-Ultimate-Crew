@@ -33,8 +33,8 @@ router.post('/', async (req: any, res) => {
 
     res.status(201).json(feedback)
   } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors })
+    if (error.issues) {
+      return res.status(400).json({ error: error.issues })
     }
     console.error('Create feedback error:', error)
     res.status(500).json({ error: 'Internal server error' })

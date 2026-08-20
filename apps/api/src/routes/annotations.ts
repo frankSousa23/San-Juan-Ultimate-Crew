@@ -4,7 +4,8 @@ import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import { success, created, badRequest, notFound } from '../lib/response.js'
-import { requireAuth, requirePermission } from './auth.js'
+import { requireAuth } from './auth.js'
+import { requireAnnotationAccess } from '../middleware/annotationAccess.js'
 import { validateBody, validateParams } from '../middleware/validation.js'
 import { createAuditHelper } from '../lib/audit.js'
 import { isGuestRequest, GUEST_EVENT_ANNOTATIONS, GUEST_EVENTS } from '../lib/guestDemoData.js'
@@ -153,7 +154,7 @@ router.get('/:id', requireAuth, validateParams(annotationIdSchema), asyncHandler
  *     summary: Create a new annotation
  *     tags: [Annotations]
  */
-router.post('/', requireAuth, requirePermission('annotations:manage'), validateBody(createAnnotationSchema), asyncHandler(async (req: Request, res: Response) => {
+router.post('/', requireAuth, requireAnnotationAccess, validateBody(createAnnotationSchema), asyncHandler(async (req: Request, res: Response) => {
   const u = (req as any).user as any
   const userId = u?.sub ? Number(u.sub) : null
 
@@ -311,7 +312,7 @@ router.post('/', requireAuth, requirePermission('annotations:manage'), validateB
  *     summary: Update an annotation
  *     tags: [Annotations]
  */
-router.put('/:id', requireAuth, requirePermission('annotations:manage'), validateParams(annotationIdSchema), validateBody(updateAnnotationSchema), asyncHandler(async (req: Request, res: Response) => {
+router.put('/:id', requireAuth, requireAnnotationAccess, validateParams(annotationIdSchema), validateBody(updateAnnotationSchema), asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params as { id: string }
   const payload = req.body
 
@@ -395,7 +396,7 @@ router.put('/:id', requireAuth, requirePermission('annotations:manage'), validat
  *     summary: Delete an annotation
  *     tags: [Annotations]
  */
-router.delete('/:id', requireAuth, requirePermission('annotations:manage'), validateParams(annotationIdSchema), asyncHandler(async (req: Request, res: Response) => {
+router.delete('/:id', requireAuth, requireAnnotationAccess, validateParams(annotationIdSchema), asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params as { id: string }
 
   const existing = await prisma.eventAnnotation.findUnique({

@@ -22,7 +22,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     
     { name: 'Roster', href: '/roster', icon: '👥', roles: ['player', 'captain', 'coach', 'admin', 'treasurer', 'marketing', 'directiva', 'annotator', 'guest'] },
     { name: 'Eventos', href: '/eventos', icon: '📅', roles: ['player', 'captain', 'coach', 'admin', 'treasurer', 'marketing', 'guest', 'directiva', 'annotator'] },
-    { name: 'Anotaciones', href: '/anotaciones', icon: '✏️', roles: ['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'guest'] },
     
     // Communications: accessible to all authenticated users (guest can view)
     { name: 'Comunicación', href: '/comunicacion', icon: '💬', roles: [] },
@@ -36,7 +35,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Recursos', href: '/recursos', icon: '📁', roles: ['player', 'coach', 'admin', 'marketing', 'guest', 'directiva', 'captain'] },
     
     // Treasurer & Admin
-    { name: 'Finanzas', href: '/finanzas', icon: '💰', roles: ['treasurer', 'admin', 'directiva'] },
+    { name: 'Finanzas', href: '/finanzas', icon: '💰', roles: ['treasurer', 'admin', 'directiva', 'guest'] },
     
     // Admin Only
     { name: 'Admin Usuarios', href: '/admin/usuarios', icon: '🔧', roles: ['admin'] },

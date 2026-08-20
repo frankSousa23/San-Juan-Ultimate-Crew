@@ -23,7 +23,7 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadFinanceSummary() {
       // Only load finance summary if user has finance permission
-      if (!hasPermission('finance:view') && !hasRole('admin')) {
+      if (!hasPermission('finance:view') && !hasRole('admin') && !hasRole('guest')) {
         setFinanceLoading(false)
         return
       }
@@ -58,11 +58,11 @@ export default function Dashboard() {
 
   const isAdmin = hasRole('admin')
   const isPlayer = hasRole('player') || !!user?.playerId
-  const isGuest = !isAdmin && !isPlayer
+  const isGuest = hasRole('guest') || user?.email === 'guest@sigedivo.com'
   const isCaptain = hasRole('captain')
   const isCoach = hasRole('coach')
   const isTreasurer = hasRole('treasurer')
-  const canViewFinance = hasPermission('finance:view') || isAdmin
+  const canViewFinance = hasPermission('finance:view') || isAdmin || isGuest
   const canViewMessages = hasPermission('communications:view') || isAdmin || isPlayer
 
   return (

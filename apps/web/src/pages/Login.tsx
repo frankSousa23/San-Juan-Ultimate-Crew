@@ -54,10 +54,10 @@ export const Login: React.FC = () => {
   return (
     <div className="w-full max-w-xl mx-auto px-4 py-6 sm:py-10">
       <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-5 sm:p-8">
-        <div className="text-center mb-6">
+        <div className="text-center mb-6 px-2">
           <div className="text-4xl mb-2">🥏</div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">SIGEDIVO</h2>
-          <p className="text-sm text-gray-600 mt-1 font-medium">Plataforma de Gestión Deportiva y Operaciones</p>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 break-words leading-tight">SIGEDIVO</h2>
+          <p className="text-sm sm:text-base text-gray-600 mt-2 font-medium break-words">Sistema de Gestión para el Disco Volador</p>
         </div>
 
         {/* Acceso Demostrativo Exclusivo: Modo Invitado (Guest) */}

@@ -31,7 +31,15 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
   const { user, hasPermission, hasRole } = useAuth()
   const toasts = useToast()
   const isGuest = hasRole('guest') || user?.email === 'guest@sigedivo.com'
-  const canManage = hasPermission('annotations:manage') || hasPermission('events:manage') || hasRole('admin') || hasRole('captain') || hasRole('coach') || hasRole('directiva') || hasRole('annotator') || isGuest || event.id < 0
+  const canManage = (() => {
+    if (hasRole('admin') || hasRole('directiva') || hasPermission('events:manage') || hasPermission('annotations:manage')) return true;
+    if (hasRole('coach') || hasRole('captain') || hasRole('annotator')) return true;
+    if (hasRole('player')) {
+      const strictTypes = ['TOURNAMENT', 'FULL_DAY_OPEN', 'FULL_DAY_MIXTO', 'MATCH'];
+      return !strictTypes.includes(event.type);
+    }
+    return false;
+  })()
   
   const [annotations, setAnnotations] = useState<EventAnnotation[]>([])
   const [players, setPlayers] = useState<Player[]>([])
@@ -77,28 +85,6 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
 
   const loadData = async () => {
     try {
-      if (event.id < 0) {
-        // Simulador de prueba / Modo Sandbox
-        let pls: Player[] = []
-        try {
-          pls = await playersApi.list()
-        } catch {
-          pls = []
-        }
-        if (pls.length === 0) {
-          pls = [
-            { id: 101, name: 'Carlos Mendoza (Capitán)', number: 7, position: 'HANDLER', status: 'ACTIVE' } as any,
-            { id: 102, name: 'Alejandro Ramos', number: 10, position: 'CUTTER', status: 'ACTIVE' } as any,
-            { id: 103, name: 'Gabriela Silva', number: 14, position: 'HYBRID', status: 'ACTIVE' } as any,
-            { id: 104, name: 'David Peña', number: 23, position: 'CUTTER', status: 'ACTIVE' } as any,
-            { id: 105, name: 'Valeria Rivas', number: 88, position: 'HANDLER', status: 'ACTIVE' } as any,
-          ]
-        }
-        setPlayers(pls)
-        setLoading(false)
-        return
-      }
-
       const [anns, pls] = await Promise.all([
         annotationsApi.list({ eventId: event.id }),
         playersApi.list(),
@@ -128,7 +114,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
   const playerStats = useMemo(() => {
     const statsMap = new Map<string, PlayerStats>()
     
-    // HOME: San Juan UC (o Equipo Claro)
+    // HOME: Equipo Local (o Equipo Claro)
     players.forEach(player => {
       const key = `home-${player.id}`
       const playerAnns = annotations.filter(a => a.playerId === player.id && (!a.teamSide || a.teamSide === 'HOME'))
@@ -216,40 +202,8 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
     relatedPlayerId: number | null = null
   ) => {
     if (!canManage) return
-    
     try {
-      const typeLabel = type === 'GOAL' ? '⚽ ¡GOL ANOTADO!' : type === 'DEFENSE' ? '🛡️ ¡DEFENSA (D) REGISTRADA!' : '❌ TURNOVER REGISTRADO'
-
-      if (event.id < 0) {
-        // En modo simulación / sandbox, manejamos el estado de manera reactiva local
-        const pObj = playerId ? players.find(p => p.id === playerId) : undefined
-        const newScoreHome = type === 'GOAL' && (teamSide === 'HOME' || !teamSide) ? scoreHome + 1 : scoreHome
-        const newScoreAway = type === 'GOAL' && teamSide === 'AWAY' ? scoreAway + 1 : scoreAway
-
-        const fakeAnn: EventAnnotation = {
-          id: Date.now() + Math.floor(Math.random() * 1000),
-          eventId: event.id,
-          type,
-          playerId: playerId || null,
-          player: pObj ? { id: pObj.id, name: pObj.name, number: pObj.number } : undefined,
-          relatedPlayerId: relatedPlayerId || null,
-          opponentPlayerName: playerName || null,
-          opponentPlayerNumber: playerNumber || null,
-          opponentTeamName: opponentTeamName || null,
-          teamSide: teamSide || 'HOME',
-          timestamp: new Date().toISOString(),
-          scoreHome: newScoreHome,
-          scoreAway: newScoreAway,
-        }
-
-        setAnnotations(prev => [fakeAnn, ...prev])
-        if (type === 'GOAL') {
-          if (teamSide === 'HOME' || !teamSide) setScoreHome(prev => prev + 1)
-          else setScoreAway(prev => prev + 1)
-        }
-        toasts.success(typeLabel)
-        return
-      }
+      const typeLabel = type === 'GOAL' ? '⚽ ¡GOL ANOTADO!' : type === 'DEFENSE' ? '🛡️ ¡DEFENSA (D) REGISTRADA!' : '❌ PÉRDIDA REGISTRADA'
 
       const payload: CreateAnnotationInput = {
         eventId: event.id,
@@ -296,20 +250,6 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
   const removeAnnotation = async (annotationId: number, type: AnnotationType) => {
     if (!canManage) return
     try {
-      if (event.id < 0) {
-        const ann = annotations.find(a => a.id === annotationId)
-        setAnnotations(prev => prev.filter(a => a.id !== annotationId))
-        if (type === 'GOAL') {
-          if (ann?.teamSide === 'HOME' || (!ann?.teamSide && !ann?.opponentTeamName)) {
-            setScoreHome(prev => Math.max(0, prev - 1))
-          } else if (ann?.teamSide === 'AWAY') {
-            setScoreAway(prev => Math.max(0, prev - 1))
-          }
-        }
-        toasts.success('Anotación eliminada')
-        return
-      }
-
       await annotationsApi.remove(annotationId)
       if (type === 'GOAL') {
         const ann = annotations.find(a => a.id === annotationId)
@@ -661,7 +601,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
         {!loading && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            {/* VISTA LOCAL (San Juan UC) */}
+            {/* VISTA LOCAL (Equipo Local) */}
             <div className={`${(isVersus || isInternal) && activeTab !== 'HOME' ? 'hidden lg:block' : 'block'}`}>
               {renderTacticalPlayerList(
                 homeStats, 
@@ -734,7 +674,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
                             ann.type === 'DEFENSE' ? 'bg-purple-200 text-purple-800' :
                             'bg-red-200 text-red-800'
                           }`}>
-                            {ann.type}
+                            {ann.type === 'GOAL' ? 'GOL' : ann.type === 'DEFENSE' ? 'DEFENSA' : ann.type === 'TURNOVER' ? 'PÉRDIDA' : ann.type}
                           </span>
                         </div>
                         {assister && (
@@ -751,7 +691,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
                         onClick={() => setConfirmState({ 
                           id: ann.id, 
                           type: ann.type, 
-                          message: `¿Eliminar esta anotación de ${ann.type}?`, 
+                          message: `¿Eliminar esta anotación de ${ann.type === 'GOAL' ? 'GOL' : ann.type === 'DEFENSE' ? 'DEFENSA' : ann.type === 'TURNOVER' ? 'PÉRDIDA' : ann.type}?`, 
                           onYes: () => removeAnnotation(ann.id, ann.type) 
                         })} 
                         className="w-9 h-9 flex items-center justify-center bg-red-100 hover:bg-red-200 active:bg-red-300 text-red-600 rounded-xl font-black text-lg transition-all"
@@ -897,10 +837,10 @@ function renderTacticalPlayerList(
                 <button 
                   onClick={() => quickAddAnnotation(stat.playerId, stat.playerName, stat.playerNumber, 'TURNOVER', side)} 
                   className="h-12 sm:h-14 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-xl font-black text-sm sm:text-base shadow-sm active:scale-95 transition-all flex items-center justify-center gap-1.5 border-b-4 border-red-800 active:border-b-0"
-                  title="Registrar Turnover (Pérdida de disco, caída o mal pase)"
+                  title="Registrar Pérdida (Pérdida de disco, caída o mal pase)"
                 >
                   <span className="text-lg">❌</span>
-                  <span>TURNOVER</span>
+                  <span>PÉRDIDA</span>
                 </button>
               </div>
             )}

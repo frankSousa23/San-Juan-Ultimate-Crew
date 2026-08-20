@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { z } from 'zod'
 import { requirePermission } from './auth.js'
+import { isGuestRequest, GUEST_TRANSACTIONS } from '../lib/guestDemoData.js'
 import type { Prisma } from '@prisma/client'
 import { createAuditHelper } from '../lib/audit.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
@@ -89,6 +90,7 @@ const transactionQuerySchema = z.object({
  *                   type: integer
  */
 router.get('/', asyncHandler(async (req: Request, res: Response) => {
+  if (isGuestRequest(req)) { return success(res, { items: GUEST_TRANSACTIONS, total: GUEST_TRANSACTIONS.length }) }
   const parsed = transactionQuerySchema.safeParse(req.query)
   if (!parsed.success) {
     return validationError(res, 'Invalid query parameters', parsed.error.issues)
@@ -290,6 +292,7 @@ const summaryQuerySchema = z.object({
 })
 
 router.get('/summary/overall', asyncHandler(async (req: Request, res: Response) => {
+  if (isGuestRequest(req)) { return success(res, { income: 70000, expense: 17500, balance: 140000 }) }
   const parsed = summaryQuerySchema.safeParse(req.query)
   if (!parsed.success) {
     return validationError(res, 'Invalid query parameters', parsed.error.issues)

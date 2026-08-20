@@ -73,7 +73,7 @@ export function AnnotationForm({
                 {t === 'GOAL' ? '⚽ Gol' :
                  t === 'ASSIST' ? '🎯 Asistencia' :
                  t === 'DEFENSE' ? '🛡️ Intercepción (Defensa)' :
-                 t === 'TURNOVER' ? '❌ Turnover (Pérdida / Caída)' :
+                 t === 'TURNOVER' ? '❌ Pérdida / Caída' :
                  t === 'CALLAHAN' ? '🌟 Gol Callahan' :
                  t === 'MVP' ? '👑 MVP' :
                  t === 'FOUL' ? '⚠️ Falta' :

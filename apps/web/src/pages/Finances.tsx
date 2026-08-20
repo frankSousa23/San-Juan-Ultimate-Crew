@@ -206,7 +206,7 @@ export default function Finances() {
       const headers = ['Fecha','Tipo','Cuenta','Categoría','Monto','Descripción']
       const rows = all.map(it => [
         new Date(it.occurredAt).toISOString(),
-        it.type,
+        it.type === 'INCOME' ? 'Ingreso' : it.type === 'EXPENSE' ? 'Egreso' : 'Transferencia',
         it.account?.name || String(it.accountId),
         it.category?.name || (it.categoryId ?? ''),
         (it.amountCents/100).toFixed(2),
@@ -349,7 +349,7 @@ export default function Finances() {
                 {items.map(it => (
                   <tr key={it.id} className="border-t">
                     <td className="px-2 sm:px-4 py-2 whitespace-nowrap text-xs sm:text-sm">{new Date(it.occurredAt).toLocaleString()}</td>
-                    <td className="px-2 sm:px-4 py-2">{it.type}</td>
+                    <td className="px-2 sm:px-4 py-2">{it.type === 'INCOME' ? 'Ingreso' : it.type === 'EXPENSE' ? 'Egreso' : 'Transferencia'}</td>
                     <td className="px-2 sm:px-4 py-2 hidden md:table-cell">{it.account?.name || it.accountId}</td>
                     <td className="px-2 sm:px-4 py-2 hidden lg:table-cell">{it.category?.name || (it.categoryId ?? '')}</td>
                     <td className="px-2 sm:px-4 py-2 text-right whitespace-nowrap">{(it.amountCents/100).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</td>
