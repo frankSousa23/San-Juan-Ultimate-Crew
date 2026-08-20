@@ -14,7 +14,7 @@
 > *"Este proyecto es mi contribución de corazón a la comunidad venezolana y del mundo para el Ultimate Frisbee / Disco Volador, el deporte más bonito del mundo."*  
 > **— Frank Sousa** (`frankSousa23`), San Juan de los Morros, Estado Guárico, Venezuela.
 
-Durante más de 15 años residiendo en **San Juan de los Morros**, he viajado incansablemente al estado **Aragua, Carabobo, Yaracuy** y diversas regiones de Venezuela para competir en ligas, torneos y full days. Al ver la necesidad tecnológica que existía para organizar equipos, llevar estadísticas precisas en tiempo real y profesionalizar los eventos deportivos, dediqué este trabajo a unir a los atletas locales y brindar una herramienta abierta, moderna y gratuita.
+Durante más de 15 años residiendo en **San Juan de los Morros**, he viajado al estado **Aragua, Carabobo, Yaracuy** y diversas regiones de Venezuela para competir en ligas, torneos y full days. Al ver la necesidad tecnológica que existía para organizar equipos, llevar estadísticas precisas en tiempo real y profesionalizar los eventos deportivos, dediqué este trabajo a unir a los atletas locales y brindar una herramienta abierta, moderna y gratuita.
 
 Este sistema nace con el firme propósito de respaldar a la **Federación del Disco Volador de Venezuela (FDVV)**, a la **Asociación Aragüeña del Disco Volador (AADV)** y sentar las bases tecnológicas y organizativas para la creación y consolidación de la **Asociación Guariqueña del Disco Volador (AGDV)**.
 
@@ -63,8 +63,8 @@ Este proyecto es software libre y de código abierto bajo la **[Licencia MIT](LI
 ### 5. 🏥 Historial Médico y Lesiones
 - Seguimiento evolutivo del estado del jugador (Activo -> En Recuperación -> Resuelto).
 
-### 6. 📋 Libro de Jugadas y Estrategia
-- Pizarra de jugadas ofensivas (Vertical Stack, Horizontal Stack) y defensivas (Zona 3-3-1, Fuerza Banda).
+### 6. 📋 Libro de Jugadas y Estrategia (Playbook)
+- Pizarra de jugadas ofensivas (Vertical Stack, Horizontal Stack) y defensivas (Zona 3-3-1 Cup, Defensa Dome/Clam).
 
 ### 7. 🛡️ Scouting de Rivales
 - Fichas técnicas de equipos contrarios y scouting individual de jugadores clave.
@@ -72,17 +72,20 @@ Este proyecto es software libre y de código abierto bajo la **[Licencia MIT](LI
 ### 8. 💬 Comunicaciones, Noticias y Recursos
 - Canales en tiempo real vinculados a torneos, noticias oficiales y reglamento oficial WFDF.
 
+### 9. 📄 Manual del Sistema y Generador de PDF
+- Visualizador interactivo de manual de operaciones, organigrama de roles y permisos RBAC, diagramas tácticos WFDF y exportación directa en formato PDF.
+
 ---
 
 ## 🛠️ Stack Tecnológico
 
 | Capa | Tecnología |
 | :--- | :--- |
-| **Frontend** | React 18, Vite 6, TypeScript, Tailwind CSS, Heroicons, React Hot Toast |
+| **Frontend** | React 18, Vite 6, TypeScript, Tailwind CSS, Lucide / Heroicons, React Hot Toast |
 | **Backend API** | Node.js, Express, TypeScript, Prisma ORM 7 (`@prisma/adapter-pg`) |
-| **Base de Datos** | PostgreSQL 16 |
-| **Testing** | Vitest 4 (Unit & Integration API), Playwright (E2E & Accesibilidad WCAG) |
-| **Documentación** | Swagger UI / OpenAPI 3.0 en `/api-docs` |
+| **Base de Datos** | PostgreSQL 16 (con capa de persistencia en memoria automática para desarrollo ágil) |
+| **Testing** | Vitest (Unit & Integration API), Playwright (E2E & Accesibilidad WCAG) |
+| **Documentación** | Swagger UI / OpenAPI 3.0 en `/api-docs` y manuales en `/docs` |
 
 ---
 
@@ -96,40 +99,30 @@ cd San-Juan-Ultimate-Crew
 # 2. Instalar dependencias
 npm install
 
-# 3. Iniciar base de datos local con Docker
-docker compose up -d
+# 3. Configurar variables de entorno
+cp .env.example .env
 
-# 4. Sincronizar y poblar base de datos con el Seeder Enriquecido
-npm --workspace apps/api run prisma:generate
-npm --workspace apps/api run prisma:migrate
-npm --workspace apps/api run prisma:seed
-
-# 5. Iniciar servidores de desarrollo
+# 4. Iniciar la aplicación
 npm run dev
 ```
 
-- **Frontend Web:** [http://localhost:5173](http://localhost:5173)
-- **Backend API:** [http://localhost:4000](http://localhost:4000)
-- **Swagger API Docs:** [http://localhost:4000/api-docs](http://localhost:4000/api-docs)
+- **Aplicación Web:** [http://localhost:3000](http://localhost:3000)
+- **Documentación OpenAPI / Swagger:** [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
 
 ---
 
-## 🔐 Usuarios y Roles de Prueba
+## 🔐 Control de Acceso y Modo Demostración
 
-| Usuario | Contraseña | Rol | Descripción |
-| :--- | :--- | :--- | :--- |
-| `frankalfonso1988@gmail.com` | `123456` | `admin`, `player` | Administrador General (Dorsal #1) |
-| `captain@sigedivo.com` | `123456` | `captain`, `player` | Capitán Ofensivo (Dorsal #2) |
-| `coach@sigedivo.com` | `123456` | `coach`, `player` | Entrenador Táctico (Dorsal #3) |
-| `treasurer@sigedivo.com` | `123456` | `treasurer`, `player` | Tesorero del Club (Dorsal #4) |
-| `player@sigedivo.com` | `123456` | `player` | Jugador Titular (Dorsal #5) |
-| `guest@sigedivo.com` | `123456` | `guest` | Refuerzo / Observador (Dorsal #6) |
+- **Acceso de Demostración (Modo Invitado en 1 Clic):**  
+  En la pantalla de inicio de sesión (`/login`), se incluye un botón de **Acceso Demostrativo en 1 Clic** que permite explorar de forma inmediata el Roster, Calendario, Pizarrón Táctico, Estadísticas, Finanzas y el Manual Oficial sin requerir registro previo ni configuración manual.
+- **Registro Seguro y Aprobación Administrativa:**  
+  Los nuevos registros de usuarios ingresan en estado `PENDING` para ser validados y asignados a su rol (`admin`, `captain`, `coach`, `directiva`, `treasurer`, `player`) desde el panel de administración (`/admin/usuarios`).
 
 ---
 
-## 🌐 Guía de Despliegue en Producción con Dominio Propio
+## 🌐 Guía de Despliegue en Producción
 
-Para desplegar este sistema en internet (en plataformas gratuitas o de bajo costo como Vercel, Render, Railway, Neon o en tu propio VPS con Docker y SSL), consulta nuestra guía oficial detallada:
+Para desplegar este sistema en servidores VPS (con Docker, Nginx y SSL Certbot) o en plataformas en la nube (Render, Railway, Neon, Vercel), consulta la guía detallada:
 
 👉 **[Guía Oficial de Despliegue (DEPLOYMENT_GUIDE.md)](docs/DEPLOYMENT_GUIDE.md)**
 
@@ -138,17 +131,14 @@ Para desplegar este sistema en internet (en plataformas gratuitas o de bajo cost
 ## 🧪 Comprobación de Calidad y Tests
 
 ```bash
-# Auditoría integral del ciclo de datos completo (31/31 flujos)
-node local/scripts/audit-full-system.mjs
+# Verificación de compilación y empaquetado
+npm run lint
 
-# Tests unitarios y de integración de la API (139 tests)
-npm --workspace apps/api run test:all:auth
+# Compilación completa para producción
+npm run build
 
-# Tests E2E de Playwright y Accesibilidad WCAG
-npm --workspace apps/web run test:e2e
-
-# Verificación global de linting y compilación monorepo
-npm run check
+# Ejecución en modo producción
+npm start
 ```
 
 ---
@@ -157,7 +147,7 @@ npm run check
 
 1. Haz un Fork del repositorio.
 2. Crea tu rama (`git checkout -b feature/nueva-mejora`).
-3. Realiza tus cambios y verifica con `npm run check`.
+3. Realiza tus cambios y verifica con `npm run build`.
 4. Haz Commit (`git commit -m 'feat: agregar funcionalidad'`).
 5. Sube tu rama (`git push origin feature/nueva-mejora`).
 6. Abre un **Pull Request**.
@@ -172,6 +162,6 @@ Distribuido bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para m�
 
 ## 📚 Documentación Técnica Adicional
 
-- [Guía Oficial de Despliegue en Producción](./docs/DEPLOYMENT_GUIDE.md): Configuración de Docker, PostgreSQL, variables de entorno, dominio y SSL.
+- [Guía Oficial de Despliegue en Producción](./docs/DEPLOYMENT_GUIDE.md): Configuración de Docker, PostgreSQL, variables de entorno, dominio y certificados SSL.
 - [Diagrama de Flujo de Datos](./docs/FLUJO_DE_DATOS.md): Ciclo de vida y arquitectura del sistema, autenticación JWT/RBAC, eventos y cálculo de estadísticas.
 - [Recomendaciones de Mejora y Escalabilidad](./docs/RECOMENDACIONES.md): Hoja de ruta para escalabilidad en la nube, marcadores en tiempo real (WebSockets), PWA offline y soporte multi-asociación.
