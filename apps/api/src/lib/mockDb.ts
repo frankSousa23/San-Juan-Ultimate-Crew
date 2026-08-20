@@ -313,7 +313,7 @@ function hydrateItem(tableName: string, item: any, include?: any): any {
         .filter((ur) => ur.userId === item.id)
         .map((ur) => {
           const role = dbInstance.roles.find((r) => r.id === ur.roleId);
-          let roleObj: any = role ? { ...role } : null;
+          const roleObj: any = role ? { ...role } : null;
           if (roleObj && include.roles.include?.role) {
             const roleInc = include.roles.include.role;
             if (roleInc.include?.permissions) {

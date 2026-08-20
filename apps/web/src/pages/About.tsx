@@ -49,6 +49,23 @@ export default function About() {
             Autor: Frank Sousa (frankalfonso1988@gmail.com) • San Juan de los Morros
           </div>
         </div>
+
+        {/* Botón Descarga de Guía PDF */}
+        <div className="mt-6 pt-6 border-t border-white/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h4 className="font-bold text-white text-base">📄 Documentación y Guía de Roles en PDF</h4>
+            <p className="text-xs text-blue-200">Descarga el resumen estructurado de roles, permisos, matriz de vistas y flujos de decisión.</p>
+          </div>
+          <a
+            href="/Roles_y_Permisos_San_Juan_Ultimate_Crew.pdf"
+            download="Roles_y_Permisos_San_Juan_Ultimate_Crew.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold px-5 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition text-sm whitespace-nowrap"
+          >
+            <span>📥</span> Descargar PDF
+          </a>
+        </div>
       </div>
 
       {/* Formulario de Feedback */}
