@@ -400,6 +400,11 @@ export function generateSystemManualPdf(): jsPDF {
   doc.setFontSize(8.5)
   doc.setTextColor(20, 83, 45)
   const guestLines = [
+    "• Flexibilidad Táctica (Caimaneras): Los eventos amistosos o mixtos permiten incorporar jugadores de",
+    "  otros equipos sin comprometer la privacidad del calendario oficial. Los invitados no registrados",
+    "  pueden sumar estadísticas, las cuales se fusionarán a su perfil una vez creados en el sistema.",
+    "• Interfaz Adaptativa (Modo Oscuro): La plataforma cuenta con un conmutador de tema visual (☀️/🌙)",
+    "  integrado en la barra superior que aplica ajustes cromáticos en toda la plataforma.",
     '',
     '• Vistas Disponibles en Modo Muestra: Consulta del Roster general, Calendario de eventos públicos,',
     '  Estadísticas de anotaciones, Biblioteca de jugadas tácticas y Descarga del Manual Oficial.',

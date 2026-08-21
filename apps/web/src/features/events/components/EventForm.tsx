@@ -33,7 +33,7 @@ const OFFICIAL_PRESETS: CategoryPreset[] = [
   { label: '⚡ Full Day Open Fem', type: 'FULL_DAY_OPEN', titlePrefix: 'Full Day Open Femenino', description: 'Jornada intensiva de partidos categoría Open Femenino.', color: 'bg-rose-50 text-rose-800 border-rose-200' },
   { label: '⚡ Full Day Mixto', type: 'FULL_DAY_MIXTO', titlePrefix: 'Full Day Mixto', description: 'Jornada intensiva de partidos categoría Mixta.', color: 'bg-indigo-50 text-indigo-800 border-indigo-200' },
   { label: '🤝 Amistoso Interclub', type: 'AMISTOSO', titlePrefix: 'Amistoso vs ', description: 'Partido amistoso de fogueo interclubes.', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
-  { label: '🥏 Scrimmage Interno', type: 'TRAINING', titlePrefix: 'Scrimmage Interno', isInternalScrimmage: true, description: 'Partido de práctica entre escuadras internas (Claro vs Oscuro). Anotación rápida habilitada para cualquier jugador.', color: 'bg-amber-50 text-amber-800 border-amber-200' },
+  { label: '🥏 Caimanera Interno', type: 'TRAINING', titlePrefix: 'Caimanera Interno', isInternalScrimmage: true, description: 'Partido de práctica entre escuadras internas (Claro vs Oscuro). Anotación rápida habilitada para cualquier jugador.', color: 'bg-amber-50 text-amber-800 border-amber-200' },
 ]
 
 export default function EventForm({ mode, initial, onCancel, onSubmit, onSubmitAndAnnotate }: Props) {
@@ -202,7 +202,7 @@ export default function EventForm({ mode, initial, onCancel, onSubmit, onSubmitA
                  t === 'FULL_DAY_MIXTO' ? '⚡ Full Day Mixto' :
                  t === 'MATCH' ? '🎯 Partido Oficial' :
                  t === 'AMISTOSO' ? '🤝 Amistoso Interclub' :
-                 t === 'TRAINING' ? '🏃 Entrenamiento / Scrimmage' :
+                 t === 'TRAINING' ? '🏃 Entrenamiento / Caimanera' :
                  t === 'SOCIAL' ? '🎉 Evento Social' :
                  t === 'WORKSHOP' ? '📚 Taller / Clínica' : t}
               </option>
@@ -250,7 +250,7 @@ export default function EventForm({ mode, initial, onCancel, onSubmit, onSubmitA
               <p className="text-xs text-indigo-700 mt-0.5">
                 {isMajorEvent 
                   ? 'En eventos importantes, la Mesa Técnica planifica horarios y lleva el control oficial del marcador.'
-                  : 'En entrenamientos, amistosos y scrimmages, cualquier jugador o asistente puede anotar directamente.'}
+                  : 'En entrenamientos, amistosos y caimaneras, cualquier jugador o asistente puede anotar directamente.'}
               </p>
             </div>
           </div>
@@ -393,13 +393,13 @@ export default function EventForm({ mode, initial, onCancel, onSubmit, onSubmitA
           <div className="md:col-span-2 flex items-center gap-3 bg-amber-50/60 p-3 rounded-lg border border-amber-200">
             <input 
               type="checkbox" 
-              id="scrimmage"
+              id="caimanera"
               checked={form.isInternalScrimmage || false} 
               onChange={e => handleChange('isInternalScrimmage', e.target.checked)} 
               className="w-5 h-5 text-amber-600 rounded cursor-pointer"
             />
-            <label htmlFor="scrimmage" className="text-sm font-semibold text-gray-800 cursor-pointer">
-              Es un Scrimmage Interno / Partido entre Escuadras (Claro vs Oscuro)
+            <label htmlFor="caimanera" className="text-sm font-semibold text-gray-800 cursor-pointer">
+              Es un Caimanera Interno / Partido entre Escuadras (Claro vs Oscuro)
               <p className="text-xs text-gray-500 font-normal">Permitirá llevar el marcador y estadísticas entre dos alineaciones de nuestros propios jugadores en la Pizarra Rápida con acceso para cualquier jugador.</p>
             </label>
           </div>

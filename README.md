@@ -106,7 +106,10 @@ Panel exclusivo para la Administración. Desde aquí se aprueban las solicitudes
   - ❌ **Pérdidas (Turnovers)**.
 - **Modos de Juego:**
   - **Modo Torneo / Versus:** Enfrentamientos oficiales contra equipos rivales con scouting de jugadores.
-  - **Modo Scrimmage Interno:** Partidos de práctica entre Equipo Claro vs Equipo Oscuro.
+  - **Modo Caimanera Interno:** Partidos mixtos de práctica. Los refuerzos e invitados pueden registrar sus estadísticas temporalmente (y fusionarlas al registrarse formalmente) sin exponer la privacidad de los eventos oficiales del equipo.
+  - **Dark Mode Global:** Alternador estético (☀️/🌙) global persistente en todo el sistema.
+  - **Fusión de Invitados:** La Mesa Técnica puede asignar un perfil temporal en una caimanera, y migrar atómicamente todo su historial de goles y asistencias al jugador una vez apruebe su cuenta oficial.
+  - **Modo Caimanera Interno:** Partidos de práctica entre Equipo Claro vs Equipo Oscuro.
 - **Sincronización Automática:** Alimenta al instante la tabla de estadísticas de partido (`PlayerMatchStats`) y la evaluación de Espíritu de Juego (SOTG).
 
 ### 2. 🏃 Roster y Perfil de Jugadores

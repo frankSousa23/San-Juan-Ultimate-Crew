@@ -580,7 +580,7 @@ export default function LiveAnnotationsTable({ event: initialEvent, onClose, emb
             <span className="text-xl sm:text-2xl">🥏</span>
             <div className="truncate">
               <h2 className="text-base sm:text-xl font-black truncate leading-tight">{currentEvent.title}</h2>
-              <p className="text-xs text-indigo-200 font-medium truncate">{isInternal ? 'Scrimmage Interno' : currentEvent.type} • {currentEvent.location}</p>
+              <p className="text-xs text-indigo-200 font-medium truncate">{isInternal ? 'Caimanera Interno' : currentEvent.type} • {currentEvent.location}</p>
             </div>
           </div>
 

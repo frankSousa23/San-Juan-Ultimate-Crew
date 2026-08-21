@@ -349,3 +349,66 @@ router.get('/:id/stats', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 export default router;
+
+/**
+ * @swagger
+ * /api/players/{id}/merge-guest:
+ *   post:
+ *     summary: Fusionar las estadisticas de un invitado (RivalPlayer) con un jugador oficial
+ *     tags: [Players]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           description: ID del jugador oficial
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - rivalPlayerId
+ *             properties:
+ *               rivalPlayerId:
+ *                 type: integer
+ *                 description: ID del perfil temporal invitado (RivalPlayer)
+ *     responses:
+ *       200:
+ *         description: Estadisticas fusionadas correctamente
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Se requiere permiso roster:manage
+ */
+const mergeGuestSchema = z.object({
+  rivalPlayerId: z.coerce.number().int().positive()
+});
+
+router.post('/:id/merge-guest', requirePermission('roster:manage'), validateParams(playerIdSchema), validateBody(mergeGuestSchema), asyncHandler(async (req: Request, res: Response) => {
+  const playerId = Number(req.params.id);
+  const { rivalPlayerId } = req.body;
+  
+  // 1. Update Annotations
+  await prisma.eventAnnotation.updateMany({
+    where: { rivalPlayerId },
+    data: { 
+      rivalPlayerId: null, 
+      playerId,
+      isRefuerzo: true
+    }
+  });
+
+  // 2. We can safely delete the RivalPlayer since it was just a temporary guest
+  try {
+    await prisma.rivalPlayer.delete({ where: { id: rivalPlayerId }});
+  } catch (e) {
+    // Ignore if not found or restricted
+  }
+  
+  return success(res, { message: 'Jugador oficializado con éxito' });
+}));

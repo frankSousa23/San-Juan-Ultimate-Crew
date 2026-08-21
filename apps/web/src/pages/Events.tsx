@@ -18,7 +18,7 @@ import RescheduleModal from '../features/events/components/RescheduleModal'
 import MesaTecnicaModal from '../components/MesaTecnicaModal'
 
 const typeLabel: Record<EventType, string> = {
-  TRAINING: 'Entrenamiento / Scrimmage',
+  TRAINING: 'Entrenamiento / Caimanera',
   TOURNAMENT: 'Torneo Oficial',
   SOCIAL: 'Social / Recreativo',
   WORKSHOP: 'Taller / Clínica',
@@ -76,10 +76,10 @@ export default function Events() {
     loadEvents, createEvent, updateEvent, deleteEvent
   } = actions
 
-  const handleQuickScrimmage = async () => {
+  const handleQuickCaimanera = async () => {
     try {
-      const defaultScrimmage = {
-        title: `Scrimmage Interno (${new Date().toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })})`,
+      const defaultCaimanera = {
+        title: `Caimanera Interno (${new Date().toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })})`,
         type: 'TRAINING' as EventType,
         status: 'ONGOING' as EventStatus,
         startsAt: new Date().toISOString(),
@@ -88,13 +88,13 @@ export default function Events() {
         isInternalScrimmage: true,
         description: 'Partido de práctica entre escuadras internas (Claro vs Oscuro). Anotación rápida habilitada para cualquier jugador.',
       }
-      const created = await createEvent(defaultScrimmage)
+      const created = await createEvent(defaultCaimanera)
       if (created && created.id) {
-        toasts.success('Scrimmage iniciado con éxito')
+        toasts.success('Caimanera iniciado con éxito')
         navigate(`/anotaciones?eventId=${created.id}`)
       }
     } catch (err: any) {
-      toasts.error(err?.message || 'Error al iniciar scrimmage rápido')
+      toasts.error(err?.message || 'Error al iniciar caimanera rápido')
     }
   }
 
@@ -139,17 +139,17 @@ export default function Events() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Sistema de Eventos & Torneos</h2>
-          <p className="text-xs text-gray-500 mt-0.5">Gestión de Mesa Técnica, Planificación de Torneos, Full Days, Entrenamientos y Scrimmages</p>
+          <p className="text-xs text-gray-500 mt-0.5">Gestión de Mesa Técnica, Planificación de Torneos, Full Days, Entrenamientos y Caimaneras</p>
         </div>
         <div className="flex items-center gap-2">
           {canUserAnnotate({ type: 'TRAINING', isInternalScrimmage: true } as any) && (
             <button 
-              onClick={handleQuickScrimmage} 
+              onClick={handleQuickCaimanera} 
               className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-3.5 py-2 rounded-lg hover:from-amber-700 hover:to-orange-700 whitespace-nowrap text-xs sm:text-sm shadow font-bold flex items-center gap-1.5 transition"
               title="Iniciar de inmediato un partido de entrenamiento entre escuadras y abrir la pizarra"
             >
               <span>🥏</span>
-              <span>+ Scrimmage Rápido</span>
+              <span>+ Caimanera Rápido</span>
             </button>
           )}
           {canManageEvents && (
@@ -208,7 +208,7 @@ export default function Events() {
                   onClick={() => setCategorySegment('casual')}
                   className={`text-xs px-3 py-1.5 rounded-full font-medium transition ${categorySegment === 'casual' ? 'bg-emerald-600 text-white shadow-xs font-bold' : 'bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100'}`}
                 >
-                  🥏 Entrenamientos & Scrimmages
+                  🥏 Entrenamientos & Caimaneras
                 </button>
                 <button
                   onClick={() => setCategorySegment('friendly')}
@@ -255,7 +255,7 @@ export default function Events() {
                 }} className="px-3 py-2 border rounded-lg text-sm">
                   <option value="all">Todos los tipos</option>
                   <option value="TOURNAMENT">Torneos</option>
-                  <option value="TRAINING">Entrenamientos / Scrimmage</option>
+                  <option value="TRAINING">Entrenamientos / Caimanera</option>
                   <option value="FULL_DAY_OPEN">Full Day Open</option>
                   <option value="FULL_DAY_MIXTO">Full Day Mixto</option>
                   <option value="AMISTOSO">Amistoso</option>
@@ -316,7 +316,7 @@ export default function Events() {
                         </button>
                         {e.isInternalScrimmage && (
                           <span className="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold">
-                            🥏 Scrimmage Interno
+                            🥏 Caimanera Interno
                           </span>
                         )}
                         {isMajor && (

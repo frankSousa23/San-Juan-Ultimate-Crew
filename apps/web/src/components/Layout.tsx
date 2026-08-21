@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useTheme } from "../hooks/useTheme"
 import { useAuth } from '../contexts/AuthContext'
 import SystemManualModal from './SystemManualModal'
 
@@ -10,6 +11,7 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [manualOpen, setManualOpen] = useState(false)
+  const { isDark, toggleTheme } = useTheme()
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout, hasRole } = useAuth()
@@ -167,6 +169,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
           
           <div className="flex items-center space-x-2 sm:space-x-3">
+            <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition" title="Cambiar tema"> {isDark ? "☀️" : "🌙"} </button>
             <button
               onClick={() => setManualOpen(true)}
               className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs sm:text-sm font-bold rounded-lg border border-blue-200 transition active:scale-95"

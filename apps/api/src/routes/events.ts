@@ -42,9 +42,19 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const u = (req as any).user;
   const isAdmin = u?.roles?.includes('admin') || u?.roles?.includes('directiva');
   const userTeamId = u?.teamId;
-  const whereClause = !isAdmin && userTeamId 
-    ? { OR: [{ teamId: userTeamId }, { awayTeamId: userTeamId }, { teamId: null }] } 
-    : {};
+  const playerId = u?.playerId;
+
+  const whereClause: any = {};
+  if (!isAdmin) {
+    whereClause.OR = [
+      { teamId: userTeamId || -1 },
+      { awayTeamId: userTeamId || -1 },
+      { teamId: null }
+    ];
+    if (playerId) {
+      whereClause.OR.push({ participants: { some: { playerId } } });
+    }
+  }
 
   const includeConfig = {
     children: true,

@@ -134,7 +134,7 @@ Este es el núcleo deportivo de la plataforma, conectando el flujo desde la plan
                          │
                          ▼
        [ 4. INICIO DE PARTIDO EN PISARRA TÁCTIL ]
-       (Selección: Modo Torneo vs Rival  O  Modo Scrimmage Interno)
+       (Selección: Modo Torneo vs Rival  O  Modo Caimanera Interno)
                          │
                          ▼
     ┌────────────────────────────────────────────────────────┐
@@ -181,3 +181,14 @@ Este es el núcleo deportivo de la plataforma, conectando el flujo desde la plan
 2. **Filtro Antispam (`rateLimiter`):** El backend verifica que no se exceda el límite de 3 envíos por hora por cliente.
 3. **Almacenamiento Seguro:** Se guarda en la base de datos vinculado al `userId` (si está autenticado) o de forma anónima con sus datos de contacto.
 4. **Bandeja Administrativa Privada:** Únicamente accesible por usuarios con rol `admin` en `/admin/feedback` para evaluar solicitudes, corregir errores reportados e incorporar nuevas sugerencias de la comunidad.
+
+## 🔄 7. Flujo de Fusión de Jugador Invitado a Jugador Oficial (Merge Guest)
+Para eventos mixtos o Caimaneras donde asisten jugadores aún no registrados en el sistema, la Mesa Técnica utiliza el flujo de Fusión:
+
+1. **Anotación Temporal:** Durante la Caimanera, la Mesa Técnica registra los Goles y Asistencias del jugador vinculándolos a un perfil temporal (`RivalPlayer`).
+2. **Ingreso al Sistema:** El jugador realiza su registro normal y el administrador aprueba su cuenta, asignándole un `playerId` oficial.
+3. **Fusión (Merge) Atómica:** 
+   * Se invoca el servicio `POST /api/players/:id/merge-guest`.
+   * El backend busca todas las anotaciones (`EventAnnotation`) que pertenecían al perfil temporal.
+   * Se actualiza atómicamente el campo `rivalPlayerId` a `null` y se transfiere la autoría al `playerId` oficial (marcándolo como `isRefuerzo = true` para el historial histórico).
+   * Finalmente, se elimina el perfil temporal de `RivalPlayer`.
