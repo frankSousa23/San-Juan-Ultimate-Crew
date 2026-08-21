@@ -19,7 +19,7 @@ jobs:
           POSTGRES_PASSWORD: sju
           POSTGRES_DB: sju_test
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U sju"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -38,7 +38,7 @@ jobs:
       run: |
         if [ ! -f package-lock.json ]; then
           echo "Generating package-lock.json..."
-          npm install --package-lock-only || npm install
+          npm install
         else
           npm ci || npm install
         fi
@@ -168,7 +168,7 @@ jobs:
       run: |
         if [ ! -f package-lock.json ]; then
           echo "Generating package-lock.json..."
-          npm install --package-lock-only || npm install
+          npm install
         else
           npm ci || npm install
         fi
