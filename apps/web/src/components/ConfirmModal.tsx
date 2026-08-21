@@ -30,7 +30,7 @@ export default function ConfirmModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={!isSubmitting ? onCancel : undefined}>
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={!isSubmitting ? onCancel : undefined}>
       <div
         className="bg-white rounded shadow w-full max-w-md"
         onClick={e => e.stopPropagation()}

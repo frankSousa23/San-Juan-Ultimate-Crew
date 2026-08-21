@@ -105,6 +105,7 @@ app.use('/api/resources/upload', uploadLimiter);
 const uploadsDir = path.resolve(process.cwd(), 'apps', 'api', 'uploads');
 app.use('/uploads', express.static(uploadsDir));
 
+
 app.get('/api', (_req: Request, res: Response) => res.json({ name: 'SIGEDIVO (Sistema de Gestión para el Disco Volador) API', ok: true }));
 
 // Swagger documentation

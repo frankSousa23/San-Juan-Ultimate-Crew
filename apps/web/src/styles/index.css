@@ -8,35 +8,113 @@ html, body, #root {
 
 /* Base dark mode styles for views that haven't been fully migrated */
 .dark body {
-  background-color: #111827;
-  color: #f3f4f6;
+  background-color: #111827; /* gray-900 */
+  color: #f3f4f6; /* gray-100 */
 }
 
+/* Backgrounds */
 .dark .bg-white {
-  background-color: #1f2937 !important;
+  background-color: #1f2937 !important; /* gray-800 */
   color: #f3f4f6;
 }
-
-.dark .bg-gray-50 {
-  background-color: #111827 !important;
+.dark .bg-gray-50, .dark .bg-slate-50 {
+  background-color: #111827 !important; /* gray-900 */
+}
+.dark .bg-gray-100, .dark .bg-slate-100 {
+  background-color: #374151 !important; /* gray-700 */
+}
+.dark .bg-gray-200, .dark .bg-slate-200 {
+  background-color: #4b5563 !important; /* gray-600 */
 }
 
-.dark .bg-gray-100 {
-  background-color: #374151 !important;
+/* Texts */
+.dark .text-gray-900, .dark .text-gray-800, .dark .text-slate-900, .dark .text-slate-800 {
+  color: #f9fafb !important; /* gray-50 */
+}
+.dark .text-gray-700, .dark .text-gray-600, .dark .text-slate-700, .dark .text-slate-600 {
+  color: #d1d5db !important; /* gray-300 */
+}
+.dark .text-gray-500, .dark .text-slate-500 {
+  color: #9ca3af !important; /* gray-400 */
 }
 
-.dark .text-gray-900, .dark .text-gray-800 {
-  color: #f9fafb !important;
+/* Borders */
+.dark .border-gray-200, .dark .border-gray-300, .dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]), .dark .divide-gray-300 > :not([hidden]) ~ :not([hidden]), .dark .border-slate-200, .dark .border-slate-300, .dark .border, .dark .border-t, .dark .border-b, .dark .border-l, .dark .border-r {
+  border-color: #374151 !important; /* gray-700 */
 }
 
-.dark .text-gray-700, .dark .text-gray-600 {
-  color: #d1d5db !important;
+/* Colored subtle backgrounds (blue-50, green-50, etc) usually used for badges/alerts */
+.dark .bg-blue-50 { background-color: rgba(30, 58, 138, 0.3) !important; color: #bfdbfe !important; }
+.dark .text-blue-800 { color: #93c5fd !important; }
+.dark .text-blue-700 { color: #60a5fa !important; }
+.dark .text-blue-600 { color: #60a5fa !important; }
+
+.dark .bg-green-50 { background-color: rgba(20, 83, 45, 0.3) !important; color: #bbf7d0 !important; }
+.dark .text-green-800 { color: #86efac !important; }
+.dark .text-green-700 { color: #4ade80 !important; }
+.dark .text-green-600 { color: #4ade80 !important; }
+
+.dark .bg-red-50, .dark .bg-rose-50 { background-color: rgba(127, 29, 29, 0.3) !important; color: #fecaca !important; }
+.dark .text-red-800, .dark .text-rose-800 { color: #fca5a5 !important; }
+.dark .text-red-700, .dark .text-rose-700 { color: #f87171 !important; }
+.dark .text-red-600, .dark .text-rose-600 { color: #f87171 !important; }
+
+.dark .bg-yellow-50, .dark .bg-amber-50 { background-color: rgba(113, 63, 18, 0.3) !important; color: #fef08a !important; }
+.dark .text-yellow-800, .dark .text-amber-800 { color: #fde047 !important; }
+.dark .text-yellow-700, .dark .text-amber-700 { color: #facc15 !important; }
+.dark .text-yellow-600, .dark .text-amber-600 { color: #facc15 !important; }
+
+/* Table specific */
+.dark table {
+  color: #d1d5db; /* gray-300 */
+}
+.dark th {
+  background-color: #1f2937 !important; /* gray-800 */
+  color: #f9fafb !important; /* gray-50 */
+}
+.dark tr:hover td {
+  background-color: #374151 !important; /* gray-700 */
 }
 
-.dark .border-gray-200, .dark .border {
-  border-color: #374151 !important;
-}
-
-.dark .shadow-sm, .dark .shadow-md, .dark .shadow-lg {
+/* Shadows */
+.dark .shadow-sm, .dark .shadow-md, .dark .shadow-lg, .dark .shadow {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Modals inputs & selects */
+.dark input:not([type="checkbox"]):not([type="radio"]), .dark select, .dark textarea {
+  background-color: #374151 !important;
+  color: #f9fafb !important;
+  border-color: #4b5563 !important;
+}
+.dark input:not([type="checkbox"]):not([type="radio"]):focus, .dark select:focus, .dark textarea:focus {
+  border-color: #60a5fa !important;
+  outline: none;
+}
+.dark input::placeholder, .dark textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Disable bg-white override for buttons that are specifically meant to be colored, wait, .bg-white will override if it has .bg-white */
+/* Make sure buttons with bg-blue-600 keep their background */
+.dark button.bg-blue-600 { background-color: #2563eb !important; color: white !important; }
+.dark button.bg-blue-600:hover { background-color: #1d4ed8 !important; }
+
+/* Hover backgrounds */
+.dark .hover\:bg-gray-50:hover, .dark .hover\:bg-slate-50:hover {
+  background-color: #1f2937 !important; /* gray-800 */
+}
+.dark .hover\:bg-gray-100:hover, .dark .hover\:bg-slate-100:hover {
+  background-color: #374151 !important; /* gray-700 */
+}
+.dark .hover\:bg-gray-200:hover, .dark .hover\:bg-slate-200:hover {
+  background-color: #4b5563 !important; /* gray-600 */
+}
+
+/* Hover texts */
+.dark .hover\:text-gray-900:hover, .dark .hover\:text-gray-800:hover {
+  color: #ffffff !important;
+}
+.dark .hover\:text-gray-700:hover, .dark .hover\:text-gray-600:hover {
+  color: #f3f4f6 !important;
 }

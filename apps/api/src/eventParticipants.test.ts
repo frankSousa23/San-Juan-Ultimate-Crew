@@ -1,4 +1,5 @@
 import request from 'supertest'
+import { prisma } from './lib/prisma.js'
 import { app } from './app.js'
 
 describe('Event Participants API', () => {
@@ -8,6 +9,8 @@ describe('Event Participants API', () => {
   let authHeader: string | undefined
 
   beforeAll(async () => {
+    await prisma.event.create({ data: { title: "Test Event for Participants", type: "TRAINING", startsAt: new Date() } })
+    await prisma.player.create({ data: { name: "Test Player for Participants", number: 99, position: "HANDLER" } })
     if (AUTH_ON) {
       const login = await request(app)
         .post('/api/auth/login')

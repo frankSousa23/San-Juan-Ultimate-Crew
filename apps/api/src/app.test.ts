@@ -7,8 +7,8 @@ describe('API basic routes', () => {
     expect(r.status).toBe(200)
   })
 
-  it('GET / should return name and ok', async () => {
-    const r = await request(app).get('/')
+  it('GET /api should return name and ok', async () => {
+    const r = await request(app).get('/api')
     expect(r.status).toBe(200)
     expect(r.body?.name).toBe('SIGEDIVO (Sistema de Gestión para el Disco Volador) API')
     expect(r.body?.ok).toBe(true)
