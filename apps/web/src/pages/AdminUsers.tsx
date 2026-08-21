@@ -4,7 +4,36 @@ import { useAuth } from '../contexts/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
 import { http, adminUsersApi, usersApi } from '../lib/api'
 
-interface UserItem { id: number; email: string; name?: string; roles: string[]; playerId: number | null; teamId?: number | null; teamName?: string | null; status?: string; createdAt?: string }
+interface UserItem { 
+  id: number; 
+  email: string; 
+  name?: string; 
+  roles: string[]; 
+  playerId: number | null; 
+  teamId?: number | null; 
+  teamName?: string | null; 
+  status?: string; 
+  createdAt?: string 
+}
+
+export const SYSTEM_ROLES = [
+  { id: 'admin', label: 'Admin', description: 'Acceso total y configuración del sistema', badgeColor: 'bg-red-100 text-red-800 border-red-200' },
+  { id: 'directiva', label: 'Directiva', description: 'Gestión institucional, eventos, equipos y supervisión', badgeColor: 'bg-purple-100 text-purple-800 border-purple-200' },
+  { id: 'coach', label: 'Entrenador', description: 'Tácticas, jugadas, convocatorias y estadísticas deportivas', badgeColor: 'bg-amber-100 text-amber-800 border-amber-200' },
+  { id: 'captain', label: 'Capitán', description: 'Roster de partido, alineaciones O/D y mesa técnica', badgeColor: 'bg-blue-100 text-blue-800 border-blue-200' },
+  { id: 'treasurer', label: 'Tesorero', description: 'Finanzas, cuentas, ingresos, egresos y balances', badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+  { id: 'annotator', label: 'Anotador', description: 'Oficial de mesa técnica para actas de partido en vivo', badgeColor: 'bg-teal-100 text-teal-800 border-teal-200' },
+  { id: 'player', label: 'Jugador', description: 'Atleta registrado con ficha deportiva y eventos', badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
+  { id: 'guest', label: 'Refuerzo', description: 'Invitado / Refuerzo temporal con acceso acotado', badgeColor: 'bg-gray-100 text-gray-800 border-gray-200' },
+] as const
+
+export function getRoleBadge(roleName: string) {
+  const found = SYSTEM_ROLES.find(r => r.id === roleName)
+  if (found) {
+    return { label: found.label, badgeColor: found.badgeColor }
+  }
+  return { label: roleName, badgeColor: 'bg-gray-100 text-gray-700 border-gray-200' }
+}
 
 export default function AdminUsers() {
   const toast = useToast()
@@ -26,7 +55,7 @@ export default function AdminUsers() {
   const [requestSaved, setRequestSaved] = useState<Record<number, boolean>>({})
   const [pendingUsers, setPendingUsers] = useState<UserItem[]>([])
   const [pendingLoading, setPendingLoading] = useState(false)
-  const [approveRole, setApproveRole] = useState<Record<number, 'guest' | 'player' | 'admin' | 'captain' | 'coach' | 'treasurer'>>({})
+  const [approveRole, setApproveRole] = useState<Record<number, string>>({})
   const [approvePlayerId, setApprovePlayerId] = useState<Record<number, string>>({})
   const [approving, setApproving] = useState<Record<number, boolean>>({})
   const [showPlayerForm, setShowPlayerForm] = useState<Record<number, boolean>>({})
@@ -35,15 +64,20 @@ export default function AdminUsers() {
   const [deleting, setDeleting] = useState<Record<number, boolean>>({})
   const [confirmState, setConfirmState] = useState<{ title: string; message: string; confirmText: string; onYes: () => void } | null>(null)
 
+  // Multi-role edit modal state
+  const [editingRolesUser, setEditingRolesUser] = useState<UserItem | null>(null)
+  const [selectedRolesForEdit, setSelectedRolesForEdit] = useState<string[]>([])
+  const [savingRoles, setSavingRoles] = useState(false)
+  const [showRoleGuide, setShowRoleGuide] = useState(false)
+
   const loadPendingUsers = async () => {
     setPendingLoading(true)
     try {
       const data = await usersApi.list('PENDING')
       setPendingUsers(data)
-      const initRole: Record<number, 'guest' | 'player' | 'admin' | 'captain' | 'coach' | 'treasurer'> = {}
+      const initRole: Record<number, string> = {}
       const initPlayer: Record<number, string> = {}
       for (const u of data) {
-        // Por defecto, todos los usuarios nuevos empiezan como jugadores del equipo
         initRole[u.id] = 'player'
         initPlayer[u.id] = ''
       }
@@ -57,7 +91,6 @@ export default function AdminUsers() {
   }
 
   const handleApproveUser = async (id: number) => {
-    // Si el rol es 'player' y no hay playerId, mostrar formulario de datos de jugador
     const role = approveRole[id] || 'player'
     const hasPlayerId = approvePlayerId[id] && approvePlayerId[id].trim() !== ''
     const shouldShowForm = role === 'player' && !hasPlayerId && !showPlayerForm[id]
@@ -72,12 +105,9 @@ export default function AdminUsers() {
     try {
       const payload: any = { role }
       
-      // Si hay playerId, usarlo
       if (hasPlayerId) {
         payload.playerId = Number(approvePlayerId[id])
-      } 
-      // Si hay datos de jugador en el formulario, usarlos
-      else if (showPlayerForm[id] && playerData[id]) {
+      } else if (showPlayerForm[id] && playerData[id]) {
         const data = playerData[id]
         if (!data.number || !data.position) {
           toast.showErrorToast('Número y posición son requeridos para crear jugador')
@@ -102,12 +132,42 @@ export default function AdminUsers() {
         return newData
       })
       await loadPendingUsers()
-      await load() // Reload all users
+      await load()
     } catch (e: any) {
       const errorMsg = e?.response?.data?.error || 'No se pudo aprobar el usuario'
       toast.showErrorToast(errorMsg)
     } finally {
       setApproving(prev => ({ ...prev, [id]: false }))
+    }
+  }
+
+  const handleOpenRoleModal = (user: UserItem) => {
+    setEditingRolesUser(user)
+    setSelectedRolesForEdit(Array.from(new Set(user.roles || [])))
+  }
+
+  const handleToggleRoleForEdit = (roleId: string) => {
+    setSelectedRolesForEdit(prev => {
+      if (prev.includes(roleId)) {
+        return prev.filter(r => r !== roleId)
+      } else {
+        return [...prev, roleId]
+      }
+    })
+  }
+
+  const handleSaveUserRoles = async () => {
+    if (!editingRolesUser) return
+    setSavingRoles(true)
+    try {
+      await adminUsersApi.setRoles(editingRolesUser.id, selectedRolesForEdit)
+      toast.showSuccessToast(`Roles actualizados para ${editingRolesUser.email}`)
+      setEditingRolesUser(null)
+      await load()
+    } catch (err: any) {
+      toast.showErrorToast(err?.response?.data?.error || 'No se pudieron actualizar los roles')
+    } finally {
+      setSavingRoles(false)
     }
   }
 
@@ -241,219 +301,282 @@ export default function AdminUsers() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Admin: Usuarios</h2>
-          <p className="text-sm text-gray-600">Gestión de roles, vinculación de atletas y aprobación de cuentas</p>
+          <h2 className="text-2xl font-bold text-gray-800">Admin: Usuarios & Roles</h2>
+          <p className="text-sm text-gray-600">Gestión integral de roles, permisos, vinculación de atletas y control de acceso para Beta</p>
         </div>
+        <button
+          onClick={() => setShowRoleGuide(!showRoleGuide)}
+          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition-colors"
+        >
+          <span>{showRoleGuide ? '📖 Ocultar Guía de Roles' : '📖 Ver Matriz de Roles y Categorías'}</span>
+        </button>
       </div>
+
       {error && <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded p-3 text-sm">{error}</div>}
+
+      {/* Role & Category Architecture Guide for Beta */}
+      {showRoleGuide && (
+        <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-xl p-5 shadow-xl space-y-4">
+          <div className="flex items-center justify-between border-b border-indigo-800/80 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🛡️</span>
+              <div>
+                <h3 className="font-bold text-lg text-white">Matriz de Roles, Permisos y Categorías (Beta)</h3>
+                <p className="text-xs text-indigo-200">Arquitectura de control de acceso, estados persistentes vs dinámicos</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowRoleGuide(false)}
+              className="text-xs text-indigo-300 hover:text-white bg-indigo-800/50 px-2.5 py-1 rounded"
+            >
+              Cerrar
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div className="bg-indigo-950/60 border border-indigo-800/60 rounded-lg p-3 space-y-2">
+              <h4 className="font-semibold text-emerald-300 flex items-center gap-1.5 text-sm">
+                <span>📌</span> Roles Estructurales (Persistentes)
+              </h4>
+              <ul className="space-y-1.5 text-gray-300">
+                <li><strong className="text-white">👑 Admin:</strong> Control total, configuración, finanzas, borrado irreversible y monitoreo.</li>
+                <li><strong className="text-white">🏛️ Directiva:</strong> Gestión institucional, eventos, equipos, supervisión de nóminas y aprobaciones.</li>
+                <li><strong className="text-white">📋 Entrenador (Coach):</strong> Tácticas, jugadas, convocatorias, alineaciones y estadísticas.</li>
+                <li><strong className="text-white">🎖️ Capitán:</strong> Roster de partido, alineaciones O/D, jugadas y apoyo a mesa técnica.</li>
+                <li><strong className="text-white">💰 Tesorero:</strong> Módulo de finanzas, cuentas, ingresos, egresos y balances contables.</li>
+                <li><strong className="text-white">📝 Anotador:</strong> Mesa técnica acreditada para actas y estadísticas en vivo.</li>
+                <li><strong className="text-white">🏃 Jugador:</strong> Atleta registrado con ficha deportiva (número, posición) y eventos.</li>
+                <li><strong className="text-white">🤝 Refuerzo (Guest):</strong> Invitado temporal con acceso acotado y vista de eventos convocados.</li>
+              </ul>
+            </div>
+
+            <div className="bg-indigo-950/60 border border-indigo-800/60 rounded-lg p-3 space-y-2">
+              <h4 className="font-semibold text-cyan-300 flex items-center gap-1.5 text-sm">
+                <span>⚡</span> Funciones Dinámicas (Activar / Desactivar)
+              </h4>
+              <ul className="space-y-2 text-gray-300">
+                <li>
+                  <strong className="text-white">Modo Jugador Activo:</strong> Cualquier usuario (coach, capitán, etc.) puede activar o desactivar su condición de atleta activo en <em className="text-indigo-200">Mi Perfil → Seguridad</em> para entrar o salir de las listas de convocatorias sin perder su ficha deportiva.
+                </li>
+                <li>
+                  <strong className="text-white">Mesa Técnica por Evento:</strong> La responsabilidad de mesa técnica se asigna o releva dinámicamente por evento/partido sin requerir cambiar el rol base del usuario en la base de datos.
+                </li>
+                <li>
+                  <strong className="text-white">Categorías Deportivas:</strong> OPEN, MIXTO, FEMENINO, JUVENIL y MASTER cuentan con aislamiento y estadísticas filtrables por equipo y división.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pending Users Section */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-4 py-2 border-b bg-yellow-50">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium text-gray-800">Usuarios Pendientes de Aprobación</div>
-              <div className="text-sm text-gray-600 mt-1">Usuarios que se han registrado y esperan aprobación del administrador</div>
-            </div>
-            {pendingUsers.length > 0 && (
-              <span className="bg-yellow-500 text-white rounded-full px-3 py-1 text-sm font-semibold">
-                {pendingUsers.length}
-              </span>
-            )}
+        <div className="px-4 py-3 border-b bg-yellow-50 flex items-center justify-between">
+          <div>
+            <div className="font-semibold text-gray-800">Usuarios Pendientes de Aprobación</div>
+            <div className="text-xs text-gray-600">Usuarios registrados que esperan asignación de rol y confirmación de acceso</div>
           </div>
+          {pendingUsers.length > 0 && (
+            <span className="bg-yellow-500 text-white rounded-full px-2.5 py-0.5 text-xs font-bold">
+              {pendingUsers.length} pendientes
+            </span>
+          )}
         </div>
-        <div className="overflow-x-auto -mx-4 sm:mx-0">
-          <div className="inline-block min-w-full align-middle sm:px-0">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left px-2 sm:px-4 py-2">Email</th>
-                  <th className="text-left px-2 sm:px-4 py-2">Nombre</th>
-                  <th className="text-left px-2 sm:px-4 py-2 hidden md:table-cell">Fecha Registro</th>
-                  <th className="text-left px-2 sm:px-4 py-2">Rol</th>
-                  <th className="px-2 sm:px-4 py-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {pendingUsers.map(u => (
-                  <React.Fragment key={u.id}>
-                    <tr className="border-t">
-                      <td className="px-2 sm:px-4 py-2 break-words">{u.email}</td>
-                      <td className="px-2 sm:px-4 py-2">{u.name || '-'}</td>
-                      <td className="px-2 sm:px-4 py-2 hidden md:table-cell">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}</td>
-                      <td className="px-2 sm:px-4 py-2">
-                        <select
-                          className="border rounded px-2 py-1 w-full sm:w-auto text-xs sm:text-sm"
-                          value={approveRole[u.id] || 'player'}
-                          onChange={(e) => {
-                            setApproveRole(prev => ({
-                              ...prev,
-                              [u.id]: e.target.value as 'guest' | 'player' | 'admin' | 'captain' | 'coach' | 'treasurer'
-                            }))
-                            // Si cambia el rol y no es player, ocultar formulario
-                            if (e.target.value !== 'player') {
-                              setShowPlayerForm(prev => ({ ...prev, [u.id]: false }))
-                            }
-                          }}
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-left px-4 py-2">Email</th>
+                <th className="text-left px-4 py-2">Nombre</th>
+                <th className="text-left px-4 py-2 hidden md:table-cell">Fecha Registro</th>
+                <th className="text-left px-4 py-2">Rol a Asignar</th>
+                <th className="px-4 py-2 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pendingUsers.map(u => (
+                <React.Fragment key={u.id}>
+                  <tr className="border-t">
+                    <td className="px-4 py-2 font-medium">{u.email}</td>
+                    <td className="px-4 py-2">{u.name || '-'}</td>
+                    <td className="px-4 py-2 hidden md:table-cell text-xs text-gray-500">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}</td>
+                    <td className="px-4 py-2">
+                      <select
+                        className="border rounded px-2 py-1 text-xs sm:text-sm bg-white font-medium text-gray-800"
+                        value={approveRole[u.id] || 'player'}
+                        onChange={(e) => {
+                          setApproveRole(prev => ({
+                            ...prev,
+                            [u.id]: e.target.value
+                          }))
+                          if (e.target.value !== 'player') {
+                            setShowPlayerForm(prev => ({ ...prev, [u.id]: false }))
+                          }
+                        }}
+                      >
+                        <option value="player">🏃 Jugador</option>
+                        <option value="captain">🎖️ Capitán</option>
+                        <option value="coach">📋 Entrenador</option>
+                        <option value="directiva">🏛️ Directiva</option>
+                        <option value="treasurer">💰 Tesorero</option>
+                        <option value="annotator">📝 Anotador</option>
+                        <option value="admin">👑 Admin</option>
+                        <option value="guest">🤝 Refuerzo</option>
+                      </select>
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          className="px-3 py-1 bg-emerald-600 text-white rounded text-xs sm:text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                          disabled={!!approving[u.id]}
+                          onClick={() => handleApproveUser(u.id)}
                         >
-                          <option value="guest">Refuerzo</option>
-                          <option value="player">Jugador</option>
-                          <option value="admin">Admin</option>
-                          <option value="captain">Capitán</option>
-                          <option value="coach">Entrenador</option>
-                          <option value="treasurer">Tesorero</option>
-                        </select>
-                      </td>
-                      <td className="px-2 sm:px-4 py-2">
-                        <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 sm:justify-end">
-                          <button
-                            className="px-2 sm:px-3 py-1 bg-emerald-600 text-white rounded disabled:opacity-50 text-xs sm:text-sm whitespace-nowrap"
-                            disabled={!!approving[u.id]}
-                            onClick={() => handleApproveUser(u.id)}
-                          >
-                            {approving[u.id] ? 'Aprobando…' : 'Aprobar'}
-                          </button>
-                          <button
-                            className="px-2 sm:px-3 py-1 bg-rose-600 text-white rounded disabled:opacity-50 text-xs sm:text-sm whitespace-nowrap"
-                            disabled={!!approving[u.id]}
-                            onClick={() => handleRejectUser(u.id)}
-                          >
-                            {approving[u.id] ? 'Rechazando…' : 'Rechazar'}
-                          </button>
+                          {approving[u.id] ? 'Aprobando…' : 'Aprobar'}
+                        </button>
+                        <button
+                          className="px-3 py-1 bg-rose-600 text-white rounded text-xs sm:text-sm font-medium hover:bg-rose-700 disabled:opacity-50 transition-colors"
+                          disabled={!!approving[u.id]}
+                          onClick={() => handleRejectUser(u.id)}
+                        >
+                          {approving[u.id] ? 'Rechazando…' : 'Rechazar'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {showPlayerForm[u.id] && (
+                    <tr className="border-t bg-indigo-50/70">
+                      <td colSpan={5} className="px-4 py-3">
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-indigo-900 text-sm">Crear Ficha Deportiva del Atleta</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Camiseta # <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="number"
+                                min="1"
+                                required
+                                className="w-full border rounded px-2.5 py-1.5 text-sm bg-white"
+                                value={playerData[u.id]?.number || ''}
+                                onChange={e => {
+                                  const val = e.target.value
+                                  if (val === '' || (Number(val) > 0 && Number.isInteger(Number(val)))) {
+                                    setPlayerData(prev => ({
+                                      ...prev,
+                                      [u.id]: { ...(prev[u.id] || { number: '', position: 'CUTTER', heightCm: '', experience: '' }), number: val }
+                                    }))
+                                  }
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Posición <span className="text-red-500">*</span>
+                              </label>
+                              <select
+                                className="w-full border rounded px-2.5 py-1.5 text-sm bg-white"
+                                value={playerData[u.id]?.position || 'CUTTER'}
+                                onChange={e => setPlayerData(prev => ({
+                                  ...prev,
+                                  [u.id]: { ...(prev[u.id] || { number: '', position: 'CUTTER', heightCm: '', experience: '' }), position: e.target.value as any }
+                                }))}
+                              >
+                                <option value="CUTTER">Cortador (Cutter)</option>
+                                <option value="HANDLER">Manejador (Handler)</option>
+                                <option value="HYBRID">Híbrido (Hybrid)</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Altura (cm) <span className="text-gray-400 text-xs">(opcional)</span>
+                              </label>
+                              <input
+                                type="number"
+                                min="1"
+                                className="w-full border rounded px-2.5 py-1.5 text-sm bg-white"
+                                value={playerData[u.id]?.heightCm || ''}
+                                onChange={e => {
+                                  const val = e.target.value
+                                  if (val === '' || (Number(val) > 0 && Number.isInteger(Number(val)))) {
+                                    setPlayerData(prev => ({
+                                      ...prev,
+                                      [u.id]: { ...(prev[u.id] || { number: '', position: 'CUTTER', heightCm: '', experience: '' }), heightCm: val }
+                                    }))
+                                  }
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Experiencia <span className="text-gray-400 text-xs">(opcional)</span>
+                              </label>
+                              <input
+                                type="text"
+                                className="w-full border rounded px-2.5 py-1.5 text-sm bg-white"
+                                value={playerData[u.id]?.experience || ''}
+                                onChange={e => setPlayerData(prev => ({
+                                  ...prev,
+                                  [u.id]: { ...(prev[u.id] || { number: '', position: 'CUTTER', heightCm: '', experience: '' }), experience: e.target.value }
+                                }))}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              className="px-3 py-1.5 bg-emerald-600 text-white rounded text-xs font-medium hover:bg-emerald-700"
+                              onClick={() => handleApproveUser(u.id)}
+                              disabled={!!approving[u.id] || !playerData[u.id]?.number || !playerData[u.id]?.position}
+                            >
+                              {approving[u.id] ? 'Aprobando…' : 'Confirmar y Crear Ficha'}
+                            </button>
+                            <button
+                              className="px-3 py-1.5 bg-gray-400 text-white rounded text-xs font-medium hover:bg-gray-500"
+                              onClick={() => {
+                                setShowPlayerForm(prev => ({ ...prev, [u.id]: false }))
+                                setPlayerData(prev => {
+                                  const newData = { ...prev }
+                                  delete newData[u.id]
+                                  return newData
+                                })
+                              }}
+                            >
+                              Cancelar
+                            </button>
+                          </div>
                         </div>
                       </td>
                     </tr>
-                    {showPlayerForm[u.id] && (
-                      <tr className="border-t bg-indigo-50">
-                        <td colSpan={5} className="px-2 sm:px-4 py-4">
-                          <div className="space-y-3">
-                            <h4 className="font-medium text-indigo-900">Datos del Jugador</h4>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-sm font-medium mb-1">
-                                  Número <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                  type="number"
-                                  min="1"
-                                  required
-                                  className="w-full border rounded px-3 py-2"
-                                  value={playerData[u.id]?.number || ''}
-                                  onChange={e => {
-                                    const val = e.target.value
-                                    if (val === '' || (Number(val) > 0 && Number.isInteger(Number(val)))) {
-                                      setPlayerData(prev => ({
-                                        ...prev,
-                                        [u.id]: { ...(prev[u.id] || { number: '', position: 'CUTTER', heightCm: '', experience: '' }), number: val }
-                                      }))
-                                    }
-                                  }}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-1">
-                                  Posición <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                  className="w-full border rounded px-3 py-2"
-                                  value={playerData[u.id]?.position || 'CUTTER'}
-                                  onChange={e => setPlayerData(prev => ({
-                                    ...prev,
-                                    [u.id]: { ...(prev[u.id] || { number: '', position: 'CUTTER', heightCm: '', experience: '' }), position: e.target.value as any }
-                                  }))}
-                                >
-                                  <option value="CUTTER">Cortador</option>
-                                  <option value="HANDLER">Manejador</option>
-                                  <option value="HYBRID">Híbrido</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-1">
-                                  Altura (cm) <span className="text-gray-500 text-xs">(opcional)</span>
-                                </label>
-                                <input
-                                  type="number"
-                                  min="1"
-                                  className="w-full border rounded px-3 py-2"
-                                  value={playerData[u.id]?.heightCm || ''}
-                                  onChange={e => {
-                                    const val = e.target.value
-                                    if (val === '' || (Number(val) > 0 && Number.isInteger(Number(val)))) {
-                                      setPlayerData(prev => ({
-                                        ...prev,
-                                        [u.id]: { ...(prev[u.id] || { number: '', position: 'CUTTER', heightCm: '', experience: '' }), heightCm: val }
-                                      }))
-                                    }
-                                  }}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-1">
-                                  Experiencia <span className="text-gray-500 text-xs">(opcional)</span>
-                                </label>
-                                <input
-                                  type="text"
-                                  className="w-full border rounded px-3 py-2"
-                                  value={playerData[u.id]?.experience || ''}
-                                  onChange={e => setPlayerData(prev => ({
-                                    ...prev,
-                                    [u.id]: { ...(prev[u.id] || { number: '', position: 'CUTTER', heightCm: '', experience: '' }), experience: e.target.value }
-                                  }))}
-                                />
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm"
-                                onClick={() => handleApproveUser(u.id)}
-                                disabled={!!approving[u.id] || !playerData[u.id]?.number || !playerData[u.id]?.position}
-                              >
-                                {approving[u.id] ? 'Aprobando…' : 'Aprobar con estos datos'}
-                              </button>
-                              <button
-                                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
-                                onClick={() => {
-                                  setShowPlayerForm(prev => ({ ...prev, [u.id]: false }))
-                                  setPlayerData(prev => {
-                                    const newData = { ...prev }
-                                    delete newData[u.id]
-                                    return newData
-                                  })
-                                }}
-                              >
-                                Cancelar
-                              </button>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                ))}
-                {pendingLoading && (
-                  <tr><td className="px-4 py-6 text-center text-gray-500" colSpan={6}>Cargando…</td></tr>
-                )}
-                {!pendingLoading && pendingUsers.length === 0 && (
-                  <tr><td className="px-4 py-6 text-center text-gray-500" colSpan={6}>No hay usuarios pendientes</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                  )}
+                </React.Fragment>
+              ))}
+              {pendingLoading && (
+                <tr><td className="px-4 py-6 text-center text-gray-500" colSpan={5}>Cargando pendientes…</td></tr>
+              )}
+              {!pendingLoading && pendingUsers.length === 0 && (
+                <tr><td className="px-4 py-6 text-center text-gray-500" colSpan={5}>No hay usuarios pendientes de aprobación</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
+      {/* All Users Section */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-4 py-2 border-b bg-gray-50 flex items-center justify-between">
-          <div className="font-medium">Todos los Usuarios</div>
+        <div className="px-4 py-3 border-b bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <div className="font-semibold text-gray-800">Todos los Usuarios Registrados</div>
+            <div className="text-xs text-gray-500">Asignación de multi-roles, vinculación deportiva y control de equipo</div>
+          </div>
           <select
-            className="border rounded px-2 py-1 text-sm"
+            className="border rounded px-2.5 py-1 text-xs sm:text-sm bg-white"
             value={userStatusFilter}
             onChange={(e) => {
               setUserStatusFilter(e.target.value as 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED')
-              load()
             }}
           >
             <option value="ALL">Todos los estados</option>
@@ -462,119 +585,133 @@ export default function AdminUsers() {
             <option value="REJECTED">Rechazados</option>
           </select>
         </div>
+
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="text-left px-4 py-2">Email</th>
-              <th className="text-left px-4 py-2">Nombre</th>
-              <th className="text-left px-4 py-2">Estado</th>
-              <th className="text-left px-4 py-2">Roles</th>
-              <th className="text-left px-4 py-2">Equipo</th>
-              <th className="text-left px-4 py-2">PlayerId</th>
-              <th className="px-4 py-2"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(u => (
-              <tr key={u.id} className="border-t">
-                <td className="px-4 py-2">{u.email}</td>
-                <td className="px-4 py-2">{u.name || ''}</td>
-                <td className="px-4 py-2">
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    u.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                    u.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                    u.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {u.status || 'APPROVED'}
-                  </span>
-                </td>
-                <td className="px-4 py-2">
-                  <div className="flex flex-wrap gap-1 text-xs sm:text-sm">
-                    {u.roles.length === 0 && (
-                      <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-600">Sin rol</span>
-                    )}
-                    {Array.from(new Set(u.roles)).map((r, idx) => (
-                      <span key={`${u.id}-${r}-${idx}`} className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        {r === 'guest' ? 'Refuerzo' :
-                         r === 'player' ? 'Jugador' :
-                         r === 'admin' ? 'Admin' :
-                         r === 'captain' ? 'Capitán' :
-                         r === 'coach' ? 'Entrenador' :
-                         r === 'treasurer' ? 'Tesorero' :
-                         r}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td className="px-4 py-2">
-                  <select
-                    className="border rounded px-2 py-1 text-sm w-full"
-                    value={teamSelection[u.id] || (u.teamId ? String(u.teamId) : '')}
-                    onChange={async (e) => {
-                      const newTeamId = e.target.value ? Number(e.target.value) : null;
-                      setTeamSelection(prev => ({ ...prev, [u.id]: e.target.value }));
-                      try {
-                        await http.put(`/api/users/${u.id}/team`, { teamId: newTeamId });
-                        toast.showSuccessToast('Equipo asignado correctamente');
-                        load();
-                      } catch (err: any) {
-                        toast.showErrorToast(err?.response?.data?.error || 'Error al asignar equipo');
-                      }
-                    }}
-                  >
-                    <option value="">Sin equipo</option>
-                    {teams.map((t: any) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
-                </td>
-                <td className="px-4 py-2">
-                  <input
-                    className="border rounded px-2 py-1 w-24"
-                    value={playerId[u.id] || ''}
-                    onChange={(e) => setPlayerId(prev => ({ ...prev, [u.id]: e.target.value }))}
-                    placeholder="id"
-                    disabled={!!u.playerId}
-                  />
-                </td>
-                <td className="px-4 py-2 text-right">
-                  <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 sm:justify-end">
-                    <button
-                      className="px-2 py-1 bg-emerald-600 text-white rounded text-xs sm:text-sm whitespace-nowrap disabled:opacity-50"
-                      onClick={() => saveLink(u.id)}
-                      disabled={!!u.playerId || !playerId[u.id]}
+            <thead className="bg-gray-50 text-gray-700">
+              <tr>
+                <th className="text-left px-4 py-2.5">Usuario</th>
+                <th className="text-left px-4 py-2.5">Estado</th>
+                <th className="text-left px-4 py-2.5">Roles Asignados</th>
+                <th className="text-left px-4 py-2.5">Equipo</th>
+                <th className="text-left px-4 py-2.5">Ficha / PlayerId</th>
+                <th className="px-4 py-2.5 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.id} className="border-t hover:bg-gray-50/80 transition-colors">
+                  <td className="px-4 py-2.5">
+                    <div className="font-medium text-gray-900">{u.email}</div>
+                    {u.name && <div className="text-xs text-gray-500">{u.name}</div>}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                      u.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                      u.status === 'PENDING' ? 'bg-amber-100 text-amber-800' :
+                      u.status === 'REJECTED' ? 'bg-rose-100 text-rose-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {u.status || 'APPROVED'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {u.roles.length === 0 && (
+                        <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-500 text-xs">Sin rol</span>
+                      )}
+                      {Array.from(new Set(u.roles)).map((r, idx) => {
+                        const badge = getRoleBadge(r)
+                        return (
+                          <span 
+                            key={`${u.id}-${r}-${idx}`} 
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium border ${badge.badgeColor}`}
+                          >
+                            {badge.label}
+                          </span>
+                        )
+                      })}
+                      <button
+                        onClick={() => handleOpenRoleModal(u)}
+                        className="ml-1 text-xs text-indigo-600 hover:text-indigo-800 hover:underline font-medium inline-flex items-center gap-0.5"
+                        title="Modificar roles de este usuario"
+                      >
+                        <span>✏️ Editar</span>
+                      </button>
+                    </div>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <select
+                      className="border rounded px-2 py-1 text-xs bg-white w-full min-w-[120px]"
+                      value={teamSelection[u.id] || (u.teamId ? String(u.teamId) : '')}
+                      onChange={async (e) => {
+                        const newTeamId = e.target.value ? Number(e.target.value) : null;
+                        setTeamSelection(prev => ({ ...prev, [u.id]: e.target.value }));
+                        try {
+                          await http.put(`/api/users/${u.id}/team`, { teamId: newTeamId });
+                          toast.showSuccessToast('Equipo asignado correctamente');
+                          load();
+                        } catch (err: any) {
+                          toast.showErrorToast(err?.response?.data?.error || 'Error al asignar equipo');
+                        }
+                      }}
                     >
-                      Vincular
-                    </button>
+                      <option value="">Sin equipo</option>
+                      {teams.map((t: any) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center gap-1">
+                      <input
+                        className="border rounded px-2 py-1 w-16 text-xs"
+                        value={playerId[u.id] || ''}
+                        onChange={(e) => setPlayerId(prev => ({ ...prev, [u.id]: e.target.value }))}
+                        placeholder="id"
+                        disabled={!!u.playerId}
+                      />
+                      <button
+                        className="px-2 py-1 bg-indigo-600 text-white rounded text-xs disabled:opacity-40 hover:bg-indigo-700 transition-colors"
+                        onClick={() => saveLink(u.id)}
+                        disabled={!!u.playerId || !playerId[u.id]}
+                        title="Vincular a ficha de atleta"
+                      >
+                        {u.playerId ? '✓' : 'Link'}
+                      </button>
+                    </div>
+                  </td>
+                  <td className="px-4 py-2.5 text-right">
                     <button
-                      className="px-2 py-1 bg-red-600 text-white rounded text-xs sm:text-sm whitespace-nowrap disabled:opacity-50 hover:bg-red-700"
+                      className="px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs hover:bg-red-100 disabled:opacity-50 transition-colors"
                       onClick={() => handleDeleteUser(u.id)}
                       disabled={!!deleting[u.id]}
-                      title="Eliminar usuario permanentemente"
+                      title="Eliminar usuario"
                     >
-                      {deleting[u.id] ? 'Eliminando…' : '🗑️ Eliminar'}
+                      {deleting[u.id] ? '…' : '🗑️ Eliminar'}
                     </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {users.length === 0 && !loading && (
-              <tr><td className="px-4 py-6 text-center text-gray-500" colSpan={5}>Sin usuarios</td></tr>
-            )}
-          </tbody>
-        </table>
+                  </td>
+                </tr>
+              ))}
+              {users.length === 0 && !loading && (
+                <tr><td className="px-4 py-6 text-center text-gray-500" colSpan={6}>Sin usuarios</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
+      {/* Role Requests Section */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-4 py-2 border-b bg-gray-50 flex items-center justify-between">
-          <div className="font-medium">Solicitudes de rol</div>
-          <div className="text-sm flex items-center gap-2">
+        <div className="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
+          <div>
+            <div className="font-semibold text-gray-800">Solicitudes de Rol</div>
+            <div className="text-xs text-gray-500">Peticiones de atletas y miembros para ascensos o vinculaciones</div>
+          </div>
+          <div className="text-xs flex items-center gap-2">
             <span className="text-gray-600">Estado:</span>
             <select
-              className="border rounded px-2 py-1"
+              className="border rounded px-2 py-1 bg-white"
               value={requestStatus}
               onChange={(e) => setRequestStatus(e.target.value as 'PENDING'|'APPROVED'|'DENIED')}
             >
@@ -586,113 +723,176 @@ export default function AdminUsers() {
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="text-left px-4 py-2">ID</th>
-              <th className="text-left px-4 py-2">Usuario</th>
-              <th className="text-left px-4 py-2">Rol</th>
-              <th className="text-left px-4 py-2">Estado</th>
-              <th className="text-left px-4 py-2">PlayerId</th>
-              <th className="text-left px-4 py-2">Nota</th>
-              <th className="px-4 py-2"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {requests.map((r: any) => (
-              <tr key={r.id} className="border-t" data-testid={`role-req-row-${r.id}`}>
-                <td className="px-4 py-2">{r.id}</td>
-                <td className="px-4 py-2">{r.user?.email}</td>
-                <td className="px-4 py-2">{r.role}</td>
-                <td className="px-4 py-2">{r.status}</td>
-                <td className="px-4 py-2">
-                  {r.status === 'PENDING' ? (
-                    <input
-                      data-testid={`role-req-playerId-${r.id}`}
-                      className="border rounded px-2 py-1 w-24"
-                      value={requestPlayerId[r.id] || ''}
-                      onChange={(e) => setRequestPlayerId(prev => ({ ...prev, [r.id]: e.target.value }))}
-                      placeholder="id"
-                    />
-                  ) : (
-                    r.playerId ?? ''
-                  )}
-                </td>
-                <td className="px-4 py-2">
-                  {r.status === 'PENDING' ? (
-                    <input
-                      data-testid={`role-req-note-${r.id}`}
-                      className="border rounded px-2 py-1 w-56"
-                      value={requestNote[r.id] || ''}
-                      onChange={(e) => setRequestNote(prev => ({ ...prev, [r.id]: e.target.value }))}
-                      placeholder="nota"
-                    />
-                  ) : (
-                    r.note ?? ''
-                  )}
-                </td>
-                <td className="px-4 py-2 text-right">
-                  {r.status === 'PENDING' && (
-                    <>
-                      <div className="flex flex-col items-end gap-1 mb-1">
-                        {requestError[r.id] && (
-                          <div className="text-rose-600 text-xs">{requestError[r.id]}</div>
-                        )}
-                        {requestSaved[r.id] && !requestError[r.id] && (
-                          <div className="text-emerald-700 text-xs">Guardado</div>
-                        )}
-                      </div>
-                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 sm:justify-end">
-                      <button
-                        data-testid={`role-req-save-${r.id}`}
-                        className={`px-2 py-1 rounded text-xs sm:text-sm whitespace-nowrap ${requestSaving[r.id] ? 'bg-gray-300 text-gray-500' : 'bg-gray-200 text-gray-800'}`}
-                        disabled={!!requestSaving[r.id]}
-                        onClick={async () => {
-                        const raw = requestPlayerId[r.id]
-                          // Validate: allow blank or positive integer
-                          if (raw && !/^[1-9]\d*$/.test(raw)) {
-                            setRequestError(prev => ({ ...prev, [r.id]: 'PlayerId inválido (usa un número entero positivo o deja vacío)' }))
-                            return
-                          }
-                          const pid = raw ? Number(raw) : null
-                        try {
-                          setRequestSaving(prev => ({ ...prev, [r.id]: true }))
-                          setRequestError(prev => ({ ...prev, [r.id]: null }))
-                          await adminUsersApi.updateRoleRequest(r.id, { playerId: pid, note: requestNote[r.id] ?? undefined })
-                          setRequestSaved(prev => ({ ...prev, [r.id]: true }))
-                          toast.showSuccessToast('Solicitud actualizada')
-                            // auto-clear success after a short delay
-                            setTimeout(() => {
-                              setRequestSaved(prev => ({ ...prev, [r.id]: false }))
-                            }, 1500)
-                          await loadRequests()
-                        } catch (e: any) {
-                          const msg = e?.response?.data?.error || 'No se pudo actualizar la solicitud'
-                          setRequestError(prev => ({ ...prev, [r.id]: msg }))
-                          toast.showErrorToast(msg)
-                        } finally {
-                          setRequestSaving(prev => ({ ...prev, [r.id]: false }))
-                        }
-                      }}>
-                        {requestSaving[r.id] ? 'Guardando…' : 'Guardar'}
-                      </button>
-                      <button className="px-2 py-1 bg-emerald-600 text-white rounded text-xs sm:text-sm whitespace-nowrap" onClick={async () => { await adminUsersApi.approveRoleRequest(r.id); toast.showSuccessToast('Solicitud aprobada'); await loadRequests() }}>Aprobar</button>
-                      <button className="px-2 py-1 bg-rose-600 text-white rounded text-xs sm:text-sm whitespace-nowrap" onClick={async () => { await adminUsersApi.denyRoleRequest(r.id); toast.showInfoToast('Solicitud denegada'); await loadRequests() }}>Denegar</button>
-                      </div>
-                    </>
-                  )}
-                </td>
+            <thead className="bg-gray-50 text-gray-700">
+              <tr>
+                <th className="text-left px-4 py-2">ID</th>
+                <th className="text-left px-4 py-2">Usuario</th>
+                <th className="text-left px-4 py-2">Rol Solicitado</th>
+                <th className="text-left px-4 py-2">Estado</th>
+                <th className="text-left px-4 py-2">PlayerId</th>
+                <th className="text-left px-4 py-2">Nota</th>
+                <th className="px-4 py-2 text-right"></th>
               </tr>
-            ))}
-            {requestsLoading && (
-              <tr><td className="px-4 py-6 text-center text-gray-500" colSpan={7}>Cargando…</td></tr>
-            )}
-            {!requestsLoading && requests.length === 0 && (
-              <tr><td className="px-4 py-6 text-center text-gray-500" colSpan={7}>Sin solicitudes</td></tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {requests.map((r: any) => (
+                <tr key={r.id} className="border-t" data-testid={`role-req-row-${r.id}`}>
+                  <td className="px-4 py-2 font-mono text-xs">{r.id}</td>
+                  <td className="px-4 py-2 font-medium">{r.user?.email}</td>
+                  <td className="px-4 py-2">
+                    <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-xs border border-indigo-100 font-medium">
+                      {r.role}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2">
+                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                      r.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' :
+                      r.status === 'PENDING' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
+                    }`}>
+                      {r.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2">
+                    {r.status === 'PENDING' ? (
+                      <input
+                        data-testid={`role-req-playerId-${r.id}`}
+                        className="border rounded px-2 py-1 w-20 text-xs"
+                        value={requestPlayerId[r.id] || ''}
+                        onChange={(e) => setRequestPlayerId(prev => ({ ...prev, [r.id]: e.target.value }))}
+                        placeholder="id"
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-600">{r.playerId ?? '-'}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2">
+                    {r.status === 'PENDING' ? (
+                      <input
+                        data-testid={`role-req-note-${r.id}`}
+                        className="border rounded px-2 py-1 w-48 text-xs"
+                        value={requestNote[r.id] || ''}
+                        onChange={(e) => setRequestNote(prev => ({ ...prev, [r.id]: e.target.value }))}
+                        placeholder="nota administrativa"
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-600">{r.note ?? '-'}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2 text-right">
+                    {r.status === 'PENDING' && (
+                      <div className="flex gap-1.5 justify-end">
+                        <button
+                          className="px-2.5 py-1 bg-emerald-600 text-white rounded text-xs hover:bg-emerald-700 transition-colors"
+                          onClick={async () => { 
+                            await adminUsersApi.approveRoleRequest(r.id); 
+                            toast.showSuccessToast('Solicitud aprobada'); 
+                            await loadRequests() 
+                          }}
+                        >
+                          Aprobar
+                        </button>
+                        <button
+                          className="px-2.5 py-1 bg-rose-600 text-white rounded text-xs hover:bg-rose-700 transition-colors"
+                          onClick={async () => { 
+                            await adminUsersApi.denyRoleRequest(r.id); 
+                            toast.showInfoToast('Solicitud denegada'); 
+                            await loadRequests() 
+                          }}
+                        >
+                          Denegar
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {requestsLoading && (
+                <tr><td className="px-4 py-6 text-center text-gray-500" colSpan={7}>Cargando solicitudes…</td></tr>
+              )}
+              {!requestsLoading && requests.length === 0 && (
+                <tr><td className="px-4 py-6 text-center text-gray-500" colSpan={7}>Sin solicitudes de rol</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
+
+      {/* Multi-Role Management Modal */}
+      {editingRolesUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 bg-gradient-to-r from-indigo-900 to-slate-900 text-white flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold">Asignación de Roles del Sistema</h3>
+                <p className="text-xs text-indigo-200">{editingRolesUser.email} {editingRolesUser.name ? `(${editingRolesUser.name})` : ''}</p>
+              </div>
+              <button
+                onClick={() => setEditingRolesUser(null)}
+                className="text-indigo-300 hover:text-white text-lg font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <p className="text-xs text-gray-600">
+                Selecciona uno o múltiples roles para este usuario. Cada rol otorga capacidades específicas que se combinan armónicamente:
+              </p>
+
+              <div className="space-y-2.5">
+                {SYSTEM_ROLES.map(role => {
+                  const isChecked = selectedRolesForEdit.includes(role.id)
+                  return (
+                    <label
+                      key={role.id}
+                      className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                        isChecked 
+                          ? 'border-indigo-600 bg-indigo-50/60 shadow-xs' 
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => handleToggleRoleForEdit(role.id)}
+                        className="mt-1 h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm text-gray-900">{role.label}</span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${role.badgeColor}`}>
+                            {role.id}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5">{role.description}</p>
+                      </div>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-gray-50 border-t flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setEditingRolesUser(null)}
+                disabled={savingRoles}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveUserRoles}
+                disabled={savingRoles}
+                className="px-5 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 shadow-xs transition-colors"
+              >
+                {savingRoles ? 'Guardando Roles…' : 'Guardar Roles'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Confirm Modal */}
       {confirmState && (

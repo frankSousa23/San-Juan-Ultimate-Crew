@@ -10,14 +10,16 @@ export function NewsPostForm({
   onCancel,
 }: {
   post: NewsPost | null
-  onSave: (data: { title: string; content: string; category?: string; isPinned?: boolean; isPublished?: boolean }) => void
+  onSave: (data: { title: string; content: string; category?: string; isPinned?: boolean; isPublished?: boolean; commentsLocked?: boolean; eventId?: number | null }) => void
   onCancel: () => void
 }) {
   const [title, setTitle] = useState(post?.title || '')
   const [content, setContent] = useState(post?.content || '')
-  const [category, setCategory] = useState(post?.category || '')
+  const [category, setCategory] = useState(post?.category || '📢 Anuncios Oficiales')
   const [isPinned, setIsPinned] = useState(post?.isPinned || false)
   const [isPublished, setIsPublished] = useState(post?.isPublished !== false)
+  const [commentsLocked, setCommentsLocked] = useState(post?.commentsLocked || false)
+  const [eventId, setEventId] = useState<string>(post?.eventId ? String(post.eventId) : '')
   const [uploadingFiles, setUploadingFiles] = useState<File[]>([])
   const [uploadedFiles, setUploadedFiles] = useState<NewsPostFile[]>(post?.files || [])
   const [confirmState, setConfirmState] = useState<{ id: number; message: string; onYes: () => Promise<void> } | null>(null)
@@ -29,7 +31,15 @@ export function NewsPostForm({
       toasts.error('Título y contenido son requeridos')
       return
     }
-    onSave({ title: title.trim(), content: content.trim(), category: category.trim() || undefined, isPinned, isPublished })
+    onSave({
+      title: title.trim(),
+      content: content.trim(),
+      category: category.trim() || undefined,
+      isPinned,
+      isPublished,
+      commentsLocked,
+      eventId: eventId ? Number(eventId) : null,
+    })
   }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,30 +107,66 @@ export function NewsPostForm({
                 type="text"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg"
-                placeholder="Ej: Anuncios, Eventos, General"
+                className="w-full px-3 py-2 border rounded-lg mb-1.5"
+                placeholder="Ej: ⏱️ Eventualidad de Mesa Técnica, 🏆 Torneo / Eventos"
               />
+              <div className="flex flex-wrap gap-1">
+                {['⏱️ Eventualidad de Mesa Técnica', '🏆 Torneo / Eventos', '📢 Anuncios Oficiales', 'Entrenamiento'].map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCategory(c)}
+                    className="text-[11px] px-2 py-0.5 rounded bg-gray-100 hover:bg-purple-100 hover:text-purple-700 transition"
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={isPinned}
-                  onChange={(e) => setIsPinned(e.target.checked)}
-                  className="rounded"
-                />
-                <span className="text-sm text-gray-700">Fijar en la parte superior</span>
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={isPublished}
-                  onChange={(e) => setIsPublished(e.target.checked)}
-                  className="rounded"
-                />
-                <span className="text-sm text-gray-700">Publicar inmediatamente</span>
-              </label>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Vincular a Evento (Opcional)</label>
+              <input
+                type="number"
+                value={eventId}
+                onChange={(e) => setEventId(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg"
+                placeholder="ID del Evento (ej: 1, 2, 3...)"
+              />
+              <span className="text-[11px] text-gray-400 block mt-1">
+                Si se vincula, incluirá un enlace directo a la mesa técnica o evento en el calendario.
+              </span>
             </div>
+          </div>
+
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isPinned}
+                onChange={(e) => setIsPinned(e.target.checked)}
+                className="rounded text-purple-600 focus:ring-purple-500"
+              />
+              <span className="text-xs font-semibold text-gray-800">📌 Fijar en la parte superior</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isPublished}
+                onChange={(e) => setIsPublished(e.target.checked)}
+                className="rounded text-purple-600 focus:ring-purple-500"
+              />
+              <span className="text-xs font-semibold text-gray-800">🌐 Publicar inmediatamente</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={commentsLocked}
+                onChange={(e) => setCommentsLocked(e.target.checked)}
+                className="rounded text-rose-600 focus:ring-rose-500"
+              />
+              <span className="text-xs font-semibold text-rose-800">🔒 Cerrar comentarios</span>
+            </label>
           </div>
           {post && (
             <div>

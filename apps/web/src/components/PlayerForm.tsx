@@ -23,6 +23,7 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
     status: 'ACTIVE',
     heightCm: undefined,
     experience: '',
+    category: '',
     teamId: undefined,
   })
   const [submitting, setSubmitting] = useState(false)
@@ -41,10 +42,11 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
         status: initial.status,
         heightCm: initial.heightCm,
         experience: initial.experience ?? '',
+        category: initial.category ?? '',
         teamId: initial.teamId ?? undefined,
       })
     } else {
-      setForm({ name: '', number: 0, position: 'HYBRID', status: 'ACTIVE', heightCm: undefined, experience: '', teamId: undefined })
+      setForm({ name: '', number: 0, position: 'HYBRID', status: 'ACTIVE', heightCm: undefined, experience: '', category: '', teamId: undefined })
     }
   }, [mode, initial])
 
@@ -173,6 +175,15 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
             }}
             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
             placeholder="175"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-600 mb-1">Categoría</label>
+          <input
+            value={form.category ?? ''}
+            onChange={e => handleChange('category', e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            placeholder="Ej. Open Masculino"
           />
         </div>
         <div className="md:col-span-2">

@@ -18,7 +18,7 @@ export function AnnotationForm({
   onCancel: () => void
 }) {
   const [playerId, setPlayerId] = useState<number>(initial?.playerId || players[0]?.id || 0)
-  const [type, setType] = useState<AnnotationType>(initial?.type || 'GENERAL')
+  const [type, setType] = useState<AnnotationType>(initial?.type || 'GOAL')
   const [note, setNote] = useState<string>(initial?.note || '')
   const [timestamp, setTimestamp] = useState<string>(
     initial?.timestamp 

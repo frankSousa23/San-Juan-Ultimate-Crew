@@ -151,6 +151,53 @@ export default function About() {
           )}
         </form>
       </div>
+
+      {/* Recorrido y Donaciones */}
+      <div className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-slate-200 mt-8">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <span>🚀</span> Historia y Evolución de SIGEDIVO
+          </h2>
+        </div>
+        <div className="space-y-4 text-slate-600 leading-relaxed text-sm">
+          <p>
+            El proyecto <strong>SIGEDIVO</strong> comenzó como una herramienta modesta diseñada inicialmente para gestionar las métricas de un solo equipo local. Sin embargo, a medida que el ecosistema del Ultimate Frisbee creció y las necesidades de los atletas y entrenadores se volvieron más sofisticadas, el sistema evolucionó drásticamente.
+          </p>
+          <p>
+            Al principio, nos centramos en capturar la asistencia y contar pases básicos. Con el tiempo, reconocimos la necesidad imperativa de un sistema de estadísticas en tiempo real (pizarra táctica interactiva) para los partidos, capaz de rastrear no solo los puntos, sino los pases, las intercepciones y el desarrollo táctico del campo.
+          </p>
+          <p>
+            Hoy, en su estado actual, SIGEDIVO se ha convertido en una plataforma robusta <strong>multi-equipo y multi-división</strong>, completamente libre de datos simulados y operando en un entorno de producción beta real. Esto significa que diferentes clubes pueden coexistir en la plataforma, manejar roles (administradores, capitanes, cuerpo técnico) con permisos personalizados (RBAC), monitorear sus propias finanzas y hacer scouting de rivales, todo con los más altos estándares de rendimiento y seguridad.
+          </p>
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-slate-100">
+          <h3 className="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+            <span>❤️</span> Apoya el Proyecto
+          </h3>
+          <div className="bg-amber-50 rounded-xl p-5 border border-amber-100">
+            <p className="text-amber-800 text-sm font-medium mb-4">
+              Para donaciones personales tu contribución ayuda a mejorar el sistema, pagar hosting junto a dominio, a las direcciones de Binance franksousa4@hotmail.com y Paypal frankalfonso1988@gmail.com
+            </p>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-amber-200">
+                <span className="text-xl">💰</span>
+                <div>
+                  <div className="text-xs text-slate-500 font-bold uppercase tracking-wider">Binance</div>
+                  <div className="font-medium text-slate-800 font-mono">franksousa4@hotmail.com</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-amber-200">
+                <span className="text-xl">💳</span>
+                <div>
+                  <div className="text-xs text-slate-500 font-bold uppercase tracking-wider">PayPal</div>
+                  <div className="font-medium text-slate-800 font-mono">frankalfonso1988@gmail.com</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

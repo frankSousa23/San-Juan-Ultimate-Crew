@@ -108,6 +108,16 @@ function AppRoutes() {
         <Route path="/admin/equipos" element={<ProtectedRoute requiredRole={['admin', 'directiva']}><AdminTeams /></ProtectedRoute>} />
         <Route path="/admin/feedback" element={<ProtectedRoute requiredRole="admin"><AdminFeedback /></ProtectedRoute>} />
         <Route path="/admin/monitoring" element={<ProtectedRoute requiredRole="admin"><SystemMonitoring /></ProtectedRoute>} />
+
+        {/* English / Alternative Route Aliases */}
+        <Route path="/events" element={<Navigate to="/eventos" replace />} />
+        <Route path="/communications" element={<Navigate to="/comunicacion" replace />} />
+        <Route path="/news" element={<Navigate to="/comunicacion" replace />} />
+        <Route path="/stats" element={<Navigate to="/estadisticas" replace />} />
+        <Route path="/dashboard" element={<Navigate to="/" replace />} />
+
+        {/* Catch-all fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     </Layout>

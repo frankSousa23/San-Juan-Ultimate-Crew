@@ -32,12 +32,12 @@ export function EventModals({
   return (
     <>
       {createOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setCreateOpen(false)}>
-          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4" onClick={() => setCreateOpen(false)}>
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="bg-gradient-to-r from-amber-600 to-rose-600 text-white p-4">
-              <div className="text-lg font-bold">Crear Evento</div>
+              <div className="text-lg font-bold">Crear Evento / Partido</div>
             </div>
-            <div className="p-4">
+            <div className="p-4 sm:p-5">
               <EventForm
                 mode="create"
                 initial={null}
@@ -51,12 +51,12 @@ export function EventModals({
       )}
       
       {editTarget && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setEditTarget(null)}>
-          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4" onClick={() => setEditTarget(null)}>
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="bg-gradient-to-r from-indigo-600 to-amber-600 text-white p-4">
-              <div className="text-lg font-bold">Editar Evento</div>
+              <div className="text-lg font-bold">Editar Evento / Mesa Técnica</div>
             </div>
-            <div className="p-4">
+            <div className="p-4 sm:p-5">
               <EventForm
                 mode="edit"
                 initial={editTarget}

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import ConfirmModal from '../components/ConfirmModal'
-import { eventsApi, playersApi, eventParticipantsApi, exportEventParticipantsCsv, getAuthToken } from '../lib/api'
+import { eventsApi, playersApi, eventParticipantsApi, exportEventParticipantsCsv, getAuthToken, teamsApi } from '../lib/api'
 import type { EventItem } from '../types/event'
-import type { Player } from '../types/player'
+import type { Player, Team } from '../types/player'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -12,6 +12,8 @@ export default function RosterTorneo() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [events, setEvents] = useState<EventItem[]>([])
   const [players, setPlayers] = useState<Player[]>([])
+  const [teams, setTeams] = useState<Team[]>([])
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('')
   const [eventId, setEventId] = useState<number | null>(null)
   const [participants, setParticipants] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -33,9 +35,10 @@ export default function RosterTorneo() {
   useEffect(() => {
     (async () => {
       try {
-        const [evs, pls] = await Promise.all([eventsApi.list(), playersApi.list()])
+        const [evs, pls, tms] = await Promise.all([eventsApi.list(), playersApi.list(), teamsApi.list().catch(() => [])])
         setEvents(evs)
         setPlayers(pls)
+        setTeams(tms || [])
         if (evs.length > 0) {
           // Prefer URL param, then localStorage, otherwise first event
           const spEvent = Number(searchParams.get('eventId') || '')
@@ -78,6 +81,10 @@ export default function RosterTorneo() {
       }
       if (pos && p.position !== pos) return false
       if (pstatus && p.status !== pstatus) return false
+      if (selectedTeamId) {
+        if (selectedTeamId === 'no_team' && p.teamId) return false
+        if (selectedTeamId !== 'no_team' && String(p.teamId) !== selectedTeamId) return false
+      }
       return true
     })
     .sort((a, b) => sortKey === 'number' ? a.number - b.number : a.name.localeCompare(b.name))
@@ -123,10 +130,33 @@ export default function RosterTorneo() {
     const val = status.trim() === '' ? null : status
     setParticipants(prev => prev.map(p => p.playerId === pid ? { ...p, status: val } : p))
     try {
-  await eventParticipantsApi.upsert({ eventId, playerId: pid, status: val as any })
-  toasts.success('Estado actualizado')
+      await eventParticipantsApi.upsert({ eventId, playerId: pid, status: val as any })
+      toasts.success('Estado actualizado')
     } catch (e: any) {
       setError(e?.message || 'No se pudo guardar el estado')
+    }
+  }
+
+  async function updateRefuerzo(pid: number, isRefuerzo: boolean) {
+    if (!eventId) return
+    setParticipants(prev => prev.map(p => p.playerId === pid ? { ...p, isRefuerzo } : p))
+    try {
+      await eventParticipantsApi.upsert({ eventId, playerId: pid, isRefuerzo })
+      toasts.success(isRefuerzo ? 'Marcado como Refuerzo' : 'Marcado como Regular')
+    } catch (e: any) {
+      setError(e?.message || 'No se pudo actualizar condición de refuerzo')
+    }
+  }
+
+  async function updateTeamSide(pid: number, teamSide: string) {
+    if (!eventId) return
+    const val = teamSide.trim() === '' ? null : teamSide
+    setParticipants(prev => prev.map(p => p.playerId === pid ? { ...p, teamSide: val } : p))
+    try {
+      await eventParticipantsApi.upsert({ eventId, playerId: pid, teamSide: val })
+      toasts.success('Lado/Equipo asignado')
+    } catch (e: any) {
+      setError(e?.message || 'No se pudo asignar lado de equipo')
     }
   }
 
@@ -247,9 +277,24 @@ export default function RosterTorneo() {
         <div className="bg-white rounded shadow p-4">
           <div className="flex flex-col gap-2 mb-2">
             <h3 className="font-medium">Jugadores disponibles</h3>
-            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center text-sm">
-              <input className="border rounded px-2 py-1 flex-1" placeholder="Buscar nombre o #"
+            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center text-sm flex-wrap">
+              <input className="border rounded px-2 py-1 flex-1 min-w-[120px]" placeholder="Buscar nombre o #"
                      value={q} onChange={e => setQ(e.target.value)} />
+              {teams.length > 0 && (
+                <select 
+                  className="border rounded px-2 py-1 bg-indigo-50/40 text-indigo-900 font-medium"
+                  value={selectedTeamId}
+                  onChange={e => setSelectedTeamId(e.target.value)}
+                >
+                  <option value="">Todos los Equipos/Categorías</option>
+                  {teams.map(t => (
+                    <option key={t.id} value={String(t.id)}>
+                      {t.name}
+                    </option>
+                  ))}
+                  <option value="no_team">Sin Equipo Asignado</option>
+                </select>
+              )}
               <select className="border rounded px-2 py-1" value={pos} onChange={e => setPos(e.target.value)}>
                 <option value="">Posición</option>
                 <option value="HANDLER">Manejador</option>
@@ -268,7 +313,7 @@ export default function RosterTorneo() {
               </select>
               <span className="text-gray-500 whitespace-nowrap">Disponibles: {availablePlayers.length}</span>
               <button className="px-2 py-1 rounded bg-gray-200 whitespace-nowrap" onClick={() => {
-                setQ(''); setPos(''); setPstatus('')
+                setQ(''); setPos(''); setPstatus(''); setSelectedTeamId('')
                 const params = new URLSearchParams()
                 if (eventId) params.set('eventId', String(eventId))
                 if (sortKey !== 'number') params.set('sort', sortKey)
@@ -282,17 +327,34 @@ export default function RosterTorneo() {
             </div>
           </div>
           <div className="max-h-96 overflow-auto divide-y">
-            {availablePlayers.map(p => (
-              <div key={p.id} className="py-2 flex items-center justify-between">
-                <div>
-                  <div className="font-medium">#{p.number} {p.name}</div>
-                  <div className="text-xs text-gray-500">
-                    {p.position === 'HANDLER' ? 'Manejador' : p.position === 'CUTTER' ? 'Cortador' : 'Híbrido'} · {p.status === 'ACTIVE' ? 'Activo' : p.status === 'INACTIVE' ? 'Inactivo' : 'Lesionado'}
+            {availablePlayers.map(p => {
+              const playerTeam = teams.find(t => t.id === p.teamId)
+              return (
+                <div key={p.id} className="py-2 flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">#{p.number} {p.name}</span>
+                      {playerTeam && (
+                        <span 
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                          style={{
+                            backgroundColor: playerTeam.color ? `${playerTeam.color}20` : '#e0e7ff',
+                            color: playerTeam.color || '#3730a3',
+                            border: `1px solid ${playerTeam.color ? `${playerTeam.color}40` : '#c7d2fe'}`
+                          }}
+                        >
+                          {playerTeam.name}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {p.position === 'HANDLER' ? 'Manejador' : p.position === 'CUTTER' ? 'Cortador' : 'Híbrido'} · {p.status === 'ACTIVE' ? 'Activo' : p.status === 'INACTIVE' ? 'Inactivo' : 'Lesionado'}
+                    </div>
                   </div>
+                  {authed && <button className="px-2 py-1 text-sm rounded bg-indigo-600 text-white" onClick={() => addPlayer(p.id)} disabled={loading}>Agregar</button>}
                 </div>
-                {authed && <button className="px-2 py-1 text-sm rounded bg-indigo-600 text-white" onClick={() => addPlayer(p.id)} disabled={loading}>Agregar</button>}
-              </div>
-            ))}
+              )
+            })}
             {availablePlayers.length === 0 && <div className="text-sm text-gray-500">No hay jugadores disponibles.</div>}
           </div>
         </div>
@@ -349,6 +411,42 @@ export default function RosterTorneo() {
                           </select>
                         ) : (
                           <span className="text-gray-700 font-medium">{p.status || '(sin estado)'}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <label className="text-gray-500">Lado:</label>
+                        {authed ? (
+                          <select
+                            className="border rounded px-2 py-1 text-xs sm:text-sm"
+                            value={p.teamSide ?? 'HOME'}
+                            onChange={(e) => updateTeamSide(p.playerId, e.target.value)}
+                            disabled={loading}
+                          >
+                            <option value="HOME">Local (Home)</option>
+                            <option value="AWAY">Visitante (Away)</option>
+                          </select>
+                        ) : (
+                          <span className="text-gray-700 font-medium">{p.teamSide === 'AWAY' ? 'Visitante' : 'Local'}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {authed ? (
+                          <label className="flex items-center gap-1 cursor-pointer select-none text-xs bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                            <input
+                              type="checkbox"
+                              checked={!!p.isRefuerzo}
+                              onChange={(e) => updateRefuerzo(p.playerId, e.target.checked)}
+                              disabled={loading}
+                              className="rounded text-amber-600 focus:ring-amber-500"
+                            />
+                            <span className="font-bold text-amber-800">Refuerzo</span>
+                          </label>
+                        ) : (
+                          p.isRefuerzo && (
+                            <span className="px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-800 rounded-full">
+                              🌟 Refuerzo
+                            </span>
+                          )
                         )}
                       </div>
                     </div>

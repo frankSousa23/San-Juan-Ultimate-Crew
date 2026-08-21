@@ -54,9 +54,17 @@ const createPostSchema = z.object({
   category: z.string().optional(),
   isPinned: z.boolean().optional().default(false),
   isPublished: z.boolean().optional().default(true),
+  commentsLocked: z.boolean().optional().default(false),
+  eventId: z.number().optional().nullable(),
 })
 
 const updatePostSchema = createPostSchema.partial()
+
+const createCommentSchema = z.object({
+  content: z.string().trim().min(3, 'El comentario debe tener al menos 3 caracteres').max(300, 'El comentario no puede exceder los 300 caracteres'),
+  authorName: z.string().optional(),
+  authorRole: z.string().optional(),
+})
 
 const postIdSchema = z.object({
   id: z.coerce.number().int().positive()
@@ -123,7 +131,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
           orderBy: { createdAt: 'asc' }
         },
         _count: {
-          select: { files: true }
+          select: { files: true, comments: true }
         }
       },
       orderBy: [
@@ -175,6 +183,13 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
           createdAt: true,
         },
         orderBy: { createdAt: 'asc' }
+      },
+      comments: {
+        orderBy: { createdAt: 'asc' },
+        take: 50,
+      },
+      _count: {
+        select: { files: true, comments: true }
       }
     }
   })
@@ -519,6 +534,329 @@ router.get('/:id/files/:fileId/download', asyncHandler(async (req: Request, res:
   } catch (error) {
     return notFound(res, 'File not found on disk')
   }
+}))
+
+/**
+ * @swagger
+ * /api/news/{id}/comments:
+ *   get:
+ *     summary: Get comments for a news post
+ *     tags: [News]
+ */
+router.get('/:id/comments', asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params
+  const post = await prisma.newsPost.findUnique({
+    where: { id: Number(id) }
+  })
+  if (!post) {
+    return notFound(res, 'Post not found')
+  }
+
+  const comments = await prisma.newsComment.findMany({
+    where: { postId: Number(id) },
+    include: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+        }
+      }
+    },
+    orderBy: { createdAt: 'asc' },
+    take: 50,
+  })
+
+  return success(res, comments)
+}))
+
+/**
+ * @swagger
+ * /api/news/{id}/comments:
+ *   post:
+ *     summary: Add a comment to a news post (with anti-saturation rules)
+ *     tags: [News]
+ */
+router.post('/:id/comments', requireAuth, validateBody(createCommentSchema), asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params
+  const postId = Number(id)
+  const u = (req as any).user as any
+  const userId = u?.sub ? Number(u.sub) : null
+  const body = req.body
+
+  const post = await prisma.newsPost.findUnique({
+    where: { id: postId }
+  })
+
+  if (!post) {
+    return notFound(res, 'Noticia o comunicado no encontrado')
+  }
+
+  if (post.commentsLocked) {
+    return badRequest(res, 'Los comentarios para esta publicación han sido cerrados por la Mesa Técnica / Directiva.')
+  }
+
+  // Regla 1: Límite máximo de 50 comentarios en total por publicación (anti-saturación global)
+  const totalCommentsCount = await prisma.newsComment.count({
+    where: { postId }
+  })
+
+  if (totalCommentsCount >= 50) {
+    return badRequest(res, 'Se ha alcanzado el límite máximo de 50 comentarios para este aviso para evitar saturación del hilo.')
+  }
+
+  // Regla 2: Límite de máximo 3 comentarios por usuario por publicación (anti-spam / anti-saturación individual)
+  if (userId) {
+    const userCommentsCount = await prisma.newsComment.count({
+      where: {
+        postId,
+        userId
+      }
+    })
+
+    if (userCommentsCount >= 3) {
+      return badRequest(res, 'Has alcanzado el límite máximo de 3 comentarios por usuario en este aviso. Esto garantiza un espacio conciso y ordenado para todos los atletas.')
+    }
+
+    // Regla 3: Cooldown de 10 segundos entre comentarios
+    const latestUserComment = await prisma.newsComment.findFirst({
+      where: { postId, userId },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    if (latestUserComment) {
+      const diffMs = Date.now() - new Date(latestUserComment.createdAt).getTime()
+      if (diffMs < 10000) {
+        return badRequest(res, 'Por favor espera unos segundos antes de enviar otro comentario.')
+      }
+    }
+  }
+
+  // Determinar rol y nombre del autor
+  let authorName = body.authorName || 'Miembro'
+  let authorRole = body.authorRole || 'Jugador'
+
+  if (userId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        player: true,
+        roles: {
+          include: {
+            role: true
+          }
+        }
+      }
+    })
+
+    if (user) {
+      if (user.player?.name) {
+        authorName = `#${user.player.number || ''} ${user.player.name}`.trim()
+      } else if (user.name) {
+        authorName = user.name
+      }
+
+      const roleNames = user.roles.map((r: any) => r.role?.name || '')
+      if (roleNames.includes('admin')) {
+        authorRole = 'Directiva'
+      } else if (roleNames.includes('technical_table') || roleNames.includes('annotator')) {
+        authorRole = 'Mesa Técnica'
+      } else if (roleNames.includes('coach')) {
+        authorRole = 'Entrenador'
+      } else if (roleNames.includes('captain')) {
+        authorRole = 'Capitán'
+      } else if (roleNames.includes('treasurer')) {
+        authorRole = 'Tesorero'
+      } else if (user.player) {
+        authorRole = 'Jugador'
+      }
+    }
+  }
+
+  const comment = await prisma.newsComment.create({
+    data: {
+      postId,
+      userId,
+      authorName,
+      authorRole,
+      content: body.content.trim(),
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+        }
+      }
+    }
+  })
+
+  const audit = createAuditHelper(req)
+  await audit.log('CREATE', 'NewsComment', comment.id, {
+    postId,
+    authorName,
+    contentPreview: body.content.slice(0, 50),
+  })
+
+  return created(res, comment)
+}))
+
+/**
+ * @swagger
+ * /api/news/{id}/comments/{commentId}:
+ *   delete:
+ *     summary: Delete a comment
+ *     tags: [News]
+ */
+router.delete('/:id/comments/:commentId', requireAuth, asyncHandler(async (req: Request, res: Response) => {
+  const { id, commentId } = req.params
+  const u = (req as any).user as any
+  const userId = u?.sub ? Number(u.sub) : null
+
+  const comment = await prisma.newsComment.findUnique({
+    where: { id: Number(commentId) }
+  })
+
+  if (!comment || comment.postId !== Number(id)) {
+    return notFound(res, 'Comentario no encontrado')
+  }
+
+  // Verificar si es el autor o admin / gestor de comunicaciones
+  const isAuthor = comment.userId === userId
+  let canDelete = isAuthor
+
+  if (!canDelete && userId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  include: {
+                    permission: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+
+    if (user) {
+      const userRoles = user.roles.map(ur => ur.role.name)
+      const userPermissions = user.roles.flatMap(ur =>
+        ur.role.permissions.map(rp => rp.permission.name)
+      )
+      canDelete = userRoles.includes('admin') || userPermissions.includes('communications:manage')
+    }
+  }
+
+  if (!canDelete) {
+    return unauthorized(res, 'No tienes permiso para eliminar este comentario')
+  }
+
+  await prisma.newsComment.delete({
+    where: { id: Number(commentId) }
+  })
+
+  const audit = createAuditHelper(req)
+  await audit.log('DELETE', 'NewsComment', Number(commentId), {
+    postId: Number(id),
+  })
+
+  return success(res, { message: 'Comentario eliminado correctamente' })
+}))
+
+/**
+ * @swagger
+ * /api/news/{id}/toggle-lock:
+ *   put:
+ *     summary: Lock or unlock comments on a post
+ *     tags: [News]
+ */
+router.put('/:id/toggle-lock', requireAuth, requirePermission('communications:manage'), asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params
+  const post = await prisma.newsPost.findUnique({
+    where: { id: Number(id) }
+  })
+
+  if (!post) {
+    return notFound(res, 'Post not found')
+  }
+
+  const updatedPost = await prisma.newsPost.update({
+    where: { id: Number(id) },
+    data: {
+      commentsLocked: !post.commentsLocked
+    },
+    include: {
+      author: true,
+      files: true,
+      comments: true,
+      _count: {
+        select: { files: true, comments: true }
+      }
+    }
+  })
+
+  const audit = createAuditHelper(req)
+  await audit.log('UPDATE', 'NewsPost', Number(id), {
+    commentsLocked: updatedPost.commentsLocked,
+  })
+
+  return success(res, updatedPost)
+}))
+
+/**
+ * @swagger
+ * /api/news/event-notice:
+ *   post:
+ *     summary: Publish an official event announcement or contingency notice
+ *     tags: [News]
+ */
+router.post('/event-notice', requireAuth, requirePermission('events:manage'), asyncHandler(async (req: Request, res: Response) => {
+  const { eventId, title, content, category, isPinned } = req.body
+  const u = (req as any).user as any
+  const userId = u?.sub ? Number(u.sub) : null
+
+  const user = userId ? await prisma.user.findUnique({
+    where: { id: userId },
+    select: { playerId: true }
+  }) : null
+
+  const post = await prisma.newsPost.create({
+    data: {
+      title,
+      content,
+      category: category || '⏱️ Eventualidad de Mesa Técnica',
+      isPinned: isPinned !== undefined ? isPinned : true,
+      isPublished: true,
+      commentsLocked: false,
+      eventId: eventId ? Number(eventId) : null,
+      authorId: user?.playerId || null,
+      publishedAt: new Date(),
+    },
+    include: {
+      author: true,
+      comments: true,
+      _count: {
+        select: { files: true, comments: true }
+      }
+    }
+  })
+
+  const audit = createAuditHelper(req)
+  await audit.log('CREATE', 'NewsPost', post.id, {
+    eventId,
+    title,
+    category: post.category,
+  })
+
+  return created(res, post)
 }))
 
 export default router

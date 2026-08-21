@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { playersApi, authApi, getAuthToken, attendanceApi, eventParticipantsApi, eventsApi } from '../lib/api'
+import { playersApi, authApi, getAuthToken, attendanceApi, eventParticipantsApi, eventsApi, teamsApi, TeamItem } from '../lib/api'
 import { useApi } from '../hooks/useApi'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
@@ -18,6 +18,8 @@ export default function Roster() {
   const { isAuthenticated: authed, hasPermission, user: authUser } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const [players, setPlayers] = useState<Player[]>([])
+  const [teams, setTeams] = useState<TeamItem[]>([])
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('')
   const [q, setQ] = useState('')
   const [pos, setPos] = useState<'' | Position>('')
   const [st, setSt] = useState<'' | Status>('')
@@ -72,6 +74,7 @@ export default function Roster() {
 
   useEffect(() => {
     loadPlayers()
+    teamsApi.list().then(setTeams).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -171,11 +174,12 @@ export default function Roster() {
     if (q.trim()) params.set('q', q.trim())
     if (pos) params.set('pos', pos)
     if (st) params.set('st', st)
+    if (selectedTeamId) params.set('teamId', selectedTeamId)
     const next = params.toString()
     const curr = searchParams.toString()
     if (next !== curr) setSearchParams(params)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, pos, st])
+  }, [q, pos, st, selectedTeamId])
 
   const filtered = useMemo(() => {
     return players.filter(p => {
@@ -183,13 +187,14 @@ export default function Roster() {
       const okText = text.includes(q.toLowerCase())
       const okPos = !pos || p.position === pos
       const okSt = !st || p.status === st
-      return okText && okPos && okSt
+      const okTeam = !selectedTeamId || (selectedTeamId === 'none' ? !p.teamId : p.teamId === Number(selectedTeamId))
+      return okText && okPos && okSt && okTeam
     })
-  }, [players, q, pos, st])
+  }, [players, q, pos, st, selectedTeamId])
 
   useEffect(() => {
     setPage(1)
-  }, [q, pos, st])
+  }, [q, pos, st, selectedTeamId])
 
   const paginatedPlayers = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE
@@ -207,9 +212,14 @@ export default function Roster() {
     <div className="space-y-6">
       {/* Header & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Roster Principal</h2>
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Roster Principal</h2>
+          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+            Plantel de atletas y divisiones oficiales: Open (Fem/Masc), Mixto, Junior y Master
+          </p>
+        </div>
         {hasPermission('roster:manage') && (
-          <button onClick={() => setCreateOpen(true)} className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 whitespace-nowrap text-sm sm:text-base">+ Agregar Jugador</button>
+          <button onClick={() => setCreateOpen(true)} className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 whitespace-nowrap text-sm sm:text-base shadow font-semibold">+ Agregar Jugador</button>
         )}
       </div>
 
@@ -225,18 +235,34 @@ export default function Roster() {
                 if (q.trim()) params.q = q.trim()
                 if (pos) params.pos = pos
                 if (st) params.st = st
+                if (selectedTeamId) params.teamId = selectedTeamId
                 setSearchParams(params)
               } else if (e.key === 'Escape') {
                 setQ('')
                 const params: Record<string, string> = {}
                 if (pos) params.pos = pos
                 if (st) params.st = st
+                if (selectedTeamId) params.teamId = selectedTeamId
                 setSearchParams(params)
               }
             }}
             placeholder="Buscar jugador..."
             className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm sm:text-base"
           />
+          <select 
+            aria-label="Filtrar por equipo o categoría" 
+            value={selectedTeamId} 
+            onChange={e => setSelectedTeamId(e.target.value)} 
+            className="px-3 sm:px-4 py-2 border rounded-lg text-sm sm:text-base font-medium text-gray-700 bg-white"
+          >
+            <option value=''>Todos los equipos / Categorías</option>
+            {teams.map(t => (
+              <option key={t.id} value={String(t.id)}>
+                {t.name}
+              </option>
+            ))}
+            <option value='none'>Sin equipo asignado</option>
+          </select>
           <select aria-label="Filtrar por posición" value={pos} onChange={e => setPos(e.target.value as '' | Position)} className="px-3 sm:px-4 py-2 border rounded-lg text-sm sm:text-base">
             <option value=''>Todas las posiciones</option>
             <option value='HANDLER'>Manejador</option>
@@ -255,21 +281,48 @@ export default function Roster() {
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {paginatedPlayers.map(p => (
-          <button key={p.id} onClick={() => setSelected(p)} className="text-left bg-white rounded-xl shadow-md overflow-hidden hover:-translate-y-0.5 transition-transform">
-            <div className={`${posClass(p.position)} p-4 text-white text-center`}>
-              <div className="text-lg font-bold">#{p.number}</div>
-            </div>
-            <div className="p-4">
-              <h3 className="font-bold text-lg text-gray-800 mb-1">{p.name}</h3>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600">
-                  {p.position === 'HANDLER' ? 'Manejador' : p.position === 'CUTTER' ? 'Cortador' : 'Híbrido'}
-                </span>
-                <span className={`text-xs font-semibold ${badgeColor[p.status]}`}>
-                  {p.status === 'ACTIVE' ? 'Activo' : p.status === 'INACTIVE' ? 'Inactivo' : 'Lesionado'}
-                </span>
+          <button key={p.id} onClick={() => setSelected(p)} className="text-left bg-white rounded-xl shadow-md overflow-hidden hover:-translate-y-0.5 transition-transform flex flex-col justify-between border border-gray-100">
+            <div>
+              <div className={`${posClass(p.position)} p-4 text-white text-center relative`}>
+                <div className="text-lg font-bold">#{p.number}</div>
+                {p.team && (
+                  <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 bg-black/40 backdrop-blur-xs text-white rounded-full">
+                    {p.team.name}
+                  </span>
+                )}
+              </div>
+              <div className="p-4">
+                <h3 className="font-bold text-lg text-gray-800 mb-1">{p.name}</h3>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">
+                    {p.position === 'HANDLER' ? 'Manejador' : p.position === 'CUTTER' ? 'Cortador' : 'Híbrido'}
+                  </span>
+                  <span className={`text-xs font-semibold ${badgeColor[p.status]}`}>
+                    {p.status === 'ACTIVE' ? 'Activo' : p.status === 'INACTIVE' ? 'Inactivo' : 'Lesionado'}
+                  </span>
+                </div>
               </div>
             </div>
+            {p.user?.roles && p.user.roles.length > 0 && (
+              <div className="px-4 py-1.5 bg-indigo-50/50 border-t border-indigo-50 flex items-center gap-1.5 flex-wrap">
+                {p.user.roles.map(r => (
+                  <span key={r.role.name} className="text-[9px] font-bold uppercase tracking-wide text-indigo-700 bg-indigo-100/50 px-1.5 py-0.5 rounded">
+                    {r.role.name}
+                  </span>
+                ))}
+              </div>
+            )}
+            {(p.team || p.category) && (
+              <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 truncate">
+                  {p.team && <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: p.team.color || '#4f46e5' }} />}
+                  <span className="text-xs font-medium text-gray-600 truncate">{p.team?.name || 'Agente Libre'}</span>
+                </div>
+                {p.category && (
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">{p.category}</span>
+                )}
+              </div>
+            )}
           </button>
         ))}
 
@@ -312,8 +365,52 @@ export default function Roster() {
             </div>
             <div className="p-4 space-y-3">
               <div className="text-sm"><span className="text-gray-500">Estado:</span> <span className={`font-semibold ${badgeColor[selected.status]}`}>{selected.status}</span></div>
-              {selected.experience && <div className="text-sm"><span className="text-gray-500">Experiencia:</span> {selected.experience}</div>}
-              {selected.heightCm && <div className="text-sm"><span className="text-gray-500">Altura:</span> {selected.heightCm} cm</div>}
+              
+              <div className="border-t pt-3 mt-3">
+                <div className="font-semibold text-gray-700 mb-2">Información de Equipo</div>
+                {selected.team ? (
+                  <div className="text-sm">
+                    <div className="flex items-center gap-2 mb-1">
+                      {selected.team.logoUrl && <img src={selected.team.logoUrl} alt="Logo" className="w-5 h-5 object-contain" />}
+                      <span className="font-bold">{selected.team.name}</span>
+                    </div>
+                    {selected.team.categories && <div><span className="text-gray-500">Categorías del Equipo:</span> {selected.team.categories}</div>}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500 italic">Agente Libre / Sin Equipo</div>
+                )}
+                {selected.category && <div className="text-sm mt-1"><span className="text-gray-500">Categoría del Jugador:</span> {selected.category}</div>}
+              </div>
+
+              {selected.user?.roles && selected.user.roles.length > 0 && (
+                <div className="border-t pt-3 mt-3">
+                  <div className="font-semibold text-gray-700 mb-2">Roles y Permisos del Usuario</div>
+                  <div className="space-y-2">
+                    {selected.user.roles.map(r => (
+                      <div key={r.role.name} className="text-sm bg-gray-50 p-2 rounded border border-gray-100">
+                        <div className="font-medium text-gray-900">{r.role.name}</div>
+                        {r.role.roles && r.role.roles.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {r.role.roles.map(p => (
+                              <span key={p.permission.name} className="px-1.5 py-0.5 bg-indigo-100 text-indigo-800 rounded text-[10px] uppercase font-bold tracking-wide">
+                                {p.permission.name.replace(/_/g, ' ')}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-400 mt-1">Sin permisos explícitos</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t pt-3 mt-3">
+                <div className="font-semibold text-gray-700 mb-2">Datos Físicos</div>
+                {selected.experience && <div className="text-sm"><span className="text-gray-500">Experiencia:</span> {selected.experience}</div>}
+                {selected.heightCm && <div className="text-sm"><span className="text-gray-500">Altura:</span> {selected.heightCm} cm</div>}
+              </div>
               
               {/* Player Statistics */}
               <div className="border-t pt-3 mt-3">

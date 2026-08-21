@@ -1,3 +1,19 @@
+export interface NewsComment {
+  id: number
+  postId: number
+  userId?: number | null
+  authorName?: string | null
+  authorRole?: string | null
+  content: string
+  createdAt: string
+  updatedAt: string
+  user?: {
+    id: number
+    name?: string | null
+    email: string
+  } | null
+}
+
 export interface NewsPost {
   id: number
   title: string
@@ -5,6 +21,8 @@ export interface NewsPost {
   authorId?: number | null
   isPinned: boolean
   isPublished: boolean
+  commentsLocked?: boolean
+  eventId?: number | null
   category?: string | null
   views: number
   createdAt: string
@@ -16,8 +34,10 @@ export interface NewsPost {
     number: number
   }
   files?: NewsPostFile[]
+  comments?: NewsComment[]
   _count?: {
-    files: number
+    files?: number
+    comments?: number
   }
 }
 
@@ -39,6 +59,8 @@ export interface CreateNewsPostInput {
   category?: string
   isPinned?: boolean
   isPublished?: boolean
+  commentsLocked?: boolean
+  eventId?: number | null
 }
 
 export interface UpdateNewsPostInput {
@@ -47,6 +69,14 @@ export interface UpdateNewsPostInput {
   category?: string
   isPinned?: boolean
   isPublished?: boolean
+  commentsLocked?: boolean
+  eventId?: number | null
+}
+
+export interface CreateNewsCommentInput {
+  content: string
+  authorName?: string
+  authorRole?: string
 }
 
 export interface NewsPostListResponse {

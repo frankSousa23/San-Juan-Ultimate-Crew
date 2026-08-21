@@ -176,6 +176,10 @@ export default function Communications() {
           post={newsState.selectedPost}
           canManage={canManage}
           onClose={() => newsActions.setSelectedPost(null)}
+          onPostUpdated={(updated) => {
+            newsActions.setSelectedPost(updated)
+            newsActions.loadNews()
+          }}
           onEdit={() => {
             newsActions.setSelectedPost(null)
             newsActions.setEditingPost(newsState.selectedPost)

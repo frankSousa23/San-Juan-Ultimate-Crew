@@ -81,7 +81,7 @@ export function generateSystemManualPdf(): jsPDF {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(18)
   doc.setTextColor(15, 23, 42)
-  doc.text('MANUAL DEL USUARIO Y GUÍA DEL SISTEMA', margin + 8, 106)
+  doc.text('MANUAL DEL USUARIO (VERSIÓN BETA MULTI-EQUIPO)', margin + 8, 106)
 
   doc.setFontSize(11)
   doc.setTextColor(71, 85, 105)

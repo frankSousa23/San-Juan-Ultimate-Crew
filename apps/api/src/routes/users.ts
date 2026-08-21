@@ -175,7 +175,10 @@ router.get('/me/role-requests', requireAuth, asyncHandler(async (req: Request, r
   return success(res, items)
 }))
 
-const setRolesSchema = z.object({ roles: z.array(z.enum(['guest','player'])).default([]) })
+const VALID_ROLE_NAMES = ['admin', 'player', 'captain', 'coach', 'directiva', 'annotator', 'treasurer', 'guest'] as const
+const setRolesSchema = z.object({ 
+  roles: z.array(z.enum(VALID_ROLE_NAMES)).default([]) 
+})
 const userIdSchema = z.object({
   id: z.coerce.number().int().positive()
 })
@@ -205,7 +208,7 @@ const userIdSchema = z.object({
  *                 type: array
  *                 items:
  *                   type: string
- *                   enum: [guest, player]
+ *                   enum: [admin, player, captain, coach, directiva, annotator, treasurer, guest]
  *                 default: []
  *     responses:
  *       200:
@@ -235,7 +238,7 @@ const userIdSchema = z.object({
  *       404:
  *         description: User not found
  */
-router.put('/:id/roles', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+router.put('/:id/roles', requireRole(['admin', 'directiva']), asyncHandler(async (req: Request, res: Response) => {
   const parsedId = userIdSchema.safeParse(req.params)
   if (!parsedId.success) {
     return validationError(res, 'Invalid id', parsedId.error.issues)
@@ -249,21 +252,21 @@ router.put('/:id/roles', requireRole(['admin']), asyncHandler(async (req: Reques
   
   const user = await prisma.user.findUnique({ 
     where: { id: userId }, 
-    include: { roles: true } 
+    include: { roles: { include: { role: true } } } 
   })
   if (!user) return notFound(res, 'User')
   
   const roleRecords = await prisma.role.findMany({ 
-    where: { name: { in: ['guest','player'] } } 
+    where: { name: { in: [...VALID_ROLE_NAMES] } } 
   })
   const roleMap = new Map(roleRecords.map(r => [r.name, r.id]))
-  const existingRoleIds = user.roles.map(ur => ur.roleId).filter(id => {
-    const role = roleRecords.find(r => r.id === id)
-    return role && ['guest','player'].includes(role.name)
-  })
+  
+  const existingRoleIds = user.roles.map(ur => ur.roleId)
   const targetRoleIds = roles.map(name => roleMap.get(name)).filter((id): id is number => id !== undefined)
+  
   const toRemove = existingRoleIds.filter(id => !targetRoleIds.includes(id))
   const toAdd = targetRoleIds.filter(id => !existingRoleIds.includes(id))
+  
   if (toRemove.length > 0) {
     await prisma.userRole.deleteMany({ 
       where: { userId, roleId: { in: toRemove } } 
@@ -274,6 +277,7 @@ router.put('/:id/roles', requireRole(['admin']), asyncHandler(async (req: Reques
       data: toAdd.map(roleId => ({ userId, roleId })) 
     })
   }
+  
   const updatedUser = await prisma.user.findUnique({ 
     where: { id: userId }, 
     include: { roles: { include: { role: true } } } 
@@ -282,6 +286,7 @@ router.put('/:id/roles', requireRole(['admin']), asyncHandler(async (req: Reques
   const roleNames = updatedUser.roles.map(ur => ur.role?.name).filter((name): name is string => Boolean(name))
   const audit = createAuditHelper(req)
   await audit.log('ROLE_CHANGE', 'User', userId, { 
+    roles: roleNames,
     addedRoles: roles.filter((_, idx) => toAdd.includes(targetRoleIds[idx])),
     removedRoles: existingRoleIds.map(id => {
       const role = roleRecords.find(r => r.id === id)
@@ -836,7 +841,7 @@ router.post('/role-requests/:id/deny', requireRole(['admin']), asyncHandler(asyn
 }))
 
 const approveUserSchema = z.object({
-  role: z.enum(['guest', 'player', 'admin', 'captain', 'coach', 'treasurer']).optional(),
+  role: z.enum(['guest', 'player', 'admin', 'captain', 'coach', 'directiva', 'annotator', 'treasurer']).optional(),
   playerId: z.coerce.number().int().positive().optional(),
   playerData: z.object({
     number: z.coerce.number().int().positive(),

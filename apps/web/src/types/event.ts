@@ -11,21 +11,31 @@ export interface EventItem {
   location?: string
   startsAt: string
   endsAt?: string
+  teamId?: number | null
+  awayTeamId?: number | null
+  officialAnnotatorId?: number | null
+  isAnnotatorLocked?: boolean
   parentId?: number | null
   matchCategory?: MatchCategory | null
   rivalId?: number | null
   isInternalScrimmage?: boolean
+  team?: { id: number; name: string; color?: string | null; logoUrl?: string | null } | null
+  awayTeam?: { id: number; name: string; color?: string | null; logoUrl?: string | null } | null
+  officialAnnotator?: { id: number; name?: string | null; email: string } | null
   children?: EventItem[]
 }
 
-export type CreateEventInput = Omit<EventItem, 'id'>
-export type UpdateEventInput = Partial<Omit<EventItem, 'id'>>
+export type CreateEventInput = Omit<EventItem, 'id' | 'team' | 'awayTeam' | 'officialAnnotator' | 'children'>
+export type UpdateEventInput = Partial<Omit<EventItem, 'id' | 'team' | 'awayTeam' | 'officialAnnotator' | 'children'>>
 
 export interface EventParticipant {
   eventId: number
   playerId: number
   role?: string | null
   status?: string | null
-  player?: { id: number; name: string; number: number }
+  lineType?: string | null
+  teamSide?: string | null
+  isRefuerzo?: boolean
+  player?: { id: number; name: string; number: number; teamId?: number | null; team?: { id: number; name: string } | null }
   event?: { id: number; title: string }
 }

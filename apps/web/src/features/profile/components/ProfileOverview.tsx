@@ -768,22 +768,7 @@ const { hasRole } = useAuth() as any
                         </div>
                         <button
                           onClick={async () => {
-                            const newState = !user.roles?.includes('player')
-                            setTogglingPlayerRole(true)
-                            try {
-                              const updated = await handleTogglePlayerRole(newState) as any
-                              setUser(updated)
-                              // await refreshUser()
-                              alert(
-                                newState 
-                                  ? 'Rol de jugador activado. Ahora puedes ver estadísticas y participar en eventos como jugador.' 
-                                  : 'Rol de jugador desactivado. Ya no verás estadísticas de jugador.'
-                              )
-                            } catch (e: any) {
-                              alert(e?.response?.data?.error || 'No se pudo cambiar el estado del rol de jugador')
-                            } finally {
-                              setTogglingPlayerRole(false)
-                            }
+                            await handleTogglePlayerRole()
                           }}
                           disabled={togglingPlayerRole}
                           className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${

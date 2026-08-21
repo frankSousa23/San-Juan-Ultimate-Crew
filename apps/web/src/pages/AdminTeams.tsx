@@ -9,6 +9,9 @@ export default function AdminTeams() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingTeam, setEditingTeam] = useState<TeamItem | null>(null)
   const [name, setName] = useState('')
+  const [tag, setTag] = useState('')
+  const [categories, setCategories] = useState('')
+  const [notes, setNotes] = useState('')
   const [color, setColor] = useState('#4f46e5')
   const [logoUrl, setLogoUrl] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -34,6 +37,9 @@ export default function AdminTeams() {
   const handleOpenCreate = () => {
     setEditingTeam(null)
     setName('')
+    setTag('')
+    setCategories('')
+    setNotes('')
     setColor('#4f46e5')
     setLogoUrl('')
     setShowCreateModal(true)
@@ -42,6 +48,9 @@ export default function AdminTeams() {
   const handleOpenEdit = (team: TeamItem) => {
     setEditingTeam(team)
     setName(team.name)
+    setTag(team.tag || '')
+    setCategories(team.categories || '')
+    setNotes(team.notes || '')
     setColor(team.color || '#4f46e5')
     setLogoUrl(team.logoUrl || '')
     setShowCreateModal(true)
@@ -56,19 +65,20 @@ export default function AdminTeams() {
 
     setSubmitting(true)
     try {
+      const payload = {
+        name: name.trim(),
+        tag: tag.trim() || undefined,
+        categories: categories.trim() || undefined,
+        notes: notes.trim() || undefined,
+        color,
+        logoUrl: logoUrl.trim() || undefined,
+      }
+
       if (editingTeam) {
-        await teamsApi.update(editingTeam.id, {
-          name: name.trim(),
-          color,
-          logoUrl: logoUrl.trim() || undefined,
-        })
+        await teamsApi.update(editingTeam.id, payload)
         showSuccessToast('Equipo actualizado con éxito')
       } else {
-        await teamsApi.create({
-          name: name.trim(),
-          color,
-          logoUrl: logoUrl.trim() || undefined,
-        })
+        await teamsApi.create(payload)
         showSuccessToast('Equipo creado con éxito')
       }
       setShowCreateModal(false)
@@ -150,7 +160,6 @@ export default function AdminTeams() {
                     )}
                     <div>
                       <h3 className="font-semibold text-gray-900 text-lg">{team.name}</h3>
-                      <span className="text-xs text-gray-500">ID: {team.id}</span>
                     </div>
                   </div>
                   {isAdminOrDirectiva && (
@@ -164,24 +173,41 @@ export default function AdminTeams() {
                 </div>
 
                 {/* Metrics */}
-                <div className="grid grid-cols-3 gap-2 mt-6 pt-4 border-t border-gray-100 text-center">
+                <div className="grid grid-cols-3 gap-2 mt-5 text-center">
                   <div className="bg-gray-50 rounded p-2">
                     <div className="text-xl font-bold text-gray-900">
                       {team._count?.players ?? 0}
                     </div>
-                    <div className="text-xs text-gray-500 font-medium">Jugadores</div>
+                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wide mt-0.5">Jugadores</div>
                   </div>
                   <div className="bg-gray-50 rounded p-2">
                     <div className="text-xl font-bold text-gray-900">
                       {team._count?.users ?? 0}
                     </div>
-                    <div className="text-xs text-gray-500 font-medium">Usuarios</div>
+                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wide mt-0.5">Usuarios</div>
                   </div>
                   <div className="bg-gray-50 rounded p-2">
                     <div className="text-xl font-bold text-gray-900">
                       {team._count?.events ?? 0}
                     </div>
-                    <div className="text-xs text-gray-500 font-medium">Eventos</div>
+                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wide mt-0.5">Eventos</div>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-gray-100 text-xs space-y-2">
+                  <div className="flex justify-between items-center text-gray-600">
+                    <span className="font-semibold">ID / Tag:</span>
+                    <div className="flex gap-1.5 items-center">
+                      <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-500 font-mono text-[10px]">#{team.id}</span>
+                      {team.tag ? <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded font-bold">{team.tag}</span> : '-'}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between items-start text-gray-600">
+                    <span className="font-semibold whitespace-nowrap mt-0.5">Categorías:</span>
+                    <span className="text-right ml-2 text-gray-800 line-clamp-2">
+                      {team.categories || <span className="text-gray-400 italic">No especificadas</span>}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -198,51 +224,122 @@ export default function AdminTeams() {
               {editingTeam ? 'Editar Equipo' : 'Nuevo Equipo'}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre del Equipo <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Ej: Femenino, Open, Master, Sub-20"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Color Representativo
-                </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={color}
-                    onChange={(e) => setColor(e.target.value)}
-                    className="w-10 h-10 p-1 border rounded cursor-pointer"
-                  />
+              <div className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre del Equipo / Club <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
-                    value={color}
-                    onChange={(e) => setColor(e.target.value)}
-                    className="w-32 border border-gray-300 rounded px-3 py-2 text-sm"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Ej: Warao, Medusa, Motherflowers"
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                  />
+                  {!editingTeam && (
+                    <div className="mt-2">
+                      <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">
+                        Sugerencias Base:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { label: 'Warao', col: '#1E40AF', tag: 'WAR', cat: 'Open Masculino, Mixto' },
+                          { label: 'Medusa', col: '#7C3AED', tag: 'MED', cat: 'Mixto' },
+                          { label: 'Motherflowers', col: '#E11D48', tag: 'MF', cat: 'Mixto, Femenino' },
+                          { label: 'Agente Libre / Refuerzo', col: '#64748b', tag: 'LIB', cat: '' }
+                        ].map(sug => (
+                          <button
+                            key={sug.label}
+                            type="button"
+                            onClick={() => {
+                              setName(sug.label)
+                              setColor(sug.col)
+                              setTag(sug.tag)
+                              setCategories(sug.cat)
+                            }}
+                            className="text-xs px-2.5 py-1 rounded-full border border-gray-200 bg-gray-50 hover:bg-indigo-50 hover:border-indigo-300 text-gray-700 transition-colors"
+                          >
+                            + {sug.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tag / Abreviación
+                  </label>
+                  <input
+                    type="text"
+                    value={tag}
+                    onChange={(e) => setTag(e.target.value)}
+                    placeholder="Ej: WAR, MED, MF"
+                    maxLength={5}
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 uppercase"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  URL del Logo <span className="text-gray-500 font-normal text-xs">(Opcional)</span>
-                </label>
-                <input
-                  type="url"
-                  value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                  placeholder="https://ejemplo.com/logo.png"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Categorías Participantes
+                  </label>
+                  <input
+                    type="text"
+                    value={categories}
+                    onChange={(e) => setCategories(e.target.value)}
+                    placeholder="Ej: Open Masculino, Mixto, Femenino"
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <p className="text-[11px] text-gray-500 mt-1">Categorías en las que participa (separadas por coma).</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Color Representativo
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={color}
+                      onChange={(e) => setColor(e.target.value)}
+                      className="w-10 h-10 p-1 border rounded cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={color}
+                      onChange={(e) => setColor(e.target.value)}
+                      className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm uppercase font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    URL del Logo <span className="text-gray-500 font-normal text-xs">(Opcional)</span>
+                  </label>
+                  <input
+                    type="url"
+                    value={logoUrl}
+                    onChange={(e) => setLogoUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notas / Descripción
+                  </label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Información adicional del equipo..."
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 min-h-[60px]"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t">

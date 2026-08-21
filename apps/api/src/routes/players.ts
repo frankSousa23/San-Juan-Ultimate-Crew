@@ -48,14 +48,54 @@ router.get('/', requirePermission('roster:view'), asyncHandler(async (req: Reque
 
   if (page && !isNaN(page)) {
     const skip = (page - 1) * limit;
+    const includeConfig = {
+      team: { select: { id: true, name: true, color: true, logoUrl: true, categories: true } },
+      user: {
+        select: {
+          id: true,
+          email: true,
+          roles: {
+            include: {
+              role: {
+                include: {
+                  roles: {
+                    include: { permission: true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    };
     const [players, total] = await Promise.all([
-      prisma.player.findMany({ where: whereClause, orderBy: { number: 'asc' }, skip, take: limit }),
+      prisma.player.findMany({ where: whereClause, orderBy: { number: 'asc' }, skip, take: limit, include: includeConfig }),
       prisma.player.count({ where: whereClause })
     ]);
     return success(res, { data: players, total, page, totalPages: Math.ceil(total / limit) });
   }
 
-  const players = await prisma.player.findMany({ where: whereClause, orderBy: { number: 'asc' } });
+  const includeConfig = {
+    team: { select: { id: true, name: true, color: true, logoUrl: true, categories: true } },
+    user: {
+      select: {
+        id: true,
+        email: true,
+        roles: {
+          include: {
+            role: {
+              include: {
+                roles: {
+                  include: { permission: true }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  };
+  const players = await prisma.player.findMany({ where: whereClause, orderBy: { number: 'asc' }, include: includeConfig });
   return success(res, players);
 }));
 
@@ -63,6 +103,7 @@ const createPlayerSchema = z.object({
   name: z.string().min(1),
   number: z.coerce.number().int().positive(),
   position: z.enum(['HANDLER', 'CUTTER', 'HYBRID']),
+  category: z.string().optional().nullable(),
   status: z.enum(['ACTIVE', 'INJURED', 'INACTIVE']).optional().default('ACTIVE'),
   heightCm: z.coerce.number().int().positive().optional(),
   experience: z.string().optional(),

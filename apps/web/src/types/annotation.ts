@@ -15,6 +15,7 @@ export interface EventAnnotation {
   timestamp: string
   category?: string // Para FULL_DAY: "OPEN" o "MIXTO"
   createdBy?: number
+  isRefuerzo?: boolean
   createdAt: string
   updatedAt: string
   // Campos para versus
@@ -34,6 +35,12 @@ export interface EventAnnotation {
     id: number
     name: string
     number: number
+    teamId?: number | null
+  } | null
+  createdByUser?: {
+    id: number
+    name?: string | null
+    email: string
   } | null
 }
 
@@ -46,6 +53,7 @@ export interface CreateAnnotationInput {
   lineType?: string | null
   timestamp?: string
   category?: string
+  isRefuerzo?: boolean
   // Campos para versus
   opponentTeamName?: string
   opponentPlayerName?: string
@@ -61,6 +69,7 @@ export interface UpdateAnnotationInput {
   lineType?: string | null
   timestamp?: string
   category?: string
+  isRefuerzo?: boolean
   eventId?: number
   playerId?: number | null
   relatedPlayerId?: number | null

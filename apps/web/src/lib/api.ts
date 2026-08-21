@@ -8,7 +8,7 @@ import { PlayItem, CreatePlayInput, UpdatePlayInput } from '../types/plays'
 import { EventParticipant } from '../types/event'
 import { ResourceItem, CreateResourceInput, UpdateResourceInput } from '../types/resource'
 import { EventAnnotation, CreateAnnotationInput, UpdateAnnotationInput, AnnotationStats } from '../types/annotation'
-import { NewsPost, NewsPostFile, CreateNewsPostInput, UpdateNewsPostInput, NewsPostListResponse } from '../types/news'
+import { NewsPost, NewsPostFile, CreateNewsPostInput, UpdateNewsPostInput, NewsPostListResponse, NewsComment, CreateNewsCommentInput } from '../types/news'
 
 function buildUrl(url: string, params?: Record<string, any>) {
   if (!params) return url
@@ -239,6 +239,10 @@ export const eventsApi = {
     const { data } = await http.get<EventItem[]>('/api/events')
     return data
   },
+  get: async (id: number): Promise<EventItem> => {
+    const { data } = await http.get<EventItem>(`/api/events/${id}`)
+    return data
+  },
   create: async (payload: CreateEventInput): Promise<EventItem> => {
     const { data } = await http.post<EventItem>('/api/events', payload)
     return data
@@ -247,9 +251,65 @@ export const eventsApi = {
     const { data } = await http.put<EventItem>(`/api/events/${id}`, payload)
     return data
   },
+  toggleAnnotatorLock: async (id: number, payload?: { officialAnnotatorId?: number | null; isAnnotatorLocked?: boolean }): Promise<EventItem> => {
+    const { data } = await http.post<EventItem>(`/api/events/${id}/toggle-annotator-lock`, payload || {})
+    return data
+  },
+  getMesaTecnica: async (id: number): Promise<{
+    eventId: number;
+    eventTitle: string;
+    eventStatus: string;
+    eventType: string;
+    isAnnotatorLocked: boolean;
+    officialAnnotatorId?: number | null;
+    officialAnnotator?: { id: number; name?: string | null; email: string } | null;
+    members: Array<{
+      id?: number;
+      playerId?: number;
+      playerName: string;
+      playerNumber?: number;
+      role: string;
+      roleLabel: string;
+      isCurrentShift?: boolean;
+      isPlayer?: boolean;
+    }>;
+    annotatorsAudit: Array<{ id: number; name: string; email: string; annotationsCount: number }>;
+  }> => {
+    const { data } = await http.get(`/api/events/${id}/mesa-tecnica`)
+    return data.data || data
+  },
+  saveMesaTecnica: async (id: number, payload: {
+    isAnnotatorLocked?: boolean;
+    officialAnnotatorId?: number | null;
+    members?: Array<{
+      playerId?: number | null;
+      userId?: number | null;
+      name?: string;
+      role: 'DIRECTOR_MESA' | 'PLANILLERO_ANOTADOR' | 'CRONOMETRISTA' | 'VEEDOR_ESPIRITU' | 'DELEGADO_CAMPO' | 'STAFF_MESA';
+      isCurrentShift?: boolean;
+    }>;
+  }): Promise<any> => {
+    const { data } = await http.post(`/api/events/${id}/mesa-tecnica`, payload)
+    return data.data || data
+  },
+  shiftChangeMesaTecnica: async (id: number, payload: { nextOfficialAnnotatorId?: number | null; reason?: string }): Promise<any> => {
+    const { data } = await http.post(`/api/events/${id}/mesa-tecnica/shift-change`, payload)
+    return data.data || data
+  },
   remove: async (id: number): Promise<void> => {
     await http.delete(`/api/events/${id}`)
   }
+}
+
+export const statsApi = {
+  getOverview: async (): Promise<any> => {
+    const { data } = await http.get('/api/stats')
+    return data.data || data
+  },
+  getTournamentStats: async (tournamentId: number): Promise<any> => {
+    const { data } = await http.get(`/api/stats/tournament/${tournamentId}`)
+    return data.data || data
+  },
 }
 
 export const channelsApi = {
@@ -315,7 +375,15 @@ export const eventParticipantsApi = {
   listByEvent: async (eventId: number): Promise<EventParticipant[]> => (
     await http.get<EventParticipant[]>('/api/event-participants', { params: { eventId } })
   ).data,
-  upsert: async (payload: { eventId: number; playerId: number; role?: string | null; status?: string | null }): Promise<EventParticipant> => (
+  upsert: async (payload: { 
+    eventId: number; 
+    playerId: number; 
+    role?: string | null; 
+    status?: string | null; 
+    lineType?: string | null;
+    teamSide?: string | null;
+    isRefuerzo?: boolean;
+  }): Promise<EventParticipant> => (
     await http.put<EventParticipant>('/api/event-participants', payload)
   ).data,
   remove: async (eventId: number, playerId: number): Promise<void> => {
@@ -547,7 +615,7 @@ export const adminUsersApi = {
   list: async (): Promise<Array<{ id: number; email: string; name?: string; roles: string[]; playerId: number | null }>> => (
     await http.get('/api/users')
   ).data,
-  setRoles: async (id: number, roles: Array<'guest'|'player'>): Promise<{ ok: boolean }> => (
+  setRoles: async (id: number, roles: string[]): Promise<{ id: number; email: string; name?: string; roles: string[] }> => (
     await http.put(`/api/users/${id}/roles`, { roles })
   ).data,
   linkPlayer: async (id: number, playerId: number): Promise<{ id: number; playerId: number }> => (
@@ -582,7 +650,7 @@ export const usersApi = {
   ).data,
   approve: async (
     id: number,
-    payload?: { role?: 'guest' | 'player' | 'admin' | 'captain' | 'coach' | 'treasurer'; playerId?: number; playerData?: { number: number; position: 'HANDLER' | 'CUTTER' | 'HYBRID'; status?: 'ACTIVE' | 'INJURED' | 'INACTIVE'; heightCm?: number; experience?: string } }
+    payload?: { role?: 'guest' | 'player' | 'admin' | 'captain' | 'coach' | 'directiva' | 'annotator' | 'treasurer'; playerId?: number; playerData?: { number: number; position: 'HANDLER' | 'CUTTER' | 'HYBRID'; status?: 'ACTIVE' | 'INJURED' | 'INACTIVE'; heightCm?: number; experience?: string } }
   ): Promise<any> => (
     await http.post(`/api/users/${id}/approve`, payload || {})
   ).data,
@@ -670,6 +738,21 @@ export const newsApi = {
     link.remove()
     window.URL.revokeObjectURL(url)
   },
+  listComments: async (postId: number): Promise<NewsComment[]> => (
+    await http.get<NewsComment[]>(`/api/news/${postId}/comments`)
+  ).data,
+  addComment: async (postId: number, payload: CreateNewsCommentInput): Promise<NewsComment> => (
+    await http.post<NewsComment>(`/api/news/${postId}/comments`, payload)
+  ).data,
+  deleteComment: async (postId: number, commentId: number): Promise<{ message: string }> => (
+    await http.delete(`/api/news/${postId}/comments/${commentId}`)
+  ).data,
+  toggleLock: async (postId: number): Promise<NewsPost> => (
+    await http.put<NewsPost>(`/api/news/${postId}/toggle-lock`, {})
+  ).data,
+  createEventNotice: async (payload: { eventId: number; title: string; content: string; category?: string; isPinned?: boolean }): Promise<NewsPost> => (
+    await http.post<NewsPost>('/api/news/event-notice', payload)
+  ).data,
 }
 
 // Teams API
@@ -678,6 +761,9 @@ export interface TeamItem {
   name: string
   color?: string | null
   logoUrl?: string | null
+  tag?: string | null
+  categories?: string | null
+  notes?: string | null
   _count?: {
     players?: number
     users?: number

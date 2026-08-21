@@ -63,6 +63,8 @@ const upsertSchema = z.object({
   role: z.string().optional().nullable(),
   status: z.string().optional().nullable(), // confirmed, tentative, declined
   lineType: z.string().optional().nullable(), // O-Line, D-Line, Flex
+  teamSide: z.string().optional().nullable(), // HOME, AWAY, LIGHT, DARK
+  isRefuerzo: z.boolean().optional(),
 })
 
 const deleteQuerySchema = z.object({
@@ -120,11 +122,25 @@ const deleteQuerySchema = z.object({
 router.put('/', requirePermission('roster:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsed = upsertSchema.safeParse(req.body)
   if (!parsed.success) return validationError(res, 'Invalid input', parsed.error.issues)
-  const { eventId, playerId, role, status, lineType } = parsed.data
+  const { eventId, playerId, role, status, lineType, teamSide, isRefuerzo } = parsed.data
   const participant = await prisma.eventParticipant.upsert({
     where: { eventId_playerId: { eventId, playerId } },
-    create: { eventId, playerId, role: role ?? undefined, status: status ?? undefined, lineType: lineType ?? undefined },
-    update: { role: role ?? undefined, status: status ?? undefined, lineType: lineType ?? undefined },
+    create: { 
+      eventId, 
+      playerId, 
+      role: role ?? undefined, 
+      status: status ?? undefined, 
+      lineType: lineType ?? undefined,
+      teamSide: teamSide ?? undefined,
+      isRefuerzo: isRefuerzo ?? false,
+    },
+    update: { 
+      role: role ?? undefined, 
+      status: status ?? undefined, 
+      lineType: lineType ?? undefined,
+      teamSide: teamSide ?? undefined,
+      isRefuerzo: isRefuerzo ?? undefined,
+    },
   })
   return updated(res, participant)
 }))

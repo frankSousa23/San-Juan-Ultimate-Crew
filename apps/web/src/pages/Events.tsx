@@ -14,22 +14,24 @@ import { useEvents } from '../features/events/hooks/useEvents'
 import { useToast } from '../hooks/useToast'
 import { AnnotationForm } from '../features/events/components/AnnotationForm'
 import { EventModals } from '../features/events/components/EventModals'
+import RescheduleModal from '../features/events/components/RescheduleModal'
+import MesaTecnicaModal from '../components/MesaTecnicaModal'
 
 const typeLabel: Record<EventType, string> = {
-  TRAINING: 'Entrenamiento',
-  TOURNAMENT: 'Torneo',
-  SOCIAL: 'Social',
-  WORKSHOP: 'Taller',
+  TRAINING: 'Entrenamiento / Scrimmage',
+  TOURNAMENT: 'Torneo Oficial',
+  SOCIAL: 'Social / Recreativo',
+  WORKSHOP: 'Taller / Clínica',
   FULL_DAY_OPEN: 'Full Day Open',
   FULL_DAY_MIXTO: 'Full Day Mixto',
-  AMISTOSO: 'Amistoso',
+  AMISTOSO: 'Amistoso Interclub',
   MATCH: 'Partido Oficial',
 }
 
-const STATUS_LABELS: Record<EventStatus, string> = { UPCOMING: 'Próximo', ONGOING: 'En Curso', COMPLETED: 'Completado', CANCELLED: 'Cancelado' };
+const STATUS_LABELS: Record<EventStatus, string> = { UPCOMING: 'Próximo', ONGOING: 'En Curso', COMPLETED: 'Completado', CANCELLED: 'Cancelado / Postergado' };
 const statusBadge: Record<EventStatus, string> = {
   UPCOMING: 'bg-blue-100 text-blue-700',
-  ONGOING: 'bg-green-100 text-green-700',
+  ONGOING: 'bg-green-100 text-green-700 animate-pulse',
   COMPLETED: 'bg-gray-100 text-gray-700',
   CANCELLED: 'bg-red-100 text-red-700',
 }
@@ -44,9 +46,12 @@ export default function Events() {
   const canUserAnnotate = (e: EventItem) => {
     if (hasRole('admin') || hasRole('directiva') || hasPermission('events:manage') || hasPermission('annotations:manage')) return true;
     if (hasRole('coach') || hasRole('captain') || hasRole('annotator')) return true;
+    if (user?.id && e.officialAnnotatorId === user.id) return true;
     if (hasRole('player')) {
       const strictTypes = ['TOURNAMENT', 'FULL_DAY_OPEN', 'FULL_DAY_MIXTO', 'MATCH'];
-      return !strictTypes.includes(e.type);
+      if (e.isInternalScrimmage) return true;
+      if (!strictTypes.includes(e.type)) return true;
+      if (!e.isAnnotatorLocked) return true;
     }
     return false;
   }
@@ -60,12 +65,52 @@ export default function Events() {
   } = state
   const [expandedTournaments, setExpandedTournaments] = useState<number[]>([])
   const [detailEvent, setDetailEvent] = useState<EventItem | null>(null)
+  const [rescheduleTarget, setRescheduleTarget] = useState<EventItem | null>(null)
+  const [mesaTecnicaTarget, setMesaTecnicaTarget] = useState<EventItem | null>(null)
+  const [categorySegment, setCategorySegment] = useState<'all' | 'major' | 'casual' | 'friendly'>('all')
+
   const {
     setTab, setTypeFilter, setStatusFilter, setQ, setLimit, setPage,
     setCreateOpen, setEditTarget, setError, setAttEvent, setAnnotEvent,
     setSelectedDateEvents, setConfirmState, setSearchParams,
     loadEvents, createEvent, updateEvent, deleteEvent
   } = actions
+
+  const handleQuickScrimmage = async () => {
+    try {
+      const defaultScrimmage = {
+        title: `Scrimmage Interno (${new Date().toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })})`,
+        type: 'TRAINING' as EventType,
+        status: 'ONGOING' as EventStatus,
+        startsAt: new Date().toISOString(),
+        endsAt: new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
+        location: 'Cancha de Práctica',
+        isInternalScrimmage: true,
+        description: 'Partido de práctica entre escuadras internas (Claro vs Oscuro). Anotación rápida habilitada para cualquier jugador.',
+      }
+      const created = await createEvent(defaultScrimmage)
+      if (created && created.id) {
+        toasts.success('Scrimmage iniciado con éxito')
+        navigate(`/anotaciones?eventId=${created.id}`)
+      }
+    } catch (err: any) {
+      toasts.error(err?.message || 'Error al iniciar scrimmage rápido')
+    }
+  }
+
+  // Filtered by category segment
+  const segmentFiltered = useMemo(() => {
+    if (categorySegment === 'major') {
+      return paged.filter(e => e.type === 'TOURNAMENT' || e.type === 'FULL_DAY_OPEN' || e.type === 'FULL_DAY_MIXTO' || e.type === 'MATCH')
+    }
+    if (categorySegment === 'casual') {
+      return paged.filter(e => e.type === 'TRAINING' || e.isInternalScrimmage)
+    }
+    if (categorySegment === 'friendly') {
+      return paged.filter(e => e.type === 'AMISTOSO')
+    }
+    return paged
+  }, [paged, categorySegment])
 
   // Show loading state on initial load
   if (loading && events.length === 0 && !error) {
@@ -91,11 +136,31 @@ export default function Events() {
           </div>
         </div>
       )}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Sistema de Eventos</h2>
-        {canManageEvents && (
-          <button onClick={() => setCreateOpen(true)} className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 whitespace-nowrap text-sm sm:text-base shadow font-semibold">+ Crear Evento</button>
-        )}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Sistema de Eventos & Torneos</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Gestión de Mesa Técnica, Planificación de Torneos, Full Days, Entrenamientos y Scrimmages</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {canUserAnnotate({ type: 'TRAINING', isInternalScrimmage: true } as any) && (
+            <button 
+              onClick={handleQuickScrimmage} 
+              className="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-3.5 py-2 rounded-lg hover:from-amber-700 hover:to-orange-700 whitespace-nowrap text-xs sm:text-sm shadow font-bold flex items-center gap-1.5 transition"
+              title="Iniciar de inmediato un partido de entrenamiento entre escuadras y abrir la pizarra"
+            >
+              <span>🥏</span>
+              <span>+ Scrimmage Rápido</span>
+            </button>
+          )}
+          {canManageEvents && (
+            <button 
+              onClick={() => setCreateOpen(true)} 
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 whitespace-nowrap text-xs sm:text-sm shadow font-semibold transition"
+            >
+              + Crear Evento
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
@@ -103,9 +168,9 @@ export default function Events() {
         <div className="border-b border-gray-200">
           <nav className="flex gap-2 sm:gap-4 px-2 sm:px-4 overflow-x-auto">
             {[
-              { k: 'events', label: 'Eventos' },
+              { k: 'events', label: 'Todos los Eventos' },
               { k: 'calendar', label: 'Calendario' },
-              { k: 'tournaments', label: 'Torneos' },
+              { k: 'tournaments', label: '🏆 Torneos & Mesa Técnica' },
               { k: 'stats', label: 'Estadísticas' },
             ].map(t => (
               <button key={t.k} onClick={() => {
@@ -124,6 +189,35 @@ export default function Events() {
         <div className="p-4">
           {tab === 'events' && (
             <div className="space-y-4">
+              {/* Category Segment Pills */}
+              <div className="flex flex-wrap items-center gap-2 pb-1 border-b border-gray-100">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mr-1">Filtrar por:</span>
+                <button
+                  onClick={() => setCategorySegment('all')}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition ${categorySegment === 'all' ? 'bg-indigo-600 text-white shadow-xs font-bold' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  🌟 Todos ({paged.length})
+                </button>
+                <button
+                  onClick={() => setCategorySegment('major')}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition ${categorySegment === 'major' ? 'bg-amber-600 text-white shadow-xs font-bold' : 'bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100'}`}
+                >
+                  🏆 Torneos & Full Days (Mesa Técnica)
+                </button>
+                <button
+                  onClick={() => setCategorySegment('casual')}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition ${categorySegment === 'casual' ? 'bg-emerald-600 text-white shadow-xs font-bold' : 'bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100'}`}
+                >
+                  🥏 Entrenamientos & Scrimmages
+                </button>
+                <button
+                  onClick={() => setCategorySegment('friendly')}
+                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition ${categorySegment === 'friendly' ? 'bg-sky-600 text-white shadow-xs font-bold' : 'bg-sky-50 text-sky-900 border border-sky-200 hover:bg-sky-100'}`}
+                >
+                  🤝 Amistosos Interclubes
+                </button>
+              </div>
+
               {/* Filters */}
               <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center flex-wrap">
                 <input
@@ -161,12 +255,13 @@ export default function Events() {
                 }} className="px-3 py-2 border rounded-lg text-sm">
                   <option value="all">Todos los tipos</option>
                   <option value="TOURNAMENT">Torneos</option>
-                  <option value="TRAINING">Entrenamientos</option>
-                  <option value="SOCIAL">Eventos Sociales</option>
-                  <option value="WORKSHOP">Talleres</option>
+                  <option value="TRAINING">Entrenamientos / Scrimmage</option>
                   <option value="FULL_DAY_OPEN">Full Day Open</option>
                   <option value="FULL_DAY_MIXTO">Full Day Mixto</option>
                   <option value="AMISTOSO">Amistoso</option>
+                  <option value="MATCH">Partido Oficial</option>
+                  <option value="SOCIAL">Eventos Sociales</option>
+                  <option value="WORKSHOP">Talleres</option>
                 </select>
                 <select value={statusFilter} onChange={e => {
                   const val = e.target.value as 'all' | EventStatus
@@ -180,9 +275,9 @@ export default function Events() {
                 }} className="px-3 py-2 border rounded-lg text-sm">
                   <option value="all">Todos los estados</option>
                   <option value="UPCOMING">Próximos</option>
-                  <option value="ONGOING">En curso</option>
+                  <option value="ONGOING">En curso (En Vivo)</option>
                   <option value="COMPLETED">Completados</option>
-                  <option value="CANCELLED">Cancelados</option>
+                  <option value="CANCELLED">Postergados / Cancelados</option>
                 </select>
                 <select
                   value={String(limit)}
@@ -200,57 +295,82 @@ export default function Events() {
                 >
                   {[10,20,50,100,200].map(n => <option key={n} value={n}>{n} por página</option>)}
                 </select>
-                <span className="text-sm text-gray-600">Mostrando {paged.length} de {filtered.length} (Total {events.length})</span>
-                <button className="px-2 py-1 rounded bg-gray-100" onClick={() => {
+                <span className="text-sm text-gray-600">Mostrando {segmentFiltered.length} de {filtered.length} (Total {events.length})</span>
+                <button className="px-2 py-1 rounded bg-gray-100 text-xs sm:text-sm" onClick={() => {
                   setTypeFilter('all'); setStatusFilter('all'); setQ(''); setLimit(20); setPage(1)
                   localStorage.removeItem('events.limit')
                   setSearchParams({ tab: 'events', page: '1', limit: '20' })
                 }}>Limpiar filtros</button>
-                <button
-                  className="px-3 py-2 rounded bg-amber-100 text-amber-700"
-                  onClick={() => {
-                    const params: Record<string, string> = { tab: 'events', page: '1', limit: String(limit) }
-                    if (typeFilter !== 'all') params.type = typeFilter
-                    if (statusFilter !== 'all') params.status = statusFilter
-                    if (q.trim()) params.q = q.trim()
-                    setSearchParams(params)
-                  }}
-                >Aplicar</button>
               </div>
 
               <div className="space-y-3">
-                {paged.map(e => (
+                {segmentFiltered.map(e => {
+                  const isMajor = e.type === 'TOURNAMENT' || e.type === 'FULL_DAY_OPEN' || e.type === 'FULL_DAY_MIXTO' || e.type === 'MATCH'
+                  return (
                   <React.Fragment key={e.id}>
-                  <div className="bg-white border hover:shadow-md transition-shadow rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="bg-white border hover:shadow-md transition-shadow rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <button onClick={() => setDetailEvent(e)} className="font-semibold text-indigo-900 hover:text-indigo-600 hover:underline text-left truncate w-full sm:w-auto">
-                        {e.title}
-                      </button>
-                      <div className="text-xs text-gray-500 mt-0.5">{typeLabel[e.type]}</div>
+                      <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                        <button onClick={() => setDetailEvent(e)} className="font-bold text-gray-900 hover:text-indigo-600 hover:underline text-left truncate text-base">
+                          {e.title}
+                        </button>
+                        {e.isInternalScrimmage && (
+                          <span className="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                            🥏 Scrimmage Interno
+                          </span>
+                        )}
+                        {isMajor && (
+                          <span className="bg-purple-100 text-purple-800 text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                            🏆 Mesa Técnica
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                        <span className="font-medium text-gray-700">{typeLabel[e.type]}</span>
+                        {e.location && <span>• 📍 {e.location}</span>}
+                        {e.officialAnnotator && (
+                          <span className="text-indigo-700 font-medium">
+                            • 📋 Mesa: {e.officialAnnotator.name || e.officialAnnotator.email}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                      <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${statusBadge[e.status]}`}>{STATUS_LABELS[e.status]}</span>
-                      <div className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">{e.startsAt ? new Date(e.startsAt).toLocaleString() : ''}</div>
-                      <button className="text-purple-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={async () => {
-                        try {
-                          // try find or create channel for this event
-                          const list = await channelsApi.list(e.id)
-                          let ch = list[0]
-                          if (!ch) ch = await channelsApi.create({ name: `Canal ${e.title}`, eventId: e.id })
-                          navigate(`/comunicacion?channelId=${ch.id}`)
-                        } catch {
-                          toasts.info('No se pudo abrir el canal')
-                        }
-                      }}>Abrir canal</button>
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+                      <span className={`text-xs px-2.5 py-1 rounded-full whitespace-nowrap font-medium ${statusBadge[e.status]}`}>{STATUS_LABELS[e.status]}</span>
+                      <div className="text-xs sm:text-sm text-gray-600 whitespace-nowrap font-medium">{e.startsAt ? new Date(e.startsAt).toLocaleString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</div>
                       
                       {canUserAnnotate(e) && (
-                        <button className="text-purple-700 hover:underline text-xs sm:text-sm whitespace-nowrap font-medium" onClick={() => setAnnotEvent(e)}>🥏 Anotaciones</button>
+                        <button 
+                          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-lg text-xs sm:text-sm whitespace-nowrap font-bold transition shadow-xs flex items-center gap-1" 
+                          onClick={() => setAnnotEvent(e)}
+                          title="Abrir Pizarra y Anotador en Vivo"
+                        >
+                          <span>🥏</span>
+                          <span>Anotaciones</span>
+                        </button>
                       )}
 
                       {canManageEvents && (
                         <>
+                          {(e.type === 'TOURNAMENT' || e.type === 'FULL_DAY_OPEN' || e.type === 'FULL_DAY_MIXTO' || e.type === 'MATCH' || e.type === 'AMISTOSO') && (
+                            <button
+                              className="bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded-lg text-xs sm:text-sm whitespace-nowrap font-bold transition shadow-xs flex items-center gap-1"
+                              onClick={() => setMesaTecnicaTarget(e)}
+                              title="Designar responsables de Mesa Técnica, planillero, cronometrista y relevos"
+                            >
+                              <span>📋</span>
+                              <span>Mesa Técnica</span>
+                            </button>
+                          )}
+                          <button 
+                            className="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-lg text-xs sm:text-sm whitespace-nowrap font-semibold transition" 
+                            onClick={() => setRescheduleTarget(e)}
+                            title="Modificar horario, retrasos o contingencias climáticas rápidamente"
+                          >
+                            ⏱️ Horario
+                          </button>
                           <button className="text-teal-700 hover:underline text-xs sm:text-sm whitespace-nowrap font-medium" onClick={() => setAttEvent(e)}>📋 Asistencia</button>
-                          <button className="text-amber-700 hover:underline text-xs sm:text-sm whitespace-nowrap font-medium" onClick={() => setEditTarget(e)}>Editar</button>
+                          <button className="text-gray-700 hover:underline text-xs sm:text-sm whitespace-nowrap font-medium" onClick={() => setEditTarget(e)}>Editar</button>
                           <button className="text-red-600 hover:underline text-xs sm:text-sm whitespace-nowrap font-medium" onClick={() => {
                             setConfirmState({
                               eventId: e.id,
@@ -271,7 +391,7 @@ export default function Events() {
                         onClick={() => setExpandedTournaments(prev => prev.includes(e.id) ? prev.filter(id => id !== e.id) : [...prev, e.id])}
                         className="text-indigo-600 text-sm font-semibold hover:underline"
                       >
-                        {expandedTournaments.includes(e.id) ? `▼ Ocultar ${e.children.length} Partidos` : `▶ Ver ${e.children.length} Partidos`}
+                        {expandedTournaments.includes(e.id) ? `▼ Ocultar ${e.children.length} Partidos Planificados` : `▶ Ver ${e.children.length} Partidos Planificados`}
                       </button>
                       {expandedTournaments.includes(e.id) && (
                         <div className="space-y-2 mt-2">
@@ -287,7 +407,15 @@ export default function Events() {
                                 <span className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${statusBadge[child.status]}`}>{STATUS_LABELS[child.status]}</span>
                                 <div className="text-xs text-gray-600 whitespace-nowrap">{child.startsAt ? new Date(child.startsAt).toLocaleString() : ''}</div>
                                 {canManageEvents && (
-                                  <button className="text-teal-700 hover:underline text-xs whitespace-nowrap" onClick={() => setAttEvent(child as any)}>Asistencia</button>
+                                  <>
+                                    <button 
+                                      className="text-amber-700 hover:underline text-xs whitespace-nowrap font-medium" 
+                                      onClick={() => setRescheduleTarget(child as any)}
+                                    >
+                                      ⏱️ Horario
+                                    </button>
+                                    <button className="text-teal-700 hover:underline text-xs whitespace-nowrap" onClick={() => setAttEvent(child as any)}>Asistencia</button>
+                                  </>
                                 )}
                                 {canUserAnnotate(child as any) && (
                                   <button className="text-purple-700 hover:underline text-xs whitespace-nowrap font-medium" onClick={() => setAnnotEvent(child as any)}>🥏 Anotaciones</button>
@@ -300,9 +428,9 @@ export default function Events() {
                     </div>
                   )}
                   </React.Fragment>
-                ))}
+                )})}
                 {loading && <div className="text-gray-600">Cargando...</div>}
-                {!loading && filtered.length === 0 && <div className="text-gray-600">No hay eventos para los filtros seleccionados.</div>}
+                {!loading && segmentFiltered.length === 0 && <div className="text-gray-600 p-8 text-center bg-gray-50 rounded-xl border border-dashed">No hay eventos para la categoría o filtros seleccionados.</div>}
                 {!loading && filtered.length > 0 && (
                   <div className="flex items-center justify-between pt-2">
                     <div className="text-sm text-gray-600">Página {currentPage} de {totalPages}</div>
@@ -369,14 +497,42 @@ export default function Events() {
           )}
           {tab === 'tournaments' && (
             <div className="space-y-6">
-              {events.filter(e => e.type === 'TOURNAMENT').length === 0 ? (
-                 <div className="text-gray-500 italic p-4 text-center">No hay torneos registrados.</div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-4 rounded-xl shadow-xs border border-gray-100">
+                <div>
+                  <h3 className="font-bold text-gray-900 text-lg">Mesa Técnica & Planificación de Torneos</h3>
+                  <p className="text-xs text-gray-500">
+                    Administra calendarios, horarios, rondas de partidos y estadísticas acumuladas para Torneos y Full Days
+                  </p>
+                </div>
+                {canManageEvents && (
+                  <button
+                    onClick={() => {
+                      setEditTarget(null)
+                      setCreateOpen(true)
+                    }}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow transition-colors"
+                  >
+                    + Nuevo Torneo / Full Day
+                  </button>
+                )}
+              </div>
+
+              {events.filter(e => e.type === 'TOURNAMENT' || e.type === 'FULL_DAY_OPEN' || e.type === 'FULL_DAY_MIXTO').length === 0 ? (
+                 <div className="text-gray-500 italic p-12 bg-white rounded-xl border border-dashed text-center">
+                   No hay torneos o jornadas Full Day registradas.
+                 </div>
               ) : (
-                events.filter(e => e.type === 'TOURNAMENT').map(tournament => (
+                events.filter(e => e.type === 'TOURNAMENT' || e.type === 'FULL_DAY_OPEN' || e.type === 'FULL_DAY_MIXTO').map(tournament => (
                   <TournamentBracket 
                     key={tournament.id} 
                     tournament={tournament} 
                     matches={events.filter(m => m.parentId === tournament.id)} 
+                    canManage={canManageEvents}
+                    onEditMatch={(m) => setEditTarget(m)}
+                    onAddMatch={(t) => {
+                      setEditTarget(null)
+                      setCreateOpen(true)
+                    }}
                   />
                 ))
               )}
@@ -501,6 +657,26 @@ export default function Events() {
         createEvent={async (data) => { await createEvent(data) }}
         updateEvent={async (id, data) => { await updateEvent(id, data) }}
       />
+      {rescheduleTarget && (
+        <RescheduleModal
+          event={rescheduleTarget}
+          onClose={() => setRescheduleTarget(null)}
+          onSave={async (id, data) => {
+            await updateEvent(id, data)
+            toasts.success('Horario y contingencia actualizados correctamente')
+          }}
+        />
+      )}
+      {mesaTecnicaTarget && (
+        <MesaTecnicaModal
+          event={mesaTecnicaTarget}
+          isOpen={Boolean(mesaTecnicaTarget)}
+          onClose={() => setMesaTecnicaTarget(null)}
+          onUpdated={() => {
+            loadEvents()
+          }}
+        />
+      )}
       {attEvent && (
         <AttendanceModal eventItem={attEvent} onClose={() => setAttEvent(null)} />
       )}

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { annotationsApi, playersApi, rivalsApi } from '../lib/api'
+import { annotationsApi, playersApi, rivalsApi, eventsApi } from '../lib/api'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
 import { EventAnnotation, CreateAnnotationInput, AnnotationType } from '../types/annotation'
 import { Player } from '../types/player'
 import { EventItem } from '../types/event'
 import ConfirmModal from '../components/ConfirmModal'
+import MesaTecnicaModal from '../components/MesaTecnicaModal'
 
 interface LiveAnnotationsTableProps {
   event: EventItem
@@ -27,15 +28,25 @@ interface PlayerStats {
 
 type LineFilter = 'ALL' | 'O-LINE' | 'D-LINE' | 'ACTIVE'
 
-export default function LiveAnnotationsTable({ event, onClose, embedded = false }: LiveAnnotationsTableProps) {
+export default function LiveAnnotationsTable({ event: initialEvent, onClose, embedded = false }: LiveAnnotationsTableProps) {
   const { user, hasPermission, hasRole } = useAuth()
   const toasts = useToast()
+  const [currentEvent, setCurrentEvent] = useState<EventItem>(initialEvent)
+
+  const isDeskLocked = Boolean(currentEvent.isAnnotatorLocked)
+  const isOfficialAnnotator = currentEvent.officialAnnotatorId === user?.id
+  const isAdminOrDirectiva = hasRole('admin') || hasRole('directiva') || hasPermission('events:manage')
+
   const canManage = (() => {
-    if (hasRole('admin') || hasRole('directiva') || hasPermission('events:manage') || hasPermission('annotations:manage')) return true;
-    if (hasRole('coach') || hasRole('captain') || hasRole('annotator')) return true;
+    // Si la mesa técnica está bloqueada para anotador oficial, solo el anotador oficial o directiva/admin pueden anotar
+    if (isDeskLocked && !isAdminOrDirectiva && !isOfficialAnnotator) {
+      return false
+    }
+    if (isAdminOrDirectiva || hasPermission('annotations:manage')) return true;
+    if (hasRole('coach') || hasRole('captain') || hasRole('annotator') || isOfficialAnnotator) return true;
     if (hasRole('player')) {
       const strictTypes = ['TOURNAMENT', 'FULL_DAY_OPEN', 'FULL_DAY_MIXTO', 'MATCH'];
-      return !strictTypes.includes(event.type);
+      return !strictTypes.includes(currentEvent.type);
     }
     return false;
   })()
@@ -43,7 +54,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
   const [annotations, setAnnotations] = useState<EventAnnotation[]>([])
   const [players, setPlayers] = useState<Player[]>([])
   const [registeredRivals, setRegisteredRivals] = useState<Array<{ id: number; name: string }>>([])
-  const [selectedRivalId, setSelectedRivalId] = useState<number | null>(event.rivalId || null)
+  const [selectedRivalId, setSelectedRivalId] = useState<number | null>(currentEvent.rivalId || null)
   const [awayClubPlayerIds, setAwayClubPlayerIds] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -60,13 +71,14 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
     playerName: string | null
     playerNumber: number | null
     teamSide: 'HOME' | 'AWAY' | null
+    isRefuerzo?: boolean
   } | null>(null)
 
   // Configuración del evento
-  const isInternal = event.isInternalScrimmage || false
-  const [isVersus, setIsVersus] = useState(!!event.rivalId || isInternal || event.type === 'AMISTOSO' || event.type === 'MATCH')
-  const [opponentTeamName, setOpponentTeamName] = useState(isInternal ? 'Equipo Oscuro' : 'Equipo Rival')
-  const [homeTeamName, setHomeTeamName] = useState(isInternal ? 'Equipo Claro' : 'SIGEDIVO')
+  const isInternal = currentEvent.isInternalScrimmage || false
+  const [isVersus, setIsVersus] = useState(!!currentEvent.rivalId || isInternal || currentEvent.type === 'AMISTOSO' || currentEvent.type === 'MATCH' || !!currentEvent.awayTeamId)
+  const [opponentTeamName, setOpponentTeamName] = useState(currentEvent.awayTeam?.name || (isInternal ? 'Equipo Oscuro' : 'Equipo Rival'))
+  const [homeTeamName, setHomeTeamName] = useState(currentEvent.team?.name || (isInternal ? 'Equipo Claro' : 'SIGEDIVO'))
   
   // Jugadores oponentes (para versus externo)
   const [opponentPlayers, setOpponentPlayers] = useState<Array<{ name: string; number: number }>>([])
@@ -77,23 +89,38 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
   // Marcador
   const [scoreHome, setScoreHome] = useState(0)
   const [scoreAway, setScoreAway] = useState(0)
+  const [showMesaTecnicaModal, setShowMesaTecnicaModal] = useState(false)
+
+  const toggleDeskLock = async () => {
+    if (!isAdminOrDirectiva) return
+    try {
+      const updated = await eventsApi.toggleAnnotatorLock(currentEvent.id, {
+        isAnnotatorLocked: !isDeskLocked,
+        officialAnnotatorId: !isDeskLocked ? (currentEvent.officialAnnotatorId || user?.id) : currentEvent.officialAnnotatorId
+      })
+      setCurrentEvent(updated)
+      toasts.success(updated.isAnnotatorLocked ? '🔒 Mesa técnica bloqueada para anotador oficial' : '🔓 Mesa técnica liberada')
+    } catch {
+      toasts.error('Error al cambiar bloqueo de mesa técnica')
+    }
+  }
 
   useEffect(() => {
     loadData()
     loadRivals()
-    if (event.id > 0) {
+    if (currentEvent.id > 0) {
       const interval = setInterval(loadData, 4000)
       return () => clearInterval(interval)
     }
-  }, [event.id])
+  }, [currentEvent.id])
 
   const loadRivals = async () => {
     try {
       const rivs = await rivalsApi.list()
       if (Array.isArray(rivs)) {
         setRegisteredRivals(rivs)
-        if (event.rivalId) {
-          const matchR = rivs.find(r => r.id === event.rivalId)
+        if (currentEvent.rivalId) {
+          const matchR = rivs.find(r => r.id === currentEvent.rivalId)
           if (matchR?.name) {
             setOpponentTeamName(matchR.name)
             setIsVersus(true)
@@ -136,7 +163,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
   const loadData = async () => {
     try {
       const [anns, pls] = await Promise.all([
-        annotationsApi.list({ eventId: event.id }),
+        annotationsApi.list({ eventId: currentEvent.id }),
         playersApi.list(),
       ])
       setAnnotations(anns)
@@ -324,7 +351,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
       const typeLabel = type === 'GOAL' ? '⚽ ¡GOL ANOTADO!' : type === 'DEFENSE' ? '🛡️ ¡DEFENSA (D) REGISTRADA!' : '❌ PÉRDIDA REGISTRADA'
 
       const payload: CreateAnnotationInput = {
-        eventId: event.id,
+        eventId: currentEvent.id,
         type,
         timestamp: new Date().toISOString(),
       }
@@ -374,7 +401,8 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
         opponentPlayerName: payload.opponentPlayerName || null,
         opponentTeamName: payload.opponentTeamName || null,
         timestamp: payload.timestamp,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
       setAnnotations(prev => [optimisticAnn, ...prev]);
       
@@ -551,12 +579,41 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
           <div className="flex items-center gap-2 truncate">
             <span className="text-xl sm:text-2xl">🥏</span>
             <div className="truncate">
-              <h2 className="text-base sm:text-xl font-black truncate leading-tight">{event.title}</h2>
-              <p className="text-xs text-indigo-200 font-medium truncate">{isInternal ? 'Scrimmage Interno' : event.type} • {event.location}</p>
+              <h2 className="text-base sm:text-xl font-black truncate leading-tight">{currentEvent.title}</h2>
+              <p className="text-xs text-indigo-200 font-medium truncate">{isInternal ? 'Scrimmage Interno' : currentEvent.type} • {currentEvent.location}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Control de Mesa Técnica Oficial */}
+            <div className="flex items-center gap-1.5 bg-black/30 border border-white/20 px-2.5 py-1 rounded-xl text-xs font-bold">
+              <span title={isDeskLocked ? 'Mesa técnica cerrada' : 'Mesa técnica abierta'}>
+                {isDeskLocked ? '🔒 Mesa Bloqueada' : '🔓 Mesa Abierta'}
+              </span>
+              {currentEvent.officialAnnotator && (
+                <span className="hidden md:inline text-indigo-200">
+                  • {currentEvent.officialAnnotator.name || currentEvent.officialAnnotator.email}
+                </span>
+              )}
+              {isAdminOrDirectiva && (
+                <button
+                  onClick={toggleDeskLock}
+                  className="ml-1 px-2 py-0.5 bg-white/20 hover:bg-white/30 active:scale-95 rounded text-[11px] font-black transition-all"
+                  title="Cambiar bloqueo de mesa técnica oficial"
+                >
+                  {isDeskLocked ? 'Desbloquear' : 'Bloquear'}
+                </button>
+              )}
+              <button
+                onClick={() => setShowMesaTecnicaModal(true)}
+                className="ml-1 px-2 py-0.5 bg-amber-500 hover:bg-amber-600 text-white active:scale-95 rounded text-[11px] font-black transition-all flex items-center gap-1 shadow-xs"
+                title="Designar responsables de mesa técnica o realizar relevo de turno"
+              >
+                <span>📋</span>
+                <span>Mesa / Relevos</span>
+              </button>
+            </div>
+
             {canManage && !isInternal && (
               <label className="hidden sm:flex items-center gap-2 bg-indigo-950/60 hover:bg-indigo-950 px-3 py-1.5 rounded-xl border border-indigo-500/30 text-xs font-bold cursor-pointer transition-all">
                 <input
@@ -876,7 +933,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
                         {ann.type === 'GOAL' ? '⚽' : ann.type === 'DEFENSE' ? '🛡️' : '❌'}
                       </span>
                       <div>
-                        <div className="font-black text-gray-900 text-sm sm:text-base flex items-center gap-2">
+                        <div className="font-black text-gray-900 text-sm sm:text-base flex flex-wrap items-center gap-2">
                           <span>
                             {ann.player ? `#${ann.player.number} ${ann.player.name}` : 
                              ann.opponentPlayerName ? `#${ann.opponentPlayerNumber} ${ann.opponentPlayerName} (${ann.opponentTeamName || 'Rival'})` : 
@@ -889,6 +946,16 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
                           }`}>
                             {ann.type === 'GOAL' ? 'GOL' : ann.type === 'DEFENSE' ? 'DEFENSA' : ann.type === 'TURNOVER' ? 'PÉRDIDA' : ann.type}
                           </span>
+                          {ann.isRefuerzo && (
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                              🌟 Refuerzo
+                            </span>
+                          )}
+                          {ann.createdByUser && (
+                            <span className="text-[11px] text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-md">
+                              👤 {ann.createdByUser.name || ann.createdByUser.email}
+                            </span>
+                          )}
                         </div>
                         {assister && (
                           <div className="text-xs text-green-700 font-bold mt-0.5">
@@ -941,12 +1008,31 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
     </div>
   )
 
-  if (embedded) return <>{content}{renderAssistModal()}</>
+  if (embedded) return <>{content}{renderAssistModal()}{showMesaTecnicaModal && (
+        <MesaTecnicaModal
+          event={currentEvent}
+          isOpen={showMesaTecnicaModal}
+          onClose={() => setShowMesaTecnicaModal(false)}
+          onUpdated={() => {
+            loadData()
+          }}
+        />
+      )}</>
 
   return (
     <div className="fixed inset-0 bg-gray-950/80 backdrop-blur-md z-[60] flex items-center justify-center p-0 sm:p-4 lg:p-6" onClick={onClose}>
       {content}
       {renderAssistModal()}
+      {showMesaTecnicaModal && (
+        <MesaTecnicaModal
+          event={currentEvent}
+          isOpen={showMesaTecnicaModal}
+          onClose={() => setShowMesaTecnicaModal(false)}
+          onUpdated={() => {
+            loadData()
+          }}
+        />
+      )}
       {confirmState && (
         <ConfirmModal
           title="Confirmar eliminación"

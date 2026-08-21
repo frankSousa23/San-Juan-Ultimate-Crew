@@ -98,6 +98,7 @@ class InMemoryDB {
   resources: any[] = [];
   newsPosts: any[] = [];
   newsPostFiles: any[] = [];
+  newsComments: any[] = [];
   roleRequests: any[] = [];
   auditLogs: any[] = [];
   passwordResetTokens: any[] = [];
@@ -171,22 +172,60 @@ class InMemoryDB {
     assignPerms('treasurer', ['finance:manage', 'finance:view', 'roster:view', 'events:view', 'statistics:view']);
     assignPerms('guest', ['events:view', 'roster:view', 'injuries:view', 'rivals:view', 'plays:view', 'resources:view', 'statistics:view', 'annotations:view']);
 
-    // 3. Players - TOTALMENTE VACÍO
-    this.players = [];
-    this.nextId['player'] = 1;
-
-    // 4. Users (Únicamente 2 usuarios iniciales pre-aprobados: Super Admin e Invitado)
-    const coreUsers = [
-      { id: 1, email: 'frankalfonso1988@gmail.com', name: 'Frank Sousa', role: 'admin', playerId: null },
-      { id: 2, email: 'guest@sigedivo.com', name: 'Invitado / Demostración', role: 'guest', playerId: null },
-    ];
-
-    
+    // 3. Equipos del Ecosistema Beta Multi-Equipo
     this.teams = [
-      { id: 1, name: 'San Juan Ultimate Crew', color: '#ff0000', createdAt: new Date(), updatedAt: new Date() },
-      { id: 2, name: 'Equipo B', color: '#00ff00', createdAt: new Date(), updatedAt: new Date() },
+      { id: 1, name: 'Warao', tag: 'WAR', categories: 'Open Masculino, Mixto', color: '#1E40AF', notes: 'Equipo élite categoría Masculina / Open de alto rendimiento.', createdAt: new Date(), updatedAt: new Date() },
+      { id: 2, name: 'Medusa', tag: 'MED', categories: 'Mixto', color: '#7C3AED', notes: 'Equipo representativo categoría Mixta con balance y dinámica táctica.', createdAt: new Date(), updatedAt: new Date() },
+      { id: 3, name: 'Motherflowers', tag: 'MF', categories: 'Mixto, Femenino', color: '#E11D48', notes: 'Club tradicional categoría Mixta reconocido por su velocidad y cortes profundos.', createdAt: new Date(), updatedAt: new Date() },
     ];
-    this.nextId['team'] = 3;
+    this.nextId['team'] = 4;
+
+    // 4. Players (Roster por Equipo + Agentes Libres / Sin Equipo)
+    this.players = [
+      // Warao Open & Mixto
+      { id: 1, name: 'Frank Sousa', number: 23, position: 'HANDLER', status: 'ACTIVE', teamId: 1, category: 'Open Masculino', heightCm: 182, experience: '8 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 2, name: 'Juan Pérez', number: 7, position: 'CUTTER', status: 'ACTIVE', teamId: 1, category: 'Open Masculino', heightCm: 178, experience: '5 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 3, name: 'Carlos Díaz', number: 15, position: 'CUTTER', status: 'ACTIVE', teamId: 1, category: 'Open Masculino', heightCm: 175, experience: '4 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 4, name: 'Miguel Torres', number: 21, position: 'HYBRID', status: 'ACTIVE', teamId: 1, category: 'Mixto', heightCm: 180, experience: '6 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 5, name: 'Andrés Mendoza', number: 8, position: 'HANDLER', status: 'ACTIVE', teamId: 1, category: 'Mixto', heightCm: 176, experience: '4 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 6, name: 'Ricardo Ramos', number: 19, position: 'CUTTER', status: 'ACTIVE', teamId: 1, category: 'Open Masculino', heightCm: 183, experience: '3 años', createdAt: new Date(), updatedAt: new Date() },
+
+      // Medusa Mixto
+      { id: 7, name: 'María Gonzalez', number: 10, position: 'HANDLER', status: 'ACTIVE', teamId: 2, category: 'Mixto', heightCm: 168, experience: '6 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 8, name: 'Pedro Luis', number: 99, position: 'HYBRID', status: 'ACTIVE', teamId: 2, category: 'Mixto', heightCm: 184, experience: '7 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 9, name: 'Ana Silva', number: 12, position: 'CUTTER', status: 'ACTIVE', teamId: 2, category: 'Mixto', heightCm: 165, experience: '3 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 10, name: 'Gabriel Silva', number: 17, position: 'CUTTER', status: 'ACTIVE', teamId: 2, category: 'Mixto', heightCm: 177, experience: '4 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 11, name: 'Sofía Rojas', number: 4, position: 'HANDLER', status: 'ACTIVE', teamId: 2, category: 'Mixto', heightCm: 170, experience: '5 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 12, name: 'Luis Martínez', number: 88, position: 'HANDLER', status: 'ACTIVE', teamId: 2, category: 'Mixto', heightCm: 179, experience: '8 años', createdAt: new Date(), updatedAt: new Date() },
+
+      // Motherflowers
+      { id: 13, name: 'Laura Gómez', number: 33, position: 'CUTTER', status: 'ACTIVE', teamId: 3, category: 'Mixto', heightCm: 167, experience: '5 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 14, name: 'Valentina Torres', number: 9, position: 'HANDLER', status: 'ACTIVE', teamId: 3, category: 'Femenino', heightCm: 164, experience: '4 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 15, name: 'Diego Castro', number: 5, position: 'HYBRID', status: 'ACTIVE', teamId: 3, category: 'Mixto', heightCm: 181, experience: '6 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 16, name: 'Camila Rivas', number: 14, position: 'CUTTER', status: 'ACTIVE', teamId: 3, category: 'Femenino', heightCm: 172, experience: '3 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 17, name: 'Roberto Morales', number: 11, position: 'HANDLER', status: 'ACTIVE', teamId: 3, category: 'Mixto', heightCm: 175, experience: '5 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 18, name: 'Elena Ramos', number: 27, position: 'CUTTER', status: 'ACTIVE', teamId: 3, category: 'Mixto', heightCm: 169, experience: '2 años', createdAt: new Date(), updatedAt: new Date() },
+
+      // Free Agents / Sin Equipo (Refuerzos Libres)
+      { id: 19, name: 'Daniela Herrera', number: 22, position: 'HYBRID', status: 'ACTIVE', teamId: null, category: null, heightCm: 171, experience: '4 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 20, name: 'Javier Blanco', number: 18, position: 'HANDLER', status: 'ACTIVE', teamId: null, category: null, heightCm: 177, experience: '6 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 21, name: 'Valeria Morales', number: 3, position: 'CUTTER', status: 'ACTIVE', teamId: null, category: null, heightCm: 166, experience: '3 años', createdAt: new Date(), updatedAt: new Date() },
+      { id: 22, name: 'Marcos Peñaloza', number: 30, position: 'CUTTER', status: 'ACTIVE', teamId: null, category: null, heightCm: 180, experience: '2 años', createdAt: new Date(), updatedAt: new Date() },
+    ];
+    this.nextId['player'] = 23;
+
+    // 5. Users (Admin, Guest, Capitanes, Coaches, Mesa Técnica y Atletas)
+    const coreUsers = [
+      { id: 1, email: 'frankalfonso1988@gmail.com', name: 'Frank Sousa (Admin)', role: 'admin', playerId: 1, teamId: 1 },
+      { id: 2, email: 'guest@sigedivo.com', name: 'Invitado / Demostración', role: 'guest', playerId: null, teamId: null },
+      { id: 3, email: 'capitan.warao@sigedivo.com', name: 'Juan Pérez (Capitán Warao)', role: 'captain', playerId: 2, teamId: 1 },
+      { id: 4, email: 'capitan.medusa@sigedivo.com', name: 'María Gonzalez (Capitana Medusa)', role: 'captain', playerId: 7, teamId: 2 },
+      { id: 5, email: 'capitan.motherflowers@sigedivo.com', name: 'Laura Gómez (Capitana Motherflowers)', role: 'captain', playerId: 13, teamId: 3 },
+      { id: 6, email: 'mesa.tecnica@sigedivo.com', name: 'Mesa Técnica Oficial', role: 'annotator', playerId: null, teamId: null },
+      { id: 7, email: 'coach.medusa@sigedivo.com', name: 'Pedro Luis (Coach Medusa)', role: 'coach', playerId: 8, teamId: 2 },
+      { id: 8, email: 'jugador.libre@sigedivo.com', name: 'Daniela Herrera (Agente Libre / Refuerzo)', role: 'player', playerId: 19, teamId: null },
+      { id: 9, email: 'jugador.warao@sigedivo.com', name: 'Carlos Díaz (Warao Open)', role: 'player', playerId: 3, teamId: 1 },
+    ];
 
     this.users = coreUsers.map((u) => ({
       id: u.id,
@@ -194,42 +233,234 @@ class InMemoryDB {
       name: u.name,
       passwordHash: u.role === 'admin' ? ADMIN_PW_HASH : DEFAULT_PW_HASH,
       status: 'APPROVED',
-      playerId: null,
+      playerId: u.playerId,
+      teamId: u.teamId,
       createdAt: new Date(),
       updatedAt: new Date(),
     }));
-    this.nextId['user'] = 3;
+    this.nextId['user'] = 10;
 
     coreUsers.forEach((u) => {
       this.userRoles.push({ userId: u.id, roleId: roleMap[u.role] });
     });
 
-    // 5. Rivales y Jugadores Oponentes - TOTALMENTE VACÍO
-    this.rivals = [];
-    this.nextId['rival'] = 1;
-    this.rivalPlayers = [];
-    this.nextId['rivalPlayer'] = 1;
+    // 6. Rivales y Jugadores Oponentes
+    this.rivals = [
+      { id: 1, name: 'Dragones Ultimate Club', notes: 'Rival de zona central', createdAt: new Date() },
+      { id: 2, name: 'Tiburones de la Bahía', notes: 'Equipo costero', createdAt: new Date() },
+    ];
+    this.nextId['rival'] = 3;
 
-    // 6. Eventos - TOTALMENTE VACÍO
-    this.events = [];
-    this.nextId['event'] = 1;
+    this.rivalPlayers = [
+      { id: 1, rivalId: 1, name: 'Alex Rondón', number: 10, position: 'HANDLER', createdAt: new Date() },
+      { id: 2, rivalId: 1, name: 'Gabriel Soto', number: 21, position: 'CUTTER', createdAt: new Date() },
+    ];
+    this.nextId['rivalPlayer'] = 3;
 
-    // 7. Event Participants & Attendance - TOTALMENTE VACÍO
-    this.eventParticipants = [];
-    this.attendances = [];
-    this.nextId['attendance'] = 1;
+    // 7. Eventos (Torneo Mixto de Fin de Mes con Fixtures + Evento Completado Previo)
+    const tournamentDate = new Date('2026-08-29T08:00:00Z');
+    const tournamentEndDate = new Date('2026-08-30T19:00:00Z');
 
-    // 8. Event Annotations - TOTALMENTE VACÍO
-    this.eventAnnotations = [];
-    this.nextId['annotation'] = 1;
+    this.events = [
+      // Torneo Mixto de Fin de Mes (Evento Padre)
+      {
+        id: 1,
+        title: 'Torneo Mixto de Fin de Mes',
+        type: 'TOURNAMENT',
+        status: 'UPCOMING',
+        location: 'Complejo Deportivo Simón Bolívar - Canchas 1 y 2',
+        startsAt: tournamentDate,
+        endsAt: tournamentEndDate,
+        officialAnnotatorId: 6,
+        isAnnotatorLocked: false,
+        description: 'Gran Torneo Mixto de integración y ranking. Participan Warao Open, Medusa Mixto, Motherflowers y refuerzos libres. Control de horarios, plantillas y estadísticas por Mesa Técnica.',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      // Partido 1 Fixture
+      {
+        id: 2,
+        title: 'Fase de Grupos: Medusa Mixto vs Motherflowers',
+        type: 'MATCH',
+        status: 'UPCOMING',
+        location: 'Cancha 1 - Césped Principal',
+        startsAt: new Date('2026-08-29T09:00:00Z'),
+        endsAt: new Date('2026-08-29T10:30:00Z'),
+        parentId: 1,
+        teamId: 2,
+        awayTeamId: 3,
+        matchCategory: 'GROUP_STAGE',
+        officialAnnotatorId: 6,
+        description: 'Jornada inaugural del Torneo Mixto. Duración 80 min a 15 puntos.',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      // Partido 2 Fixture
+      {
+        id: 3,
+        title: 'Fase de Grupos: Warao Open vs Medusa Mixto',
+        type: 'MATCH',
+        status: 'UPCOMING',
+        location: 'Cancha Central',
+        startsAt: new Date('2026-08-29T11:30:00Z'),
+        endsAt: new Date('2026-08-29T13:00:00Z'),
+        parentId: 1,
+        teamId: 1,
+        awayTeamId: 2,
+        matchCategory: 'GROUP_STAGE',
+        officialAnnotatorId: 6,
+        description: 'Clásico de velocidad y manejo de disco en categoría abierta/mixta.',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      // Partido 3 Fixture
+      {
+        id: 4,
+        title: 'Fase de Grupos: Motherflowers vs Warao Open',
+        type: 'MATCH',
+        status: 'UPCOMING',
+        location: 'Cancha 2',
+        startsAt: new Date('2026-08-29T14:30:00Z'),
+        endsAt: new Date('2026-08-29T16:00:00Z'),
+        parentId: 1,
+        teamId: 3,
+        awayTeamId: 1,
+        matchCategory: 'GROUP_STAGE',
+        officialAnnotatorId: 6,
+        description: 'Definición de posiciones de cara a la Gran Final.',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      // Gran Final Fixture
+      {
+        id: 5,
+        title: 'Gran Final - Torneo Mixto de Fin de Mes',
+        type: 'MATCH',
+        status: 'UPCOMING',
+        location: 'Cancha Central',
+        startsAt: new Date('2026-08-30T16:00:00Z'),
+        endsAt: new Date('2026-08-30T18:00:00Z'),
+        parentId: 1,
+        matchCategory: 'FINALS',
+        officialAnnotatorId: 6,
+        description: 'Gran Final por la Copa de Fin de Mes y Premio de Espíritu de Juego (SOTG).',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      // Evento Especial Completado (Copa Apertura)
+      {
+        id: 6,
+        title: 'Full Day Mixto - Copa Apertura',
+        type: 'FULL_DAY_MIXTO',
+        status: 'COMPLETED',
+        location: 'Cancha Central Simón Bolívar',
+        startsAt: new Date(Date.now() - 86400000 * 6),
+        endsAt: new Date(Date.now() - 86400000 * 6 + 28800000),
+        teamId: 2,
+        awayTeamId: 3,
+        officialAnnotatorId: 6,
+        description: 'Jornada completa de partidos con seguimiento oficial por Mesa Técnica.',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+    this.nextId['event'] = 7;
 
-    // 9. PlayerMatchStats - TOTALMENTE VACÍO
-    this.playerMatchStats = [];
-    this.nextId['playerMatchStats'] = 1;
+    // 8. Event Participants & Attendance (Nóminas, Refuerzos y Mesa Técnica)
+    this.eventParticipants = [
+      // Medusa Mixto en Torneo
+      { id: 1, eventId: 1, playerId: 7, role: 'Manejador', status: 'confirmed', lineType: 'O-Line', teamSide: 'HOME', isRefuerzo: false },
+      { id: 2, eventId: 1, playerId: 8, role: 'Manejador', status: 'confirmed', lineType: 'O-Line', teamSide: 'HOME', isRefuerzo: false },
+      { id: 3, eventId: 1, playerId: 9, role: 'Cortador', status: 'confirmed', lineType: 'D-Line', teamSide: 'HOME', isRefuerzo: false },
+      { id: 4, eventId: 1, playerId: 10, role: 'Cortador', status: 'confirmed', lineType: 'D-Line', teamSide: 'HOME', isRefuerzo: false },
+      { id: 5, eventId: 1, playerId: 11, role: 'Manejador', status: 'confirmed', lineType: 'O-Line', teamSide: 'HOME', isRefuerzo: false },
+      { id: 6, eventId: 1, playerId: 12, role: 'Manejador', status: 'confirmed', lineType: 'O-Line', teamSide: 'HOME', isRefuerzo: false },
+      // Refuerzo libre añadido a Medusa: Daniela Herrera (#19)
+      { id: 7, eventId: 1, playerId: 19, role: 'Refuerzo Híbrido', status: 'confirmed', lineType: 'O-Line', teamSide: 'HOME', isRefuerzo: true },
 
-    // 10. Spirit Scores - TOTALMENTE VACÍO
-    this.spiritScores = [];
-    this.nextId['spiritScore'] = 1;
+      // Motherflowers en Torneo
+      { id: 8, eventId: 1, playerId: 13, role: 'Cortador', status: 'confirmed', lineType: 'O-Line', teamSide: 'AWAY', isRefuerzo: false },
+      { id: 9, eventId: 1, playerId: 14, role: 'Manejador', status: 'confirmed', lineType: 'O-Line', teamSide: 'AWAY', isRefuerzo: false },
+      { id: 10, eventId: 1, playerId: 15, role: 'Cortador', status: 'confirmed', lineType: 'D-Line', teamSide: 'AWAY', isRefuerzo: false },
+      { id: 11, eventId: 1, playerId: 16, role: 'Cortador', status: 'confirmed', lineType: 'D-Line', teamSide: 'AWAY', isRefuerzo: false },
+      { id: 12, eventId: 1, playerId: 17, role: 'Manejador', status: 'confirmed', lineType: 'O-Line', teamSide: 'AWAY', isRefuerzo: false },
+      { id: 13, eventId: 1, playerId: 18, role: 'Cortador', status: 'confirmed', lineType: 'O-Line', teamSide: 'AWAY', isRefuerzo: false },
+      // Refuerzo libre añadido a Motherflowers: Javier Blanco (#20)
+      { id: 14, eventId: 1, playerId: 20, role: 'Refuerzo Handler', status: 'tentative', lineType: 'O-Line', teamSide: 'AWAY', isRefuerzo: true },
+
+      // Warao Open en Torneo
+      { id: 15, eventId: 1, playerId: 1, role: 'Manejador', status: 'confirmed', lineType: 'O-Line', isRefuerzo: false },
+      { id: 16, eventId: 1, playerId: 2, role: 'Cortador', status: 'confirmed', lineType: 'O-Line', isRefuerzo: false },
+      { id: 17, eventId: 1, playerId: 3, role: 'Cortador', status: 'confirmed', lineType: 'O-Line', isRefuerzo: false },
+      { id: 18, eventId: 1, playerId: 4, role: 'Cortador', status: 'confirmed', lineType: 'D-Line', isRefuerzo: false },
+      { id: 19, eventId: 1, playerId: 5, role: 'Manejador', status: 'confirmed', lineType: 'O-Line', isRefuerzo: false },
+      { id: 20, eventId: 1, playerId: 6, role: 'Cortador', status: 'confirmed', lineType: 'D-Line', isRefuerzo: false },
+
+      // Mesa Técnica en Torneo
+      { id: 21, eventId: 1, playerId: 5, role: 'DIRECTOR_MESA', status: 'confirmed' },
+      { id: 22, eventId: 1, playerId: 11, role: 'PLANILLERO_ANOTADOR', status: 'confirmed' },
+      { id: 23, eventId: 1, playerId: 14, role: 'VEEDOR_ESPIRITU', status: 'confirmed' },
+    ];
+    this.nextId['eventParticipant'] = 24;
+
+    // Asistencias registradas
+    this.attendances = this.players.map((p, idx) => ({
+      id: idx + 1,
+      eventId: 1,
+      playerId: p.id,
+      status: 'present',
+      confirmedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }));
+    this.nextId['attendance'] = this.players.length + 1;
+
+    // 9. Event Annotations (Play-by-play del Evento Completado #6)
+    this.eventAnnotations = [
+      { id: 1, eventId: 6, type: 'GOAL', playerId: 7, relatedPlayerId: 8, teamSide: 'HOME', scoreHome: 1, scoreAway: 0, lineType: 'O-Line', note: 'Pase largo perfecto de Pedro a María en la zona', createdBy: 6, timestamp: new Date(Date.now() - 86400000 * 6 + 600000), createdAt: new Date() },
+      { id: 2, eventId: 6, type: 'GOAL', playerId: 13, relatedPlayerId: 15, teamSide: 'AWAY', scoreHome: 1, scoreAway: 1, lineType: 'O-Line', note: 'Respuesta inmediata de Motherflowers', createdBy: 6, timestamp: new Date(Date.now() - 86400000 * 6 + 1200000), createdAt: new Date() },
+      { id: 3, eventId: 6, type: 'DEFENSE', playerId: 9, teamSide: 'HOME', lineType: 'D-Line', note: 'Bloqueo aéreo de Ana Silva', createdBy: 6, timestamp: new Date(Date.now() - 86400000 * 6 + 1800000), createdAt: new Date() },
+      { id: 4, eventId: 6, type: 'GOAL', playerId: 19, relatedPlayerId: 7, teamSide: 'HOME', scoreHome: 2, scoreAway: 1, lineType: 'O-Line', isRefuerzo: true, note: 'Gol anotado por Daniela Herrera (Refuerzo Libre)', createdBy: 6, timestamp: new Date(Date.now() - 86400000 * 6 + 2400000), createdAt: new Date() },
+      { id: 5, eventId: 6, type: 'GOAL', playerId: 16, relatedPlayerId: 14, teamSide: 'AWAY', scoreHome: 2, scoreAway: 2, lineType: 'O-Line', note: 'Corte hacia break side de Camila', createdBy: 6, timestamp: new Date(Date.now() - 86400000 * 6 + 3000000), createdAt: new Date() },
+      { id: 6, eventId: 6, type: 'DEFENSE', playerId: 1, teamSide: 'HOME', lineType: 'D-Line', note: 'Intercepción de Frank Sousa', createdBy: 6, timestamp: new Date(Date.now() - 86400000 * 6 + 3600000), createdAt: new Date() },
+      { id: 7, eventId: 6, type: 'GOAL', playerId: 2, relatedPlayerId: 1, teamSide: 'HOME', scoreHome: 3, scoreAway: 2, lineType: 'O-Line', note: 'Asistencia de Frank a Juan Pérez', createdBy: 6, timestamp: new Date(Date.now() - 86400000 * 6 + 4200000), createdAt: new Date() },
+      { id: 8, eventId: 6, type: 'TURNOVER', playerId: 17, teamSide: 'AWAY', lineType: 'O-Line', note: 'Pase forzado con stall 9', createdBy: 6, timestamp: new Date(Date.now() - 86400000 * 6 + 4800000), createdAt: new Date() },
+      { id: 9, eventId: 6, type: 'GOAL', playerId: 8, relatedPlayerId: 19, teamSide: 'HOME', scoreHome: 4, scoreAway: 2, lineType: 'O-Line', note: 'Asistencia clave de la jugadora libre Daniela', createdBy: 6, timestamp: new Date(Date.now() - 86400000 * 6 + 5400000), createdAt: new Date() },
+      { id: 10, eventId: 6, type: 'GOAL', playerId: 13, relatedPlayerId: 17, teamSide: 'AWAY', scoreHome: 4, scoreAway: 3, lineType: 'O-Line', note: 'Segundo gol de Laura Gómez', createdBy: 6, timestamp: new Date(Date.now() - 86400000 * 6 + 6000000), createdAt: new Date() },
+    ];
+    this.nextId['annotation'] = 11;
+
+    // 10. PlayerMatchStats
+    this.playerMatchStats = [
+      { id: 1, eventId: 6, playerId: 7, goals: 3, assists: 4, defenses: 1, turnovers: 1, pointsPlayed: 14, isRefuerzo: false },
+      { id: 2, eventId: 6, playerId: 8, goals: 4, assists: 3, defenses: 2, turnovers: 1, pointsPlayed: 15, isRefuerzo: false },
+      { id: 3, eventId: 6, playerId: 19, goals: 3, assists: 2, defenses: 2, turnovers: 0, pointsPlayed: 12, isRefuerzo: true },
+      { id: 4, eventId: 6, playerId: 13, goals: 5, assists: 1, defenses: 0, turnovers: 2, pointsPlayed: 16, isRefuerzo: false },
+      { id: 5, eventId: 6, playerId: 14, goals: 1, assists: 5, defenses: 1, turnovers: 1, pointsPlayed: 14, isRefuerzo: false },
+      { id: 6, eventId: 6, playerId: 1, goals: 2, assists: 6, defenses: 3, turnovers: 1, pointsPlayed: 15, isRefuerzo: false },
+      { id: 7, eventId: 6, playerId: 2, goals: 4, assists: 1, defenses: 1, turnovers: 1, pointsPlayed: 13, isRefuerzo: false },
+      { id: 8, eventId: 6, playerId: 9, goals: 1, assists: 1, defenses: 4, turnovers: 0, pointsPlayed: 11, isRefuerzo: false },
+    ];
+    this.nextId['playerMatchStats'] = 9;
+
+    // 11. Spirit Scores
+    this.spiritScores = [
+      {
+        id: 1,
+        eventId: 6,
+        teamId: 3,
+        evaluatedTeam: 'Medusa Mixto',
+        rulesKnowledge: 4,
+        foulsAndContact: 4,
+        fairMindedness: 4,
+        positiveAttitude: 4,
+        communication: 4,
+        totalScore: 20,
+        comments: 'Excelente partido, juego fluido y gran respeto por las reglas.',
+        createdAt: new Date(),
+      },
+    ];
+    this.nextId['spiritScore'] = 2;
 
     // 11. Finanzas: Cuentas, Categorías y Transacciones de Ejemplo Realista
     this.accounts = [
@@ -359,40 +590,111 @@ class InMemoryDB {
     this.newsPosts = [
       {
         id: 1,
-        title: '🏆 ¡Bienvenidos a SIGEDIVO - San Juan Ultimate Crew! Guía Rápida del Sistema',
-        content: `¡Saludos a todos los atletas y miembros de **San Juan Ultimate Crew**!
+        title: '🏆 Gran Torneo Regional Open & Mixto: Convocatoria Oficial y Asignación de Mesa Técnica',
+        content: `La Directiva y el Comité Técnico informan a todo el plantel que ha quedado oficialmente programado el **Torneo Regional Open & Mixto**.
+        
+📌 **Directrices Clave**:
+- **Fecha y Lugar**: Sábado y Domingo en el Complejo Deportivo Central (Canchas 1 y 2).
+- **Mesa Técnica**: Se han asignado anotadores oficiales autorizados para el control de cronómetro, planillas digitales en vivo y Spirit Score.
+- **Roster & Asistencia**: Todo jugador debe confirmar su estado de asistencia en el módulo de Eventos antes del jueves 20:00.
+- **Indumentaria**: Llevar ambas camisetas oficiales (Oscura y Clara/Blanca).
 
-Esta plataforma ha sido diseñada para optimizar nuestra gestión deportiva, táctica y organizativa. A continuación, les compartimos los puntos clave para el uso diario:
-
-1. **📅 Calendario y Convocatorias (RSVP)**: Ingresen a la sección de *Eventos* para confirmar su disponibilidad (Asistiré / Pendiente / No podré) antes de cada entrenamiento y partido. Esto permite a los entrenadores y capitanes definir las líneas de juego (Línea O / Línea D).
-2. **📋 Pizarra Táctica (Playbook)**: Consulten las jugadas oficiales (*Vertical Stack*, *Horizontal Stack*, *Defensa en Zona Cup* y *Dome*) para llegar al campo con la estrategia clara.
-3. **💰 Transparencia Financiera**: En el módulo de *Finanzas* pueden revisar el balance general del club, aportes de membresía, compra de discos reglamentarios y presupuesto de torneos.
-4. **📚 Recursos y Reglamento**: En la sección de *Recursos* tienen acceso al reglamento oficial de la **WFDF**, la guía de **Espíritu de Juego (SOTG)** y manuales de preparación técnica.
-5. **💬 Canales de Chat**: Manténganse conectados en los canales de mensajería para coordinar traslados y resolver dudas con capitanes y cuerpo técnico.
-
-*¡A darlo todo en la cancha con el mejor Espíritu de Juego!*`,
-        authorId: null,
+*Por favor utilicen los comentarios abajo para dudas puntuales sobre logística o transporte. Recordamos el límite de 3 comentarios por miembro.*`,
+        authorId: 1,
         isPinned: true,
         isPublished: true,
-        category: 'Anuncios',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        category: '🏆 Torneo / Evento',
+        commentsLocked: false,
+        eventId: 1,
+        createdAt: new Date(Date.now() - 3600000 * 5),
+        updatedAt: new Date(Date.now() - 3600000 * 5),
       },
       {
         id: 2,
+        title: '⏱️ Aviso de Mesa Técnica: Ajuste de Horarios por Clima / Mantenimiento',
+        content: `Atención a todas las escuadras: Debido a los trabajos de drenaje en Cancha 2 y pronóstico de llovizna matutina, los primeros 2 encuentros tendrán un **desplazamiento de +30 minutos**.
+        
+- **Partido Inaugural**: Iniciará a las 09:30 AM (en lugar de las 09:00 AM).
+- **Control de Mesa**: Las planillas en vivo y el reloj de calentamiento se abrirán 15 minutos antes.
+- **Recomendación**: Llevar calzado con tapones adecuados para césped húmedo y toallas de microfibra para secar discos.`,
+        authorId: 2,
+        isPinned: true,
+        isPublished: true,
+        category: '⏱️ Eventualidad de Mesa Técnica',
+        commentsLocked: false,
+        eventId: 2,
+        createdAt: new Date(Date.now() - 3600000 * 2),
+        updatedAt: new Date(Date.now() - 3600000 * 2),
+      },
+      {
+        id: 3,
+        title: '🥏 Guía Rápida de SIGEDIVO San Juan Ultimate Crew',
+        content: `¡Saludos a todos los atletas y miembros de **San Juan Ultimate Crew**!
+
+Esta plataforma ha sido diseñada para optimizar nuestra gestión deportiva, táctica y organizativa:
+
+1. **📅 Calendario y Convocatorias (RSVP)**: Confirmen asistencia antes de cada entrenamiento y partido para estructurar Líneas O y D.
+2. **📋 Pizarra Táctica (Playbook)**: Consulten jugadas como Vertical Stack, Horizontal Stack y Defensa Cup.
+3. **💰 Transparencia Financiera**: Revisen aportes, compras de material y presupuestos de torneos.
+4. **📚 Recursos y Reglamento**: Acceso al reglamento oficial de la WFDF y manual de Espíritu de Juego (SOTG).`,
+        authorId: null,
+        isPinned: false,
+        isPublished: true,
+        category: 'Anuncios',
+        commentsLocked: false,
+        createdAt: new Date(Date.now() - 86400000 * 3),
+        updatedAt: new Date(Date.now() - 86400000 * 3),
+      },
+      {
+        id: 4,
         title: '🥏 Taller de Lanzamientos: Perfeccionamiento de Forehand y Lanzamientos Invertidos',
         content: `En las próximas sesiones dedicaremos un bloque especial al pulido del pase de derecha (Forehand / Flick), Hammer y Scoober para romper marcas en zona. Revisen el material complementario en la sección de Recursos.`,
         authorId: null,
         isPinned: false,
         isPublished: true,
         category: 'Entrenamiento',
-        createdAt: new Date(Date.now() - 86400000 * 2),
-        updatedAt: new Date(Date.now() - 86400000 * 2),
+        commentsLocked: false,
+        createdAt: new Date(Date.now() - 86400000 * 5),
+        updatedAt: new Date(Date.now() - 86400000 * 5),
       },
     ];
-    this.nextId['newsPost'] = 3;
+    this.nextId['newsPost'] = 5;
     this.newsPostFiles = [];
     this.nextId['newsPostFile'] = 1;
+
+    this.newsComments = [
+      {
+        id: 1,
+        postId: 1,
+        userId: 1,
+        authorName: 'Admin Frank',
+        authorRole: 'Directiva',
+        content: 'Recordamos a los capitanes estar 45 minutos antes para la reunión de capitanes y sorteo de discos.',
+        createdAt: new Date(Date.now() - 3600000 * 4),
+        updatedAt: new Date(Date.now() - 3600000 * 4),
+      },
+      {
+        id: 2,
+        postId: 1,
+        userId: 2,
+        authorName: 'Capitán Carlos',
+        authorRole: 'Capitán',
+        content: 'Entendido. Línea O confirmada al 100%. Llevaremos conos adicionales para el calentamiento.',
+        createdAt: new Date(Date.now() - 3600000 * 3),
+        updatedAt: new Date(Date.now() - 3600000 * 3),
+      },
+      {
+        id: 3,
+        postId: 2,
+        userId: 3,
+        authorName: 'Mesa Técnica Principal',
+        authorRole: 'Mesa Técnica',
+        content: 'Canchas revisadas. El cronómetro oficial y la transmisión de anotaciones en vivo comenzarán a las 09:15 AM.',
+        createdAt: new Date(Date.now() - 3600000 * 1),
+        updatedAt: new Date(Date.now() - 3600000 * 1),
+      },
+    ];
+    this.nextId['newsComment'] = 4;
 
     this.resources = [
       {
@@ -553,6 +855,9 @@ function hydrateItem(tableName: string, item: any, include?: any): any {
   }
 
   if (tableName === 'player') {
+    if (include.team) {
+      clone.team = item.teamId ? dbInstance.teams.find((t) => t.id === item.teamId) || null : null;
+    }
     if (include.user) {
       clone.user = dbInstance.users.find((u) => u.playerId === item.id) || null;
     }
@@ -568,6 +873,15 @@ function hydrateItem(tableName: string, item: any, include?: any): any {
   }
 
   if (tableName === 'event') {
+    if (include.team) {
+      clone.team = item.teamId ? dbInstance.teams.find((t) => t.id === item.teamId) || null : null;
+    }
+    if (include.awayTeam) {
+      clone.awayTeam = item.awayTeamId ? dbInstance.teams.find((t) => t.id === item.awayTeamId) || null : null;
+    }
+    if (include.officialAnnotator) {
+      clone.officialAnnotator = item.officialAnnotatorId ? dbInstance.users.find((u) => u.id === item.officialAnnotatorId) || null : null;
+    }
     if (include.participants) {
       clone.participants = dbInstance.eventParticipants
         .filter((ep) => ep.eventId === item.id)
@@ -599,7 +913,14 @@ function hydrateItem(tableName: string, item: any, include?: any): any {
         }));
     }
     if (include.children) {
-      clone.children = dbInstance.events.filter((e) => e.parentId === item.id);
+      clone.children = dbInstance.events
+        .filter((e) => e.parentId === item.id)
+        .map((child) => ({
+          ...child,
+          team: child.teamId ? dbInstance.teams.find((t) => t.id === child.teamId) || null : null,
+          awayTeam: child.awayTeamId ? dbInstance.teams.find((t) => t.id === child.awayTeamId) || null : null,
+          officialAnnotator: child.officialAnnotatorId ? dbInstance.users.find((u) => u.id === child.officialAnnotatorId) || null : null,
+        }));
     }
     if (include.parent) {
       clone.parent = dbInstance.events.find((e) => e.id === item.parentId) || null;
@@ -621,6 +942,9 @@ function hydrateItem(tableName: string, item: any, include?: any): any {
     }
     if (include.event) {
       clone.event = dbInstance.events.find((e) => e.id === item.eventId) || null;
+    }
+    if (include.createdByUser) {
+      clone.createdByUser = item.createdBy ? dbInstance.users.find((u) => u.id === item.createdBy) || null : null;
     }
     if (include.rival) {
       clone.rival = item.rivalId ? dbInstance.rivals.find((r) => r.id === item.rivalId) || null : null;
@@ -697,6 +1021,36 @@ function hydrateItem(tableName: string, item: any, include?: any): any {
     }
     if (include.files) {
       clone.files = dbInstance.newsPostFiles.filter((f) => f.postId === item.id);
+    }
+    if (include.comments) {
+      let comments = dbInstance.newsComments.filter((c) => c.postId === item.id);
+      if (include.comments.orderBy?.createdAt === 'desc') {
+        comments = [...comments].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      } else {
+        comments = [...comments].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      }
+      clone.comments = comments.map((c) => ({
+        ...c,
+        user: c.userId ? dbInstance.users.find((u) => u.id === c.userId) || null : null,
+      }));
+    }
+    if (include._count?.select?.comments) {
+      clone._count = {
+        ...(clone._count || {}),
+        comments: dbInstance.newsComments.filter((c) => c.postId === item.id).length,
+      };
+    }
+    if (include.event) {
+      clone.event = item.eventId ? dbInstance.events.find((e) => e.id === item.eventId) || null : null;
+    }
+  }
+
+  if (tableName === 'newsComment') {
+    if (include.user) {
+      clone.user = item.userId ? dbInstance.users.find((u) => u.id === item.userId) || null : null;
+    }
+    if (include.post) {
+      clone.post = dbInstance.newsPosts.find((p) => p.id === item.postId) || null;
     }
   }
 
@@ -947,6 +1301,7 @@ export const mockPrisma: any = {
   resource: createModelHandler('resource', () => dbInstance.resources),
   newsPost: createModelHandler('newsPost', () => dbInstance.newsPosts),
   newsPostFile: createModelHandler('newsPostFile', () => dbInstance.newsPostFiles),
+  newsComment: createModelHandler('newsComment', () => dbInstance.newsComments),
   roleRequest: createModelHandler('roleRequest', () => dbInstance.roleRequests),
   auditLog: createModelHandler('auditLog', () => dbInstance.auditLogs),
   passwordResetToken: createModelHandler('passwordResetToken', () => dbInstance.passwordResetTokens),

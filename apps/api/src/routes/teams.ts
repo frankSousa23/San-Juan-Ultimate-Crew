@@ -14,6 +14,8 @@ router.get('/public', asyncHandler(async (_req: Request, res: Response) => {
     select: {
       id: true,
       name: true,
+      tag: true,
+      categories: true,
       color: true,
       logoUrl: true,
     },
@@ -64,6 +66,9 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
 
 const createTeamSchema = z.object({
   name: z.string().min(1, 'Team name is required'),
+  tag: z.string().optional().nullable(),
+  categories: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
   color: z.string().optional().nullable(),
   logoUrl: z.string().optional().nullable(),
 })

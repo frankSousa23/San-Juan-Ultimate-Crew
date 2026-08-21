@@ -22,6 +22,7 @@ const createAnnotationSchema = z.object({
   lineType: z.string().optional(),
   timestamp: z.string().datetime().optional(), // Si no se proporciona, usa ahora
   category: z.string().optional(), // Para FULL_DAY: "OPEN" o "MIXTO"
+  isRefuerzo: z.boolean().optional(),
   // Campos para versus / rivales
   rivalId: z.number().int().positive().optional(),
   rivalPlayerId: z.number().int().positive().optional(),
@@ -38,11 +39,38 @@ const updateAnnotationSchema = createAnnotationSchema.partial().extend({
   playerId: z.number().int().positive().optional().nullable(),
   relatedPlayerId: z.number().int().positive().optional().nullable(),
   type: z.enum(['GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER']).optional(),
+  isRefuerzo: z.boolean().optional(),
 })
 
 const annotationIdSchema = z.object({
   id: z.coerce.number().int().positive()
 })
+
+const defaultAnnotationInclude = {
+  event: {
+    select: {
+      id: true,
+      title: true,
+      type: true,
+      status: true,
+    }
+  },
+  player: {
+    select: {
+      id: true,
+      name: true,
+      number: true,
+      teamId: true,
+    }
+  },
+  createdByUser: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    }
+  }
+}
 
 /**
  * @swagger
@@ -84,23 +112,7 @@ router.get('/', requireAuth, asyncHandler(async (req: Request, res: Response) =>
 
   const annotations = await prisma.eventAnnotation.findMany({
     where,
-    include: {
-      event: {
-        select: {
-          id: true,
-          title: true,
-          type: true,
-          status: true,
-        }
-      },
-      player: {
-        select: {
-          id: true,
-          name: true,
-          number: true,
-        }
-      }
-    },
+    include: defaultAnnotationInclude,
     orderBy: {
       timestamp: 'desc'
     }
@@ -121,23 +133,7 @@ router.get('/:id', requireAuth, validateParams(annotationIdSchema), asyncHandler
   
   const annotation = await prisma.eventAnnotation.findUnique({
     where: { id: Number(id) },
-    include: {
-      event: {
-        select: {
-          id: true,
-          title: true,
-          type: true,
-          status: true,
-        }
-      },
-      player: {
-        select: {
-          id: true,
-          name: true,
-          number: true,
-        }
-      }
-    }
+    include: defaultAnnotationInclude
   })
 
   if (!annotation) {
@@ -187,14 +183,10 @@ router.post('/', requireAuth, requireAnnotationAccess, validateBody(createAnnota
   }
 
   // Integración automática con Rivales / RivalPlayer:
-  // - Si viene opponentTeamName y número/nombre de jugador oponente,
-  //   buscamos (o creamos) el Rival y RivalPlayer correspondientes
-  //   y rellenamos rivalId / rivalPlayerId en la anotación.
   let rivalId: number | null = payload.rivalId ?? null
   let rivalPlayerId: number | null = payload.rivalPlayerId ?? null
 
   if (!payload.playerId && payload.opponentTeamName && payload.opponentPlayerNumber && payload.opponentPlayerName) {
-    // 1) Resolver o crear Rival por nombre (no es unique en el schema, así que usamos findFirst + create)
     let rival = await prisma.rival.findFirst({
       where: { name: payload.opponentTeamName },
     })
@@ -210,7 +202,6 @@ router.post('/', requireAuth, requireAnnotationAccess, validateBody(createAnnota
 
     rivalId = rival.id
 
-    // 2) Resolver o crear RivalPlayer por (rivalId, number)
     let rivalPlayer = await prisma.rivalPlayer.findFirst({
       where: {
         rivalId: rival.id,
@@ -227,7 +218,6 @@ router.post('/', requireAuth, requireAnnotationAccess, validateBody(createAnnota
         },
       })
     } else if (payload.opponentPlayerName && payload.opponentPlayerName !== rivalPlayer.name) {
-      // Opcional: mantener actualizado el nombre si cambia
       rivalPlayer = await prisma.rivalPlayer.update({
         where: { id: rivalPlayer.id },
         data: { name: payload.opponentPlayerName },
@@ -247,6 +237,7 @@ router.post('/', requireAuth, requireAnnotationAccess, validateBody(createAnnota
       lineType: payload.lineType ?? null,
       timestamp,
       category: payload.category,
+      isRefuerzo: payload.isRefuerzo ?? false,
       createdBy: userId,
       rivalId,
       rivalPlayerId,
@@ -257,17 +248,10 @@ router.post('/', requireAuth, requireAnnotationAccess, validateBody(createAnnota
       scoreHome: payload.scoreHome ?? null,
       scoreAway: payload.scoreAway ?? null,
     },
-    include: {
-      event: {
-        select: { id: true, title: true, type: true, status: true }
-      },
-      player: {
-        select: { id: true, name: true, number: true }
-      }
-    }
+    include: defaultAnnotationInclude
   })
 
-  // === Autocalcular Estadísticas ===
+  // === Autocalcular Estadísticas con Soporte de Refuerzos y Equipo ===
   const updateStats = async (pId: number, field: string, increment: number = 1) => {
     const stats = await prisma.playerMatchStats.findUnique({
       where: { playerId_eventId: { playerId: pId, eventId: payload.eventId } }
@@ -275,11 +259,21 @@ router.post('/', requireAuth, requireAnnotationAccess, validateBody(createAnnota
     if (stats) {
       await prisma.playerMatchStats.update({
         where: { id: stats.id },
-        data: { [field]: { increment } }
+        data: { 
+          [field]: { increment },
+          isRefuerzo: payload.isRefuerzo !== undefined ? payload.isRefuerzo : stats.isRefuerzo,
+          teamSide: payload.teamSide || stats.teamSide
+        }
       })
     } else {
       await prisma.playerMatchStats.create({
-        data: { playerId: pId, eventId: payload.eventId, [field]: increment }
+        data: { 
+          playerId: pId, 
+          eventId: payload.eventId, 
+          [field]: increment,
+          isRefuerzo: payload.isRefuerzo ?? false,
+          teamSide: payload.teamSide ?? null
+        }
       })
     }
   }
@@ -301,6 +295,7 @@ router.post('/', requireAuth, requireAnnotationAccess, validateBody(createAnnota
     eventId: annotation.eventId,
     playerId: annotation.playerId,
     type: annotation.type,
+    isRefuerzo: annotation.isRefuerzo,
   })
 
   return created(res, annotation)
@@ -361,23 +356,7 @@ router.put('/:id', requireAuth, requireAnnotationAccess, validateParams(annotati
   const annotation = await prisma.eventAnnotation.update({
     where: { id: Number(id) },
     data: updateData,
-    include: {
-      event: {
-        select: {
-          id: true,
-          title: true,
-          type: true,
-          status: true,
-        }
-      },
-      player: {
-        select: {
-          id: true,
-          name: true,
-          number: true,
-        }
-      }
-    }
+    include: defaultAnnotationInclude
   })
 
   const audit = createAuditHelper(req)

@@ -447,10 +447,10 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
             <div className="space-y-6 animate-in fade-in duration-150">
               <div className="bg-slate-900 text-white rounded-2xl p-5 sm:p-6 shadow-md">
                 <h3 className="font-black text-xl sm:text-2xl text-white mb-2 flex items-center gap-2">
-                  <span>🖥️</span> Catálogo de Módulos & Pizarras de SIGEDIVO
+                  <span>🖥️</span> Catálogo de Módulos (Versión Beta Multi-Equipo)
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-300 max-w-3xl">
-                  Recorrido visual explicativo por cada una de las herramientas diseñadas para la gestión táctica, deportiva y organizativa del Disco Volador.
+                  SIGEDIVO opera en modo Multi-Equipo y Multi-División. Cada club cuenta con aislamiento de datos: Roster propio, Finanzas privadas, Partidos y Tácticas independientes. Este catálogo describe las herramientas disponibles para cada equipo registrado en la plataforma.
                 </p>
               </div>
 
