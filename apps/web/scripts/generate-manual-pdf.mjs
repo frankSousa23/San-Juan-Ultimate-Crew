@@ -3,7 +3,7 @@ import fs from 'fs'
 import path from 'path'
 
 const DOCS_DIR = path.resolve('..', '..', 'docs')
-const OUTPUT_PDF = path.join(DOCS_DIR, 'MANUAL_COMPLETO_SAN_JUAN_ULTIMATE_CREW.pdf')
+const OUTPUT_PDF = path.join(DOCS_DIR, 'MANUAL_COMPLETO_SIGEDIVO.pdf')
 const IMAGES_DIR = path.join(DOCS_DIR, 'images')
 
 // Función para convertir imagen a base64

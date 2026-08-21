@@ -75,13 +75,13 @@ export class NetworkOptimizationService {
       const cached = this.getFromCache(requestId)
       if (cached) {
         this.stats.cacheHitRate = (this.stats.cacheHitRate + 1) / 2
-        return cached as unknown as T
+        return cached as T
       }
     }
 
     // Agregar a cola si hay demasiadas requests activas
     if (this.activeRequests.size >= this.options.maxConcurrentRequests) {
-      return this.queueRequest(config) as unknown as Promise<T>
+      return this.queueRequest(config) as Promise<T>
     }
 
     return this.executeRequest(config, requestId)
@@ -104,7 +104,7 @@ export class NetworkOptimizationService {
         this.setCache(requestId, response, this.options.cacheTimeout)
       }
 
-      return response
+      return response as T
     } catch (error) {
       const responseTime = Date.now() - startTime
       this.updateStats(false, responseTime)
@@ -199,7 +199,7 @@ export class NetworkOptimizationService {
   private getFromCache<T>(key: string): T | null {
     const cached = this.requestCache.get(key)
     if (cached && Date.now() - cached.timestamp < cached.ttl) {
-      return cached as unknown as T.data
+      return cached.data as T
     }
     this.requestCache.delete(key)
     return null

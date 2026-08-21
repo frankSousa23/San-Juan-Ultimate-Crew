@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 
 // Servicio de optimización de imágenes
 export interface ImageOptimizationOptions {

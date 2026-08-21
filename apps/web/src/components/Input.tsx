@@ -1,6 +1,6 @@
 import React, { forwardRef } from 'react'
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label?: string
   error?: string
   helperText?: string
@@ -9,7 +9,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   onLeftIconClick?: () => void
   onRightIconClick?: () => void
   variant?: 'default' | 'filled' | 'outlined'
-  inputSize?: "sm" | "md" | "lg"
+  size?: "sm" | "md" | "lg"
   fullWidth?: boolean
 }
 
@@ -107,12 +107,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
 Input.displayName = 'Input'
 
 // Textarea component
-interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface TextareaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'size'> {
   label?: string
   error?: string
   helperText?: string
   variant?: 'default' | 'filled' | 'outlined'
-  inputSize?: "sm" | "md" | "lg"
+  size?: "sm" | "md" | "lg"
   fullWidth?: boolean
   resize?: 'none' | 'vertical' | 'horizontal' | 'both'
 }
@@ -194,14 +194,14 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({
 Textarea.displayName = 'Textarea'
 
 // Select component
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size"> {
   label?: string
   error?: string
   helperText?: string
   options: Array<{ value: string | number; label: string; disabled?: boolean }>
   placeholder?: string
   variant?: 'default' | 'filled' | 'outlined'
-  inputSize?: "sm" | "md" | "lg"
+  size?: "sm" | "md" | "lg"
   fullWidth?: boolean
 }
 
@@ -312,7 +312,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
     }
 
     timeoutRef.current = setTimeout(() => {
-      onSearch(internalValue)
+      onSearch(internalValue as string)
     }, debounceMs)
 
     return () => {

@@ -50,7 +50,7 @@ let curY = 115;
 curY = drawSectionHeader('1. RESUMEN ARQUITECTÓNICO DEL CONTROL DE ACCESO', curY);
 
 doc.fontSize(9.5).font('Helvetica').fillColor(TEXT_DARK).text(
-  'El sistema de San Juan Ultimate Crew implementa un modelo jerárquico de control de acceso basado en roles (RBAC). Permite segmentar responsabilidades de gestión de la directiva, táctica de entrenadores, liderazgo en cancha y participación deportiva de los atletas.',
+  'El sistema SIGEDIVO implementa un modelo jerárquico de control de acceso basado en roles (RBAC). Permite segmentar responsabilidades de gestión de la directiva, táctica de entrenadores, liderazgo en cancha y participación deportiva de los atletas.',
   40, curY, { width: 515, align: 'justify', lineGap: 3 }
 );
 

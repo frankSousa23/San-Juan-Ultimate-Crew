@@ -45,7 +45,7 @@ export const LazyLoad: React.FC<LazyLoadProps> = ({
 }
 
 // Lazy Image Component
-interface LazyImageProps {
+interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string
   alt: string
   width?: number

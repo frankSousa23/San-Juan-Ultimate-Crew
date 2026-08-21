@@ -116,7 +116,7 @@ export function generateSystemManualPdf(): jsPDF {
   doc.setFontSize(9)
   doc.setTextColor(51, 65, 85)
   doc.text('• Administrador Inicial (frankalfonso1988@gmail.com): Pre-aprobado para gestión, configuración y aprobación.', margin + 12, 175)
-  doc.text('• Usuario Invitado (guest@sigedivo.com): Modo muestra y solo lectura visible en la pantalla de login.', margin + 12, 182)
+  doc.text('', margin + 12, 182)
   doc.text('• Nuevos Registros: Todos los nuevos usuarios inician en estado PENDIENTE hasta ser aprobados.', margin + 12, 189)
   doc.text('• Privacidad del Admin: El acceso administrativo no se expone públicamente en el login.', margin + 12, 196)
 
@@ -400,7 +400,7 @@ export function generateSystemManualPdf(): jsPDF {
   doc.setFontSize(8.5)
   doc.setTextColor(20, 83, 45)
   const guestLines = [
-    '• Acceso Inmediato en Login: Cualquier persona puede ingresar con 1 clic como Invitado (guest@sigedivo.com).',
+    '',
     '• Vistas Disponibles en Modo Muestra: Consulta del Roster general, Calendario de eventos públicos,',
     '  Estadísticas de anotaciones, Biblioteca de jugadas tácticas y Descarga del Manual Oficial.',
     '• Permisos Restringidos: El rol Invitado cuenta con permisos de SOLO LECTURA. No puede alterar datos,',

@@ -4,7 +4,7 @@ interface DividerProps {
   orientation?: 'horizontal' | 'vertical'
   thickness?: 'thin' | 'medium' | 'thick'
   color?: string
-  style?: 'solid' | 'dashed' | 'dotted'
+  lineStyle?: 'solid' | 'dashed' | 'dotted'
   spacing?: 'none' | 'small' | 'medium' | 'large'
   label?: string
   labelPosition?: 'left' | 'center' | 'right'
@@ -16,7 +16,7 @@ export const Divider: React.FC<DividerProps> = ({
   orientation = 'horizontal',
   thickness = 'thin',
   color = '#e5e7eb',
-  style: lineStyle = 'solid',
+  lineStyle = 'solid',
   spacing = 'medium',
   label,
   labelPosition = 'center',
@@ -143,7 +143,7 @@ export const Divider: React.FC<DividerProps> = ({
 interface HorizontalDividerProps {
   thickness?: 'thin' | 'medium' | 'thick'
   color?: string
-  style?: 'solid' | 'dashed' | 'dotted'
+  lineStyle?: 'solid' | 'dashed' | 'dotted'
   spacing?: 'none' | 'small' | 'medium' | 'large'
   label?: string
   labelPosition?: 'left' | 'center' | 'right'
@@ -154,7 +154,7 @@ interface HorizontalDividerProps {
 export const HorizontalDivider: React.FC<HorizontalDividerProps> = ({
   thickness = 'thin',
   color = '#e5e7eb',
-  style: lineStyle = 'solid',
+  lineStyle = 'solid',
   spacing = 'medium',
   label,
   labelPosition = 'center',
@@ -166,7 +166,7 @@ export const HorizontalDivider: React.FC<HorizontalDividerProps> = ({
       orientation="horizontal"
       thickness={thickness}
       color={color}
-      style={lineStyle}
+      lineStyle={lineStyle}
       spacing={spacing}
       label={label}
       labelPosition={labelPosition}
@@ -180,7 +180,7 @@ export const HorizontalDivider: React.FC<HorizontalDividerProps> = ({
 interface VerticalDividerProps {
   thickness?: 'thin' | 'medium' | 'thick'
   color?: string
-  style?: 'solid' | 'dashed' | 'dotted'
+  lineStyle?: 'solid' | 'dashed' | 'dotted'
   spacing?: 'none' | 'small' | 'medium' | 'large'
   className?: string
   style?: React.CSSProperties
@@ -189,7 +189,7 @@ interface VerticalDividerProps {
 export const VerticalDivider: React.FC<VerticalDividerProps> = ({
   thickness = 'thin',
   color = '#e5e7eb',
-  style: lineStyle = 'solid',
+  lineStyle = 'solid',
   spacing = 'medium',
   className = '',
   style = {}
@@ -199,7 +199,7 @@ export const VerticalDivider: React.FC<VerticalDividerProps> = ({
       orientation="vertical"
       thickness={thickness}
       color={color}
-      style={lineStyle}
+      lineStyle={lineStyle}
       spacing={spacing}
       className={className}
       style={style}
@@ -214,7 +214,7 @@ interface SectionDividerProps {
   icon?: React.ReactNode
   thickness?: 'thin' | 'medium' | 'thick'
   color?: string
-  style?: 'solid' | 'dashed' | 'dotted'
+  lineStyle?: 'solid' | 'dashed' | 'dotted'
   spacing?: 'none' | 'small' | 'medium' | 'large'
   className?: string
   style?: React.CSSProperties
@@ -226,7 +226,7 @@ export const SectionDivider: React.FC<SectionDividerProps> = ({
   icon,
   thickness = 'thin',
   color = '#e5e7eb',
-  style: lineStyle = 'solid',
+  lineStyle = 'solid',
   spacing = 'large',
   className = '',
   style = {}
@@ -255,7 +255,7 @@ export const SectionDivider: React.FC<SectionDividerProps> = ({
       <HorizontalDivider
         thickness={thickness}
         color={color}
-        style={lineStyle}
+        lineStyle={lineStyle}
         spacing={spacing}
       />
     </div>

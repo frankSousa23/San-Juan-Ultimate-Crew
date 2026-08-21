@@ -60,6 +60,7 @@ export const Login: React.FC = () => {
           <p className="text-sm sm:text-base text-gray-600 mt-2 font-medium break-words">Sistema de Gestión para el Disco Volador</p>
         </div>
 
+        
         {/* Acceso Demostrativo Exclusivo: Modo Invitado (Guest) */}
         <div className="mb-6 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-4 sm:p-5">
           <div className="flex items-start gap-3">

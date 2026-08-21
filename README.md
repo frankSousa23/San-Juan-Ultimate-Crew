@@ -34,6 +34,59 @@ Este proyecto es software libre y de código abierto bajo la **[Licencia MIT](LI
 
 ---
 
+## 📸 Galería de Vistas y Funcionalidades
+
+A continuación, se presenta un recorrido visual por los módulos principales de SIGEDIVO, diseñados bajo una arquitectura limpia, responsiva y orientada a la experiencia del usuario (UX) en campo.
+
+### 🔐 1. Inicio de Sesión y Modo Demostración
+El portal de acceso seguro del sistema. Cuenta con validación JWT, un diseño responsivo de alto contraste y un **Modo Invitado de 1 Clic** que permite explorar un ecosistema completo de demostración sin necesidad de registro.
+![Inicio de Sesión](./docs/images/00_login.png)
+
+### 📊 2. Dashboard Principal
+El panel de control (Dashboard) ofrece una vista panorámica en tiempo real del club. Integra widgets rápidos de estado del Roster (jugadores activos y lesionados), próximos torneos y un resumen financiero inmediato.
+![Dashboard Principal](./docs/images/01_dashboard.png)
+
+### 🏃 3. Roster y Perfil de Atletas
+Gestión completa de la plantilla oficial. Permite organizar a los jugadores por línea de juego, posición (Handler, Cutter, Híbrido), y enlazar su estado médico y estadísticas históricas.
+![Roster Oficial](./docs/images/02_roster.png)
+
+### ⏱️ 4. Pizarra Táctica y Anotaciones en Vivo (Móvil y Escritorio)
+El corazón estadístico del sistema. Diseñado específicamente para ser usado en el campo de juego desde una Tablet o Smartphone. Los botones son táctiles y de gran tamaño para registrar asistencias, goles, defensas (D's) y pérdidas al instante.
+<div align="center">
+  <img src="./docs/images/03_anotaciones_selector.png" width="48%" alt="Anotaciones Selector" />
+  <img src="./docs/images/14_anotaciones_movil_tactil.png" width="48%" alt="Anotaciones Móvil Táctil" />
+</div>
+
+### 📅 5. Eventos, Torneos y Convocatorias
+Módulo de logística deportiva para coordinar prácticas y competiciones oficiales. Incluye confirmación de asistencia (RSVP) por jugador y organización de partidos (fases de grupos, semifinales, finales).
+![Eventos y Torneos](./docs/images/04_eventos_torneos.png)
+
+### 📈 6. Estadísticas de Rendimiento (Analytics)
+Procesamiento de datos en tiempo real (Puntos Jugados, +/- Plus/Minus, Goles, Asistencias) que alimenta tablas de líderes y permite al cuerpo técnico tomar decisiones informadas sobre las líneas.
+![Estadísticas Generales](./docs/images/10_estadisticas.png)
+
+### 💰 7. Control de Finanzas y Tesorería
+Herramienta contable dedicada a la Directiva y Tesorería del club. Seguimiento riguroso de pagos de mensualidades, inscripción a torneos (Bid Fees), compra de discos y control del balance (Caja Chica y Cuentas Bancarias).
+![Tesorería y Finanzas](./docs/images/05_finanzas.png)
+
+### 📋 8. Libro de Jugadas (Playbook) Tácticas
+Un espacio formativo y estratégico donde los entrenadores (Coaches) publican las formaciones oficiales del equipo (e.g. *Vertical Stack*, *Horizontal Stack*, *Defensa Cup*).
+![Playbook Táctico](./docs/images/07_jugadas_tacticas.png)
+
+### 🏥 9. Parte Médico y Gestión de Lesiones
+Un seguimiento evolutivo de las lesiones de los atletas, desde el momento del incidente hasta la recuperación total (Alta médica), permitiendo a los entrenadores proteger la salud física del roster.
+![Gestión de Lesiones](./docs/images/06_lesiones.png)
+
+### 🛡️ 10. Scouting de Rivales
+Base de datos técnica de equipos adversarios. Permite almacenar puntos fuertes, tácticas habituales y análisis detallado de jugadores clave para planificar estrategias previas a los encuentros.
+![Scouting de Rivales](./docs/images/08_scouting_rivales.png)
+
+### ⚙️ 11. Administración del Sistema (Directiva)
+Panel exclusivo para la Administración. Desde aquí se aprueban las solicitudes de nuevos atletas, se asignan roles (Capitán, Entrenador, Directiva) y se gestionan los diferentes equipos y categorías que conviven en el sistema.
+![Admin Usuarios](./docs/images/12_admin_usuarios.png)
+
+---
+
 ## 🚀 Módulos y Funcionalidades del Sistema
 
 ### 0. 🛡️ Arquitectura Multi-Equipo y Multi-División

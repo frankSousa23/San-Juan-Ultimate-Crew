@@ -81,7 +81,7 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
         Object.keys(payload).forEach(k => {
           const key = k as keyof typeof payload
           if (payload[key] === '' || payload[key] === undefined) {
-            delete (payload as Record<string, unknown>)[key]
+            delete (payload as Record<string, unknown>)[k]
           }
         })
       }

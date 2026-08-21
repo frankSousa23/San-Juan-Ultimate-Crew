@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken'
 import { Request } from 'express'
 
-export function isGuestRequest(req: Request): boolean { return false; 
+export function isGuestRequest(req: Request): boolean {
   const user = (req as any).user
   if (user?.email === 'guest@sigedivo.com') return true
 
@@ -220,8 +220,8 @@ export const GUEST_TRANSACTIONS = [
 export const GUEST_POSTS = [
   {
     id: 1,
-    title: '🏆 ¡Bienvenidos a SIGEDIVO - San Juan Ultimate Crew! Guía Rápida del Sistema',
-    content: `¡Saludos a todos los atletas y miembros de **San Juan Ultimate Crew**!
+    title: '🏆 ¡Bienvenidos a SIGEDIVO! Guía Rápida del Sistema',
+    content: `¡Saludos a todos los atletas y miembros de **SIGEDIVO**!
 
 Esta plataforma ha sido diseñada para optimizar nuestra gestión deportiva, táctica y organizativa. A continuación, les compartimos los puntos clave para el uso diario:
 

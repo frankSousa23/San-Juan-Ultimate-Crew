@@ -142,7 +142,7 @@ export const Form: React.FC<FormProps> = ({
             {showCancelButton && (
               <Button
                 type="button"
-                variant="outline"
+                variant="secondary"
                 onClick={onCancel}
                 disabled={isSubmitting}
                 {...cancelButtonProps}

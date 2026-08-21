@@ -2,7 +2,7 @@ import React from 'react'
 
 interface Column<T> {
   key: keyof T
-  title: string
+  title: string | React.ReactNode
   render?: (value: any, item: T, index: number) => React.ReactNode
   sortable?: boolean
   width?: string

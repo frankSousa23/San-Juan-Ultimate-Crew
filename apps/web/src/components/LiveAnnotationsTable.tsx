@@ -400,7 +400,7 @@ export default function LiveAnnotationsTable({ event: initialEvent, onClose, emb
         teamSide: payload.teamSide || null,
         opponentPlayerName: payload.opponentPlayerName || null,
         opponentTeamName: payload.opponentTeamName || null,
-        timestamp: payload.timestamp,
+        timestamp: payload.timestamp || "",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
