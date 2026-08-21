@@ -104,3 +104,4 @@ backups/
 *.sqlite
 *.sqlite3
 dev.db
+.local_archive/

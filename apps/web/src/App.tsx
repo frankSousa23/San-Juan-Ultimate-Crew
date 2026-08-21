@@ -3,7 +3,7 @@ import React, { Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { Layout } from './components/Layout'
-import { ErrorBoundary } from './components/ErrorBoundary'
+import { FaultBoundary } from './components/FaultBoundary'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 
 import Dashboard from './pages/Dashboard'
@@ -126,14 +126,14 @@ function AppRoutes() {
 
 function App() {
   return (
-    <ErrorBoundary>
+    <FaultBoundary>
       <AuthProvider>
         <Router>
           <AppRoutes />
           <Toaster position="top-right" />
         </Router>
       </AuthProvider>
-    </ErrorBoundary>
+    </FaultBoundary>
   )
 }
 

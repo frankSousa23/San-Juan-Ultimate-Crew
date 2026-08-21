@@ -96,7 +96,7 @@ jobs:
     - name: Run database migrations
       run: |
         cd apps/api
-        npx prisma db push --skip-generate --accept-data-loss
+        npx prisma db push  --accept-data-loss
       continue-on-error: false
       timeout-minutes: 5
       env:

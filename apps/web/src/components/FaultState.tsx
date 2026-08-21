@@ -1,6 +1,6 @@
 import React from 'react'
 
-interface ErrorStateProps {
+interface FaultStateProps {
   title?: string
   message: string
   onRetry?: () => void
@@ -9,7 +9,7 @@ interface ErrorStateProps {
   details?: string
 }
 
-export const ErrorState: React.FC<ErrorStateProps> = ({
+export const FaultState: React.FC<FaultStateProps> = ({
   title = 'Algo salió mal',
   message,
   onRetry,
@@ -54,7 +54,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
 
 // Specific error states for common scenarios
 export const NetworkError: React.FC<{ onRetry?: () => void }> = ({ onRetry }) => (
-  <ErrorState
+  <FaultState
     title="Error de conexión"
     message="No se pudo conectar con el servidor. Verifica tu conexión a internet e intenta nuevamente."
     onRetry={onRetry}
@@ -62,7 +62,7 @@ export const NetworkError: React.FC<{ onRetry?: () => void }> = ({ onRetry }) =>
 )
 
 export const NotFoundError: React.FC<{ onGoBack?: () => void }> = ({ onGoBack }) => (
-  <ErrorState
+  <FaultState
     title="No encontrado"
     message="El recurso que buscas no existe o ha sido eliminado."
     onGoBack={onGoBack}
@@ -70,7 +70,7 @@ export const NotFoundError: React.FC<{ onGoBack?: () => void }> = ({ onGoBack })
 )
 
 export const UnauthorizedError: React.FC<{ onGoBack?: () => void }> = ({ onGoBack }) => (
-  <ErrorState
+  <FaultState
     title="Acceso denegado"
     message="No tienes permisos para acceder a este recurso."
     onGoBack={onGoBack}
@@ -81,7 +81,7 @@ export const ServerError: React.FC<{ onRetry?: () => void; details?: string }> =
   onRetry, 
   details 
 }) => (
-  <ErrorState
+  <FaultState
     title="Error del servidor"
     message="Ocurrió un error interno en el servidor. Nuestro equipo ha sido notificado."
     onRetry={onRetry}
@@ -95,7 +95,7 @@ export const ValidationError: React.FC<{
   details?: string;
   field?: string;
 }> = ({ onRetry, details, field }) => (
-  <ErrorState
+  <FaultState
     title={field ? `Error en ${field}` : "Error de validación"}
     message="Los datos proporcionados no son válidos. Por favor, revisa la información e intenta nuevamente."
     onRetry={onRetry}
@@ -142,7 +142,7 @@ export const InlineError: React.FC<{
 }
 
 // Error boundary fallback component
-export const ErrorBoundaryFallback: React.FC<{ 
+export const FaultBoundaryFallback: React.FC<{ 
   error: Error; 
   onRetry?: () => void;
 }> = ({ error, onRetry }) => (

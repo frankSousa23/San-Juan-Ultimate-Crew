@@ -10,7 +10,7 @@ interface State {
   error?: Error
 }
 
-export class ErrorBoundary extends Component<Props, State> {
+export class FaultBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false
   }
@@ -20,7 +20,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
+    console.error('FaultBoundary caught an error:', error, errorInfo)
   }
 
   public render() {

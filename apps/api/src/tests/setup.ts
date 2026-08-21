@@ -51,7 +51,7 @@ beforeAll(async () => {
   }
   
   try {
-    execSync('npx prisma db push --skip-generate --accept-data-loss', { 
+    execSync('npx prisma db push  --accept-data-loss', { 
       stdio: 'ignore',
       env: { ...process.env },
       timeout: 20000

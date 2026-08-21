@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useDataContext } from '../contexts/DataContext'
 import { LoadingState } from './LoadingState'
-import { ErrorState } from './ErrorState'
+import { FaultState } from './FaultState'
 
 interface DataInitializerProps {
   children: React.ReactNode
@@ -87,7 +87,7 @@ export const DataInitializer: React.FC<DataInitializerProps> = ({ children }) =>
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="max-w-md w-full">
-          <ErrorState
+          <FaultState
             title="Error al cargar datos"
             message={initializationError}
             onRetry={() => window.location.reload()}
