@@ -131,7 +131,7 @@ export class TestingService {
 
     try {
       for (const suite of this.testSuites) {
-        await this.runTestSuite(suite)
+        await this.runTestSuite(suite.id)
       }
 
       this.currentReport.summary = this.calculateSummary()

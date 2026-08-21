@@ -8,7 +8,7 @@ Esta guía detalla el proceso para desplegar el **Sistema de Gestión para el Di
 
 - **Node.js** 20.x o 22.x LTS y **npm** 10+.
 - **Docker & Docker Compose** (para despliegue autocontenido en VPS).
-- **Instancia de PostgreSQL 16+** (local o en la nube como Neon, Supabase o Render PostgreSQL).
+- **Instancia de PostgreSQL 15+ (con soporte completo multi-tenant lógico por Team ID)** (local o en la nube como Neon, Supabase o Render PostgreSQL).
 - **Dominio Propio** (opcional pero recomendado para producción con certificado SSL).
 
 ---

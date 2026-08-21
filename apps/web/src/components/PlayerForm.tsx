@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { CreatePlayerInput, Player, Position, Status, UpdatePlayerInput } from '../types/player'
+import { teamsApi, TeamItem } from '../lib/api'
 
 type Mode = 'create' | 'edit'
 
@@ -14,6 +15,7 @@ const positionOptions: Position[] = ['HANDLER', 'CUTTER', 'HYBRID']
 const statusOptions: Status[] = ['ACTIVE', 'INJURED', 'INACTIVE']
 
 export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props) {
+  const [teams, setTeams] = useState<TeamItem[]>([])
   const [form, setForm] = useState<CreatePlayerInput | UpdatePlayerInput>({
     name: '',
     number: 0,
@@ -21,9 +23,14 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
     status: 'ACTIVE',
     heightCm: undefined,
     experience: '',
+    teamId: undefined,
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    teamsApi.list().then(t => setTeams(t)).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (mode === 'edit' && initial) {
@@ -34,9 +41,10 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
         status: initial.status,
         heightCm: initial.heightCm,
         experience: initial.experience ?? '',
+        teamId: initial.teamId ?? undefined,
       })
     } else {
-      setForm({ name: '', number: 0, position: 'HYBRID', status: 'ACTIVE', heightCm: undefined, experience: '' })
+      setForm({ name: '', number: 0, position: 'HYBRID', status: 'ACTIVE', heightCm: undefined, experience: '', teamId: undefined })
     }
   }, [mode, initial])
 
@@ -53,8 +61,13 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
     setSubmitting(true)
     try {
       // sanitize numeric fields
-      const payload: CreatePlayerInput | UpdatePlayerInput = { ...form }
+      const payload: any = { ...form }
       if (payload.number !== undefined) payload.number = Number(payload.number)
+      if (payload.teamId !== undefined && payload.teamId !== null && payload.teamId !== '') {
+        payload.teamId = Number(payload.teamId)
+      } else {
+        payload.teamId = null
+      }
       if (payload.heightCm !== undefined && payload.heightCm !== null && payload.heightCm !== '') {
         payload.heightCm = Number(payload.heightCm)
       }
@@ -134,6 +147,21 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
           </select>
         </div>
         <div>
+          <label className="block text-sm text-gray-600 mb-1">Equipo / División</label>
+          <select
+            value={form.teamId ?? ''}
+            onChange={e => handleChange('teamId', e.target.value ? Number(e.target.value) : undefined)}
+            className="w-full px-3 py-2 border rounded-lg"
+          >
+            <option value="">-- Sin equipo / General --</option>
+            {teams.map(t => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
           <label className="block text-sm text-gray-600 mb-1">Altura (cm)</label>
           <input
             type="number"
@@ -147,7 +175,7 @@ export default function PlayerForm({ mode, initial, onCancel, onSubmit }: Props)
             placeholder="175"
           />
         </div>
-        <div>
+        <div className="md:col-span-2">
           <label className="block text-sm text-gray-600 mb-1">Experiencia</label>
           <input
             value={form.experience ?? ''}

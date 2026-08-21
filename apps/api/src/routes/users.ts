@@ -65,19 +65,54 @@ router.get('/', requireRole(['admin']), asyncHandler(async (req: Request, res: R
   
   const users = await prisma.user.findMany({ 
     where,
-    include: { roles: { include: { role: true } } },
+    include: { team: true, roles: { include: { role: true } } },
     orderBy: { createdAt: 'desc' }
   })
-  const list = users.map((u: UserWithRoles & { status: string; createdAt: Date }) => ({
+  const list = users.map((u: any) => ({
     id: u.id,
     email: u.email,
     name: u.name,
     status: u.status,
     playerId: u.playerId ?? null,
-    roles: (u.roles || []).map((ur: any) => ur.role?.name).filter((name): name is string => Boolean(name)),
+    teamId: u.teamId ?? null,
+    teamName: u.team?.name ?? null,
+    roles: Array.from(new Set((u.roles || []).map((ur: any) => ur.role?.name).filter((name): name is string => Boolean(name)))),
     createdAt: u.createdAt,
   }))
   return success(res, list)
+}))
+
+// Assign or update user team
+router.put('/:id/team', requireRole(['admin', 'directiva']), asyncHandler(async (req: Request, res: Response) => {
+  const id = Number(req.params.id)
+  if (isNaN(id)) return validationError(res, 'Invalid user ID')
+  const { teamId } = req.body
+  const numericTeamId = teamId ? Number(teamId) : null
+  
+  const user = await prisma.user.findUnique({ where: { id } })
+  if (!user) return notFound(res, 'User not found')
+  
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id },
+      data: { teamId: numericTeamId }
+    })
+    if (user.playerId) {
+      await tx.player.update({
+        where: { id: user.playerId },
+        data: { teamId: numericTeamId }
+      }).catch(() => {})
+    }
+  })
+  
+  const audit = createAuditHelper(req)
+  await audit.log('UPDATE', 'User', id, { action: 'TEAM_ASSIGNED', teamId: numericTeamId })
+  
+  const updatedUser = await prisma.user.findUnique({
+    where: { id },
+    include: { team: true, roles: { include: { role: true } } }
+  })
+  return updated(res, updatedUser)
 }))
 
 const userIdFromTokenSchema = z.object({
@@ -934,6 +969,7 @@ router.post('/:id/approve', requireRole(['admin']), asyncHandler(async (req: Req
           status: playerData.status || 'ACTIVE',
           heightCm: playerData.heightCm || null,
           experience: playerData.experience || null,
+          teamId: user.teamId || null,
         }
       })
       finalPlayerId = newPlayer.id

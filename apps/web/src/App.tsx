@@ -1,33 +1,37 @@
 
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { Layout } from './components/Layout'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+
 import Dashboard from './pages/Dashboard'
-import Roster from './pages/Roster'
-import Events from './pages/Events'
-import Communications from './pages/Communications'
-import Finances from './pages/Finances'
-import Statistics from './pages/Statistics'
-import Injuries from './pages/Injuries'
-import Rivals from './pages/Rivals'
-import Plays from './pages/Plays'
-import RosterTorneo from './pages/RosterTorneo'
-import Annotations from './pages/Annotations'
-import Resources from './pages/Resources'
-import Profile from './pages/Profile'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
-import AdminUsers from './pages/AdminUsers'
-import AdminFeedback from './pages/AdminFeedback'
-import SystemMonitoring from './pages/SystemMonitoring'
+import Profile from './pages/Profile'
 import About from './pages/About'
 
-// Protected Route Component
+// Lazy loaded heavy components
+const Roster = lazy(() => import('./pages/Roster'))
+const Events = lazy(() => import('./pages/Events'))
+const Communications = lazy(() => import('./pages/Communications'))
+const Finances = lazy(() => import('./pages/Finances'))
+const Statistics = lazy(() => import('./pages/Statistics'))
+const Injuries = lazy(() => import('./pages/Injuries'))
+const Rivals = lazy(() => import('./pages/Rivals'))
+const Plays = lazy(() => import('./pages/Plays'))
+const RosterTorneo = lazy(() => import('./pages/RosterTorneo'))
+const Annotations = lazy(() => import('./pages/Annotations'))
+const Resources = lazy(() => import('./pages/Resources'))
+const AdminUsers = lazy(() => import('./pages/AdminUsers'))
+const AdminTeams = lazy(() => import('./pages/AdminTeams'))
+const AdminFeedback = lazy(() => import('./pages/AdminFeedback'))
+const SystemMonitoring = lazy(() => import('./pages/SystemMonitoring'))
+
+// Protected Route Component - Maneja la protección de rutas basada en roles y la inyección de contexto Multi-Equipo
 const ProtectedRoute: React.FC<{ 
   children: React.ReactNode; 
   requiredRole?: string | string[];
@@ -72,7 +76,8 @@ const ProtectedRoute: React.FC<{
 function AppRoutes() {
   return (
     <Layout>
-      <Routes>
+      <Suspense fallback={<div className="flex items-center justify-center h-[50vh]">Cargando módulo...</div>}>
+        <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -99,10 +104,12 @@ function AppRoutes() {
 
         {/* Treasurer & Admin Routes */}
         <Route path="/finanzas" element={<ProtectedRoute requiredRole={['treasurer', 'admin', 'directiva']}><Finances /></ProtectedRoute>} />
-        <Route path="/admin/usuarios" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
+        <Route path="/admin/usuarios" element={<ProtectedRoute requiredRole={['admin', 'directiva']}><AdminUsers /></ProtectedRoute>} />
+        <Route path="/admin/equipos" element={<ProtectedRoute requiredRole={['admin', 'directiva']}><AdminTeams /></ProtectedRoute>} />
         <Route path="/admin/feedback" element={<ProtectedRoute requiredRole="admin"><AdminFeedback /></ProtectedRoute>} />
         <Route path="/admin/monitoring" element={<ProtectedRoute requiredRole="admin"><SystemMonitoring /></ProtectedRoute>} />
-      </Routes>
+        </Routes>
+      </Suspense>
     </Layout>
   )
 }

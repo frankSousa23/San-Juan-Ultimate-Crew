@@ -73,6 +73,7 @@ const DEFAULT_PW_HASH = bcrypt.hashSync('123456', 10);
 const ADMIN_PW_HASH = bcrypt.hashSync('passWORD23', 10);
 
 class InMemoryDB {
+  teams: any[] = [];
   permissions: any[] = [];
   roles: any[] = [];
   rolePermissions: any[] = [];
@@ -114,6 +115,10 @@ class InMemoryDB {
   }
 
   seed() {
+    // Reset all arrays and ID counters for clean baseline
+    this.userRoles = [];
+    this.rolePermissions = [];
+
     // 1. Permissions
     const permNames = [
       'roster:view', 'roster:manage',
@@ -175,6 +180,13 @@ class InMemoryDB {
       { id: 1, email: 'frankalfonso1988@gmail.com', name: 'Frank Sousa', role: 'admin', playerId: null },
       { id: 2, email: 'guest@sigedivo.com', name: 'Invitado / Demostración', role: 'guest', playerId: null },
     ];
+
+    
+    this.teams = [
+      { id: 1, name: 'San Juan Ultimate Crew', color: '#ff0000', createdAt: new Date(), updatedAt: new Date() },
+      { id: 2, name: 'Equipo B', color: '#00ff00', createdAt: new Date(), updatedAt: new Date() },
+    ];
+    this.nextId['team'] = 3;
 
     this.users = coreUsers.map((u) => ({
       id: u.id,
@@ -506,8 +518,14 @@ function hydrateItem(tableName: string, item: any, include?: any): any {
 
   if (tableName === 'user') {
     if (include.roles) {
+      const seenRoleIds = new Set<number>();
       clone.roles = dbInstance.userRoles
-        .filter((ur) => ur.userId === item.id)
+        .filter((ur) => {
+          if (ur.userId !== item.id) return false;
+          if (seenRoleIds.has(ur.roleId)) return false;
+          seenRoleIds.add(ur.roleId);
+          return true;
+        })
         .map((ur) => {
           const role = dbInstance.roles.find((r) => r.id === ur.roleId);
           const roleObj: any = role ? { ...role } : null;
@@ -904,6 +922,7 @@ function sortItems(items: any[], orderBy: any): any[] {
 }
 
 export const mockPrisma: any = {
+  team: createModelHandler('team', () => dbInstance.teams),
   user: createModelHandler('user', () => dbInstance.users),
   role: createModelHandler('role', () => dbInstance.roles),
   permission: createModelHandler('permission', () => dbInstance.permissions),

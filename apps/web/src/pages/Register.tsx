@@ -1,12 +1,14 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { authApi } from '../lib/api'
+import { authApi, teamsApi } from '../lib/api'
 import { useToast } from '../hooks/useToast'
 
 export const Register: React.FC = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('')
+  const [availableTeams, setAvailableTeams] = useState<Array<{ id: number; name: string }>>([])
   const [willBePlayer, setWillBePlayer] = useState(false)
   const [playerNumber, setPlayerNumber] = useState('')
   const [playerPosition, setPlayerPosition] = useState<'HANDLER' | 'CUTTER' | 'HYBRID'>('CUTTER')
@@ -17,6 +19,12 @@ export const Register: React.FC = () => {
   const [success, setSuccess] = useState(false)
   const { showSuccessToast, showErrorToast } = useToast()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    teamsApi.listPublic()
+      .then(teams => setAvailableTeams(teams))
+      .catch(() => {})
+  }, [])
   
   // Password strength indicator
   const getPasswordStrength = (pwd: string): { strength: 'weak' | 'medium' | 'strong'; label: string; color: string } => {
@@ -93,10 +101,11 @@ export const Register: React.FC = () => {
         password, 
         normalizedName,
         willBePlayer,
-        playerData
+        playerData,
+        selectedTeamId ? Number(selectedTeamId) : null
       )
       setSuccess(true)
-      showSuccessToast(result.message || 'Registration successful. Please wait for admin approval.')
+      showSuccessToast(result.message || 'Registro exitoso. Tu cuenta está pendiente de aprobación por el administrador.')
       setTimeout(() => {
         navigate('/login')
       }, 3000)
@@ -197,6 +206,28 @@ export const Register: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+        
+        <div>
+          <label htmlFor="register-team" className="block text-sm font-medium mb-1">
+            Equipo / Club <span className="text-gray-500 text-xs font-normal">(Opcional)</span>
+          </label>
+          <select
+            id="register-team"
+            className="w-full border rounded px-3 py-2 text-sm bg-white"
+            value={selectedTeamId}
+            onChange={e => setSelectedTeamId(e.target.value)}
+          >
+            <option value="">-- Sin equipo asignado / Por definir --</option>
+            {availableTeams.map(t => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">
+            Selecciona a cuál de los equipos perteneces para una rápida asignación
+          </p>
         </div>
         
         <div className="border-t pt-3 mt-3">

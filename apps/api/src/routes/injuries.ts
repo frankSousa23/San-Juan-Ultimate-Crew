@@ -41,7 +41,11 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   if (isGuestRequest(req)) {
     return success(res, GUEST_INJURIES)
   }
-  const items = await prisma.injury.findMany({ include: { player: true }, orderBy: { startDate: 'desc' } })
+  const u = (req as any).user;
+  const isAdmin = u?.roles?.includes('admin');
+  const userTeamId = (req as any).userTeamId;
+  const whereClause = !isAdmin && userTeamId ? { player: { OR: [{ teamId: userTeamId }, { teamId: null }] } } : {};
+  const items = await prisma.injury.findMany({ where: whereClause, include: { player: true }, orderBy: { startDate: 'desc' } })
   return success(res, items)
 }))
 
@@ -135,6 +139,14 @@ router.get('/paged', asyncHandler(async (req: Request, res: Response) => {
   }
 
   const where: Prisma.InjuryWhereInput = {}
+  const u = (req as any).user;
+  const isAdmin = u?.roles?.includes('admin');
+  const userTeamId = (req as any).userTeamId;
+  if (!isAdmin && userTeamId) {
+    where.player = {
+      OR: [{ teamId: userTeamId }, { teamId: null }]
+    };
+  }
   if (playerId) where.playerId = playerId
   if (severity) where.severity = severity
   if (status) where.status = status

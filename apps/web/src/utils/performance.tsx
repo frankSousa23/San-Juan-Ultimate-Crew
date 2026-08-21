@@ -85,7 +85,7 @@ export const bundleOptimization = {
   preloadCriticalRoutes: () => {
     const criticalRoutes = ['Dashboard', 'Roster', 'Events']
     criticalRoutes.forEach(route => {
-      bundleOptimization.routeSplitting[route]()
+      (bundleOptimization.routeSplitting as any)[route]()
     })
   },
 }
@@ -93,7 +93,7 @@ export const bundleOptimization = {
 // Optimización de memoria
 export const memoryOptimization = {
   // Limpiar referencias
-  cleanup: (refs: React.RefObject<any>[]) => {
+  cleanup: (refs: React.MutableRefObject<any>[]) => {
     refs.forEach(ref => {
       if (ref.current) {
         ref.current = null

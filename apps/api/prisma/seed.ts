@@ -75,21 +75,47 @@ async function main() {
   await assignPerms('treasurer', ['finance:manage', 'finance:view', 'roster:view', 'events:view', 'statistics:view'])
   await assignPerms('guest', ['events:view', 'roster:view', 'injuries:view', 'rivals:view', 'plays:view', 'resources:view', 'statistics:view', 'annotations:view'])
 
-  // 3. Usuarios Iniciales (ÚNICAMENTE 2 USUARIOS PRE-APROBADOS: ADMIN Y GUEST)
-  console.log('👤 Creando únicamente los 2 usuarios iniciales autorizados (Admin y Guest)...')
-  const passwordHashGuest = await bcrypt.hash('123456', 10)
+  // 3. Usuarios Iniciales y Atletas (Workflow de Prueba)
+  console.log('👤 Creando usuarios iniciales (Admin, Guest, Capitanes, Coaches y Jugadores)...')
+  const defaultPass = await bcrypt.hash('123456', 10)
   const passwordHashAdmin = await bcrypt.hash('passWORD23', 10)
 
+  // Primero creamos los registros físicos de jugadores (Roster)
+  const rosterPlayers = await prisma.player.createManyAndReturn({
+    data: [
+      { name: 'Frank Sousa (Admin)', number: 23, position: 'HANDLER', status: 'ACTIVE' },
+      { name: 'María Gonzalez (Capitana)', number: 10, position: 'HANDLER', status: 'ACTIVE' },
+      { name: 'Juan Pérez (Capitán)', number: 7, position: 'CUTTER', status: 'ACTIVE' },
+      { name: 'Pedro Luis (Coach)', number: 99, position: 'HYBRID', status: 'ACTIVE' },
+      { name: 'Luis Martínez (Coach)', number: 88, position: 'HANDLER', status: 'INACTIVE' },
+      { name: 'Ana Silva', number: 12, position: 'CUTTER', status: 'ACTIVE' },
+      { name: 'Carlos Díaz', number: 15, position: 'CUTTER', status: 'ACTIVE' },
+      { name: 'Sofía Rojas', number: 4, position: 'HANDLER', status: 'ACTIVE' },
+      { name: 'Miguel Torres', number: 21, position: 'HYBRID', status: 'INJURED' },
+      { name: 'Laura Gómez', number: 33, position: 'CUTTER', status: 'ACTIVE' },
+    ]
+  })
+
+  // Asociamos usuarios a estos jugadores
   const initialUsers = [
-    { email: 'frankalfonso1988@gmail.com', name: 'Frank Sousa', role: 'admin', playerId: null, pass: passwordHashAdmin },
-    { email: 'guest@sigedivo.com', name: 'Invitado / Demostración', role: 'guest', playerId: null, pass: passwordHashGuest },
+    { email: 'frankalfonso1988@gmail.com', name: 'Frank Sousa', role: 'admin', playerId: rosterPlayers[0].id, pass: passwordHashAdmin, status: 'APPROVED' },
+    { email: 'guest@sigedivo.com', name: 'Invitado / Demostración', role: 'guest', playerId: null, pass: defaultPass, status: 'APPROVED' },
+    { email: 'capitan1@sigedivo.com', name: 'María Gonzalez', role: 'captain', playerId: rosterPlayers[1].id, pass: defaultPass, status: 'APPROVED' },
+    { email: 'capitan2@sigedivo.com', name: 'Juan Pérez', role: 'captain', playerId: rosterPlayers[2].id, pass: defaultPass, status: 'APPROVED' },
+    { email: 'coach1@sigedivo.com', name: 'Pedro Luis', role: 'coach', playerId: rosterPlayers[3].id, pass: defaultPass, status: 'APPROVED' },
+    { email: 'coach2@sigedivo.com', name: 'Luis Martínez', role: 'coach', playerId: rosterPlayers[4].id, pass: defaultPass, status: 'APPROVED' },
+    { email: 'jugador1@sigedivo.com', name: 'Ana Silva', role: 'player', playerId: rosterPlayers[5].id, pass: defaultPass, status: 'APPROVED' },
+    { email: 'jugador2@sigedivo.com', name: 'Carlos Díaz', role: 'player', playerId: rosterPlayers[6].id, pass: defaultPass, status: 'APPROVED' },
+    { email: 'jugador3@sigedivo.com', name: 'Sofía Rojas', role: 'player', playerId: rosterPlayers[7].id, pass: defaultPass, status: 'PENDING' }, // Pendiente de aprobación
+    { email: 'jugador4@sigedivo.com', name: 'Miguel Torres', role: 'player', playerId: rosterPlayers[8].id, pass: defaultPass, status: 'PENDING' }, // Pendiente
+    { email: 'jugador5@sigedivo.com', name: 'Laura Gómez', role: 'player', playerId: rosterPlayers[9].id, pass: defaultPass, status: 'APPROVED' },
   ]
 
   for (const u of initialUsers) {
     const user = await prisma.user.upsert({
       where: { email: u.email },
-      update: { passwordHash: u.pass, status: 'APPROVED', playerId: u.playerId, name: u.name },
-      create: { email: u.email, name: u.name, passwordHash: u.pass, status: 'APPROVED', playerId: u.playerId }
+      update: { passwordHash: u.pass, status: u.status as any, playerId: u.playerId, name: u.name },
+      create: { email: u.email, name: u.name, passwordHash: u.pass, status: u.status as any, playerId: u.playerId }
     })
     await prisma.userRole.upsert({
       where: { userId_roleId: { userId: user.id, roleId: roleMap[u.role] } },
@@ -97,6 +123,85 @@ async function main() {
       create: { userId: user.id, roleId: roleMap[u.role] }
     })
   }
+
+  // Eventos y Asistencia (Workflow de Prueba)
+  console.log('📅 Creando eventos y estadísticas de prueba...')
+  const event1 = await prisma.event.create({
+    data: {
+      title: 'Entrenamiento Selección O-Line',
+      type: 'TRAINING',
+      status: 'COMPLETED',
+      location: 'Cancha Central',
+      startsAt: new Date(Date.now() - 86400000 * 7),
+      endsAt: new Date(Date.now() - 86400000 * 7 + 7200000),
+      isInternalScrimmage: true
+    }
+  })
+
+  const event2 = await prisma.event.create({
+    data: {
+      title: 'Partido Amistoso vs. Equipo Rival',
+      type: 'MATCH',
+      status: 'COMPLETED',
+      location: 'Cancha Visitante',
+      startsAt: new Date(Date.now() - 86400000 * 2),
+      endsAt: new Date(Date.now() - 86400000 * 2 + 7200000),
+      isInternalScrimmage: false
+    }
+  })
+
+  const event3 = await prisma.event.create({
+    data: {
+      title: 'Torneo Nacional - Fase de Grupos',
+      type: 'TOURNAMENT',
+      status: 'UPCOMING',
+      location: 'Complejo Deportivo',
+      startsAt: new Date(Date.now() + 86400000 * 5),
+      endsAt: new Date(Date.now() + 86400000 * 5 + 28800000)
+    }
+  })
+
+  // Asistencia a Evento 1
+  for (const p of rosterPlayers) {
+    await prisma.attendance.create({
+      data: {
+        eventId: event1.id,
+        playerId: p.id,
+        status: p.status === 'ACTIVE' ? 'present' : 'absent'
+      }
+    })
+    // Convocatoria a Evento 3
+    if (p.status === 'ACTIVE') {
+      await prisma.eventParticipant.create({
+        data: {
+          eventId: event3.id,
+          playerId: p.id,
+          role: 'player',
+          status: 'confirmed',
+          lineType: p.position === 'HANDLER' ? 'O-Line' : 'D-Line'
+        }
+      })
+    }
+  }
+
+  // Estadísticas del Partido Amistoso (Evento 2)
+  await prisma.playerMatchStats.createMany({
+    data: [
+      { eventId: event2.id, playerId: rosterPlayers[0].id, goals: 2, assists: 5, defenses: 1, turnovers: 1, pointsPlayed: 12 },
+      { eventId: event2.id, playerId: rosterPlayers[1].id, goals: 1, assists: 4, defenses: 2, turnovers: 2, pointsPlayed: 10 },
+      { eventId: event2.id, playerId: rosterPlayers[2].id, goals: 4, assists: 1, defenses: 0, turnovers: 1, pointsPlayed: 11 },
+      { eventId: event2.id, playerId: rosterPlayers[5].id, goals: 3, assists: 0, defenses: 3, turnovers: 0, pointsPlayed: 9 },
+    ]
+  })
+
+  // Anotaciones en Vivo (Play-by-play) del Evento 2
+  await prisma.eventAnnotation.createMany({
+    data: [
+      { eventId: event2.id, type: 'GOAL', playerId: rosterPlayers[2].id, relatedPlayerId: rosterPlayers[0].id, lineType: 'O-Line', note: 'Pase largo espectacular' },
+      { eventId: event2.id, type: 'DEFENSE', playerId: rosterPlayers[5].id, lineType: 'D-Line', note: 'Intercepción en zona roja' },
+      { eventId: event2.id, type: 'GOAL', playerId: rosterPlayers[0].id, relatedPlayerId: rosterPlayers[1].id, lineType: 'O-Line', note: 'Jugada rápida en handler reset' },
+    ]
+  })
 
   // 4. Finanzas (Cuentas, Categorías y Transacciones de prueba)
   console.log('💰 Creando finanzas...')

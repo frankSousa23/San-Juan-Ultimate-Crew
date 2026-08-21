@@ -196,7 +196,7 @@ export class MemoryOptimizationService {
   }
 
   // Limpiar referencias
-  cleanupReferences(refs: React.RefObject<any>[]): void {
+  cleanupReferences(refs: React.MutableRefObject<any>[]): void {
     refs.forEach(ref => {
       if (ref.current) {
         ref.current = null
@@ -299,7 +299,7 @@ export function useMemoryOptimization() {
     memoryOptimization.forceGarbageCollection()
   }, [])
 
-  const cleanupReferences = useCallback((refs: React.RefObject<any>[]) => {
+  const cleanupReferences = useCallback((refs: React.MutableRefObject<any>[]) => {
     memoryOptimization.cleanupReferences(refs)
   }, [])
 
@@ -343,7 +343,7 @@ export function useMemoryCleanup() {
     return () => clearInterval(interval)
   }, [forceGarbageCollection])
 
-  const cleanup = useCallback((refs: React.RefObject<any>[]) => {
+  const cleanup = useCallback((refs: React.MutableRefObject<any>[]) => {
     cleanupReferences(refs)
     forceGarbageCollection()
   }, [cleanupReferences, forceGarbageCollection])

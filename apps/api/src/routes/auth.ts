@@ -48,9 +48,9 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 async function getUserWithPermissions(userId: number) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: { 
+    include: { team: true, 
       roles: { 
-        include: { 
+        include: { team: true, 
           role: {
             include: {
               permissions: {
@@ -134,6 +134,7 @@ export function requireRole(roles: string[]) {
     
     // Store user data in request for use in route handlers
     ;(req as any).userRoles = userData.roles
+    ;(req as any).userTeamId = userData.user?.teamId
     ;(req as any).userPermissions = userData.permissions
     
     next()
@@ -176,6 +177,7 @@ export function requirePermission(permission: string) {
     // Admin always has all permissions
     if (userData.roles.includes('admin')) {
       ;(req as any).userRoles = userData.roles
+    ;(req as any).userTeamId = userData.user?.teamId
       ;(req as any).userPermissions = userData.permissions
       return next()
     }
@@ -192,6 +194,7 @@ export function requirePermission(permission: string) {
     
     // Store user data in request for use in route handlers
     ;(req as any).userRoles = userData.roles
+    ;(req as any).userTeamId = userData.user?.teamId
     ;(req as any).userPermissions = userData.permissions
     
     next()
@@ -274,7 +277,7 @@ export function requireSelfOrAdminForPlayer() {
  *         description: Email already exists
  */
 router.post('/register', asyncHandler(async (req: Request, res: Response) => {
-  const { email, password, name, willBePlayer, playerData } = req.body || {}
+  const { email, password, name, willBePlayer, playerData, teamId } = req.body || {}
   if (!email || !password || !name || !String(name).trim()) {
     return validationError(res, 'name, email and password are required')
   }
@@ -298,6 +301,8 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
   if (normalizedName.length > 100) {
     return validationError(res, 'name is too long (maximum 100 characters)')
   }
+
+  const assignedTeamId = teamId ? Number(teamId) : null
   
   // Validate player data if willBePlayer is true
   if (willBePlayer && playerData) {
@@ -311,10 +316,15 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
     if (!Number.isInteger(num) || num <= 0) {
       return validationError(res, 'Player number must be a positive integer')
     }
-    // Check if player number already exists
-    const existingPlayer = await prisma.player.findUnique({ where: { number: num } })
+    // Check if player number already exists in this team
+    const existingPlayer = await prisma.player.findFirst({ 
+      where: { 
+        number: num,
+        teamId: assignedTeamId
+      } 
+    })
     if (existingPlayer) {
-      return conflict(res, `Player number ${num} is already taken`)
+      return conflict(res, `Player number ${num} is already taken in this team`)
     }
   }
   
@@ -331,6 +341,7 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
         data: {
           passwordHash,
           name: normalizedName || exists.name,
+          teamId: assignedTeamId || exists.teamId,
           status: 'PENDING'
         }
       })
@@ -360,6 +371,7 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
         email: normalizedEmail, 
         passwordHash, 
         name: normalizedName,
+        teamId: assignedTeamId,
         status: 'PENDING' // New users start as PENDING, need admin approval
       } 
     })
@@ -375,6 +387,7 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
           status: playerData.status || 'ACTIVE',
           heightCm: playerData.heightCm ? Number(playerData.heightCm) : null,
           experience: playerData.experience || null,
+          teamId: assignedTeamId,
         }
       })
       playerId = player.id
@@ -460,7 +473,7 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
   
   const user = await prisma.user.findUnique({
     where: { email: normalizedEmail },
-    include: { roles: { include: { role: true } } },
+    include: { team: true, roles: { include: { role: true } } },
   })
   if (!user) return notFound(res, 'User')
   
@@ -484,10 +497,11 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
     } catch (_) {}
   }
   if (!match) return unauthorized(res, 'Invalid credentials')
-  const token = signToken({ sub: user.id, email: user.email })
+  const userData = await getUserWithPermissions(user.id)
+  const roleNamesTemp = userData?.roles || [];
+  const token = signToken({ sub: user.id, email: user.email, teamId: userData?.user?.teamId, roles: roleNamesTemp })
   const audit = createAuditHelper(req)
   await audit.log('LOGIN', 'User', user.id, { email: user.email })
-  const userData = await getUserWithPermissions(user.id)
   const roleNames = userData?.roles || (Array.isArray(user.roles) ? user.roles.map((ur: any) => ur.role?.name).filter(Boolean) : [])
   const permissions = userData?.permissions || []
   return success(res, { 
@@ -499,6 +513,8 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
       roles: roleNames, 
       permissions,
       playerId: user.playerId ?? null,
+      teamId: userData?.user?.teamId ?? null,
+      teamName: userData?.user?.team?.name ?? null,
       status: user.status 
     } 
   })
@@ -608,6 +624,8 @@ router.get('/me', requireAuth, asyncHandler(async (req: Request, res: Response) 
       roles: userData.roles,
       permissions: userData.permissions,
       playerId: userData.user.playerId ?? null,
+      teamId: userData.user.teamId ?? null,
+      teamName: userData.user.team?.name ?? null,
       status: userData.user.status
     },
     authDisabled: false
@@ -821,7 +839,7 @@ router.post('/reset-password', asyncHandler(async (req: Request, res: Response) 
   
   const resetToken = await prisma.passwordResetToken.findUnique({
     where: { token },
-    include: { user: true }
+    include: { team: true, user: true }
   })
   
   if (!resetToken) {

@@ -62,8 +62,8 @@ export interface UpdateAnnotationInput {
   timestamp?: string
   category?: string
   eventId?: number
-  playerId?: number
-  relatedPlayerId?: number
+  playerId?: number | null
+  relatedPlayerId?: number | null
 }
 
 export interface AnnotationStats {

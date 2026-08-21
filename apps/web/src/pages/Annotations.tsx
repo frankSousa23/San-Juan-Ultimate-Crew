@@ -13,6 +13,9 @@ export default function Annotations() {
   const [searchParams] = useSearchParams()
   const isGuest = hasRole('guest') || user?.email === 'guest@sigedivo.com'
   
+  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null)
+
+  
   const canManage = (() => {
     if (hasRole('admin') || hasRole('directiva') || hasPermission('events:manage') || hasPermission('annotations:manage')) return true;
     if (hasRole('coach') || hasRole('captain') || hasRole('annotator')) return true;
@@ -23,8 +26,6 @@ export default function Annotations() {
     }
     return false;
   })()
-  
-  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

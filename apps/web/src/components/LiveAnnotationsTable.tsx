@@ -198,7 +198,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
         teamSide: 'HOME',
         goals: playerAnns.filter(a => a.type === 'GOAL').length,
         assists,
-        interceptions: playerAnns.filter(a => a.type === 'DEFENSE' || a.type === 'CALLAHAN').length,
+        interceptions: playerAnns.filter(a => a.type === 'DEFENSE' || a.type === ("CALLAHAN" as any)).length,
         turnovers: playerAnns.filter(a => a.type === 'TURNOVER').length,
       })
     })
@@ -218,7 +218,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
           teamSide: 'AWAY',
           goals: playerAnns.filter(a => a.type === 'GOAL').length,
           assists,
-          interceptions: playerAnns.filter(a => a.type === 'DEFENSE' || a.type === 'CALLAHAN').length,
+          interceptions: playerAnns.filter(a => a.type === 'DEFENSE' || a.type === ("CALLAHAN" as any)).length,
           turnovers: playerAnns.filter(a => a.type === 'TURNOVER').length,
         })
       })
@@ -237,7 +237,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
             teamSide: 'AWAY',
             goals: playerAnns.filter(a => a.type === 'GOAL').length,
             assists,
-            interceptions: playerAnns.filter(a => a.type === 'DEFENSE' || a.type === 'CALLAHAN').length,
+            interceptions: playerAnns.filter(a => a.type === 'DEFENSE' || a.type === ("CALLAHAN" as any)).length,
             turnovers: playerAnns.filter(a => a.type === 'TURNOVER').length,
           })
         }
@@ -263,7 +263,7 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
           teamSide: 'AWAY',
           goals: playerAnns.filter(a => a.type === 'GOAL').length,
           assists: 0,
-          interceptions: playerAnns.filter(a => a.type === 'DEFENSE' || a.type === 'CALLAHAN').length,
+          interceptions: playerAnns.filter(a => a.type === 'DEFENSE' || a.type === ("CALLAHAN" as any)).length,
           turnovers: playerAnns.filter(a => a.type === 'TURNOVER').length,
         })
       })
@@ -362,9 +362,32 @@ export default function LiveAnnotationsTable({ event, onClose, embedded = false 
         payload.scoreAway = scoreAway
       }
       
-      await annotationsApi.create(payload)
-      await loadData()
-      toasts.success(typeLabel)
+      
+      // Optimistic UI Update
+      const optimisticAnn = {
+        id: Date.now(), // Temp ID
+        eventId: payload.eventId,
+        type: payload.type,
+        playerId: payload.playerId || null,
+        relatedPlayerId: payload.relatedPlayerId || null,
+        teamSide: payload.teamSide || null,
+        opponentPlayerName: payload.opponentPlayerName || null,
+        opponentTeamName: payload.opponentTeamName || null,
+        timestamp: payload.timestamp,
+        createdAt: new Date().toISOString()
+      };
+      setAnnotations(prev => [optimisticAnn, ...prev]);
+      
+      // Async API call without blocking the UI
+      annotationsApi.create(payload).then(() => {
+        loadData();
+        toasts.success(typeLabel);
+      }).catch((err) => {
+        toasts.error(err?.response?.data?.error || 'No se pudo registrar la anotación');
+        loadData();
+      });
+      return; // Early return to avoid old blocking logic
+
     } catch (err: any) {
       toasts.error(err?.response?.data?.error || 'No se pudo registrar la anotación')
       await loadData()

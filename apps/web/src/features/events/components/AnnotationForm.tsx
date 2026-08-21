@@ -27,14 +27,14 @@ export function AnnotationForm({
   )
   const [category, setCategory] = useState<string>(initial?.category || '')
 
-  const annotationTypes: AnnotationType[] = [
+  const annotationTypes: any[] = [
     'GOAL', 'ASSIST', 'DEFENSE', 'TURNOVER', 'CALLAHAN', 'MVP', 'FOUL',
     'TIMEOUT', 'SUBSTITUTION', 'INJURY', 'GENERAL', 'STRATEGY', 'PERFORMANCE'
   ]
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit({
+    onSubmit({ eventId: 0,
       playerId,
       type,
       note: note.trim() || undefined,

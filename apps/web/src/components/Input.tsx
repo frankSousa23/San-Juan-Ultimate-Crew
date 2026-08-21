@@ -9,7 +9,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   onLeftIconClick?: () => void
   onRightIconClick?: () => void
   variant?: 'default' | 'filled' | 'outlined'
-  size?: 'sm' | 'md' | 'lg'
+  inputSize?: "sm" | "md" | "lg"
   fullWidth?: boolean
 }
 
@@ -112,7 +112,7 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
   error?: string
   helperText?: string
   variant?: 'default' | 'filled' | 'outlined'
-  size?: 'sm' | 'md' | 'lg'
+  inputSize?: "sm" | "md" | "lg"
   fullWidth?: boolean
   resize?: 'none' | 'vertical' | 'horizontal' | 'both'
 }
@@ -201,7 +201,7 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   options: Array<{ value: string | number; label: string; disabled?: boolean }>
   placeholder?: string
   variant?: 'default' | 'filled' | 'outlined'
-  size?: 'sm' | 'md' | 'lg'
+  inputSize?: "sm" | "md" | "lg"
   fullWidth?: boolean
 }
 

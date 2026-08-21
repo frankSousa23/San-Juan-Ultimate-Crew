@@ -45,6 +45,20 @@ enum EventStatus {
   CANCELLED
 }
 
+
+model Team {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  color       String?
+  logoUrl     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  users       User[]
+  players     Player[]
+  events      Event[]
+}
+
 // Global System Feedback
 model Feedback {
   id        Int      @id @default(autoincrement())
@@ -117,7 +131,9 @@ enum UserStatus {
 model Player {
   id         Int            @id @default(autoincrement())
   name       String
-  number     Int            @unique
+  number     Int
+  teamId     Int?
+  team       Team?          @relation(fields: [teamId], references: [id], onDelete: SetNull)
   position   PlayerPosition
   status     PlayerStatus   @default(ACTIVE)
   heightCm   Int?
@@ -139,14 +155,18 @@ model Player {
   // Reverse relation to RoleRequest.player
   roleRequests RoleRequest[]
 
+  @@index([teamId])
   @@index([status])
   @@index([position])
   @@index([number])
+  @@index([teamId, number])
 }
 
 model Event {
   id          Int         @id @default(autoincrement())
   title       String
+  teamId      Int?
+  team        Team?       @relation(fields: [teamId], references: [id], onDelete: Cascade)
   description String?
   type        EventType
   status      EventStatus @default(UPCOMING)
@@ -179,6 +199,7 @@ model Event {
   matchStats   PlayerMatchStats[]
   spiritScores SpiritScore[]
 
+  @@index([teamId])
   @@index([startsAt])
   @@index([type])
   @@index([status])
@@ -492,6 +513,9 @@ model User {
   updatedAt    DateTime   @updatedAt
 
   roles    UserRole[]
+  teamId       Int?
+  team         Team?      @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
   playerId Int?
   player   Player?    @relation("PlayerUser", fields: [playerId], references: [id], onDelete: SetNull)
 
@@ -503,6 +527,7 @@ model User {
   feedbacks       Feedback[]
 
   @@unique([playerId])
+  @@index([teamId])
   @@index([status])
   @@index([email])
 }

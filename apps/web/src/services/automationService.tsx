@@ -196,6 +196,7 @@ export class AutomationService {
         name: 'Daily Maintenance',
         description: 'Daily maintenance tasks',
         tasks: ['backup-database', 'cleanup-logs', 'optimize-assets'],
+        triggers: [],
         schedule: '0 1 * * *', // Daily at 1 AM
         isActive: true,
         createdAt: new Date(),
@@ -206,6 +207,7 @@ export class AutomationService {
         name: 'Weekly Optimization',
         description: 'Weekly optimization tasks',
         tasks: ['optimize-assets', 'cleanup-logs', 'run-tests'],
+        triggers: [],
         schedule: '0 2 * * 0', // Weekly on Sunday at 2 AM
         isActive: true,
         createdAt: new Date(),

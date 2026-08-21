@@ -243,12 +243,12 @@ export function withOptimization<P extends object>(
 
   // Aplicar memoización
   if (memo) {
-    OptimizedComponent = React.memo(OptimizedComponent) as React.ComponentType<P>
+    OptimizedComponent = React.memo(OptimizedComponent) as unknown as React.ComponentType<P>
   }
 
   // Aplicar lazy loading
   if (lazy) {
-    OptimizedComponent = React.lazy(() => Promise.resolve({ default: OptimizedComponent })) as React.ComponentType<P>
+    OptimizedComponent = React.lazy(() => Promise.resolve({ default: OptimizedComponent })) as unknown as React.ComponentType<P>
   }
 
   // Aplicar profiling

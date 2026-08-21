@@ -99,7 +99,7 @@ export function SearchableVirtualList<T>({
         })
       }
 
-      return Object.values(item).some(value =>
+      return Object.values(item as any).some(value =>
         String(value).toLowerCase().includes(searchTerm.toLowerCase())
       )
     })
@@ -343,7 +343,7 @@ export function AdvancedVirtualList<T>({
           })
         }
 
-        return Object.values(item).some(value =>
+        return Object.values(item as any).some(value =>
           String(value).toLowerCase().includes(searchTerm.toLowerCase())
         )
       })

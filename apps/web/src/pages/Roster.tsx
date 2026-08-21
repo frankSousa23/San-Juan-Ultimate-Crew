@@ -396,7 +396,7 @@ export default function Roster() {
                 mode="create"
                 initial={null}
                 onCancel={() => setCreateOpen(false)}
-                onSubmit={(data) => createPlayer(data as any)}
+                onSubmit={async (data) => { await createPlayer(data as any) }}
               />
             </div>
           </div>
@@ -415,7 +415,7 @@ export default function Roster() {
                 mode="edit"
                 initial={selected}
                 onCancel={() => setEditOpen(false)}
-                onSubmit={(data) => selected && updatePlayer(selected.id, data as any)}
+                onSubmit={async (data) => { if (selected) await updatePlayer(selected.id, data as any) }}
               />
             </div>
           </div>

@@ -49,6 +49,13 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     return success(res, records)
   }
 
+  const u = (req as any).user;
+  const isAdmin = u?.roles?.includes('admin');
+  const userTeamId = (req as any).userTeamId;
+  const ev = await prisma.event.findUnique({ where: { id: eventId } });
+  if (ev && !isAdmin && userTeamId && ev.teamId !== userTeamId && ev.teamId !== null) {
+    return res.status(403).json({ error: 'Access denied to this event' });
+  }
   const records = await prisma.attendance.findMany({
     where: { eventId },
     include: { player: true },
@@ -105,6 +112,13 @@ router.put('/', requirePermission('events:manage'), asyncHandler(async (req: Req
   const parsed = upsertSchema.safeParse(req.body)
   if (!parsed.success) return validationError(res, 'Invalid input', parsed.error.issues)
   const { eventId, playerId, status, note } = parsed.data
+  const u = (req as any).user;
+  const isAdmin = u?.roles?.includes('admin');
+  const userTeamId = (req as any).userTeamId;
+  const ev = await prisma.event.findUnique({ where: { id: eventId } });
+  if (ev && !isAdmin && userTeamId && ev.teamId !== userTeamId && ev.teamId !== null) {
+    return res.status(403).json({ error: 'Access denied to this event' });
+  }
   const record = await prisma.attendance.upsert({
     where: { playerId_eventId: { playerId, eventId } },
     create: { eventId, playerId, status, note: note ?? undefined },

@@ -13,6 +13,7 @@ export default function Finances() {
   const [categories, setCategories] = useState<Category[]>([])
   const [items, setItems] = useState<TransactionItem[]>([])
   const [total, setTotal] = useState(0)
+  const [error, setError] = useState<string | null>(null)
   const [limit, setLimit] = useState(20)
   const [offset, setOffset] = useState(0)
   const [from, setFrom] = useState<string>('')
@@ -28,13 +29,14 @@ export default function Finances() {
   const [acctForm, setAcctForm] = useState<any>({ name: '', type: 'CASH' })
   const [catModal, setCatModal] = useState(false)
   const [catForm, setCatForm] = useState<any>({ name: '', kind: 'INCOME' })
+  const [detailItem, setDetailItem] = useState<TransactionItem | null>(null)
   const toasts = useToast()
   const { hasPermission } = useAuth()
   const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
   const authed = !!getAuthToken() && hasPermission('finance:manage')
 
   // API hooks
-  const { execute: loadTransactions, loading, error } = useApi(transactionsApi.list, {
+  const { execute: loadTransactions, loading, error: apiError } = useApi(transactionsApi.list, {
     onSuccess: (data) => {
       setItems(data.items)
       setTotal(data.total)
@@ -240,9 +242,9 @@ export default function Finances() {
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded p-3 text-sm">Inicia sesión para crear, editar o eliminar transacciones, cuentas y categorías.</div>
       )}
 
-      {error && (
+      {(error || apiError) && (
         <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded p-3 flex items-start justify-between">
-          <div className="pr-3">{error}</div>
+          <div className="pr-3">{error || apiError}</div>
           <div className="flex gap-2 shrink-0">
             <button className="px-2 py-1 bg-rose-100 rounded" onClick={() => load()}>Reintentar</button>
           </div>
@@ -342,20 +344,39 @@ export default function Finances() {
                   <th className="text-left px-2 sm:px-4 py-2 hidden lg:table-cell">Categoría</th>
                   <th className="text-right px-2 sm:px-4 py-2">Monto</th>
                   <th className="text-left px-2 sm:px-4 py-2 hidden xl:table-cell">Descripción</th>
-                  <th className="px-2 sm:px-4 py-2"></th>
+                  <th className="px-2 sm:px-4 py-2 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map(it => (
-                  <tr key={it.id} className="border-t">
-                    <td className="px-2 sm:px-4 py-2 whitespace-nowrap text-xs sm:text-sm">{new Date(it.occurredAt).toLocaleString()}</td>
-                    <td className="px-2 sm:px-4 py-2">{it.type === 'INCOME' ? 'Ingreso' : it.type === 'EXPENSE' ? 'Egreso' : 'Transferencia'}</td>
-                    <td className="px-2 sm:px-4 py-2 hidden md:table-cell">{it.account?.name || it.accountId}</td>
-                    <td className="px-2 sm:px-4 py-2 hidden lg:table-cell">{it.category?.name || (it.categoryId ?? '')}</td>
-                    <td className="px-2 sm:px-4 py-2 text-right whitespace-nowrap">{(it.amountCents/100).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</td>
-                    <td className="px-2 sm:px-4 py-2 hidden xl:table-cell">{it.description || ''}</td>
+                  <tr key={it.id} className="border-t hover:bg-gray-50/70 transition-colors">
+                    <td className="px-2 sm:px-4 py-2 whitespace-nowrap text-xs sm:text-sm">
+                      <button onClick={() => setDetailItem(it)} className="text-left font-medium text-indigo-900 hover:text-indigo-600 hover:underline">
+                        {new Date(it.occurredAt).toLocaleString()}
+                      </button>
+                    </td>
                     <td className="px-2 sm:px-4 py-2">
-                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 sm:justify-end">
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                        it.type === 'INCOME' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                        it.type === 'EXPENSE' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                        'bg-blue-50 text-blue-700 border border-blue-200'
+                      }`}>
+                        {it.type === 'INCOME' ? 'Ingreso' : it.type === 'EXPENSE' ? 'Egreso' : 'Transferencia'}
+                      </span>
+                    </td>
+                    <td className="px-2 sm:px-4 py-2 hidden md:table-cell text-gray-700">{it.account?.name || it.accountId}</td>
+                    <td className="px-2 sm:px-4 py-2 hidden lg:table-cell text-gray-600">{it.category?.name || (it.categoryId ? `Cat #${it.categoryId}` : '-')}</td>
+                    <td className="px-2 sm:px-4 py-2 text-right whitespace-nowrap font-medium">
+                      <span className={it.type === 'INCOME' ? 'text-emerald-600' : it.type === 'EXPENSE' ? 'text-rose-600' : 'text-blue-600'}>
+                        {it.type === 'INCOME' ? '+' : it.type === 'EXPENSE' ? '-' : ''}{(it.amountCents/100).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}
+                      </span>
+                    </td>
+                    <td className="px-2 sm:px-4 py-2 hidden xl:table-cell text-gray-500 max-w-xs truncate">{it.description || '-'}</td>
+                    <td className="px-2 sm:px-4 py-2">
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 justify-end">
+                        <button onClick={() => setDetailItem(it)} className="text-xs text-gray-600 hover:text-indigo-600 border border-gray-200 rounded px-1.5 py-0.5 sm:px-2 sm:py-1 whitespace-nowrap">
+                          Ver
+                        </button>
                         {authed && <button onClick={() => openEdit(it)} className="text-indigo-700 hover:underline text-xs sm:text-sm whitespace-nowrap">Editar</button>}
                         {authed && <button onClick={() => remove(it.id)} className="text-red-700 hover:underline text-xs sm:text-sm whitespace-nowrap">Eliminar</button>}
                       </div>
@@ -552,6 +573,85 @@ export default function Finances() {
           </div>
         </div>
       )}
+      {/* Detail Modal */}
+      {detailItem && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setDetailItem(null)}>
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className={`p-4 text-white flex items-center justify-between ${
+              detailItem.type === 'INCOME' ? 'bg-gradient-to-r from-emerald-600 to-teal-700' :
+              detailItem.type === 'EXPENSE' ? 'bg-gradient-to-r from-rose-600 to-pink-700' :
+              'bg-gradient-to-r from-blue-600 to-indigo-700'
+            }`}>
+              <div>
+                <div className="text-xs uppercase tracking-wider opacity-90">Detalle de Transacción</div>
+                <div className="text-xl font-bold">
+                  {detailItem.type === 'INCOME' ? 'Ingreso' : detailItem.type === 'EXPENSE' ? 'Egreso' : 'Transferencia'} #{detailItem.id}
+                </div>
+              </div>
+              <button onClick={() => setDetailItem(null)} className="text-white/80 hover:text-white text-xl font-bold p-1">✕</button>
+            </div>
+            <div className="p-5 space-y-4 text-sm">
+              <div className="bg-gray-50 p-4 rounded-xl flex items-center justify-between border border-gray-100">
+                <div>
+                  <span className="text-xs text-gray-500 block uppercase">Monto Total</span>
+                  <span className={`text-2xl font-black ${
+                    detailItem.type === 'INCOME' ? 'text-emerald-600' :
+                    detailItem.type === 'EXPENSE' ? 'text-rose-600' : 'text-blue-600'
+                  }`}>
+                    {detailItem.type === 'INCOME' ? '+' : detailItem.type === 'EXPENSE' ? '-' : ''}
+                    {(detailItem.amountCents/100).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs text-gray-500 block uppercase">Fecha y Hora</span>
+                  <span className="font-semibold text-gray-800">{new Date(detailItem.occurredAt).toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <span className="text-xs text-gray-500 block mb-1">Cuenta</span>
+                  <span className="font-medium text-gray-800">{detailItem.account?.name || `Cuenta #${detailItem.accountId}`}</span>
+                  {detailItem.account?.type && (
+                    <span className="text-xs text-gray-500 block mt-0.5">Tipo: {detailItem.account.type}</span>
+                  )}
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <span className="text-xs text-gray-500 block mb-1">Categoría</span>
+                  <span className="font-medium text-gray-800">{detailItem.category?.name || 'Sin categoría'}</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-100">
+                <span className="text-xs text-gray-500 block mb-1">Descripción / Concepto</span>
+                <p className="text-gray-800 whitespace-pre-wrap">{detailItem.description || 'Sin descripción adicional.'}</p>
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                {authed && (
+                  <button
+                    onClick={() => {
+                      const itemToEdit = detailItem
+                      setDetailItem(null)
+                      openEdit(itemToEdit)
+                    }}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-medium transition"
+                  >
+                    Editar Transacción
+                  </button>
+                )}
+                <button
+                  onClick={() => setDetailItem(null)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 rounded-lg font-medium transition"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* global toasts via ToastProvider */}
       {confirmState && (
         <ConfirmModal

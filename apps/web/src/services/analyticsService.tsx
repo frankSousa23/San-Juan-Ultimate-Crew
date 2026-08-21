@@ -121,7 +121,7 @@ export class AnalyticsService {
 
     // Click tracking
     document.addEventListener('click', (event) => {
-      this.trackEvent('interaction', 'click', this.getElementInfo(event.target as Element))
+      this.trackEvent('interaction', 'click', JSON.stringify(this.getElementInfo(event.target as Element)))
     })
 
     // Scroll tracking
@@ -129,29 +129,24 @@ export class AnalyticsService {
     window.addEventListener('scroll', () => {
       clearTimeout(scrollTimeout)
       scrollTimeout = setTimeout(() => {
-        this.trackEvent('interaction', 'scroll', { scrollY: window.scrollY })
+        this.trackEvent('interaction', 'scroll', JSON.stringify({ scrollY: window.scrollY }))
       }, 100)
     })
 
     // Form submission tracking
     document.addEventListener('submit', (event) => {
       const form = event.target as HTMLFormElement
-      this.trackEvent('form', 'submit', { formId: form.id, formClass: form.className })
+      this.trackEvent('form', 'submit', JSON.stringify({ formId: form.id, formClass: form.className }))
     })
 
     // Error tracking
     window.addEventListener('error', (event) => {
-      this.trackEvent('error', 'javascript', {
-        message: event.message,
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno,
-      })
+      this.trackEvent('error', 'javascript', JSON.stringify({ message: event.message, filename: event.filename, lineno: event.lineno, colno: event.colno }))
     })
 
     // Page visibility tracking
     document.addEventListener('visibilitychange', () => {
-      this.trackEvent('page', 'visibility_change', { visible: !document.hidden })
+      this.trackEvent('page', 'visibility_change', JSON.stringify({ visible: !document.hidden }))
     })
 
     // Before unload tracking
@@ -214,7 +209,7 @@ export class AnalyticsService {
         this.trackEvent('performance', 'fid', entry.name, entry.duration, metadata)
         break
       case 'layout-shift':
-        this.trackEvent('performance', 'cls', entry.name, entry.value, metadata)
+        this.trackEvent('performance', 'cls', entry.name, (entry as any).value, metadata)
         break
     }
   }
@@ -233,7 +228,7 @@ export class AnalyticsService {
       firstContentfulPaint: paint.find(p => p.name === 'first-contentful-paint')?.startTime || 0,
       largestContentfulPaint: lcp.length > 0 ? lcp[lcp.length - 1].startTime : 0,
       firstInputDelay: fid.length > 0 ? (fid[0] as any).processingStart - fid[0].startTime : 0,
-      cumulativeLayoutShift: cls.reduce((sum, entry) => sum + entry.value, 0),
+      cumulativeLayoutShift: cls.reduce((sum, entry) => sum + (entry as any).value, 0),
       timeToInteractive: this.calculateTimeToInteractive(),
       totalBlockingTime: this.calculateTotalBlockingTime(),
     }

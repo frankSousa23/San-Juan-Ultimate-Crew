@@ -5,7 +5,8 @@
 ![React](https://img.shields.io/badge/Frontend-React%2018%20%2B%20Vite%206-blue)
 ![Express](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-lightgrey)
 ![Prisma](https://img.shields.io/badge/ORM-Prisma%207%20%2B%20PostgreSQL-indigo)
-![Release](https://img.shields.io/badge/Release-v1.0.0%20Open%20Source-purple)
+![Multi-Team](https://img.shields.io/badge/Architecture-Multi--Team%20Beta-success)
+![Release](https://img.shields.io/badge/Release-v1.2.0%20Open%20Source-purple)
 
 ---
 
@@ -35,6 +36,13 @@ Este proyecto es software libre y de código abierto bajo la **[Licencia MIT](LI
 
 ## 🚀 Módulos y Funcionalidades del Sistema
 
+### 0. 🛡️ Arquitectura Multi-Equipo y Multi-División
+- **Aislamiento Seguro de Datos:** Soporte nativo para la coexistencia de múltiples equipos, clubes o categorías (Open, Femenino, Mixto, Master) en una sola instancia.
+- **Gestión de Equipos (`/admin/equipos`):** Creación, configuración de paleta cromática, escudos y monitoreo de métricas agregadas por división.
+- **Selector de Equipo en Registro:** Integración fluida en `/register` para que los nuevos atletas elijan su equipo o ingresen como independientes.
+- **Dorsales Independientes:** Eliminación de bloqueos globales en números de camiseta con indexación compuesta `@@index([teamId, number])`.
+- **Acceso Contextual:** Jugadores, capitanes y entrenadores operan exclusivamente en su equipo asignado, garantizando privacidad de roster, jugadas y finanzas.
+
 ### 1. ⏱️ Pizarra Táctica y Anotaciones en Vivo (Optimizada para Torneo y Móvil)
 - **Diseño Ultra-Responsive y Táctil:** Adaptado para tablets y teléfonos móviles en campo de juego con botones de gran tamaño (`touch-manipulation`, `active:scale-95`).
 - **Marcador Gigante Sticky:** Marcador en tiempo real siempre visible en la parte superior al hacer scroll.
@@ -49,7 +57,7 @@ Este proyecto es software libre y de código abierto bajo la **[Licencia MIT](LI
 - **Sincronización Automática:** Alimenta al instante la tabla de estadísticas de partido (`PlayerMatchStats`) y la evaluación de Espíritu de Juego (SOTG).
 
 ### 2. 🏃 Roster y Perfil de Jugadores
-- Registro de dorsales únicos, posiciones tácticas (Manejador/Handler, Cortador/Cutter, Híbrido).
+- Registro de dorsales por equipo, posiciones tácticas (Manejador/Handler, Cortador/Cutter, Híbrido).
 - Estado físico (Activo, Lesionado, Inactivo), estatura, experiencia y vinculación bidireccional con usuarios.
 
 ### 3. 📅 Eventos, Torneos y Convocatorias
@@ -116,7 +124,7 @@ npm run dev
 - **Acceso de Demostración (Modo Invitado en 1 Clic):**  
   En la pantalla de inicio de sesión (`/login`), se incluye un botón de **Acceso Demostrativo en 1 Clic** que permite explorar de forma inmediata el Roster, Calendario, Pizarrón Táctico, Estadísticas, Finanzas y el Manual Oficial sin requerir registro previo ni configuración manual.
 - **Registro Seguro y Aprobación Administrativa:**  
-  Los nuevos registros de usuarios ingresan en estado `PENDING` para ser validados y asignados a su rol (`admin`, `captain`, `coach`, `directiva`, `treasurer`, `player`) desde el panel de administración (`/admin/usuarios`).
+  Los nuevos registros de usuarios ingresan en estado `PENDING` para ser validados y asignados a su rol (`admin`, `directiva`, `captain`, `coach`, `treasurer`, `player`) y equipo desde el panel de administración (`/admin/usuarios`).
 
 ---
 
@@ -130,17 +138,18 @@ Para desplegar este sistema en servidores VPS (con Docker, Nginx y SSL Certbot) 
 
 ## 🧪 Comprobación de Calidad y Tests
 
+El proyecto cuenta con un entorno estricto de control de calidad usando `eslint`, `tsc` (TypeScript), `vite` y `playwright`.
+
 ```bash
-# Verificación de compilación y empaquetado
+# Verificación de compilación TypeScript
 npm run lint
 
-# Compilación completa para producción
+# Compilación completa para producción (Cliente + Servidor)
 npm run build
 
-# Ejecución en modo producción
-npm start
+# Pruebas End-to-End
+npm run test:e2e
 ```
-
 ---
 
 ## 🤝 Contribuciones
@@ -163,5 +172,5 @@ Distribuido bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para m�
 ## 📚 Documentación Técnica Adicional
 
 - [Guía Oficial de Despliegue en Producción](./docs/DEPLOYMENT_GUIDE.md): Configuración de Docker, PostgreSQL, variables de entorno, dominio y certificados SSL.
-- [Diagrama de Flujo de Datos](./docs/FLUJO_DE_DATOS.md): Ciclo de vida y arquitectura del sistema, autenticación JWT/RBAC, eventos y cálculo de estadísticas.
-- [Recomendaciones de Mejora y Escalabilidad](./docs/RECOMENDACIONES.md): Hoja de ruta para escalabilidad en la nube, marcadores en tiempo real (WebSockets), PWA offline y soporte multi-asociación.
+- [Diagrama de Flujo de Datos](./docs/FLUJO_DE_DATOS.md): Ciclo de vida y arquitectura del sistema, autenticación JWT/RBAC, flujo multi-equipo, eventos y cálculo de estadísticas.
+- [Recomendaciones de Mejora y Escalabilidad](./docs/RECOMENDACIONES.md): Hoja de ruta para escalabilidad en la nube, marcadores en tiempo real (WebSockets), PWA offline y soporte federado.

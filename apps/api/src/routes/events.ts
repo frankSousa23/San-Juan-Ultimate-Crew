@@ -42,15 +42,27 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
 
   if (page && !isNaN(page)) {
+    
+  const u = (req as any).user;
+  const isAdmin = u?.roles?.includes('admin');
+  const userTeamId = u?.teamId;
+  const whereClause = !isAdmin && userTeamId ? { OR: [{ teamId: userTeamId }, { teamId: null }] } : {};
+
     const skip = (page - 1) * limit;
     const [events, total] = await Promise.all([
-      prisma.event.findMany({ orderBy: { startsAt: 'desc' }, skip, take: limit, include: { children: true } }),
-      prisma.event.count()
+      prisma.event.findMany({ where: whereClause, orderBy: { startsAt: 'desc' }, skip, take: limit, include: { children: true } }),
+      prisma.event.count({ where: whereClause })
     ]);
     return success(res, { data: events, total, page, totalPages: Math.ceil(total / limit) });
   }
 
-  const events = await prisma.event.findMany({ orderBy: { startsAt: 'desc' }, include: { children: true } });
+  
+  const u = (req as any).user;
+  const isAdmin = u?.roles?.includes('admin');
+  const userTeamId = u?.teamId;
+  const whereClause = !isAdmin && userTeamId ? { OR: [{ teamId: userTeamId }, { teamId: null }] } : {};
+
+  const events = await prisma.event.findMany({ where: whereClause, orderBy: { startsAt: 'desc' }, include: { children: true } });
   return success(res, events);
 }));
 
@@ -76,7 +88,8 @@ const createEventSchema = z.object({
   endsAt: z.string().datetime().optional().nullable(),
   parentId: z.number().optional().nullable(),
   windSpeed: z.number().optional().nullable(),
-  windDirection: z.string().optional().nullable(),
+  windDirection: z.string().optional(),
+  teamId: z.number().optional().nullable().nullable(),
   matchCategory: z.enum(['GROUP_STAGE', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINALS', 'PLACEMENT']).optional().nullable(),
   rivalId: z.number().optional().nullable(),
   isInternalScrimmage: z.boolean().optional(),
@@ -138,9 +151,18 @@ const updateEventSchema = createEventSchema.partial();
  */
 router.post('/', requirePermission('events:manage'), validateBody(createEventSchema), asyncHandler(async (req: Request, res: Response) => {
   const payload = req.body;
+  const u = (req as any).user;
+  const isAdmin = u?.roles?.includes('admin');
+  const userTeamId = u?.teamId || (req as any).userTeamId;
+  
+  const assignedTeamId = payload.teamId !== undefined 
+    ? (payload.teamId ? Number(payload.teamId) : null)
+    : (!isAdmin && userTeamId ? Number(userTeamId) : null);
+
   const event = await prisma.event.create({ 
     data: { 
       ...payload, 
+      teamId: assignedTeamId,
       startsAt: new Date(payload.startsAt), 
       endsAt: payload.endsAt ? new Date(payload.endsAt) : undefined 
     } 
@@ -149,6 +171,7 @@ router.post('/', requirePermission('events:manage'), validateBody(createEventSch
   await audit.log('CREATE', 'Event', event.id, {
     type: event.type,
     title: event.title,
+    teamId: event.teamId,
   });
   return created(res, event);
 }));

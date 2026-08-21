@@ -36,8 +36,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     // Treasurer & Admin
     { name: 'Finanzas', href: '/finanzas', icon: '💰', roles: ['treasurer', 'admin', 'directiva', 'guest'] },
     
-    // Admin Only
-    { name: 'Admin Usuarios', href: '/admin/usuarios', icon: '🔧', roles: ['admin'] },
+    // Admin & Directiva
+    { name: 'Equipos / Divisiones', href: '/admin/equipos', icon: '🛡️', roles: ['admin', 'directiva'] },
+    { name: 'Admin Usuarios', href: '/admin/usuarios', icon: '🔧', roles: ['admin', 'directiva'] },
     { name: 'Feedback Recibido', href: '/admin/feedback', icon: '📬', roles: ['admin'] },
     { name: 'Monitoreo', href: '/admin/monitoring', icon: '💻', roles: ['admin'] },
     { name: 'Acerca de / Feedback', href: '/about', icon: 'ℹ️', roles: [] },
@@ -140,16 +141,29 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
         {/* Header */}
         <header className="bg-white shadow-sm border-b h-16 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-40">
-          <div className="flex items-center">
+          <div className="flex items-center gap-3 lg:gap-4">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-gray-500 hover:text-gray-700 mr-4 p-2 rounded-md hover:bg-gray-100"
+              className="lg:hidden text-gray-500 hover:text-gray-700 p-2 rounded-md hover:bg-gray-100"
             >
               <span className="text-xl">☰</span>
             </button>
-            <h2 className="text-lg font-semibold text-gray-800 truncate">
+            <h2 className="text-lg font-semibold text-gray-800 truncate hidden sm:block">
               {navigation.find(n => isActive(n.href))?.name || 'SIGEDIVO'}
             </h2>
+            
+            {/* Contexto Multi-Equipo (Badge) */}
+            {user && (
+              <div 
+                className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-slate-800 to-slate-700 text-white text-xs sm:text-sm font-medium rounded-full shadow-sm border border-slate-600"
+                title="Equipo actual de gestión"
+              >
+                <span className="text-blue-300">🛡️</span>
+                <span className="truncate max-w-[100px] sm:max-w-[200px]">
+                  {user.teamName || (user.roles?.includes('admin') ? 'Admin Global' : 'Sin Equipo')}
+                </span>
+              </div>
+            )}
           </div>
           
           <div className="flex items-center space-x-2 sm:space-x-3">
@@ -184,7 +198,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 sm:p-4 lg:p-6 overflow-x-hidden">
+        <main className="flex-1 p-4 sm:p-4 lg:p-6 pb-20 sm:pb-20 lg:pb-6 overflow-x-hidden">
           <div className="max-w-7xl mx-auto w-full">
             {children}
           </div>
@@ -201,6 +215,26 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
+      {/* Mobile Bottom Tab Bar */}
+      <nav className="lg:hidden fixed bottom-0 w-full bg-white border-t flex justify-around items-center h-16 z-40 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+          <Link to="/" className={`flex flex-col items-center justify-center w-full h-full ${isActive('/') ? 'text-blue-600' : 'text-gray-500'}`}>
+            <span className="text-xl mb-0.5">🏠</span>
+            <span className="text-[10px] font-medium">Inicio</span>
+          </Link>
+          <Link to="/eventos" className={`flex flex-col items-center justify-center w-full h-full ${isActive('/eventos') ? 'text-blue-600' : 'text-gray-500'}`}>
+            <span className="text-xl mb-0.5">📅</span>
+            <span className="text-[10px] font-medium">Eventos</span>
+          </Link>
+          <Link to="/roster" className={`flex flex-col items-center justify-center w-full h-full ${isActive('/roster') ? 'text-blue-600' : 'text-gray-500'}`}>
+            <span className="text-xl mb-0.5">👥</span>
+            <span className="text-[10px] font-medium">Roster</span>
+          </Link>
+          <Link to="/anotaciones" className={`flex flex-col items-center justify-center w-full h-full ${isActive('/anotaciones') ? 'text-blue-600' : 'text-gray-500'}`}>
+            <span className="text-xl mb-0.5">🎯</span>
+            <span className="text-[10px] font-medium">Pizarra</span>
+          </Link>
+      </nav>
     </div>
   )
 }

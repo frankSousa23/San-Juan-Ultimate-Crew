@@ -76,8 +76,8 @@ export const http = {
     return { data }
   },
   interceptors: {
-    request: { use: () => {} },
-    response: { use: () => {} },
+    request: { use: (cb: any) => {} },
+    response: { use: (cb1: any, cb2: any) => {} },
   }
 }
 
@@ -137,7 +137,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 }
 
-http.interceptors.request.use((config) => {
+http.interceptors.request.use((config: any) => {
+  
   const token = getAuthToken()
   if (token) {
     config.headers = config.headers || {}
@@ -148,8 +149,8 @@ http.interceptors.request.use((config) => {
 
 // Response interceptor to handle token expiration
 http.interceptors.response.use(
-  (response) => response,
-  (error) => {
+  (response: any) => response,
+  (error: any) => {
     if (error.response?.status === 401) {
       setAuthToken()
       const currentPath = window.location.pathname
@@ -179,10 +180,10 @@ export const authApi = {
       body: JSON.stringify({ email, password }),
     })
   },
-  register: async (email: string, password: string, name?: string, willBePlayer?: boolean, playerData?: { number: number; position: 'HANDLER' | 'CUTTER' | 'HYBRID'; status?: 'ACTIVE' | 'INJURED' | 'INACTIVE'; heightCm?: number; experience?: string }): Promise<{ message: string; user: { id: number; email: string; name?: string; status: string; playerId?: number | null } }> => {
+  register: async (email: string, password: string, name?: string, willBePlayer?: boolean, playerData?: { number: number; position: 'HANDLER' | 'CUTTER' | 'HYBRID'; status?: 'ACTIVE' | 'INJURED' | 'INACTIVE'; heightCm?: number; experience?: string }, teamId?: number | null): Promise<{ message: string; user: { id: number; email: string; name?: string; status: string; playerId?: number | null } }> => {
     return request('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, name, willBePlayer, playerData }),
+      body: JSON.stringify({ email, password, name, willBePlayer, playerData, teamId }),
     })
   },
   me: async (): Promise<{ user?: { id: number; email: string; name?: string; roles?: string[]; playerId?: number | null; status?: 'PENDING' | 'APPROVED' | 'REJECTED' }; authDisabled?: boolean }> => {
@@ -670,3 +671,40 @@ export const newsApi = {
     window.URL.revokeObjectURL(url)
   },
 }
+
+// Teams API
+export interface TeamItem {
+  id: number
+  name: string
+  color?: string | null
+  logoUrl?: string | null
+  _count?: {
+    players?: number
+    users?: number
+    events?: number
+  }
+}
+
+export const teamsApi = {
+  listPublic: async (): Promise<Array<{ id: number; name: string; color?: string | null; logoUrl?: string | null }>> => {
+    const res = await request<any>('/api/teams/public', { method: 'GET' })
+    return res.data || res || []
+  },
+  list: async (): Promise<TeamItem[]> => {
+    const { data } = await http.get('/api/teams')
+    return Array.isArray(data) ? data : data.data || []
+  },
+  get: async (id: number): Promise<TeamItem> => {
+    const { data } = await http.get(`/api/teams/${id}`)
+    return data.data || data
+  },
+  create: async (payload: { name: string; color?: string; logoUrl?: string }): Promise<TeamItem> => {
+    const { data } = await http.post('/api/teams', payload)
+    return data.data || data
+  },
+  update: async (id: number, payload: { name?: string; color?: string; logoUrl?: string }): Promise<TeamItem> => {
+    const { data } = await http.put(`/api/teams/${id}`, payload)
+    return data.data || data
+  },
+}
+

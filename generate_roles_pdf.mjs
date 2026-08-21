@@ -7,13 +7,13 @@ if (!fs.existsSync(outputDir)) {
   fs.mkdirSync(outputDir, { recursive: true });
 }
 
-const outputPath = path.join(outputDir, 'Roles_y_Permisos_San_Juan_Ultimate_Crew.pdf');
+const outputPath = path.join(outputDir, 'SIGEDIVO_Manual_de_Usuario_y_Roles.pdf');
 const doc = new PDFDocument({
   size: 'A4',
   margins: { top: 40, bottom: 40, left: 40, right: 40 },
   info: {
-    Title: 'San Juan Ultimate Crew - Roles, Permisos y Vistas',
-    Author: 'San Juan Ultimate Crew Tech Staff',
+    Title: 'SIGEDIVO - Arquitectura Multi-Equipo, Roles, Permisos y Vistas',
+    Author: 'SIGEDIVO Tech Staff (Frank Sousa)',
     Subject: 'Documentación Arquitectura de Roles y Vistas',
   }
 });

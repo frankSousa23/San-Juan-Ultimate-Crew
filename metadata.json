@@ -1,6 +1,6 @@
 {
   "name": "SIGEDIVO (Sistema de Gestión para el Disco Volador)",
-  "description": "Team management platform for SIGEDIVO (Sistema de Gestión para el Disco Volador) with roster, events, finances, stats, and tactical playbook.",
+  "description": "Multi-team athletic management platform for SIGEDIVO (Sistema de Gestión para el Disco Volador) with multi-division roster, live match annotations, events, finances, stats, and tactical playbook.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

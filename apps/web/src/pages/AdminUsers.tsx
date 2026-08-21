@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
 import { http, adminUsersApi, usersApi } from '../lib/api'
 
-interface UserItem { id: number; email: string; name?: string; roles: string[]; playerId: number | null; status?: string; createdAt?: string }
+interface UserItem { id: number; email: string; name?: string; roles: string[]; playerId: number | null; teamId?: number | null; teamName?: string | null; status?: string; createdAt?: string }
 
 export default function AdminUsers() {
   const toast = useToast()
@@ -15,6 +15,8 @@ export default function AdminUsers() {
   const [playerId, setPlayerId] = useState<Record<number, string>>({})
   const [roles, setRoles] = useState<Record<number, Set<string>>>({})
   const [requests, setRequests] = useState<any[]>([])
+  const [teams, setTeams] = useState<any[]>([])
+  const [teamSelection, setTeamSelection] = useState<Record<number, string>>({})
   const [requestStatus, setRequestStatus] = useState<'PENDING'|'APPROVED'|'DENIED'>('PENDING')
   const [requestsLoading, setRequestsLoading] = useState(false)
   const [requestPlayerId, setRequestPlayerId] = useState<Record<number, string>>({})
@@ -186,6 +188,8 @@ export default function AdminUsers() {
       const status = userStatusFilter !== 'ALL' ? userStatusFilter : undefined
       const data = await usersApi.list(status)
       setUsers(data)
+      const dataTeams = await http.get('/api/teams')
+      setTeams(dataTeams.data)
       const initRoles: Record<number, Set<string>> = {}
       const initPlayer: Record<number, string> = {}
       for (const u of data) {
@@ -239,10 +243,13 @@ export default function AdminUsers() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h2 className="text-2xl font-bold text-gray-800">Admin: Usuarios</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Admin: Usuarios</h2>
+          <p className="text-sm text-gray-600">Gestión de roles, vinculación de atletas y aprobación de cuentas</p>
+        </div>
       </div>
       {error && <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded p-3 text-sm">{error}</div>}
-      
+
       {/* Pending Users Section */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="px-4 py-2 border-b bg-yellow-50">
@@ -463,6 +470,7 @@ export default function AdminUsers() {
               <th className="text-left px-4 py-2">Nombre</th>
               <th className="text-left px-4 py-2">Estado</th>
               <th className="text-left px-4 py-2">Roles</th>
+              <th className="text-left px-4 py-2">Equipo</th>
               <th className="text-left px-4 py-2">PlayerId</th>
               <th className="px-4 py-2"></th>
             </tr>
@@ -487,8 +495,8 @@ export default function AdminUsers() {
                     {u.roles.length === 0 && (
                       <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-600">Sin rol</span>
                     )}
-                    {u.roles.map(r => (
-                      <span key={r} className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100">
+                    {Array.from(new Set(u.roles)).map((r, idx) => (
+                      <span key={`${u.id}-${r}-${idx}`} className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100">
                         {r === 'guest' ? 'Refuerzo' :
                          r === 'player' ? 'Jugador' :
                          r === 'admin' ? 'Admin' :
@@ -499,6 +507,28 @@ export default function AdminUsers() {
                       </span>
                     ))}
                   </div>
+                </td>
+                <td className="px-4 py-2">
+                  <select
+                    className="border rounded px-2 py-1 text-sm w-full"
+                    value={teamSelection[u.id] || (u.teamId ? String(u.teamId) : '')}
+                    onChange={async (e) => {
+                      const newTeamId = e.target.value ? Number(e.target.value) : null;
+                      setTeamSelection(prev => ({ ...prev, [u.id]: e.target.value }));
+                      try {
+                        await http.put(`/api/users/${u.id}/team`, { teamId: newTeamId });
+                        toast.showSuccessToast('Equipo asignado correctamente');
+                        load();
+                      } catch (err: any) {
+                        toast.showErrorToast(err?.response?.data?.error || 'Error al asignar equipo');
+                      }
+                    }}
+                  >
+                    <option value="">Sin equipo</option>
+                    {teams.map((t: any) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
                 </td>
                 <td className="px-4 py-2">
                   <input

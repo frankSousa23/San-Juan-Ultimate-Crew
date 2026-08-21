@@ -1,24 +1,25 @@
 # 🚀 Hoja de Ruta y Recomendaciones de Mejora y Escalabilidad (SIGEDIVO)
 
-Este documento reúne las recomendaciones técnicas y arquitectónicas estratégicas para guiar las futuras etapas de evolución del **Sistema de Gestión para el Disco Volador (SIGEDIVO)** tras la etapa inicial de pruebas comunitarias abiertas.
+Este documento reúne las recomendaciones técnicas y arquitectónicas estratégicas para guiar las futuras etapas de evolución del **Sistema de Gestión para el Disco Volador (SIGEDIVO)**.
 
 ---
 
 ## 🧭 1. Hoja de Ruta Tecnológica por Fases
 
-| Fase | Enfoque Principal | Tecnologías Sugeridas | Impacto Deportivo |
-| :--- | :--- | :--- | :--- |
-| **Fase 1 (Actual)** | Validación y Lanzamiento Comunitario Global | React 18, Vite 6, Express, PostgreSQL, Prisma | Recopilar feedback y probar usabilidad en campo |
-| **Fase 2 (Próxima)** | Marcadores en Vivo y PWA Offline First | WebSockets / Socket.io, Workbox PWA, IndexedDB | Registro sin internet en canchas remotas y transmisión en vivo |
-| **Fase 3 (Medio Plazo)** | Multi-Asociación y Multi-Club Federado | Multi-tenancy con `organizationId`, RBAC federado | Despliegue oficial para FDVV, AADV, AGDV y clubes |
-| **Fase 4 (Avanzada)** | Analítica Táctica con IA y Streaming Overlay | Gemini API, Canvas Overlay para OBS, Exportación WFDF | Cobertura profesional de transmisiones y scouting avanzado |
+| Fase | Enfoque Principal | Estado | Tecnologías Clave | Impacto Deportivo |
+| :--- | :--- | :---: | :--- | :--- |
+| **Fase 1** | Arquitectura Base & Lanzamiento Comunitario | ✅ Completado | React 18, Vite 6, Express, PostgreSQL, Prisma | Roster, Eventos, Marcadores en Vivo, Finanzas y Roles |
+| **Fase 2** | Multi-Equipo & Aislamiento de Datos | ✅ Completado | Multi-tenant por `teamId`, Índices compuestos, Admin de Equipos | Clubes, categorías Open/Femenino/Master operando simultáneamente |
+| **Fase 3** | Marcadores en Vivo y PWA Offline First | 🟡 En Desarrollo | WebSockets / Socket.io, Workbox PWA, IndexedDB | Registro sin internet en canchas remotas y transmisión en vivo |
+| **Fase 4** | Federación Nacional & Multi-Asociación | ⚪ Planificado | Multi-tenancy federado (`organizationId`), RBAC federado | Despliegue oficial para FDVV, AADV, AGDV y clubes afiliados |
+| **Fase 5** | Analítica Táctica con IA y Streaming Overlay | ⚪ Planificado | Gemini API, Canvas Overlay para OBS, Exportación WFDF | Cobertura profesional de transmisiones y scouting con IA |
 
 ---
 
 ## ⚡ 2. Marcadores en Tiempo Real (WebSockets / SSE)
 
 ### Contexto
-Actualmente, la actualización del marcador en la mesa técnica se realiza vía peticiones REST HTTP. Para que el público, entrenadores en banca y fanáticos puedan ver las anotaciones al instante desde sus teléfonos sin recargar:
+Actualmente, la actualización del marcador en la mesa técnica se realiza vía peticiones REST HTTP optimistas. Para que el público, entrenadores en banca y fanáticos puedan ver las anotaciones al instante desde sus teléfonos sin recargar:
 
 ### Propuesta Técnica
 - **Implementar Socket.io / WebSockets** en el backend Express:
@@ -45,13 +46,13 @@ En muchas canchas de entrenamiento y complejos deportivos en Venezuela y Latinoa
 
 ---
 
-## 🏢 4. Arquitectura Multi-Asociación y Multi-Club (Multi-Tenancy)
+## 🏢 4. Arquitectura Multi-Asociación y Jerarquía Federada
 
 ### Contexto
-Conforme el sistema crezca de un equipo piloto a dar soporte a la **Federación del Disco Volador de Venezuela (FDVV)**, **Asociación Aragüeña (AADV)**, **Asociación Guariqueña (AGDV)** y múltiples clubes independientes:
+Conforme el sistema crezca de equipos y clubes a dar soporte a la **Federación del Disco Volador de Venezuela (FDVV)**, **Asociación Aragüeña (AADV)**, **Asociación Guariqueña (AGDV)** y federaciones internacionales:
 
 ### Propuesta de Esquema de Datos
-Añadir una capa de particionamiento lógico por asociación y club:
+Añadir una capa superior de organización sobre los equipos:
 
 ```prisma
 model Organization {
@@ -63,19 +64,11 @@ model Organization {
   events      Event[]
   createdAt   DateTime  @default(now())
 }
-
-model Team {
-  id             Int          @id @default(autoincrement())
-  organizationId Int
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  name           String
-  roster         Player[]
-}
 ```
 
 - **Ventajas:**
-  - Aislamiento total de las finanzas y jugadores de cada club.
-  - Vistas consolidadas para las federaciones organizadoras de ligas nacionales.
+  - Aislamiento total entre asociaciones independientes.
+  - Vistas consolidadas y tabuladores para torneos nacionales organizados por la Federación.
 
 ---
 

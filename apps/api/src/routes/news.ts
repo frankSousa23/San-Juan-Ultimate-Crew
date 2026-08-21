@@ -15,9 +15,9 @@ import { fileURLToPath } from 'url'
 const router = Router()
 
 // Configuración de multer para subir archivos
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const uploadsDir = path.join(__dirname, '../../uploads/news')
+const currentFilename = typeof __filename !== 'undefined' ? __filename : fileURLToPath(import.meta.url || 'file://' + process.cwd() + '/index.js')
+const currentDir = typeof __dirname !== 'undefined' ? __dirname : path.dirname(currentFilename)
+const uploadsDir = path.join(currentDir, '../../uploads/news')
 
 // Asegurar que el directorio existe
 fs.mkdir(uploadsDir, { recursive: true }).catch(() => {})

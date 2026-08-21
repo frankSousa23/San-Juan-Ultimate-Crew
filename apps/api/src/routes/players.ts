@@ -41,17 +41,21 @@ router.get('/', requirePermission('roster:view'), asyncHandler(async (req: Reque
 
   const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
   const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 20;
+  const u = (req as any).user;
+  const isAdmin = u?.roles?.includes('admin');
+  const userTeamId = (req as any).userTeamId;
+  const whereClause = !isAdmin && userTeamId ? { OR: [{ teamId: userTeamId }, { teamId: null }] } : {};
 
   if (page && !isNaN(page)) {
     const skip = (page - 1) * limit;
     const [players, total] = await Promise.all([
-      prisma.player.findMany({ orderBy: { number: 'asc' }, skip, take: limit }),
-      prisma.player.count()
+      prisma.player.findMany({ where: whereClause, orderBy: { number: 'asc' }, skip, take: limit }),
+      prisma.player.count({ where: whereClause })
     ]);
     return success(res, { data: players, total, page, totalPages: Math.ceil(total / limit) });
   }
 
-  const players = await prisma.player.findMany({ orderBy: { number: 'asc' } });
+  const players = await prisma.player.findMany({ where: whereClause, orderBy: { number: 'asc' } });
   return success(res, players);
 }));
 
@@ -62,6 +66,7 @@ const createPlayerSchema = z.object({
   status: z.enum(['ACTIVE', 'INJURED', 'INACTIVE']).optional().default('ACTIVE'),
   heightCm: z.coerce.number().int().positive().optional(),
   experience: z.string().optional(),
+  teamId: z.number().optional().nullable(),
 });
 
 const updatePlayerSchema = createPlayerSchema.partial();
@@ -116,7 +121,14 @@ const updatePlayerSchema = createPlayerSchema.partial();
  *         description: Forbidden - Admin role required
  */
 router.post('/', requirePermission('roster:manage'), validateBody(createPlayerSchema), asyncHandler(async (req: Request, res: Response) => {
-  const player = await prisma.player.create({ data: req.body });
+  const data = { ...req.body };
+  const u = (req as any).user;
+  const isAdmin = u?.roles?.includes('admin');
+  const userTeamId = (req as any).userTeamId;
+  if (!isAdmin && userTeamId) {
+    data.teamId = userTeamId;
+  }
+  const player = await prisma.player.create({ data });
   const audit = createAuditHelper(req);
   await audit.log('CREATE', 'Player', player.id, {
     name: player.name,

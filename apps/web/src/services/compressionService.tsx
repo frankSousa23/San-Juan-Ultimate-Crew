@@ -1045,7 +1045,7 @@ export const CompressionDashboard: React.FC<CompressionDashboardProps> = ({ clas
                       {operation.status}
                     </span>
                     {operation.algorithm && (
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getAlgorithmColor(operation.algorithm)}`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getAlgorithmColor(operation.algorithm as any)}`}>
                         {operation.algorithm}
                       </span>
                     )}

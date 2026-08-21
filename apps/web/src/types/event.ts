@@ -15,6 +15,7 @@ export interface EventItem {
   matchCategory?: MatchCategory | null
   rivalId?: number | null
   isInternalScrimmage?: boolean
+  children?: EventItem[]
 }
 
 export type CreateEventInput = Omit<EventItem, 'id'>

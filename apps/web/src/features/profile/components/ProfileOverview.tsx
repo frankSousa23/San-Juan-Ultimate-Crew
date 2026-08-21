@@ -1,9 +1,12 @@
 import React from 'react'
 import { NavLink, Link } from 'react-router-dom'
-import { useProfile } from '../features/profile/hooks/useProfile'
+import { useAuth } from '../../../contexts/AuthContext'
+import { myRoleRequestsApi } from '../../../lib/api'
+import { useProfile } from '../hooks/useProfile'
 
 export default function Profile() {
   const { state, actions } = useProfile()
+const { hasRole } = useAuth() as any
   const {
     authDisabled, user, myRequests, requestNote, requestPlayerId, showPlayerDataForm,
     playerData, error, loading, activeTab, editName, currentPassword, newPassword,
@@ -111,7 +114,7 @@ export default function Profile() {
                         <label className="text-sm text-gray-500">Roles</label>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {user.roles && user.roles.length > 0 ? (
-                            user.roles.map(role => (
+                            user.roles.map((role: any) => (
                               <span key={role} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium capitalize">
                                 {role}
                               </span>
@@ -539,7 +542,7 @@ export default function Profile() {
                                 onChange={e => {
                                   const val = e.target.value
                                   if (val === '' || (Number(val) > 0 && Number.isInteger(Number(val)))) {
-                                    setPlayerData(prev => ({ ...prev, number: val }))
+                                    setPlayerData((prev: any) => ({ ...prev, number: val }))
                                   }
                                 }}
                               />
@@ -551,7 +554,7 @@ export default function Profile() {
                               <select
                                 className="w-full border rounded px-3 py-2 text-sm"
                                 value={playerData.position}
-                                onChange={e => setPlayerData(prev => ({ ...prev, position: e.target.value as any }))}
+                                onChange={e => setPlayerData((prev: any) => ({ ...prev, position: e.target.value as any }))}
                               >
                                 <option value="HANDLER">Manejador</option>
                                 <option value="CUTTER">Cortador</option>
@@ -570,7 +573,7 @@ export default function Profile() {
                                 onChange={e => {
                                   const val = e.target.value
                                   if (val === '' || (Number(val) > 0 && Number.isInteger(Number(val)))) {
-                                    setPlayerData(prev => ({ ...prev, heightCm: val }))
+                                    setPlayerData((prev: any) => ({ ...prev, heightCm: val }))
                                   }
                                 }}
                               />
@@ -583,7 +586,7 @@ export default function Profile() {
                                 type="text"
                                 className="w-full border rounded px-3 py-2 text-sm"
                                 value={playerData.experience}
-                                onChange={e => setPlayerData(prev => ({ ...prev, experience: e.target.value }))}
+                                onChange={e => setPlayerData((prev: any) => ({ ...prev, experience: e.target.value }))}
                               />
                             </div>
                           </div>
@@ -630,9 +633,9 @@ export default function Profile() {
                             setPlayerData({ number: '', position: 'CUTTER', heightCm: '', experience: '' })
                             const mine = await myRoleRequestsApi.listMine()
                             setMyRequests(mine)
-                            toasts.success('Solicitud enviada exitosamente')
+                            alert('Solicitud enviada exitosamente')
                           } catch (e: any) {
-                            toasts.error(e?.response?.data?.error || 'No se pudo enviar la solicitud')
+                            alert(e?.response?.data?.error || 'No se pudo enviar la solicitud')
                           }
                         }}
                         disabled={(!requestNote.trim() && !requestPlayerId && !showPlayerDataForm) || (showPlayerDataForm && (!playerData.number || !playerData.position))}
@@ -768,16 +771,16 @@ export default function Profile() {
                             const newState = !user.roles?.includes('player')
                             setTogglingPlayerRole(true)
                             try {
-                              const updated = await usersApi.togglePlayerRole(newState)
+                              const updated = await handleTogglePlayerRole(newState) as any
                               setUser(updated)
-                              await refreshUser()
-                              toasts.success(
+                              // await refreshUser()
+                              alert(
                                 newState 
                                   ? 'Rol de jugador activado. Ahora puedes ver estadísticas y participar en eventos como jugador.' 
                                   : 'Rol de jugador desactivado. Ya no verás estadísticas de jugador.'
                               )
                             } catch (e: any) {
-                              toasts.error(e?.response?.data?.error || 'No se pudo cambiar el estado del rol de jugador')
+                              alert(e?.response?.data?.error || 'No se pudo cambiar el estado del rol de jugador')
                             } finally {
                               setTogglingPlayerRole(false)
                             }

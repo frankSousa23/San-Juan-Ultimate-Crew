@@ -47,14 +47,16 @@ export default function Rivals() {
   const [limit, setLimit] = useState<number>(() => Number(localStorage.getItem('rivals.limit') || 20))
   const [offset, setOffset] = useState(0)
   const [total, setTotal] = useState(0)
+  const [error, setError] = useState<string | null>(null)
   
   const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
   const [statsTarget, setStatsTarget] = useState<RivalItem | null>(null)
+  const [detailRival, setDetailRival] = useState<RivalItem | null>(null)
   const [stats, setStats] = useState<RivalStats | null>(null)
   const [loadingStats, setLoadingStats] = useState(false)
 
   // API hooks
-  const { execute: loadRivals, loading, error } = useApi(
+  const { execute: loadRivals, loading, error: apiError } = useApi(
     (params: any) => rivalsApi.listPaged(params),
     {
       onSuccess: (data) => {
@@ -189,9 +191,9 @@ export default function Rivals() {
         <button onClick={openCreate} className="bg-emerald-600 text-white px-4 py-2 rounded-lg whitespace-nowrap">+ Nuevo Rival</button>
       </div>
 
-      {error && (
+      {(error || apiError) && (
         <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded p-3 flex items-start justify-between">
-          <div className="pr-3">{error}</div>
+          <div className="pr-3">{error || apiError}</div>
           <div className="flex gap-2 shrink-0">
             <button className="px-2 py-1 bg-rose-100 rounded" onClick={() => load()}>Reintentar</button>
             <button className="px-2 py-1 bg-gray-100 rounded" onClick={() => setError(null)}>Ocultar</button>
@@ -256,29 +258,39 @@ export default function Rivals() {
             <table className="min-w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="text-left px-2 sm:px-4 py-2">Nombre</th>
+                  <th className="text-left px-2 sm:px-4 py-2">Rival</th>
                   <th className="text-left px-2 sm:px-4 py-2 hidden md:table-cell">Fortalezas</th>
                   <th className="text-left px-2 sm:px-4 py-2 hidden md:table-cell">Debilidades</th>
-                  <th className="text-left px-2 sm:px-4 py-2">Último encuentro</th>
+                  <th className="text-left px-2 sm:px-4 py-2 hidden sm:table-cell">Último encuentro</th>
                   <th className="text-left px-2 sm:px-4 py-2 hidden lg:table-cell">Notas</th>
-                  <th className="px-2 sm:px-4 py-2"></th>
+                  <th className="px-2 sm:px-4 py-2 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map(it => (
-                  <tr key={it.id} className="border-t">
-                    <td className="px-2 sm:px-4 py-2 font-medium">{it.name}</td>
-                    <td className="px-2 sm:px-4 py-2 hidden md:table-cell">{it.strengths || ''}</td>
-                    <td className="px-2 sm:px-4 py-2 hidden md:table-cell">{it.weaknesses || ''}</td>
-                    <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{it.lastPlayedAt ? new Date(it.lastPlayedAt).toLocaleDateString() : ''}</td>
-                    <td className="px-2 sm:px-4 py-2 hidden lg:table-cell">{it.notes || ''}</td>
+                  <tr key={it.id} className="border-t hover:bg-gray-50/70 transition-colors">
+                    <td className="px-2 sm:px-4 py-2 font-medium">
+                      <button onClick={() => setDetailRival(it)} className="text-left text-indigo-900 hover:text-indigo-600 hover:underline">
+                        {it.name}
+                      </button>
+                    </td>
+                    <td className="px-2 sm:px-4 py-2 hidden md:table-cell text-gray-700 max-w-xs truncate">{it.strengths || '-'}</td>
+                    <td className="px-2 sm:px-4 py-2 hidden md:table-cell text-gray-700 max-w-xs truncate">{it.weaknesses || '-'}</td>
+                    <td className="px-2 sm:px-4 py-2 whitespace-nowrap hidden sm:table-cell text-xs text-gray-600">{it.lastPlayedAt ? new Date(it.lastPlayedAt).toLocaleDateString() : '-'}</td>
+                    <td className="px-2 sm:px-4 py-2 hidden lg:table-cell text-gray-500 max-w-xs truncate">{it.notes || '-'}</td>
                     <td className="px-2 sm:px-4 py-2 text-right">
-                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 sm:justify-end">
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 justify-end">
                         <button
-                          className="text-slate-700 hover:underline text-xs sm:text-sm whitespace-nowrap"
+                          className="text-xs text-gray-600 hover:text-indigo-600 border border-gray-200 rounded px-1.5 py-0.5 whitespace-nowrap"
+                          onClick={() => setDetailRival(it)}
+                        >
+                          Ficha
+                        </button>
+                        <button
+                          className="text-xs text-slate-700 hover:text-indigo-700 border border-slate-200 rounded px-1.5 py-0.5 whitespace-nowrap bg-slate-50"
                           onClick={() => openStats(it)}
                         >
-                          Ver estadísticas
+                          Estadísticas
                         </button>
                         {hasPermission('rivals:manage') && (
                           <>
@@ -522,6 +534,79 @@ export default function Rivals() {
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rival Scouting Profile Modal */}
+      {detailRival && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setDetailRival(null)}>
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-slate-800 to-indigo-900 p-4 text-white flex items-center justify-between">
+              <div>
+                <div className="text-xs uppercase tracking-wider opacity-90">Ficha Técnica de Rival</div>
+                <div className="text-xl font-bold">{detailRival.name}</div>
+              </div>
+              <button onClick={() => setDetailRival(null)} className="text-white/80 hover:text-white text-xl font-bold p-1">✕</button>
+            </div>
+            <div className="p-5 space-y-4 text-sm">
+              <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-100 flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-gray-500 block uppercase">Último Encuentro Registrado</span>
+                  <span className="font-semibold text-gray-900">
+                    {detailRival.lastPlayedAt ? new Date(detailRival.lastPlayedAt).toLocaleDateString() : 'Sin registros previos'}
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    const r = detailRival
+                    setDetailRival(null)
+                    openStats(r)
+                  }}
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow transition"
+                >
+                  Ver Estadísticas
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <div className="bg-emerald-50/60 p-3.5 rounded-lg border border-emerald-100">
+                  <span className="text-xs font-bold text-emerald-800 uppercase block mb-1">💪 Fortalezas Tácticas</span>
+                  <p className="text-emerald-950 whitespace-pre-wrap">{detailRival.strengths || 'No se han especificado fortalezas para este rival.'}</p>
+                </div>
+
+                <div className="bg-rose-50/60 p-3.5 rounded-lg border border-rose-100">
+                  <span className="text-xs font-bold text-rose-800 uppercase block mb-1">🎯 Debilidades a Explotar</span>
+                  <p className="text-rose-950 whitespace-pre-wrap">{detailRival.weaknesses || 'No se han especificado debilidades para este rival.'}</p>
+                </div>
+
+                <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-100">
+                  <span className="text-xs font-bold text-slate-700 uppercase block mb-1">📝 Notas de Scouting / Observaciones</span>
+                  <p className="text-slate-800 whitespace-pre-wrap">{detailRival.notes || 'Sin notas adicionales.'}</p>
+                </div>
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                {hasPermission('rivals:manage') && (
+                  <button
+                    onClick={() => {
+                      const itemToEdit = detailRival
+                      setDetailRival(null)
+                      openEdit(itemToEdit)
+                    }}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-medium transition"
+                  >
+                    Editar Rival
+                  </button>
+                )}
+                <button
+                  onClick={() => setDetailRival(null)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 rounded-lg font-medium transition"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         </div>

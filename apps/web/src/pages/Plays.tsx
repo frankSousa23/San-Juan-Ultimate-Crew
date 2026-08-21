@@ -5,6 +5,7 @@ import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
 import TacticalBoard, { getTacticalSchemaForPlay } from '../components/TacticalBoard'
+import FreeTacticalBoard from '../components/FreeTacticalBoard'
 import type { PlayItem, PlayCategory } from '../types/plays'
 
 export default function Plays() {
@@ -22,7 +23,7 @@ export default function Plays() {
   
   // Selected Play for Interactive Tactical Board
   const [selectedPlay, setSelectedPlay] = useState<PlayItem | null>(null)
-  const [viewMode, setViewMode] = useState<'interactive' | 'table'>('interactive')
+  const [viewMode, setViewMode] = useState<'interactive' | 'table' | 'free-board'>('interactive')
   const [fullscreenBoard, setFullscreenBoard] = useState(false)
 
   // Edit / Create modal states
@@ -185,10 +186,10 @@ export default function Plays() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="bg-gray-100 p-1 rounded-xl flex items-center gap-1 border border-gray-200">
+          <div className="bg-gray-100 p-1 rounded-xl flex items-center gap-1 border border-gray-200 overflow-x-auto w-full max-w-full" style={{ scrollbarWidth: 'none' }}>
             <button
               onClick={() => setViewMode('interactive')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
                 viewMode === 'interactive' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -196,11 +197,19 @@ export default function Plays() {
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
                 viewMode === 'table' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               📑 Tabla Detallada
+            </button>
+            <button
+              onClick={() => setViewMode('free-board')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                viewMode === 'free-board' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              🖍️ Pizarra Libre
             </button>
           </div>
           {hasPermission('plays:manage') && (
@@ -345,7 +354,7 @@ export default function Plays() {
 
       {/* Main Interactive View Mode */}
       {viewMode === 'interactive' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="flex flex-col-reverse lg:grid lg:grid-cols-12 gap-6">
           {/* Left Column: Play Selection Cards (5 Cols) */}
           <div className="lg:col-span-5 space-y-3">
             <div className="flex items-center justify-between px-1">
@@ -570,6 +579,11 @@ export default function Plays() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Free Board View Mode */}
+      {viewMode === 'free-board' && (
+        <FreeTacticalBoard />
       )}
 
       {/* Edit / Create Play Modal */}

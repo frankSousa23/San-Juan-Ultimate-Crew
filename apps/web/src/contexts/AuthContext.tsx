@@ -21,6 +21,8 @@ interface User {
   roles?: string[]; // Changed from Role[] to string[] to match authApi.me() response
   permissions?: string[]; // Permissions from roles
   playerId?: number | null;
+  teamId?: number | null;
+  teamName?: string | null;
   status?: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 

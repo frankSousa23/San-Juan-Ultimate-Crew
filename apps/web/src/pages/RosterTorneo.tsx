@@ -315,41 +315,55 @@ export default function RosterTorneo() {
             {participants.map(p => {
               const pl = p.player || playerById.get(p.playerId)
               return (
-                <div key={p.playerId} className="py-2 flex items-center justify-between">
-                  <div className="flex-1 pr-4">
-                    <div className="font-medium">#{pl?.number ?? p.playerId} {pl?.name ?? ''}</div>
-                    <div className="mt-1 flex gap-2 items-center text-sm">
-                      <label className="text-gray-500">Rol:</label>
-                      {authed && (
-                      <input
-                        className="border rounded px-2 py-1 text-sm"
-                        defaultValue={p.role ?? ''}
-                        placeholder="ej. Manejador, Cortador"
-                        onBlur={(e) => updateRole(p.playerId, e.target.value)}
-                        disabled={loading}
-                      />
-                      )}
-                      <label className="text-gray-500 ml-3">Estado:</label>
-                      {authed && (
-                      <select
-                        className="border rounded px-2 py-1 text-sm"
-                        value={(p.status as any) ?? ''}
-                        onChange={(e) => updateStatus(p.playerId, e.target.value)}
-                        disabled={loading}
-                      >
-                        <option value="">(sin estado)</option>
-                        <option value="confirmed">confirmado</option>
-                        <option value="tentative">tentativo</option>
-                        <option value="declined">rechazado</option>
-                      </select>
-                      )}
+                <div key={p.playerId} className="py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">#{pl?.number ?? p.playerId} {pl?.name ?? ''}</div>
+                    <div className="mt-1.5 flex flex-wrap gap-2 items-center text-xs sm:text-sm">
+                      <div className="flex items-center gap-1">
+                        <label className="text-gray-500">Rol:</label>
+                        {authed ? (
+                          <input
+                            className="border rounded px-2 py-1 text-xs sm:text-sm w-32"
+                            defaultValue={p.role ?? ''}
+                            placeholder="ej. Manejador"
+                            onBlur={(e) => updateRole(p.playerId, e.target.value)}
+                            disabled={loading}
+                          />
+                        ) : (
+                          <span className="text-gray-700 font-medium">{p.role || '(sin rol)'}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <label className="text-gray-500">Estado:</label>
+                        {authed ? (
+                          <select
+                            className="border rounded px-2 py-1 text-xs sm:text-sm"
+                            value={(p.status as any) ?? ''}
+                            onChange={(e) => updateStatus(p.playerId, e.target.value)}
+                            disabled={loading}
+                          >
+                            <option value="">(sin estado)</option>
+                            <option value="confirmed">confirmado</option>
+                            <option value="tentative">tentativo</option>
+                            <option value="declined">rechazado</option>
+                          </select>
+                        ) : (
+                          <span className="text-gray-700 font-medium">{p.status || '(sin estado)'}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  {authed && <button className="px-2 py-1 text-sm rounded bg-rose-600 text-white" onClick={() => setConfirmState({ message: `¿Quitar a ${pl?.name ?? 'este jugador'} del roster del torneo?`, onYes: () => removePlayer(p.playerId) })} disabled={loading}>Quitar</button>}
+                  {authed && (
+                    <div className="flex justify-end">
+                      <button className="px-2.5 py-1 text-xs sm:text-sm rounded bg-rose-600 hover:bg-rose-700 text-white whitespace-nowrap" onClick={() => setConfirmState({ message: `¿Quitar a ${pl?.name ?? 'este jugador'} del roster del torneo?`, onYes: () => removePlayer(p.playerId) })} disabled={loading}>
+                        Quitar
+                      </button>
+                    </div>
+                  )}
                 </div>
               )
             })}
-            {participants.length === 0 && <div className="text-sm text-gray-500">Aún no hay seleccionados.</div>}
+            {participants.length === 0 && <div className="text-sm text-gray-500 py-4 text-center">Aún no hay seleccionados.</div>}
           </div>
         </div>
       </div>

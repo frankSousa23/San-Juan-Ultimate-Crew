@@ -18,7 +18,7 @@ export default function About() {
   const handleDownloadPdf = () => {
     try {
       setIsDownloadingPdf(true)
-      downloadSystemManualPdf('Manual_Operaciones_SIGEDIVO.pdf')
+      downloadSystemManualPdf()
     } finally {
       setIsDownloadingPdf(false)
     }
@@ -50,14 +50,12 @@ export default function About() {
         </p>
         
         <div className="bg-white/10 rounded-xl p-5 border border-white/20">
-          <h3 className="font-bold text-amber-300 mb-2">Fase Actual: Lanzamiento Comunitario Global</h3>
+          <h3 className="font-bold text-amber-300 mb-2">Fase Actual: Versión Beta Multi-Equipo en Producción</h3>
           <p className="text-sm text-blue-50 leading-relaxed mb-3">
-            El sistema se encuentra en una fase de prueba y recopilación de feedback para la comunidad del Ultimate Frisbee. 
-            Actualmente todas las personas y equipos interesados pueden usar esta misma plataforma de forma unificada. 
-            Próximamente se escalará para que cada club o equipo pueda tener su propio entorno de estadísticas aisladas.
+            La plataforma cuenta con soporte nativo <strong>Multi-Equipo y Multi-División</strong>. Clubes, divisiones (Open, Femenino, Mixto, Master) y atletas pueden operar simultáneamente con aislamiento de datos, gestión de roster por equipo, convocatorias tácticas, anotaciones en vivo y panel financiero.
           </p>
           <div className="text-xs text-blue-200 uppercase tracking-wider font-semibold">
-            Autor: Frank Sousa (frankalfonso1988@gmail.com) • San Juan de los Morros
+            Autor: Frank Sousa (frankalfonso1988@gmail.com) • San Juan de los Morros, Estado Guárico, Venezuela
           </div>
         </div>
 

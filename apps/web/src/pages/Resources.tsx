@@ -416,11 +416,7 @@ export default function Resources() {
           try {
             await http.post('/api/resources/upload', fd, {
               headers: { 'Content-Type': 'multipart/form-data' },
-              onUploadProgress: (evt) => {
-                if (!evt.total) return
-                setUploadPct(Math.round((evt.loaded * 100) / evt.total))
-              }
-            })
+                          })
           } catch (err: any) {
             setUploadErr(err?.response?.data?.error || 'Error al subir el archivo')
             return
@@ -508,7 +504,7 @@ export default function Resources() {
               downloadResourcePdf(docKey, it.fileName || `${it.title}.pdf`)
               toasts.success(`Descargando ${it.title}`)
             } else if (it.storagePath) {
-              window.open(`${http.defaults.baseURL}${it.storagePath}`, '_blank')
+              window.open(`${it.storagePath}`, '_blank')
             } else if (hasUrl) {
               window.open(it.url, '_blank')
             } else {
@@ -531,13 +527,13 @@ export default function Resources() {
                 <div>
                   <div className="flex items-center gap-2">
                     {it.storagePath && it.mimeType?.startsWith('image/') && (
-                      <img src={`${http.defaults.baseURL}${it.storagePath}`} alt="thumb" className="w-10 h-10 object-cover rounded" />
+                      <img src={`${it.storagePath}`} alt="thumb" className="w-10 h-10 object-cover rounded" />
                     )}
                     <div className="font-medium">
                       {hasUrl ? (
                         <a className="text-indigo-600 hover:underline" href={it.url} target="_blank" rel="noreferrer">{it.title}</a>
                       ) : it.storagePath ? (
-                        <a className="text-indigo-600 hover:underline" href={`${http.defaults.baseURL}${it.storagePath}`} target="_blank" rel="noreferrer">{it.title}</a>
+                        <a className="text-indigo-600 hover:underline" href={`${it.storagePath}`} target="_blank" rel="noreferrer">{it.title}</a>
                       ) : (
                         <button type="button" onClick={handleOpenOrDownload} className="text-indigo-600 hover:underline text-left font-medium">
                           {it.title}
@@ -595,7 +591,7 @@ export default function Resources() {
                       const isImg = it.mimeType?.startsWith('image/')
                       const isPdf = (it.mimeType || '').includes('pdf')
                       if (isImg || isPdf) setPreview(it)
-                      else window.open(`${http.defaults.baseURL}${it.storagePath}`, '_blank')
+                      else window.open(`${it.storagePath}`, '_blank')
                     }}>Vista previa</button>
                   ) : null}
 
@@ -611,7 +607,7 @@ export default function Resources() {
                   )}
 
                   <button className="px-2 py-1 rounded bg-gray-200 text-xs" onClick={async () => {
-                    const link = hasUrl ? it.url : (it.storagePath ? `${http.defaults.baseURL}${it.storagePath}` : window.location.href)
+                    const link = hasUrl ? it.url : (it.storagePath ? `${it.storagePath}` : window.location.href)
                     if (!link) return
                     try {
                       await navigator.clipboard.writeText(link)
@@ -705,16 +701,16 @@ export default function Resources() {
               {generatedPdfBlobUrl ? (
                 <iframe title="pdf" src={generatedPdfBlobUrl} className="w-full h-[70vh] rounded-lg border shadow-inner bg-white" />
               ) : preview.mimeType?.startsWith('image/') ? (
-                <img src={`${http.defaults.baseURL}${preview.storagePath}`} alt={preview.title} className="max-w-full max-h-[70vh] object-contain rounded-lg shadow" />
+                <img src={`${preview.storagePath}`} alt={preview.title} className="max-w-full max-h-[70vh] object-contain rounded-lg shadow" />
               ) : (preview.mimeType || '').includes('pdf') ? (
-                <iframe title="pdf" src={`${http.defaults.baseURL}${preview.storagePath}`} className="w-full h-[70vh] rounded-lg border shadow-inner bg-white" />
+                <iframe title="pdf" src={`${preview.storagePath}`} className="w-full h-[70vh] rounded-lg border shadow-inner bg-white" />
               ) : (
                 <div className="text-center p-8 bg-white rounded-xl shadow-sm border">
                   <p className="text-base font-semibold text-slate-800 mb-2">Previsualización no disponible directamente</p>
                   <p className="text-sm text-slate-500 mb-4">Puedes abrir o descargar el documento oficial desde el enlace directo:</p>
                   <a
                     className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow transition"
-                    href={preview.storagePath ? `${http.defaults.baseURL}${preview.storagePath}` : preview.url}
+                    href={preview.storagePath ? `${preview.storagePath}` : preview.url}
                     target="_blank"
                     rel="noreferrer"
                   >

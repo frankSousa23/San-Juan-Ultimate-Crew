@@ -59,6 +59,7 @@ export default function Events() {
     totalPages, currentPage, searchParams
   } = state
   const [expandedTournaments, setExpandedTournaments] = useState<number[]>([])
+  const [detailEvent, setDetailEvent] = useState<EventItem | null>(null)
   const {
     setTab, setTypeFilter, setStatusFilter, setQ, setLimit, setPage,
     setCreateOpen, setEditTarget, setError, setAttEvent, setAnnotEvent,
@@ -220,10 +221,12 @@ export default function Events() {
               <div className="space-y-3">
                 {paged.map(e => (
                   <React.Fragment key={e.id}>
-                  <div className="bg-white border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="bg-white border hover:shadow-md transition-shadow rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-800 truncate">{e.title}</div>
-                      <div className="text-xs text-gray-500">{typeLabel[e.type]}</div>
+                      <button onClick={() => setDetailEvent(e)} className="font-semibold text-indigo-900 hover:text-indigo-600 hover:underline text-left truncate w-full sm:w-auto">
+                        {e.title}
+                      </button>
+                      <div className="text-xs text-gray-500 mt-0.5">{typeLabel[e.type]}</div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                       <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${statusBadge[e.status]}`}>{STATUS_LABELS[e.status]}</span>
@@ -273,10 +276,12 @@ export default function Events() {
                       {expandedTournaments.includes(e.id) && (
                         <div className="space-y-2 mt-2">
                           {e.children.map(child => (
-                            <div key={child.id} className="bg-gray-50 border rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 ml-4">
+                            <div key={child.id} className="bg-gray-50 border hover:shadow-sm transition-shadow rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 ml-4">
                               <div className="flex-1 min-w-0">
-                                <div className="font-medium text-gray-800 text-sm truncate">{child.title}</div>
-                                <div className="text-xs text-gray-500">{typeLabel[child.type] || child.type}</div>
+                                <button onClick={() => setDetailEvent(child as any)} className="font-medium text-indigo-900 hover:text-indigo-600 hover:underline text-sm truncate text-left w-full sm:w-auto">
+                                  {child.title}
+                                </button>
+                                <div className="text-xs text-gray-500 mt-0.5">{typeLabel[child.type] || child.type}</div>
                               </div>
                               <div className="flex flex-wrap items-center gap-2">
                                 <span className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${statusBadge[child.status]}`}>{STATUS_LABELS[child.status]}</span>
@@ -395,14 +400,106 @@ export default function Events() {
         onConfirm={async () => { await confirmState.onYes(); setConfirmState(null) }}
       />
     )}
+
+    {detailEvent && (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setDetailEvent(null)}>
+        <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-gradient-to-r from-amber-600 to-orange-700 p-4 text-white flex items-center justify-between">
+            <div>
+              <div className="text-xs uppercase tracking-wider opacity-90">Detalles del Evento</div>
+              <div className="text-xl font-bold">{detailEvent.title}</div>
+            </div>
+            <button onClick={() => setDetailEvent(null)} className="text-white/80 hover:text-white text-xl font-bold p-1">✕</button>
+          </div>
+          <div className="p-5 space-y-4 text-sm">
+            <div className="bg-orange-50 p-4 rounded-xl flex items-center justify-between border border-orange-100">
+              <div>
+                <span className="text-xs text-orange-800/70 block uppercase font-medium">Estado actual</span>
+                <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mt-1 ${statusBadge[detailEvent.status]}`}>
+                  {STATUS_LABELS[detailEvent.status]}
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-xs text-orange-800/70 block uppercase font-medium">Tipo</span>
+                <span className="text-lg font-bold text-gray-900 mt-0.5 inline-block">
+                  {typeLabel[detailEvent.type] || detailEvent.type}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <span className="text-xs text-gray-500 block mb-1">Inicio</span>
+                <span className="font-semibold text-gray-800">{new Date(detailEvent.startsAt).toLocaleString()}</span>
+              </div>
+              <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <span className="text-xs text-gray-500 block mb-1">Fin Estimado</span>
+                <span className="font-semibold text-gray-800">{detailEvent.endsAt ? new Date(detailEvent.endsAt).toLocaleString() : 'No definido'}</span>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-100">
+              <span className="text-xs text-gray-500 block mb-1 font-medium">Ubicación</span>
+              <p className="text-gray-800 whitespace-pre-wrap">{detailEvent.location || 'Por confirmar'}</p>
+            </div>
+
+            {detailEvent.description && (
+              <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-100">
+                <span className="text-xs text-gray-500 block mb-1 font-medium">Descripción / Notas</span>
+                <p className="text-gray-800 whitespace-pre-wrap">{detailEvent.description}</p>
+              </div>
+            )}
+
+            <div className="pt-2 flex flex-wrap gap-2">
+              <button
+                onClick={async () => {
+                  try {
+                    const list = await channelsApi.list(detailEvent.id)
+                    let ch = list[0]
+                    if (!ch) ch = await channelsApi.create({ name: `Canal ${detailEvent.title}`, eventId: detailEvent.id })
+                    navigate(`/comunicacion?channelId=${ch.id}`)
+                  } catch {
+                    toasts.info('No se pudo abrir el canal')
+                  }
+                }}
+                className="flex-1 bg-purple-100 hover:bg-purple-200 text-purple-800 py-2 rounded-lg font-semibold transition"
+              >
+                Abrir Canal
+              </button>
+              
+              {canManageEvents && (
+                <button
+                  onClick={() => {
+                    const itemToEdit = detailEvent
+                    setDetailEvent(null)
+                    setEditTarget(itemToEdit)
+                  }}
+                  className="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-lg font-medium transition"
+                >
+                  Editar Evento
+                </button>
+              )}
+              
+              <button
+                onClick={() => setDetailEvent(null)}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 rounded-lg font-medium transition"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
   {/* global toasts via ToastProvider */}
       <EventModals 
         createOpen={createOpen}
         editTarget={editTarget}
         setCreateOpen={setCreateOpen}
         setEditTarget={setEditTarget}
-        createEvent={createEvent}
-        updateEvent={updateEvent}
+        createEvent={async (data) => { await createEvent(data) }}
+        updateEvent={async (id, data) => { await updateEvent(id, data) }}
       />
       {attEvent && (
         <AttendanceModal eventItem={attEvent} onClose={() => setAttEvent(null)} />
@@ -748,13 +845,6 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
     ASSIST: 'Asistencia',
     DEFENSE: 'Defensa',
     TURNOVER: 'Pérdida',
-    FOUL: 'Falta',
-    TIMEOUT: 'Tiempo muerto',
-    SUBSTITUTION: 'Sustitución',
-    INJURY: 'Lesión',
-    GENERAL: 'General',
-    STRATEGY: 'Estrategia',
-    PERFORMANCE: 'Rendimiento',
   }
 
   const annotationTypeColors: Record<AnnotationType, string> = {
@@ -762,13 +852,6 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
     ASSIST: 'bg-blue-100 text-blue-800',
     DEFENSE: 'bg-purple-100 text-purple-800',
     TURNOVER: 'bg-red-100 text-red-800',
-    FOUL: 'bg-yellow-100 text-yellow-800',
-    TIMEOUT: 'bg-gray-100 text-gray-800',
-    SUBSTITUTION: 'bg-indigo-100 text-indigo-800',
-    INJURY: 'bg-red-200 text-red-900',
-    GENERAL: 'bg-gray-100 text-gray-800',
-    STRATEGY: 'bg-teal-100 text-teal-800',
-    PERFORMANCE: 'bg-amber-100 text-amber-800',
   }
 
   useEffect(() => {

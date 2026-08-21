@@ -35,7 +35,7 @@ export interface NetworkStats {
 export class NetworkOptimizationService {
   private static instance: NetworkOptimizationService
   private options: Required<NetworkOptimizationOptions>
-  private requestQueue: RequestConfig[] = []
+  private requestQueue: any[] = []
   private activeRequests = new Set<string>()
   private requestCache = new Map<string, { data: any; timestamp: number; ttl: number }>()
   private stats: NetworkStats = {
@@ -75,13 +75,13 @@ export class NetworkOptimizationService {
       const cached = this.getFromCache(requestId)
       if (cached) {
         this.stats.cacheHitRate = (this.stats.cacheHitRate + 1) / 2
-        return cached
+        return cached as unknown as T
       }
     }
 
     // Agregar a cola si hay demasiadas requests activas
     if (this.activeRequests.size >= this.options.maxConcurrentRequests) {
-      return this.queueRequest(config)
+      return this.queueRequest(config) as unknown as Promise<T>
     }
 
     return this.executeRequest(config, requestId)
@@ -199,7 +199,7 @@ export class NetworkOptimizationService {
   private getFromCache<T>(key: string): T | null {
     const cached = this.requestCache.get(key)
     if (cached && Date.now() - cached.timestamp < cached.ttl) {
-      return cached.data
+      return cached as unknown as T.data
     }
     this.requestCache.delete(key)
     return null

@@ -7,10 +7,11 @@ const feedbackRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 })
+
 import { Router } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { z } from 'zod'
-import { requireAuth } from './auth.js'
+import { requireRole } from './auth.js'
 
 const router = Router()
 
@@ -39,7 +40,6 @@ router.post('/', feedbackRateLimiter, async (req: any, res) => {
         userId
       }
     })
-
     res.status(201).json(feedback)
   } catch (error: any) {
     if (error.issues) {
@@ -51,12 +51,8 @@ router.post('/', feedbackRateLimiter, async (req: any, res) => {
 })
 
 // Solo Admin puede ver feedback
-router.get('/', requireAuth, async (req: any, res: any) => {
+router.get('/', requireRole(['admin']), async (req: any, res: any) => {
   try {
-    if (!req.user?.roles?.includes('admin')) {
-      return res.status(403).json({ error: 'Forbidden' })
-    }
-
     const feedbacks = await prisma.feedback.findMany({
       orderBy: { createdAt: 'desc' },
       include: {

@@ -2,7 +2,7 @@ import { createRequire } from 'module';
 import 'dotenv/config';
 import { mockPrisma } from './mockDb.js';
 
-const require = createRequire(import.meta.url);
+const req = typeof require !== 'undefined' ? require : createRequire(import.meta.url || 'file://' + process.cwd() + '/index.js');
 
 let realPrisma: any = null;
 let dbOffline = false;
@@ -16,9 +16,9 @@ if (
   dbOffline = true;
 } else {
   try {
-    const { PrismaClient } = require('@prisma/client');
-    const { PrismaPg } = require('@prisma/adapter-pg');
-    const { Pool } = require('pg');
+    const { PrismaClient } = req('@prisma/client');
+    const { PrismaPg } = req('@prisma/adapter-pg');
+    const { Pool } = req('pg');
 
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL,

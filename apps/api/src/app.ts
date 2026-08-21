@@ -29,6 +29,7 @@ import usersRouter from './routes/users.js';
 import auditRouter from './routes/audit.js';
 import annotationsRouter from './routes/annotations.js';
 import newsRouter from './routes/news.js';
+import { teamsRouter } from './routes/teams.js';
 import { feedbackRouter } from './routes/feedback.js';
 import path from 'path';
 
@@ -85,7 +86,8 @@ app.use('/api/plays', playsRouter);
 app.use('/api/event-participants', eventParticipantsRouter);
 app.use('/api/resources', resourcesRouter);
 app.use('/api/annotations', annotationsRouter);
-app.use('/api/news', newsRouter);
+app.use('/api/news', newsRouter)
+app.use('/api/teams', teamsRouter);
 app.use('/api/feedback', feedbackRouter);
 // Apply specific rate limiting to auth routes
 app.use('/api/auth', authLimiter);

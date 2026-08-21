@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 
-import { useDataCache } from '../hooks/useOptimization'
+// import { useDataCache } from "../hooks/useOptimization"
 
 // Tipos para el sistema de cache
 export interface CacheEntry<T> {

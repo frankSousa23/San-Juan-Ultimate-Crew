@@ -33,14 +33,16 @@ export default function Injuries() {
   const [limit, setLimit] = useState<number>(20)
   const [offset, setOffset] = useState(0)
   const [total, setTotal] = useState(0)
+  const [error, setError] = useState<string | null>(null)
   const [edit, setEdit] = useState<InjuryItem | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState<any>({ playerId: '', type: '', severity: 'MILD', status: 'ACTIVE', startDate: '', endDate: '', description: '' })
+  const [detailInjury, setDetailInjury] = useState<InjuryItem | null>(null)
   
   const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
 
   // API hooks
-  const { execute: loadInjuries, loading, error } = useApi(
+  const { execute: loadInjuries, loading, error: apiError } = useApi(
     (params: any) => injuriesApi.listPaged(params),
     {
       onSuccess: (data) => {
@@ -182,9 +184,9 @@ export default function Injuries() {
         <button onClick={openCreate} className="bg-rose-600 text-white px-4 py-2 rounded-lg whitespace-nowrap">+ Nueva Lesión</button>
       </div>
 
-      {error && (
+      {(error || apiError) && (
         <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded p-3 flex items-start justify-between">
-          <div className="pr-3">{error}</div>
+          <div className="pr-3">{error || apiError}</div>
           <div className="flex gap-2 shrink-0">
             <button className="px-2 py-1 bg-rose-100 rounded" onClick={() => load()}>Reintentar</button>
             <button className="px-2 py-1 bg-gray-100 rounded" onClick={() => setError(null)}>Ocultar</button>
@@ -264,22 +266,45 @@ export default function Injuries() {
                   <th className="text-left px-2 sm:px-4 py-2">Tipo</th>
                   <th className="text-left px-2 sm:px-4 py-2">Gravedad</th>
                   <th className="text-left px-2 sm:px-4 py-2">Estado</th>
-                  <th className="text-left px-2 sm:px-4 py-2">Inicio</th>
-                  <th className="text-left px-2 sm:px-4 py-2">Fin</th>
-                  <th className="px-2 sm:px-4 py-2"></th>
+                  <th className="text-left px-2 sm:px-4 py-2 hidden sm:table-cell">Inicio</th>
+                  <th className="text-left px-2 sm:px-4 py-2 hidden md:table-cell">Fin</th>
+                  <th className="px-2 sm:px-4 py-2 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map(it => (
-                  <tr key={it.id} className="border-t">
-                    <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{it.player ? `#${it.player.number} ${it.player.name}` : it.playerId}</td>
+                  <tr key={it.id} className="border-t hover:bg-gray-50/70 transition-colors">
+                    <td className="px-2 sm:px-4 py-2 whitespace-nowrap">
+                      <button onClick={() => setDetailInjury(it)} className="text-left font-medium text-rose-900 hover:text-rose-600 hover:underline">
+                        {it.player ? `#${it.player.number} ${it.player.name}` : `ID: ${it.playerId}`}
+                      </button>
+                    </td>
                     <td className="px-2 sm:px-4 py-2">{it.type}</td>
-                    <td className="px-2 sm:px-4 py-2">{it.severity === 'MILD' ? 'Leve' : it.severity === 'MODERATE' ? 'Moderada' : 'Grave'}</td>
-                    <td className="px-2 sm:px-4 py-2">{it.status === 'ACTIVE' ? 'Activa' : it.status === 'RECOVERING' ? 'En Recuperación' : 'Resuelta'}</td>
-                    <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{new Date(it.startDate).toLocaleDateString()}</td>
-                    <td className="px-2 sm:px-4 py-2 whitespace-nowrap">{it.endDate ? new Date(it.endDate).toLocaleDateString() : ''}</td>
+                    <td className="px-2 sm:px-4 py-2">
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                        it.severity === 'MILD' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                        it.severity === 'MODERATE' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
+                        'bg-rose-50 text-rose-700 border border-rose-200'
+                      }`}>
+                        {it.severity === 'MILD' ? 'Leve' : it.severity === 'MODERATE' ? 'Moderada' : 'Grave'}
+                      </span>
+                    </td>
+                    <td className="px-2 sm:px-4 py-2">
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                        it.status === 'ACTIVE' ? 'bg-rose-100 text-rose-800' :
+                        it.status === 'RECOVERING' ? 'bg-blue-100 text-blue-800' :
+                        'bg-emerald-100 text-emerald-800'
+                      }`}>
+                        {it.status === 'ACTIVE' ? 'Activa' : it.status === 'RECOVERING' ? 'Recuperación' : 'Resuelta'}
+                      </span>
+                    </td>
+                    <td className="px-2 sm:px-4 py-2 whitespace-nowrap hidden sm:table-cell text-xs text-gray-600">{new Date(it.startDate).toLocaleDateString()}</td>
+                    <td className="px-2 sm:px-4 py-2 whitespace-nowrap hidden md:table-cell text-xs text-gray-600">{it.endDate ? new Date(it.endDate).toLocaleDateString() : '-'}</td>
                     <td className="px-2 sm:px-4 py-2 text-right">
-                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 sm:justify-end">
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 justify-end">
+                        <button onClick={() => setDetailInjury(it)} className="text-xs text-gray-600 hover:text-rose-600 border border-gray-200 rounded px-1.5 py-0.5 whitespace-nowrap">
+                          Ver
+                        </button>
                         {hasPermission('injuries:manage') && (
                           <>
                             <button className="text-indigo-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => openEdit(it)}>Editar</button>
@@ -374,6 +399,89 @@ export default function Injuries() {
             <div className="p-4 flex gap-2">
               <button onClick={save} className="flex-1 bg-emerald-600 text-white py-2 rounded-lg">Guardar</button>
               <button onClick={() => setModalOpen(false)} className="flex-1 bg-gray-100 text-gray-800 py-2 rounded-lg">Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {detailInjury && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setDetailInjury(null)}>
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-rose-600 to-indigo-700 p-4 text-white flex items-center justify-between">
+              <div>
+                <div className="text-xs uppercase tracking-wider opacity-90">Reporte de Lesión</div>
+                <div className="text-xl font-bold">
+                  {detailInjury.type}
+                </div>
+              </div>
+              <button onClick={() => setDetailInjury(null)} className="text-white/80 hover:text-white text-xl font-bold p-1">✕</button>
+            </div>
+            <div className="p-5 space-y-4 text-sm">
+              <div className="bg-rose-50/50 p-4 rounded-xl flex items-center justify-between border border-rose-100">
+                <div>
+                  <span className="text-xs text-rose-800/70 block uppercase font-medium">Atleta Afectado</span>
+                  <span className="text-lg font-bold text-gray-900">
+                    {detailInjury.player ? `#${detailInjury.player.number} ${detailInjury.player.name}` : `ID Atleta: ${detailInjury.playerId}`}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                    detailInjury.status === 'ACTIVE' ? 'bg-rose-100 text-rose-800' :
+                    detailInjury.status === 'RECOVERING' ? 'bg-blue-100 text-blue-800' :
+                    'bg-emerald-100 text-emerald-800'
+                  }`}>
+                    {detailInjury.status === 'ACTIVE' ? 'Lesión Activa' : detailInjury.status === 'RECOVERING' ? 'En Recuperación' : 'Resuelta / Alta'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <span className="text-xs text-gray-500 block mb-1">Nivel de Gravedad</span>
+                  <span className={`font-semibold ${
+                    detailInjury.severity === 'SEVERE' ? 'text-rose-600' :
+                    detailInjury.severity === 'MODERATE' ? 'text-orange-600' : 'text-amber-600'
+                  }`}>
+                    {detailInjury.severity === 'MILD' ? 'Leve (Bajo Impacto)' :
+                     detailInjury.severity === 'MODERATE' ? 'Moderada (Reposo Parcial)' :
+                     'Severa / Grave (Baja Total)'}
+                  </span>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <span className="text-xs text-gray-500 block mb-1">Fecha de Inicio</span>
+                  <span className="font-medium text-gray-800">{new Date(detailInjury.startDate).toLocaleDateString()}</span>
+                  {detailInjury.endDate && (
+                    <span className="text-xs text-gray-500 block mt-0.5">Fin / Alta: {new Date(detailInjury.endDate).toLocaleDateString()}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-100">
+                <span className="text-xs text-gray-500 block mb-1 font-medium">Diagnóstico / Observaciones Clínicas</span>
+                <p className="text-gray-800 whitespace-pre-wrap">{detailInjury.description || 'Sin descripción o indicaciones adicionales registradas.'}</p>
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                {hasPermission('injuries:manage') && (
+                  <button
+                    onClick={() => {
+                      const itemToEdit = detailInjury
+                      setDetailInjury(null)
+                      openEdit(itemToEdit)
+                    }}
+                    className="flex-1 bg-rose-600 hover:bg-rose-700 text-white py-2 rounded-lg font-medium transition"
+                  >
+                    Editar Lesión
+                  </button>
+                )}
+                <button
+                  onClick={() => setDetailInjury(null)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 rounded-lg font-medium transition"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         </div>

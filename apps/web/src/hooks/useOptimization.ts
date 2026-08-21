@@ -287,7 +287,7 @@ export function useOptimizedList<T>(
 
     if (searchTerm) {
       filtered = filtered.filter(item =>
-        Object.values(item).some(value =>
+        Object.values(item as any).some(value =>
           String(value).toLowerCase().includes(searchTerm.toLowerCase())
         )
       )
