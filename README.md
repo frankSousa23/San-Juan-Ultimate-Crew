@@ -228,6 +228,8 @@ Distribuido bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para m�
 ## 📚 Documentación Técnica Adicional
 
 - [Guía Oficial de Despliegue en Producción](./docs/DEPLOYMENT_GUIDE.md): Configuración de Docker, PostgreSQL, variables de entorno, dominio y certificados SSL.
+- [Diagramas de Flujo Oficiales del Sistema](./docs/DIAGRAMAS_DE_FLUJO.md): Documentación visual unificada con todos los diagramas de arquitectura, seguridad, partidos en vivo y finanzas en Mermaid.
+- [Visualizador Interactivo de Diagramas](./docs/diagramas_flujo_visualizador.html): Visor gráfico autónomo con renderizado en tiempo real y exportación a PDF.
 - [Diagrama de Flujo de Datos](./docs/FLUJO_DE_DATOS.md): Ciclo de vida y arquitectura del sistema, autenticación JWT/RBAC, flujo multi-equipo, eventos y cálculo de estadísticas.
 - [Recomendaciones de Mejora y Escalabilidad](./docs/RECOMENDACIONES.md): Hoja de ruta para escalabilidad en la nube, marcadores en tiempo real (WebSockets), PWA offline y soporte federado.
  
