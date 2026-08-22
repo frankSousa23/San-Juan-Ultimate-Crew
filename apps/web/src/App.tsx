@@ -14,6 +14,7 @@ import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import Profile from './pages/Profile'
 import About from './pages/About'
+import ErrorPage from './pages/ErrorPage'
 
 // Lazy loaded heavy components
 const Roster = lazy(() => import('./pages/Roster'))
@@ -130,7 +131,8 @@ function AppRoutes() {
         <Route path="/dashboard" element={<Navigate to="/" replace />} />
 
         {/* Catch-all fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/404" element={<ErrorPage code="404" title="Página No Encontrada" message="La página o vista que intentas acceder no existe en el sistema." />} />
+        <Route path="*" element={<ErrorPage code="404" title="Página No Encontrada" message="La página o recurso que buscas no existe o ha sido movido." />} />
         </Routes>
       </Suspense>
     </Layout>

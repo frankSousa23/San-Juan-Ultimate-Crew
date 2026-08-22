@@ -72,6 +72,7 @@ app.use(writeLimiter);
 app.use(sanitizeRequest);
 
 app.use('/health', healthRouter);
+app.use('/api/health', healthRouter);
 app.use('/api/players', playersRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/channels', channelsRouter);
@@ -148,7 +149,7 @@ if (webDistPath) {
     return next();
   });
 } else {
-  // If running standalone API mode without web dist, provide a clean JSON/HTML landing on root
+  // If running standalone API mode without web dist, provide a styled HTML landing on root
   app.get('/', (_req: Request, res: Response) => {
     if (_req.accepts('html')) {
       return res.send(`
@@ -159,24 +160,136 @@ if (webDistPath) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>SIGEDIVO - API Backend</title>
           <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-            .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 32px; max-width: 560px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; }
-            h1 { font-size: 24px; margin-bottom: 8px; color: #38bdf8; }
-            p { color: #94a3b8; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
-            .btn-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-            a.btn { background: #2563eb; color: white; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; font-size: 14px; transition: 0.2s; }
-            a.btn:hover { background: #1d4ed8; }
-            a.btn-secondary { background: #334155; color: #e2e8f0; }
-            a.btn-secondary:hover { background: #475569; }
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              min-height: 100vh;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              padding: 20px;
+            }
+            .container {
+              background: white;
+              border-radius: 20px;
+              box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+              padding: 40px;
+              max-width: 600px;
+              width: 100%;
+              text-align: center;
+            }
+            h1 {
+              color: #1a202c;
+              font-size: 2.5em;
+              margin-bottom: 10px;
+              font-weight: 800;
+            }
+            .subtitle {
+              color: #4a5568;
+              font-size: 1.2em;
+              margin-bottom: 8px;
+              font-weight: 600;
+            }
+            .description {
+              color: #718096;
+              font-size: 1.05em;
+              margin-bottom: 25px;
+            }
+            .status {
+              background: #e6fffa;
+              border: 2px solid #38b2ac;
+              color: #234e52;
+              padding: 12px 20px;
+              border-radius: 12px;
+              font-weight: 700;
+              margin: 20px 0;
+              display: inline-block;
+            }
+            .links {
+              margin: 35px 0;
+              display: flex;
+              gap: 15px;
+              justify-content: center;
+              flex-wrap: wrap;
+            }
+            .btn {
+              display: inline-block;
+              background: #667eea;
+              color: white;
+              padding: 14px 28px;
+              border-radius: 10px;
+              text-decoration: none;
+              font-weight: 600;
+              transition: all 0.3s ease;
+              box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            }
+            .btn:hover {
+              transform: translateY(-3px);
+              box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+              background: #5568d3;
+            }
+            .btn-secondary {
+              background: #6b7280;
+            }
+            .btn-secondary:hover {
+              background: #4b5563;
+            }
+            .footer {
+              margin-top: 40px;
+              padding-top: 25px;
+              border-top: 2px solid #e5e7eb;
+              color: #6b7280;
+              font-size: 0.95em;
+            }
+            .footer a {
+              color: #667eea;
+              text-decoration: none;
+              font-weight: 600;
+              transition: color 0.2s;
+            }
+            .footer a:hover {
+              color: #5568d3;
+              text-decoration: underline;
+            }
+            .version {
+              display: inline-block;
+              background: #f3f4f6;
+              padding: 4px 12px;
+              border-radius: 6px;
+              font-size: 0.85em;
+              color: #6b7280;
+              margin-top: 10px;
+            }
           </style>
         </head>
         <body>
-          <div class="card">
-            <h1>🥏 SIGEDIVO API Online</h1>
-            <p>El servidor Backend de SIGEDIVO (Sistema de Gestión para el Disco Volador) está operando correctamente.</p>
-            <div class="btn-group">
-              <a href="/api-docs" class="btn">📖 Documentación Swagger</a>
-              <a href="/health" class="btn btn-secondary">🩺 Estado del Sistema (/health)</a>
+          <div class="container">
+            <h1>🥏 SIGEDIVO</h1>
+            <p class="subtitle">Sistema de Gestión para el Disco Volador</p>
+            <p class="description"><strong>San Juan Ultimate Crew</strong> - Venezuela 🇻🇪</p>
+            <div class="status">✅ API Activa y Funcionando</div>
+            
+            <div class="links">
+              <a href="/api-docs" class="btn">📚 Documentación API</a>
+              <a href="/api/health" class="btn btn-secondary">🏥 Health Check</a>
+            </div>
+            
+            <div class="footer">
+              <p><strong>Autor:</strong> Frank Sousa (@frankSousa23)</p>
+              <p style="margin-top: 8px;">
+                San Juan de los Morros, Estado Guárico
+              </p>
+              <p style="margin-top: 15px;">
+                <a href="https://github.com/frankSousa23/San-Juan-Ultimate-Crew" target="_blank">
+                  ⭐ Ver en GitHub
+                </a>
+              </p>
+              <div class="version">v1.2.0 | Licencia MIT | Open Source</div>
             </div>
           </div>
         </body>
@@ -187,7 +300,7 @@ if (webDistPath) {
       name: 'SIGEDIVO (Sistema de Gestión para el Disco Volador) API',
       status: 'online',
       documentation: '/api-docs',
-      health: '/health',
+      health: '/api/health',
       api_base: '/api'
     });
   });

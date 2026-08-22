@@ -33,14 +33,21 @@ const router = Router();
  *                   type: string
  */
 router.get('/', (_req: Request, res: Response) => {
-  const response: HealthResponse = {
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  const environment = process.env.NODE_ENV || 'production';
+  const version = '1.2.0';
+
+  return res.status(200).json({
+    status: 'OK',
     ok: true,
+    message: 'SIGEDIVO API is running',
+    timestamp: new Date().toISOString(),
     time: new Date().toISOString(),
+    version,
+    environment,
+    port,
     uptime: process.uptime(),
-    version: process.env.npm_package_version || '1.0.0',
-    environment: process.env.NODE_ENV || 'development',
-  };
-  return success(res, response);
+  });
 });
 
 /**
