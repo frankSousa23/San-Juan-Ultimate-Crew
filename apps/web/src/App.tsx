@@ -128,7 +128,6 @@ function AppRoutes() {
         <Route path="/communications" element={<Navigate to="/comunicacion" replace />} />
         <Route path="/news" element={<Navigate to="/comunicacion" replace />} />
         <Route path="/stats" element={<Navigate to="/estadisticas" replace />} />
-        <Route path="/dashboard" element={<Navigate to="/" replace />} />
 
         {/* Catch-all fallback */}
         <Route path="/404" element={<ErrorPage code="404" title="Página No Encontrada" message="La página o vista que intentas acceder no existe en el sistema." />} />
