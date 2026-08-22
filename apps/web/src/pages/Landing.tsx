@@ -601,7 +601,7 @@ export const Landing: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-slate-100 p-5 rounded-2xl border border-slate-300 text-center">
+              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 text-center">
                 <div className="w-full h-44 bg-emerald-800 rounded-xl border-2 border-white flex flex-col justify-between p-3 text-white font-mono text-xs relative overflow-hidden shadow-inner">
                   <div className="flex justify-between border-b border-emerald-600 pb-1 text-[10px] text-emerald-200">
                     <span>ZONA DE GOL (ENDZONE)</span>
