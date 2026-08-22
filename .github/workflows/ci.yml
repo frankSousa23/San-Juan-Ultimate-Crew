@@ -35,14 +35,7 @@ jobs:
         node-version: '22'
     
     - name: Install dependencies
-      run: |
-        if [ ! -f package-lock.json ]; then
-          echo "Generating package-lock.json..."
-          npm install
-        else
-          npm ci || npm install
-        fi
-        npm install @rollup/rollup-linux-x64-gnu --no-save || true
+      run: npm install
       continue-on-error: false
     
     - name: Setup environment files
@@ -166,13 +159,7 @@ jobs:
         node-version: '22'
     
     - name: Install dependencies
-      run: |
-        if [ ! -f package-lock.json ]; then
-          echo "Generating package-lock.json..."
-          npm install
-        else
-          npm ci || npm install
-        fi
+      run: npm install
       continue-on-error: false
     
     - name: Run security audit
