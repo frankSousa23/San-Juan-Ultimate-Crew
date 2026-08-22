@@ -19,6 +19,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigation = [
     // Public/All authenticated users
     { name: 'Panel Principal', href: '/', icon: '🏠', roles: [] },
+    { name: 'Portal Informativo', href: '/landing', icon: '🌐', roles: [] },
     { name: 'Mi Perfil', href: '/perfil', icon: '👤', roles: [] },
     
     { name: 'Roster', href: '/roster', icon: '👥', roles: ['player', 'captain', 'coach', 'admin', 'treasurer', 'marketing', 'directiva', 'annotator', 'guest'] },
@@ -58,6 +59,70 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     // Check if user has any of the required roles for this item
     return item.roles.some(role => hasRole(role))
   })
+
+  const isLanding = location.pathname === '/landing' || location.pathname === '/inicio' || (!user && location.pathname === '/')
+
+  if (isLanding) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col">
+        <header className="bg-white shadow-sm border-b h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 sticky top-0 z-40">
+          <div className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-2">
+              <span className="text-2xl">🥏</span>
+              <span className="font-extrabold text-lg sm:text-xl text-slate-900 tracking-tight">SIGEDIVO</span>
+            </Link>
+            <span className="hidden sm:inline-block text-xs bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">
+              Disco Volador
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Cambiar tema">
+              {isDark ? "☀️" : "🌙"}
+            </button>
+            <button
+              onClick={() => setManualOpen(true)}
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs sm:text-sm font-bold rounded-lg border border-blue-200 transition active:scale-95"
+              title="Ver manual y guía oficial del sistema"
+            >
+              <span>📘</span>
+              <span className="hidden sm:inline">Manual del Sistema</span>
+              <span className="text-[10px] bg-blue-200 text-blue-900 px-1.5 py-0.2 rounded font-mono">PDF</span>
+            </button>
+            {user ? (
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold rounded-lg shadow transition active:scale-95"
+              >
+                <span>🏠 Mi Panel</span>
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold rounded-lg shadow transition active:scale-95"
+                >
+                  <span>Iniciar Sesión</span>
+                </Link>
+                <Link
+                  to="/register"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-bold rounded-lg border border-slate-300 shadow-sm transition active:scale-95"
+                >
+                  <span>Registrarse</span>
+                </Link>
+              </>
+            )}
+          </div>
+        </header>
+
+        <main className="flex-1 w-full">
+          {children}
+        </main>
+
+        <SystemManualModal isOpen={manualOpen} onClose={() => setManualOpen(false)} />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">

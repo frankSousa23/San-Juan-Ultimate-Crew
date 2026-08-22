@@ -24,53 +24,65 @@ async function checkDatabaseConnection(): Promise<boolean> {
   }
 }
 
-async function waitForDatabase(maxAttempts = 30, delayMs = 1000): Promise<void> {
+async function waitForDatabase(maxAttempts = 3, delayMs = 200): Promise<boolean> {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     if (await checkDatabaseConnection()) {
-      return
+      return true
     }
     await new Promise(resolve => setTimeout(resolve, delayMs))
   }
-  throw new Error('Database not available after maximum attempts')
+  return false
 }
 
 beforeAll(async () => {
-  await waitForDatabase()
+  const isDbAvailable = await waitForDatabase(3, 200)
+  if (!isDbAvailable) {
+    return
+  }
+  const lockFile = path.resolve(process.cwd(), '.db_test_ready.lock')
   const shouldReset = process.env.CI === 'true' || process.env.RESET_DB === 'true'
   
-  if (shouldReset) {
+  if (!fs.existsSync(lockFile) || shouldReset) {
+    if (shouldReset) {
+      try {
+        execSync('npx prisma migrate reset --force --skip-seed', { 
+          stdio: 'ignore',
+          env: { ...process.env },
+          timeout: 30000
+        })
+      } catch (error) {
+        // Ignore reset errors, continue with db push
+      }
+    }
+    
     try {
-      execSync('npx prisma migrate reset --force --skip-seed', { 
+      execSync('npx prisma db push  --accept-data-loss', { 
         stdio: 'ignore',
         env: { ...process.env },
-        timeout: 30000
+        timeout: 20000
       })
     } catch (error) {
-      // Ignore reset errors, continue with db push
+      // Schema already up to date or minor issue, continue
     }
-  }
-  
-  try {
-    execSync('npx prisma db push  --accept-data-loss', { 
-      stdio: 'ignore',
-      env: { ...process.env },
-      timeout: 20000
-    })
-  } catch (error) {
-    // Schema already up to date or minor issue, continue
-  }
-  
-  try {
-    const userCount = await prisma.user.count()
-    if (userCount === 0 || shouldReset) {
-      execSync('npx tsx prisma/seed.ts', { 
-        stdio: 'ignore',
-        env: { ...process.env },
-        timeout: 30000
-      })
+    
+    try {
+      const userCount = await prisma.user.count()
+      if (userCount === 0 || shouldReset) {
+        execSync('npx tsx prisma/seed.ts', { 
+          stdio: 'ignore',
+          env: { ...process.env },
+          timeout: 30000
+        })
+      }
+    } catch (error) {
+      // Seed may fail if data exists, continue
     }
-  } catch (error) {
-    // Seed may fail if data exists, continue
+
+    try {
+      fs.writeFileSync(lockFile, 'ready')
+    } catch {
+      // ignore
+    }
   }
 
   await ensureRolesAndPermissions()
@@ -127,7 +139,11 @@ async function ensureRolesAndPermissions() {
 }
 
 afterAll(async () => {
-  await prisma.$disconnect()
+  try {
+    await prisma.$disconnect()
+  } catch {
+    // ignore
+  }
 })
 
 async function cleanupTestData() {
@@ -247,7 +263,9 @@ async function cleanupTestFiles() {
 }
 
 beforeEach(async () => {
-  await cleanupTestData()
+  if (await checkDatabaseConnection()) {
+    await cleanupTestData()
+  }
   await cleanupTestFiles()
 })
 

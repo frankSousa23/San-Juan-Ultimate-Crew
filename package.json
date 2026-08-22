@@ -7,11 +7,15 @@
   ],
   "scripts": {
     "dev": "tsx server.ts",
+    "test": "npm --workspace apps/api run test",
+    "test:api": "npm --workspace apps/api run test",
     "lint": "npm -w apps/web run build",
     "build": "npm -w apps/web run build && esbuild server.ts --bundle --platform=node --format=cjs --external:bcryptjs --external:pg --external:@prisma/client --external:@prisma/adapter-pg --external:multer --sourcemap --outfile=dist/server.cjs",
     "start": "NODE_PATH=./apps/api/node_modules node dist/server.cjs",
     "dev:api": "npm --workspace apps/api run dev",
-    "dev:web": "npm --workspace apps/web run dev"
+    "dev:web": "npm --workspace apps/web run dev",
+    "prisma:generate": "npm --workspace apps/api run prisma:generate",
+    "prisma:seed": "npm --workspace apps/api run prisma:seed"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",

@@ -7,6 +7,7 @@ import { FaultBoundary } from './components/FaultBoundary'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 
 import Dashboard from './pages/Dashboard'
+import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
@@ -30,6 +31,15 @@ const AdminUsers = lazy(() => import('./pages/AdminUsers'))
 const AdminTeams = lazy(() => import('./pages/AdminTeams'))
 const AdminFeedback = lazy(() => import('./pages/AdminFeedback'))
 const SystemMonitoring = lazy(() => import('./pages/SystemMonitoring'))
+
+// Root Index Component - Muestra la Landing interactiva si no está autenticado, o el Dashboard si está logueado
+const RootIndexRoute: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth()
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-[50vh]">Cargando...</div>
+  }
+  return isAuthenticated ? <Dashboard /> : <Landing />
+}
 
 // Protected Route Component - Maneja la protección de rutas basada en roles y la inyección de contexto Multi-Equipo
 const ProtectedRoute: React.FC<{ 
@@ -83,8 +93,11 @@ function AppRoutes() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         
-        {/* Public or Semi-Public Routes - accessible to all authenticated users */}
-        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        {/* Public or Semi-Public Routes */}
+        <Route path="/" element={<RootIndexRoute />} />
+        <Route path="/landing" element={<Landing />} />
+        <Route path="/inicio" element={<Landing />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} />
         
