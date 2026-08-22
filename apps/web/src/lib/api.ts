@@ -633,6 +633,12 @@ export const adminUsersApi = {
   updateRoleRequest: async (id: number, payload: { playerId?: number | null; note?: string }): Promise<any> => (
     await http.put(`/api/users/role-requests/${id}`, payload)
   ).data,
+  changePassword: async (id: number, password: string): Promise<{ message: string; userId: number; email: string }> => (
+    await http.put(`/api/users/${id}/password`, { password })
+  ).data,
+  generateResetLink: async (id: number): Promise<{ resetLink: string; token: string; expiresAt: string; email: string; name?: string }> => (
+    await http.post(`/api/users/${id}/reset-link`, {})
+  ).data,
 }
 
 export const myRoleRequestsApi = {

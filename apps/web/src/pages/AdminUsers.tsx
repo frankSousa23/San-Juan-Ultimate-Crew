@@ -80,6 +80,77 @@ export default function AdminUsers() {
   const [savingRoles, setSavingRoles] = useState(false)
   const [showRoleGuide, setShowRoleGuide] = useState(false)
 
+  // Password reset modal state
+  const [passwordModalUser, setPasswordModalUser] = useState<{ id: number; email: string; name?: string } | null>(null)
+  const [newPasswordInput, setNewPasswordInput] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [savingPassword, setSavingPassword] = useState(false)
+  const [generatedResetLink, setGeneratedResetLink] = useState<string | null>(null)
+  const [generatingLink, setGeneratingLink] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
+
+  const handleOpenPasswordModal = (user: { id: number; email: string; name?: string }) => {
+    setPasswordModalUser(user)
+    setNewPasswordInput('')
+    setShowPassword(true)
+    setGeneratedResetLink(null)
+    setCopiedLink(false)
+  }
+
+  const handleGenerateRandomPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$'
+    let result = ''
+    for (let i = 0; i < 10; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    setNewPasswordInput(result)
+    setShowPassword(true)
+  }
+
+  const handleSavePassword = async () => {
+    if (!passwordModalUser) return
+    if (!newPasswordInput || newPasswordInput.trim().length < 6) {
+      toast.showErrorToast('La contraseña debe tener al menos 6 caracteres')
+      return
+    }
+    setSavingPassword(true)
+    try {
+      await adminUsersApi.changePassword(passwordModalUser.id, newPasswordInput.trim())
+      toast.showSuccessToast(`Contraseña actualizada para ${passwordModalUser.email}`)
+      setPasswordModalUser(null)
+    } catch (err: any) {
+      toast.showErrorToast(err?.response?.data?.error || 'Error al cambiar la contraseña')
+    } finally {
+      setSavingPassword(false)
+    }
+  }
+
+  const handleGenerateResetLink = async () => {
+    if (!passwordModalUser) return
+    setGeneratingLink(true)
+    try {
+      const res = await adminUsersApi.generateResetLink(passwordModalUser.id)
+      setGeneratedResetLink(res.resetLink)
+      toast.showSuccessToast('Enlace de restablecimiento generado con éxito')
+    } catch (err: any) {
+      toast.showErrorToast(err?.response?.data?.error || 'Error al generar enlace')
+    } finally {
+      setGeneratingLink(false)
+    }
+  }
+
+  const handleCopyResetLink = async () => {
+    if (!generatedResetLink) return
+    try {
+      await navigator.clipboard.writeText(generatedResetLink)
+      setCopiedLink(true)
+      toast.showSuccessToast('¡Enlace copiado al portapapeles!')
+      setTimeout(() => setCopiedLink(false), 3000)
+    } catch {
+      toast.showErrorToast('No se pudo copiar automáticamente')
+    }
+  }
+
   const loadPendingUsers = async () => {
     setPendingLoading(true)
     try {
@@ -518,7 +589,16 @@ export default function AdminUsers() {
                         </select>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="flex gap-2 justify-end">
+                        <div className="flex gap-2 justify-end items-center">
+                          <button
+                            type="button"
+                            className="px-2.5 py-1.5 bg-amber-50 text-amber-800 border border-amber-300 rounded-md text-xs sm:text-sm font-medium hover:bg-amber-100 transition-colors shadow-xs flex items-center gap-1"
+                            onClick={() => handleOpenPasswordModal(u)}
+                            title="Restablecer o cambiar contraseña de este usuario"
+                          >
+                            <span>🔑</span>
+                            <span className="hidden sm:inline">Clave</span>
+                          </button>
                           <button
                             className="px-3.5 py-1.5 bg-emerald-600 text-white rounded-md text-xs sm:text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-sm"
                             disabled={!!approving[u.id]}
@@ -788,14 +868,24 @@ export default function AdminUsers() {
                     )}
                   </td>
                   <td className="px-4 py-2.5 text-right">
-                    <button
-                      className="px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs hover:bg-red-100 disabled:opacity-50 transition-colors"
-                      onClick={() => handleDeleteUser(u.id)}
-                      disabled={!!deleting[u.id]}
-                      title="Eliminar usuario"
-                    >
-                      {deleting[u.id] ? '…' : '🗑️ Eliminar'}
-                    </button>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        className="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-300 rounded text-xs hover:bg-amber-100 transition-colors flex items-center gap-1"
+                        onClick={() => handleOpenPasswordModal(u)}
+                        title="Cambiar o restablecer contraseña de este usuario"
+                      >
+                        <span>🔑</span>
+                        <span>Clave</span>
+                      </button>
+                      <button
+                        className="px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-xs hover:bg-red-100 disabled:opacity-50 transition-colors"
+                        onClick={() => handleDeleteUser(u.id)}
+                        disabled={!!deleting[u.id]}
+                        title="Eliminar usuario"
+                      >
+                        {deleting[u.id] ? '…' : '🗑️ Eliminar'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -1000,6 +1090,117 @@ export default function AdminUsers() {
         </div>
       )}
       
+      {/* Password Management & Direct Reset Link Modal */}
+      {passwordModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 bg-gradient-to-r from-amber-700 via-amber-800 to-slate-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">🔑</span>
+                <div>
+                  <h3 className="text-lg font-bold">Gestión de Contraseña</h3>
+                  <p className="text-xs text-amber-200">{passwordModalUser.email} {passwordModalUser.name ? `(${passwordModalUser.name})` : ''}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPasswordModalUser(null)}
+                className="text-amber-200 hover:text-white text-lg font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+              {/* Option 1: Direct Password Change */}
+              <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-200/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-gray-900 uppercase tracking-wider">
+                    Asignar Nueva Contraseña Directa
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleGenerateRandomPassword}
+                    className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline flex items-center gap-1"
+                  >
+                    <span>🎲 Generar Segura</span>
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPasswordInput}
+                    onChange={(e) => setNewPasswordInput(e.target.value)}
+                    placeholder="Mínimo 6 caracteres..."
+                    className="w-full border rounded-lg px-3 py-2 text-sm bg-white pr-20 font-mono focus:ring-2 focus:ring-amber-500 focus:outline-hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
+                  >
+                    {showPassword ? 'Ocultar' : 'Ver'}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSavePassword}
+                  disabled={savingPassword || !newPasswordInput || newPasswordInput.length < 6}
+                  className="w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-semibold text-sm rounded-lg shadow-sm disabled:opacity-40 transition-all flex items-center justify-center gap-2"
+                >
+                  {savingPassword ? 'Guardando...' : '💾 Guardar y Aplicar Nueva Contraseña'}
+                </button>
+              </div>
+
+              {/* Option 2: Direct Reset Link Generation */}
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                <div>
+                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                    🔗 Enlace Directo de Recuperación
+                  </h4>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Genera un enlace único de 24h para que la usuaria ingrese su propia contraseña si no recibe el correo.
+                  </p>
+                </div>
+
+                {!generatedResetLink ? (
+                  <button
+                    type="button"
+                    onClick={handleGenerateResetLink}
+                    disabled={generatingLink}
+                    className="w-full py-2 px-4 bg-slate-800 hover:bg-slate-900 text-white font-medium text-xs rounded-lg shadow-xs disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {generatingLink ? 'Generando Enlace...' : '⚡ Generar Enlace de Restablecimiento'}
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="p-2.5 bg-white border border-indigo-200 rounded-lg text-xs font-mono break-all text-indigo-900 select-all">
+                      {generatedResetLink}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyResetLink}
+                      className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg shadow-xs transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <span>{copiedLink ? '✓ ¡Copiado!' : '📋 Copiar Enlace para Compartir'}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="px-6 py-3 bg-gray-50 border-t flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setPasswordModalUser(null)}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Confirm Modal */}
       {confirmState && (
         <ConfirmModal

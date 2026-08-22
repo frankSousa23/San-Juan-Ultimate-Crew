@@ -7,6 +7,7 @@ import { createAuditHelper } from '../lib/audit.js'
 import { success, updated, created, deleted, validationError, notFound, conflict, serverError, unauthorized, forbidden } from '../lib/response.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 import { env } from '../lib/env.js'
 
 const router = Router()
@@ -389,6 +390,109 @@ router.put('/:id/link-player', requireRole(['admin']), asyncHandler(async (req: 
     data: { playerId } 
   })
   return updated(res, { id: user.id, email: user.email, name: user.name, playerId: user.playerId })
+}))
+
+const adminChangePasswordSchema = z.object({
+  password: z.string().min(6, 'Password must be at least 6 characters').max(128)
+})
+
+/**
+ * @swagger
+ * /api/users/{id}/password:
+ *   put:
+ *     summary: Change user password directly (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.put('/:id/password', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+  const parsedId = userIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid id', parsedId.error.issues)
+  }
+  const { id: userId } = parsedId.data
+  const parsed = adminChangePasswordSchema.safeParse(req.body)
+  if (!parsed.success) {
+    return validationError(res, 'Contraseña inválida. Debe tener al menos 6 caracteres.', parsed.error.issues)
+  }
+  const { password } = parsed.data
+
+  const targetUser = await prisma.user.findUnique({ where: { id: userId } })
+  if (!targetUser) return notFound(res, 'User')
+
+  const passwordHash = await bcrypt.hash(password, 10)
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash }
+  })
+
+  // Invalidate any active password reset tokens for this user
+  await prisma.passwordResetToken.deleteMany({
+    where: { userId }
+  })
+
+  const audit = createAuditHelper(req)
+  await audit.log('UPDATE', 'User', userId, {
+    action: 'ADMIN_CHANGED_PASSWORD',
+    targetEmail: targetUser.email
+  })
+
+  return updated(res, { 
+    message: `Contraseña actualizada correctamente para ${targetUser.email}`,
+    userId: targetUser.id,
+    email: targetUser.email
+  })
+}))
+
+/**
+ * @swagger
+ * /api/users/{id}/reset-link:
+ *   post:
+ *     summary: Generate direct password reset link for user (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post('/:id/reset-link', requireRole(['admin']), asyncHandler(async (req: Request, res: Response) => {
+  const parsedId = userIdSchema.safeParse(req.params)
+  if (!parsedId.success) {
+    return validationError(res, 'Invalid id', parsedId.error.issues)
+  }
+  const { id: userId } = parsedId.data
+
+  const targetUser = await prisma.user.findUnique({ where: { id: userId } })
+  if (!targetUser) return notFound(res, 'User')
+
+  const token = crypto.randomBytes(32).toString('hex')
+  const expiresAt = new Date()
+  expiresAt.setHours(expiresAt.getHours() + 24) // 24 hours validity
+
+  await prisma.passwordResetToken.deleteMany({ where: { userId } })
+  await prisma.passwordResetToken.create({
+    data: {
+      userId,
+      token,
+      expiresAt
+    }
+  })
+
+  const origin = req.get('origin') || req.get('referer') || env.FRONTEND_URL || ''
+  const cleanOrigin = origin.replace(/\/$/, '')
+  const resetLink = cleanOrigin ? `${cleanOrigin}/reset-password?token=${token}` : `/reset-password?token=${token}`
+
+  const audit = createAuditHelper(req)
+  await audit.log('CREATE', 'PasswordResetToken', userId, {
+    action: 'ADMIN_GENERATED_RESET_LINK',
+    targetEmail: targetUser.email
+  })
+
+  return success(res, {
+    resetLink,
+    token,
+    expiresAt,
+    email: targetUser.email,
+    name: targetUser.name
+  })
 }))
 
 const roleRequestsQuerySchema = z.object({

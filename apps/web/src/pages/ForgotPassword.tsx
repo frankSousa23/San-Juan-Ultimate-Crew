@@ -48,23 +48,41 @@ export const ForgotPassword: React.FC = () => {
 
   if (success) {
     return (
-      <div className="max-w-md mx-auto bg-white rounded-md shadow p-4 sm:p-6 mt-4 sm:mt-10">
-        <h2 className="text-xl font-semibold mb-4 text-green-600">Email Enviado</h2>
-        <p className="text-gray-700 mb-4">
-          Si existe una cuenta con ese email, se ha enviado un enlace para restablecer tu contraseña.
-          Revisa tu bandeja de entrada.
+      <div className="max-w-md mx-auto bg-white rounded-2xl shadow-xl p-6 sm:p-8 mt-6 sm:mt-12 border border-slate-200">
+        <div className="text-center mb-5">
+          <span className="text-4xl">📬</span>
+          <h2 className="text-2xl font-bold mt-2 text-slate-900">Solicitud Procesada</h2>
+        </div>
+        <p className="text-slate-600 text-sm mb-4 leading-relaxed">
+          Si existe una cuenta asociada a <strong>{email}</strong>, se ha procesado la solicitud de recuperación.
         </p>
+
         {token && (
-          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-            <p className="text-xs text-gray-600 mb-2">Modo desarrollo - Token de prueba:</p>
-            <p className="text-xs font-mono break-all">{token}</p>
-            <p className="text-xs text-gray-600 mt-2">
-              En producción, este token se enviaría por email.
-            </p>
+          <div className="mb-5 p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-2">
+            <p className="text-xs font-semibold text-indigo-900">Acceso Directo de Restablecimiento:</p>
+            <Link
+              to={`/reset-password?token=${token}`}
+              className="block w-full text-center py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition"
+            >
+              👉 Restablecer mi Contraseña Ahora
+            </Link>
           </div>
         )}
-        <Link to="/login" className="text-blue-600 hover:underline">
-          Volver a login
+
+        <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-1 mb-6">
+          <p className="font-bold flex items-center gap-1">
+            <span>💡</span> ¿No recibiste el correo?
+          </p>
+          <p>
+            Puedes solicitarle directamente al <strong>Administrador</strong> del sistema o de tu equipo que te asigne una nueva contraseña o te comparta un enlace de restablecimiento directo desde el panel de control.
+          </p>
+        </div>
+
+        <Link
+          to="/login"
+          className="block w-full text-center py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-xl text-sm transition"
+        >
+          ← Volver a Iniciar Sesión
         </Link>
       </div>
     )

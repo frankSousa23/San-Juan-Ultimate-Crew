@@ -117,18 +117,20 @@ export const Landing: React.FC = () => {
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-b from-white to-slate-100 border-b border-slate-200 pt-10 pb-16 sm:pt-16 sm:pb-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs sm:text-sm font-semibold mb-6 shadow-sm">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50/95 border border-blue-200/90 text-xs sm:text-sm font-bold mb-6 shadow-sm">
             <span className="text-base">🥏</span>
-            <span>Sistema Integral de Gestión Deportiva</span>
-            <span className="bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">2026</span>
+            <span className="font-bold tracking-tight" style={{ color: '#0047AB' }}>
+              Sistema Integral de Gestión Deportiva
+            </span>
+            <span className="bg-[#0047AB] text-white text-[10px] px-1.5 py-0.5 rounded font-mono font-bold">2026</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-slate-950 tracking-tight leading-tight max-w-4xl mx-auto">
             Organiza, Analiza y Triunfa en el <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-600">Disco Volador</span>
           </h1>
 
-          <p className="mt-5 text-base sm:text-lg lg:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-            <strong>SIGEDIVO</strong> es la plataforma tecnológica todo-en-uno para equipos y torneos de Ultimate Frisbee. Gestiona rosters multi-división, toma anotaciones táctiles en tiempo real, genera brackets, analiza estadísticas avanzadas y descarga manuales oficiales en PDF.
+          <p className="mt-5 text-base sm:text-lg lg:text-xl text-black dark:text-black font-medium max-w-3xl mx-auto leading-relaxed" style={{ color: '#000000' }}>
+            <strong className="text-black font-bold">SIGEDIVO</strong> es la plataforma tecnológica todo-en-uno para equipos y torneos de Ultimate Frisbee. Gestiona rosters multi-división, toma anotaciones táctiles en tiempo real, genera brackets, analiza estadísticas avanzadas y descarga manuales oficiales en PDF.
           </p>
 
           {/* Action CTAs */}
