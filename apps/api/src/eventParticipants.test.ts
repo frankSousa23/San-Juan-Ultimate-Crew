@@ -9,8 +9,6 @@ describe('Event Participants API', () => {
   let authHeader: string | undefined
 
   beforeAll(async () => {
-    await prisma.event.create({ data: { title: "Test Event for Participants", type: "TRAINING", startsAt: new Date() } })
-    await prisma.player.create({ data: { name: "Test Player for Participants", number: 99, position: "HANDLER" } })
     if (AUTH_ON) {
       const login = await request(app)
         .post('/api/auth/login')
@@ -21,6 +19,33 @@ describe('Event Participants API', () => {
   })
 
   it('bootstraps: gets events and players', async () => {
+    // Create an event and player explicitly via API before querying
+    let createEv = request(app).post('/api/events')
+    if (authHeader) createEv = createEv.set('Authorization', authHeader)
+    const evCreated = await createEv
+      .send({
+        title: 'Participant Test Event ' + Date.now(),
+        type: 'TRAINING',
+        startsAt: new Date().toISOString()
+      })
+    
+    let createPl = request(app).post('/api/players')
+    if (authHeader) createPl = createPl.set('Authorization', authHeader)
+    const plCreated = await createPl
+      .send({
+        name: 'Participant Test Player ' + Date.now(),
+        number: Math.floor(1000 + Math.random() * 9000),
+        position: 'HANDLER',
+        status: 'ACTIVE'
+      })
+
+    if (evCreated.body?.id) {
+      eventId = evCreated.body.id
+    }
+    if (plCreated.body?.id) {
+      playerId = plCreated.body.id
+    }
+
     let evReq = request(app).get('/api/events')
     if (authHeader) evReq = evReq.set('Authorization', authHeader)
     const evs = await evReq.expect(200)
@@ -28,12 +53,14 @@ describe('Event Participants API', () => {
     let plReq = request(app).get('/api/players')
     if (authHeader) plReq = plReq.set('Authorization', authHeader)
     const pls = await plReq.expect(200)
+
     expect(Array.isArray(evs.body)).toBe(true)
     expect(Array.isArray(pls.body)).toBe(true)
     expect(evs.body.length).toBeGreaterThan(0)
     expect(pls.body.length).toBeGreaterThan(0)
-    eventId = evs.body[0].id
-    playerId = pls.body[0].id
+
+    if (!eventId && evs.body.length > 0) eventId = evs.body[0].id
+    if (!playerId && pls.body.length > 0) playerId = pls.body[0].id
   })
 
   it('upserts a participant with role and status', async () => {
@@ -61,5 +88,14 @@ describe('Event Participants API', () => {
     let req = request(app).delete('/api/event-participants')
     if (authHeader) req = req.set('Authorization', authHeader)
     await req.query({ eventId, playerId }).expect(204)
+  })
+
+  afterAll(async () => {
+    if (eventId) {
+      await prisma.event.delete({ where: { id: eventId } }).catch(() => {})
+    }
+    if (playerId) {
+      await prisma.player.delete({ where: { id: playerId } }).catch(() => {})
+    }
   })
 })
