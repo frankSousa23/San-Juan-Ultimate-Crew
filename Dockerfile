@@ -2,58 +2,49 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy all package manifests
 COPY package*.json ./
 COPY apps/api/package*.json ./apps/api/
 COPY apps/web/package*.json ./apps/web/
 
-# Install dependencies for all workspaces
+# Install dependencies
 RUN npm ci
 
-# Copy source code
-COPY apps/web ./apps/web
-COPY apps/api ./apps/api
-COPY apps/api/prisma ./apps/api/prisma
+# Copy entire source
+COPY . .
 
 # Generate Prisma Client
 ENV PRISMA_CLIENT_ENGINE_TYPE=binary
 RUN cd apps/api && npx prisma generate
 
-# Build frontend and api backend
-RUN cd apps/web && npm run build
-RUN cd apps/api && npm run build
+# Build frontend and server
+RUN npm run build
 
-# Production stage
-# Use Debian-based image to avoid OpenSSL musl issues with Prisma engines.
+# Production runtime stage
 FROM node:18-slim
 
 WORKDIR /app
 
-# Copy package files
+# Copy package manifests
 COPY package*.json ./
 COPY apps/api/package*.json ./apps/api/
 COPY apps/web/package*.json ./apps/web/
 
-# Install production dependencies only
+# Install production dependencies
 RUN npm ci --omit=dev
 
-# Copy built application and frontend
+# Copy compiled assets and server
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/apps/web/dist ./apps/web/dist
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
-COPY --from=builder /app/apps/web/dist ./apps/web/dist
-COPY --from=builder /app/apps/web/dist ./apps/api/dist/public
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-# Create uploads directory
 RUN mkdir -p /app/apps/api/uploads
 
-WORKDIR /app/apps/api
-
 ENV NODE_ENV=production
-ENV PORT=4000
-EXPOSE 4000
+ENV PORT=3000
+EXPOSE 3000
 
-CMD ["node", "dist/index.js"]
-
-
+CMD ["node", "dist/server.cjs"]
