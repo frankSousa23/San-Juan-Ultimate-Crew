@@ -496,7 +496,7 @@ export default function Resources() {
       <div className="bg-white rounded shadow divide-y">
         {sortedItems.map(it => {
           const hasBuiltinDoc = !!RESOURCE_DOCS[it.id] || (it.id >= 501 && it.id <= 505)
-          const docKey = RESOURCE_DOCS[it.id] ? it.id : (it.id >= 501 && it.id <= 505 ? it.id - 500 : null)
+          const docKey = RESOURCE_DOCS[it.id] ? it.id : (it.id >= 501 && it.id <= 505 ? it.id - 500 : it)
           const hasUrl = Boolean(it.url && it.url !== '#' && it.url.startsWith('http'))
 
           const handleOpenOrDownload = () => {
