@@ -218,15 +218,15 @@ export const Register: React.FC = () => {
             value={selectedTeamId}
             onChange={e => setSelectedTeamId(e.target.value)}
           >
-            <option value="">-- Sin equipo asignado / Por definir --</option>
+            <option value="">🏃 Agente Libre / Sin equipo fijo (Pruebas / Refuerzo)</option>
             {availableTeams.map(t => (
               <option key={t.id} value={t.id}>
-                {t.name}
+                🛡️ {t.name}
               </option>
             ))}
           </select>
           <p className="text-xs text-gray-500 mt-1">
-            Selecciona a cuál de los equipos perteneces para una rápida asignación
+            Los agentes libres pueden elegir cualquier dorsal y llevar sus estadísticas personales o actuar como refuerzo.
           </p>
         </div>
         

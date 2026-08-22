@@ -10,6 +10,16 @@ interface UserItem {
   name?: string; 
   roles: string[]; 
   playerId: number | null; 
+  player?: {
+    id: number;
+    name?: string;
+    number: number;
+    position: 'HANDLER' | 'CUTTER' | 'HYBRID';
+    heightCm?: number | null;
+    experience?: string | null;
+    status?: string;
+    teamId?: number | null;
+  } | null;
   teamId?: number | null; 
   teamName?: string | null; 
   status?: string; 
@@ -77,12 +87,22 @@ export default function AdminUsers() {
       setPendingUsers(data)
       const initRole: Record<number, string> = {}
       const initPlayer: Record<number, string> = {}
+      const initPlayerData: Record<number, { number: string; position: 'HANDLER' | 'CUTTER' | 'HYBRID'; heightCm: string; experience: string }> = {}
       for (const u of data) {
         initRole[u.id] = 'player'
-        initPlayer[u.id] = ''
+        initPlayer[u.id] = u.playerId ? String(u.playerId) : ''
+        if (u.player) {
+          initPlayerData[u.id] = {
+            number: String(u.player.number ?? ''),
+            position: (u.player.position as any) || 'CUTTER',
+            heightCm: u.player.heightCm ? String(u.player.heightCm) : '',
+            experience: u.player.experience || ''
+          }
+        }
       }
       setApproveRole(initRole)
       setApprovePlayerId(initPlayer)
+      setPlayerData(initPlayerData)
     } catch (e: any) {
       toast.showErrorToast(e?.response?.data?.error || 'No se pudieron cargar usuarios pendientes')
     } finally {
@@ -91,11 +111,14 @@ export default function AdminUsers() {
   }
 
   const handleApproveUser = async (id: number) => {
+    const user = pendingUsers.find(u => u.id === id)
     const role = approveRole[id] || 'player'
     const hasPlayerId = approvePlayerId[id] && approvePlayerId[id].trim() !== ''
-    const shouldShowForm = role === 'player' && !hasPlayerId && !showPlayerForm[id]
+    const currentPlayerData = playerData[id]
+    const hasRegisteredPlayer = !!user?.player || !!user?.playerId
     
-    if (shouldShowForm) {
+    // If role is 'player', user has NO registered player data, NO playerId, and form not open:
+    if (role === 'player' && !hasRegisteredPlayer && !showPlayerForm[id]) {
       setShowPlayerForm(prev => ({ ...prev, [id]: true }))
       setPlayerData(prev => ({ ...prev, [id]: { number: '', position: 'CUTTER', heightCm: '', experience: '' } }))
       return
@@ -105,32 +128,30 @@ export default function AdminUsers() {
     try {
       const payload: any = { role }
       
-      if (hasPlayerId) {
-        payload.playerId = Number(approvePlayerId[id])
-      } else if (showPlayerForm[id] && playerData[id]) {
-        const data = playerData[id]
-        if (!data.number || !data.position) {
-          toast.showErrorToast('Número y posición son requeridos para crear jugador')
+      // If the admin modified/opened the player form
+      if (showPlayerForm[id] && currentPlayerData) {
+        if (!currentPlayerData.number || !currentPlayerData.position) {
+          toast.showErrorToast('Número y posición son requeridos para la ficha deportiva')
           setApproving(prev => ({ ...prev, [id]: false }))
           return
         }
         payload.playerData = {
-          number: Number(data.number),
-          position: data.position,
+          number: Number(currentPlayerData.number),
+          position: currentPlayerData.position,
           status: 'ACTIVE',
-          heightCm: data.heightCm ? Number(data.heightCm) : undefined,
-          experience: data.experience.trim() || undefined,
+          heightCm: currentPlayerData.heightCm ? Number(currentPlayerData.heightCm) : undefined,
+          experience: currentPlayerData.experience ? currentPlayerData.experience.trim() : undefined,
         }
+        if (hasPlayerId) {
+          payload.playerId = Number(approvePlayerId[id])
+        }
+      } else if (hasPlayerId) {
+        payload.playerId = Number(approvePlayerId[id])
       }
       
       const result = await usersApi.approve(id, payload)
-      toast.showSuccessToast(`Usuario aprobado con rol: ${result.roles?.[0] || role}`)
+      toast.showSuccessToast(`Usuario ${user?.email || ''} aprobado con éxito (${result.roles?.join(', ') || role})`)
       setShowPlayerForm(prev => ({ ...prev, [id]: false }))
-      setPlayerData(prev => {
-        const newData = { ...prev }
-        delete newData[id]
-        return newData
-      })
       await loadPendingUsers()
       await load()
     } catch (e: any) {
@@ -388,172 +409,249 @@ export default function AdminUsers() {
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 text-gray-700 font-semibold border-b">
               <tr>
-                <th className="text-left px-4 py-2">Email</th>
-                <th className="text-left px-4 py-2">Nombre</th>
-                <th className="text-left px-4 py-2 hidden md:table-cell">Fecha Registro</th>
-                <th className="text-left px-4 py-2">Rol a Asignar</th>
-                <th className="px-4 py-2 text-right">Acciones</th>
+                <th className="text-left px-4 py-2.5">Usuario / Email</th>
+                <th className="text-left px-4 py-2.5">Equipo</th>
+                <th className="text-left px-4 py-2.5">Ficha Deportiva Registrada</th>
+                <th className="text-left px-4 py-2.5">Rol a Asignar</th>
+                <th className="px-4 py-2.5 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody>
-              {pendingUsers.map(u => (
-                <React.Fragment key={u.id}>
-                  <tr className="border-t">
-                    <td className="px-4 py-2 font-medium">{u.email}</td>
-                    <td className="px-4 py-2">{u.name || '-'}</td>
-                    <td className="px-4 py-2 hidden md:table-cell text-xs text-gray-500">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-'}</td>
-                    <td className="px-4 py-2">
-                      <select
-                        className="border rounded px-2 py-1 text-xs sm:text-sm bg-white font-medium text-gray-800"
-                        value={approveRole[u.id] || 'player'}
-                        onChange={(e) => {
-                          setApproveRole(prev => ({
-                            ...prev,
-                            [u.id]: e.target.value
-                          }))
-                          if (e.target.value !== 'player') {
-                            setShowPlayerForm(prev => ({ ...prev, [u.id]: false }))
-                          }
-                        }}
-                      >
-                        <option value="player">🏃 Jugador</option>
-                        <option value="captain">🎖️ Capitán</option>
-                        <option value="coach">📋 Entrenador</option>
-                        <option value="directiva">🏛️ Directiva</option>
-                        <option value="treasurer">💰 Tesorero</option>
-                        <option value="annotator">📝 Anotador</option>
-                        <option value="admin">👑 Admin</option>
-                        <option value="guest">🤝 Refuerzo</option>
-                      </select>
-                    </td>
-                    <td className="px-4 py-2">
-                      <div className="flex gap-2 justify-end">
-                        <button
-                          className="px-3 py-1 bg-emerald-600 text-white rounded text-xs sm:text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-                          disabled={!!approving[u.id]}
-                          onClick={() => handleApproveUser(u.id)}
+            <tbody className="divide-y divide-gray-100">
+              {pendingUsers.map(u => {
+                const hasPlayer = !!u.player
+                const currentFormOpen = !!showPlayerForm[u.id]
+                return (
+                  <React.Fragment key={u.id}>
+                    <tr className="hover:bg-gray-50/70 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-gray-900">{u.name || u.email}</div>
+                        {u.name && <div className="text-xs text-gray-500">{u.email}</div>}
+                        <div className="text-[11px] text-gray-400 mt-0.5">
+                          {u.createdAt ? `Registrado: ${new Date(u.createdAt).toLocaleDateString()}` : ''}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        {u.teamName ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                            🛡️ {u.teamName}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                            🏃 Agente Libre
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {hasPlayer ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs font-medium">
+                              <span className="font-bold text-indigo-700">#{u.player?.number}</span>
+                              <span className="text-indigo-400">•</span>
+                              <span>
+                                {u.player?.position === 'CUTTER' ? 'Cortador' : u.player?.position === 'HANDLER' ? 'Manejador' : 'Híbrido'}
+                              </span>
+                              {u.player?.heightCm && (
+                                <>
+                                  <span className="text-indigo-400">•</span>
+                                  <span>{u.player.heightCm} cm</span>
+                                </>
+                              )}
+                              {u.player?.experience && (
+                                <>
+                                  <span className="text-indigo-400">•</span>
+                                  <span className="text-gray-600 truncate max-w-[120px]">{u.player.experience}</span>
+                                </>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setShowPlayerForm(prev => ({ ...prev, [u.id]: !prev[u.id] }))}
+                              className="text-xs text-indigo-600 hover:text-indigo-800 underline font-medium"
+                            >
+                              {currentFormOpen ? 'Cerrar edición' : '✏️ Editar ficha'}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">Sin ficha de jugador</span>
+                            {approveRole[u.id] === 'player' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowPlayerForm(prev => ({ ...prev, [u.id]: !prev[u.id] }))
+                                  if (!playerData[u.id]) {
+                                    setPlayerData(prev => ({ ...prev, [u.id]: { number: '', position: 'CUTTER', heightCm: '', experience: '' } }))
+                                  }
+                                }}
+                                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium underline"
+                              >
+                                {currentFormOpen ? 'Cancelar' : '➕ Crear ficha'}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          className="border rounded-md px-2.5 py-1.5 text-xs sm:text-sm bg-white font-medium text-gray-800 focus:ring-2 focus:ring-indigo-500"
+                          value={approveRole[u.id] || 'player'}
+                          onChange={(e) => {
+                            setApproveRole(prev => ({
+                              ...prev,
+                              [u.id]: e.target.value
+                            }))
+                            if (e.target.value !== 'player' && !hasPlayer) {
+                              setShowPlayerForm(prev => ({ ...prev, [u.id]: false }))
+                            }
+                          }}
                         >
-                          {approving[u.id] ? 'Aprobando…' : 'Aprobar'}
-                        </button>
-                        <button
-                          className="px-3 py-1 bg-rose-600 text-white rounded text-xs sm:text-sm font-medium hover:bg-rose-700 disabled:opacity-50 transition-colors"
-                          disabled={!!approving[u.id]}
-                          onClick={() => handleRejectUser(u.id)}
-                        >
-                          {approving[u.id] ? 'Rechazando…' : 'Rechazar'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  {showPlayerForm[u.id] && (
-                    <tr className="border-t bg-indigo-50/70">
-                      <td colSpan={5} className="px-4 py-3">
-                        <div className="space-y-3">
-                          <h4 className="font-semibold text-indigo-900 text-sm">Crear Ficha Deportiva del Atleta</h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Camiseta # <span className="text-red-500">*</span>
-                              </label>
-                              <input
-                                type="number"
-                                min="1"
-                                required
-                                className="w-full border rounded px-2.5 py-1.5 text-sm bg-white"
-                                value={playerData[u.id]?.number || ''}
-                                onChange={e => {
-                                  const val = e.target.value
-                                  if (val === '' || (Number(val) > 0 && Number.isInteger(Number(val)))) {
+                          <option value="player">🏃 Jugador</option>
+                          <option value="captain">🎖️ Capitán</option>
+                          <option value="coach">📋 Entrenador</option>
+                          <option value="directiva">🏛️ Directiva</option>
+                          <option value="treasurer">💰 Tesorero</option>
+                          <option value="annotator">📝 Anotador</option>
+                          <option value="admin">👑 Admin</option>
+                          <option value="guest">🤝 Refuerzo</option>
+                        </select>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            className="px-3.5 py-1.5 bg-emerald-600 text-white rounded-md text-xs sm:text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-sm"
+                            disabled={!!approving[u.id]}
+                            onClick={() => handleApproveUser(u.id)}
+                          >
+                            {approving[u.id] ? 'Aprobando…' : currentFormOpen ? 'Guardar y Aprobar' : 'Aprobar'}
+                          </button>
+                          <button
+                            className="px-3 py-1.5 bg-rose-600 text-white rounded-md text-xs sm:text-sm font-semibold hover:bg-rose-700 disabled:opacity-50 transition-colors shadow-sm"
+                            disabled={!!approving[u.id]}
+                            onClick={() => handleRejectUser(u.id)}
+                          >
+                            {approving[u.id] ? 'Rechazando…' : 'Rechazar'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {showPlayerForm[u.id] && (
+                      <tr className="border-t bg-indigo-50/80">
+                        <td colSpan={5} className="px-4 py-3.5">
+                          <div className="space-y-3 bg-white p-3.5 rounded-lg border border-indigo-200 shadow-sm">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-semibold text-indigo-900 text-sm flex items-center gap-1.5">
+                                <span>🏃 Ficha Deportiva del Atleta</span>
+                                <span className="text-xs font-normal text-indigo-700">
+                                  ({hasPlayer ? 'Modificar datos registrados por el usuario' : 'Completar datos deportivos'})
+                                </span>
+                              </h4>
+                              <button
+                                type="button"
+                                className="text-xs text-gray-500 hover:text-gray-700"
+                                onClick={() => setShowPlayerForm(prev => ({ ...prev, [u.id]: false }))}
+                              >
+                                ✕ Cerrar
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                  Camiseta # <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  placeholder="Ej: 10"
+                                  required
+                                  className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                  value={playerData[u.id]?.number ?? ''}
+                                  onChange={e => {
+                                    const val = e.target.value
                                     setPlayerData(prev => ({
                                       ...prev,
                                       [u.id]: { ...(prev[u.id] || { number: '', position: 'CUTTER', heightCm: '', experience: '' }), number: val }
                                     }))
-                                  }
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Posición <span className="text-red-500">*</span>
-                              </label>
-                              <select
-                                className="w-full border rounded px-2.5 py-1.5 text-sm bg-white"
-                                value={playerData[u.id]?.position || 'CUTTER'}
-                                onChange={e => setPlayerData(prev => ({
-                                  ...prev,
-                                  [u.id]: { ...(prev[u.id] || { number: '', position: 'CUTTER', heightCm: '', experience: '' }), position: e.target.value as any }
-                                }))}
-                              >
-                                <option value="CUTTER">Cortador (Cutter)</option>
-                                <option value="HANDLER">Manejador (Handler)</option>
-                                <option value="HYBRID">Híbrido (Hybrid)</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Altura (cm) <span className="text-gray-400 text-xs">(opcional)</span>
-                              </label>
-                              <input
-                                type="number"
-                                min="1"
-                                className="w-full border rounded px-2.5 py-1.5 text-sm bg-white"
-                                value={playerData[u.id]?.heightCm || ''}
-                                onChange={e => {
-                                  const val = e.target.value
-                                  if (val === '' || (Number(val) > 0 && Number.isInteger(Number(val)))) {
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                  Posición <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                  className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                  value={playerData[u.id]?.position || 'CUTTER'}
+                                  onChange={e => setPlayerData(prev => ({
+                                    ...prev,
+                                    [u.id]: { ...(prev[u.id] || { number: '', position: 'CUTTER', heightCm: '', experience: '' }), position: e.target.value as any }
+                                  }))}
+                                >
+                                  <option value="CUTTER">Cortador (Cutter)</option>
+                                  <option value="HANDLER">Manejador (Handler)</option>
+                                  <option value="HYBRID">Híbrido (Hybrid)</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                  Altura (cm) <span className="text-gray-400 font-normal text-xs">(opcional)</span>
+                                </label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  placeholder="Ej: 178"
+                                  className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                  value={playerData[u.id]?.heightCm ?? ''}
+                                  onChange={e => {
+                                    const val = e.target.value
                                     setPlayerData(prev => ({
                                       ...prev,
                                       [u.id]: { ...(prev[u.id] || { number: '', position: 'CUTTER', heightCm: '', experience: '' }), heightCm: val }
                                     }))
-                                  }
-                                }}
-                              />
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                  Experiencia <span className="text-gray-400 font-normal text-xs">(opcional)</span>
+                                </label>
+                                <input
+                                  type="text"
+                                  placeholder="Ej: 3 años jugando mixto"
+                                  className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                  value={playerData[u.id]?.experience ?? ''}
+                                  onChange={e => setPlayerData(prev => ({
+                                    ...prev,
+                                    [u.id]: { ...(prev[u.id] || { number: '', position: 'CUTTER', heightCm: '', experience: '' }), experience: e.target.value }
+                                  }))}
+                                />
+                              </div>
                             </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Experiencia <span className="text-gray-400 text-xs">(opcional)</span>
-                              </label>
-                              <input
-                                type="text"
-                                className="w-full border rounded px-2.5 py-1.5 text-sm bg-white"
-                                value={playerData[u.id]?.experience || ''}
-                                onChange={e => setPlayerData(prev => ({
-                                  ...prev,
-                                  [u.id]: { ...(prev[u.id] || { number: '', position: 'CUTTER', heightCm: '', experience: '' }), experience: e.target.value }
-                                }))}
-                              />
+                            <div className="flex gap-2 pt-1">
+                              <button
+                                type="button"
+                                className="px-3.5 py-1.5 bg-emerald-600 text-white rounded text-xs font-semibold hover:bg-emerald-700 shadow-sm"
+                                onClick={() => handleApproveUser(u.id)}
+                                disabled={!!approving[u.id] || !playerData[u.id]?.number || !playerData[u.id]?.position}
+                              >
+                                {approving[u.id] ? 'Aprobando…' : '✓ Guardar Cambios y Aprobar'}
+                              </button>
+                              <button
+                                type="button"
+                                className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-xs font-medium hover:bg-gray-300"
+                                onClick={() => setShowPlayerForm(prev => ({ ...prev, [u.id]: false }))}
+                              >
+                                Cerrar edición
+                              </button>
                             </div>
                           </div>
-                          <div className="flex gap-2">
-                            <button
-                              className="px-3 py-1.5 bg-emerald-600 text-white rounded text-xs font-medium hover:bg-emerald-700"
-                              onClick={() => handleApproveUser(u.id)}
-                              disabled={!!approving[u.id] || !playerData[u.id]?.number || !playerData[u.id]?.position}
-                            >
-                              {approving[u.id] ? 'Aprobando…' : 'Confirmar y Crear Ficha'}
-                            </button>
-                            <button
-                              className="px-3 py-1.5 bg-gray-400 text-white rounded text-xs font-medium hover:bg-gray-500"
-                              onClick={() => {
-                                setShowPlayerForm(prev => ({ ...prev, [u.id]: false }))
-                                setPlayerData(prev => {
-                                  const newData = { ...prev }
-                                  delete newData[u.id]
-                                  return newData
-                                })
-                              }}
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              ))}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                )
+              })}
               {pendingLoading && (
                 <tr><td className="px-4 py-6 text-center text-gray-500" colSpan={5}>Cargando pendientes…</td></tr>
               )}
@@ -663,23 +761,31 @@ export default function AdminUsers() {
                     </select>
                   </td>
                   <td className="px-4 py-2.5">
-                    <div className="flex items-center gap-1">
-                      <input
-                        className="border rounded px-2 py-1 w-16 text-xs"
-                        value={playerId[u.id] || ''}
-                        onChange={(e) => setPlayerId(prev => ({ ...prev, [u.id]: e.target.value }))}
-                        placeholder="id"
-                        disabled={!!u.playerId}
-                      />
-                      <button
-                        className="px-2 py-1 bg-indigo-600 text-white rounded text-xs disabled:opacity-40 hover:bg-indigo-700 transition-colors"
-                        onClick={() => saveLink(u.id)}
-                        disabled={!!u.playerId || !playerId[u.id]}
-                        title="Vincular a ficha de atleta"
-                      >
-                        {u.playerId ? '✓' : 'Link'}
-                      </button>
-                    </div>
+                    {u.player ? (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs font-medium">
+                        <span className="font-bold text-indigo-700">#{u.player.number}</span>
+                        <span className="text-indigo-400">•</span>
+                        <span>{u.player.position === 'CUTTER' ? 'Cortador' : u.player.position === 'HANDLER' ? 'Manejador' : 'Híbrido'}</span>
+                        {u.player.name && u.player.name !== u.name && <span className="text-gray-500 text-[11px]">({u.player.name})</span>}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <input
+                          className="border rounded px-2 py-1 w-16 text-xs bg-white"
+                          value={playerId[u.id] || ''}
+                          onChange={(e) => setPlayerId(prev => ({ ...prev, [u.id]: e.target.value }))}
+                          placeholder="ID atleta"
+                        />
+                        <button
+                          className="px-2 py-1 bg-indigo-600 text-white rounded text-xs disabled:opacity-40 hover:bg-indigo-700 transition-colors"
+                          onClick={() => saveLink(u.id)}
+                          disabled={!playerId[u.id]}
+                          title="Vincular a ficha de atleta existente"
+                        >
+                          Vincular
+                        </button>
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-2.5 text-right">
                     <button

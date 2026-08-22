@@ -65,7 +65,11 @@ router.get('/', requireRole(['admin']), asyncHandler(async (req: Request, res: R
   
   const users = await prisma.user.findMany({ 
     where,
-    include: { team: true, roles: { include: { role: true } } },
+    include: { 
+      team: true, 
+      roles: { include: { role: true } },
+      player: true
+    },
     orderBy: { createdAt: 'desc' }
   })
   const list = users.map((u: any) => ({
@@ -74,6 +78,16 @@ router.get('/', requireRole(['admin']), asyncHandler(async (req: Request, res: R
     name: u.name,
     status: u.status,
     playerId: u.playerId ?? null,
+    player: u.player ? {
+      id: u.player.id,
+      name: u.player.name,
+      number: u.player.number,
+      position: u.player.position,
+      heightCm: u.player.heightCm,
+      experience: u.player.experience,
+      status: u.player.status,
+      teamId: u.player.teamId,
+    } : null,
     teamId: u.teamId ?? null,
     teamName: u.team?.name ?? null,
     roles: Array.from(new Set((u.roles || []).map((ur: any) => ur.role?.name).filter((name): name is string => Boolean(name)))),
@@ -501,10 +515,19 @@ router.post('/role-requests', requireAuth, asyncHandler(async (req: Request, res
   
   // Validate playerData if provided
   if (playerData) {
-    // Check if player number already exists
-    const existingPlayer = await prisma.player.findUnique({ where: { number: playerData.number } })
-    if (existingPlayer) {
-      return conflict(res, `Player number ${playerData.number} is already taken`)
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    const targetTeamId = user?.teamId || null
+    if (targetTeamId) {
+      const existingPlayer = await prisma.player.findFirst({
+        where: {
+          number: Number(playerData.number),
+          teamId: targetTeamId,
+          ...(user?.playerId ? { id: { not: user.playerId } } : {})
+        }
+      })
+      if (existingPlayer) {
+        return conflict(res, `El dorsal #${playerData.number} ya está en uso en este equipo`)
+      }
     }
   }
   
@@ -696,28 +719,53 @@ router.post('/role-requests/:id/approve', requireRole(['admin']), asyncHandler(a
     
     let finalPlayerId = request.playerId
     
-    // If playerData is provided, create the player
+    // If playerData is provided, create or update the player
     if (playerData) {
-      // Check if player number already exists
-      const existingPlayer = await prisma.player.findUnique({ where: { number: playerData.number } })
-      if (existingPlayer) {
-        return conflict(res, `Player number ${playerData.number} is already taken`)
-      }
-      
       const user = await prisma.user.findUnique({ where: { id: request.userId } })
       if (!user) return notFound(res, 'User')
       
-      const newPlayer = await prisma.player.create({
-        data: {
-          name: user.name || user.email,
-          number: playerData.number,
-          position: playerData.position,
-          status: playerData.status || 'ACTIVE',
-          heightCm: playerData.heightCm || null,
-          experience: playerData.experience || null,
+      const targetTeamId = user.teamId || null
+      if (targetTeamId) {
+        const existingPlayer = await prisma.player.findFirst({
+          where: {
+            number: Number(playerData.number),
+            teamId: targetTeamId,
+            ...(user.playerId ? { id: { not: user.playerId } } : {})
+          }
+        })
+        if (existingPlayer) {
+          return conflict(res, `El dorsal #${playerData.number} ya está en uso en este equipo`)
         }
-      })
-      finalPlayerId = newPlayer.id
+      }
+      
+      if (user.playerId) {
+        const updated = await prisma.player.update({
+          where: { id: user.playerId },
+          data: {
+            name: user.name || user.email,
+            number: Number(playerData.number),
+            position: playerData.position,
+            status: playerData.status || 'ACTIVE',
+            heightCm: playerData.heightCm || null,
+            experience: playerData.experience || null,
+            teamId: targetTeamId,
+          }
+        })
+        finalPlayerId = updated.id
+      } else {
+        const newPlayer = await prisma.player.create({
+          data: {
+            name: user.name || user.email,
+            number: Number(playerData.number),
+            position: playerData.position,
+            status: playerData.status || 'ACTIVE',
+            heightCm: playerData.heightCm || null,
+            experience: playerData.experience || null,
+            teamId: targetTeamId,
+          }
+        })
+        finalPlayerId = newPlayer.id
+      }
     }
     
     if (finalPlayerId) {
@@ -905,13 +953,16 @@ router.post('/:id/approve', requireRole(['admin']), asyncHandler(async (req: Req
   if (!parsed.success) {
     return validationError(res, 'Invalid payload', parsed.error.issues)
   }
-  const { role = 'guest', playerId, playerData } = parsed.data
+  const { role = 'player', playerId, playerData } = parsed.data
   
   const admin = (req as Request & { user?: { sub: string } }).user
   // Cuando AUTH_REQUIRED está desactivado (modo abierto/demo), no forzamos tener admin en req.user
   if (env.AUTH_REQUIRED && !admin?.sub) return unauthorized(res, 'Unauthorized')
   
-  const user = await prisma.user.findUnique({ where: { id } })
+  const user = await prisma.user.findUnique({ 
+    where: { id },
+    include: { player: true, team: true } 
+  })
   if (!user) return notFound(res, 'User')
   
   if (user.status === 'APPROVED') {
@@ -922,17 +973,69 @@ router.post('/:id/approve', requireRole(['admin']), asyncHandler(async (req: Req
     return conflict(res, 'User is already rejected')
   }
   
-  // Validate playerData if provided
+  let finalPlayerId: number | null = playerId ?? user.playerId ?? null
+  const targetTeamId = user.teamId || null
+
+  // Validate and handle playerData if provided (or updating existing player)
   if (playerData) {
-    // Check if player number already exists
-    const existingPlayer = await prisma.player.findUnique({ where: { number: playerData.number } })
-    if (existingPlayer) {
-      return conflict(res, `Player number ${playerData.number} is already taken`)
+    const targetNumber = Number(playerData.number)
+    
+    // Check if player number already exists in this team (only for users assigned to a team)
+    if (targetTeamId) {
+      const existingPlayer = await prisma.player.findFirst({
+        where: {
+          number: targetNumber,
+          teamId: targetTeamId,
+          ...(user.playerId ? { id: { not: user.playerId } } : {})
+        }
+      })
+      if (existingPlayer) {
+        return conflict(res, `El dorsal #${targetNumber} ya está en uso en este equipo`)
+      }
     }
+
+    if (user.playerId) {
+      const updated = await prisma.player.update({
+        where: { id: user.playerId },
+        data: {
+          name: user.name || user.email,
+          number: targetNumber,
+          position: playerData.position,
+          status: playerData.status || 'ACTIVE',
+          heightCm: playerData.heightCm ? Number(playerData.heightCm) : null,
+          experience: playerData.experience || null,
+          teamId: targetTeamId,
+        }
+      })
+      finalPlayerId = updated.id
+    } else {
+      const newPlayer = await prisma.player.create({
+        data: {
+          name: user.name || user.email,
+          number: targetNumber,
+          position: playerData.position,
+          status: playerData.status || 'ACTIVE',
+          heightCm: playerData.heightCm ? Number(playerData.heightCm) : null,
+          experience: playerData.experience || null,
+          teamId: targetTeamId,
+        }
+      })
+      finalPlayerId = newPlayer.id
+    }
+  } else if (user.playerId) {
+    // If no new playerData sent, ensure the existing player is set to ACTIVE and synchronized
+    await prisma.player.update({
+      where: { id: user.playerId },
+      data: {
+        status: 'ACTIVE',
+        teamId: targetTeamId ?? undefined
+      }
+    }).catch(() => {})
+    finalPlayerId = user.playerId
   }
   
-  // Check if playerId is already linked to another user (only if not creating new player)
-  if (playerId && !playerData) {
+  // Check if playerId is already linked to another user (only if explicitly specifying a different external playerId)
+  if (playerId && !playerData && playerId !== user.playerId) {
     const player = await prisma.player.findUnique({ where: { id: playerId } })
     if (!player) {
       return notFound(res, 'Player')
@@ -947,37 +1050,36 @@ router.post('/:id/approve', requireRole(['admin']), asyncHandler(async (req: Req
     if (existingUser) {
       return conflict(res, 'Player is already linked to another user')
     }
+    finalPlayerId = playerId
   }
   
-  // Get roles
+  // Get primary role
   const primaryRole = await prisma.role.findUnique({ where: { name: role } })
   if (!primaryRole) {
     return serverError(res, 'Role not found')
   }
   
-  // Update user status and assign roles:
-  let finalPlayerId = playerId ?? null
-  
   await prisma.$transaction(async (tx) => {
-    // Remove any existing roles first (clean slate for new approval)
+    // Remove any existing roles first
     await tx.userRole.deleteMany({
       where: { userId: id }
     })
     
-    // If playerData is provided, create the player
-    if (playerData) {
-      const newPlayer = await tx.player.create({
-        data: {
-          name: user.name || user.email,
-          number: playerData.number,
-          position: playerData.position,
-          status: playerData.status || 'ACTIVE',
-          heightCm: playerData.heightCm || null,
-          experience: playerData.experience || null,
-          teamId: user.teamId || null,
-        }
-      })
-      finalPlayerId = newPlayer.id
+    // Assign primary role
+    await tx.userRole.create({
+      data: { userId: id, roleId: primaryRole.id }
+    })
+
+    // If finalPlayerId exists and primary role is not 'player', also assign 'player' role
+    if (finalPlayerId && role !== 'player') {
+      const playerRole = await tx.role.findUnique({ where: { name: 'player' } })
+      if (playerRole) {
+        await tx.userRole.upsert({
+          where: { userId_roleId: { userId: id, roleId: playerRole.id } },
+          create: { userId: id, roleId: playerRole.id },
+          update: {}
+        })
+      }
     }
     
     await tx.user.update({
@@ -986,11 +1088,6 @@ router.post('/:id/approve', requireRole(['admin']), asyncHandler(async (req: Req
         status: 'APPROVED',
         playerId: finalPlayerId,
       }
-    })
-    
-    // Assign the requested role
-    await tx.userRole.create({
-      data: { userId: id, roleId: primaryRole.id }
     })
   })
   
@@ -1005,7 +1102,7 @@ router.post('/:id/approve', requireRole(['admin']), asyncHandler(async (req: Req
   
   const updatedUser = await prisma.user.findUnique({
     where: { id },
-    include: { roles: { include: { role: true } } }
+    include: { roles: { include: { role: true } }, player: true, team: true }
   })
   
   return updated(res, {
@@ -1015,6 +1112,18 @@ router.post('/:id/approve', requireRole(['admin']), asyncHandler(async (req: Req
     status: updatedUser!.status,
     roles: (updatedUser!.roles || []).map((ur: any) => ur.role?.name).filter(Boolean),
     playerId: updatedUser!.playerId,
+    player: updatedUser!.player ? {
+      id: updatedUser!.player.id,
+      name: updatedUser!.player.name,
+      number: updatedUser!.player.number,
+      position: updatedUser!.player.position,
+      heightCm: updatedUser!.player.heightCm,
+      experience: updatedUser!.player.experience,
+      status: updatedUser!.player.status,
+      teamId: updatedUser!.player.teamId,
+    } : null,
+    teamId: updatedUser!.teamId,
+    teamName: updatedUser!.team?.name ?? null,
   })
 }))
 

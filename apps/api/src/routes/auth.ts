@@ -316,15 +316,17 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
     if (!Number.isInteger(num) || num <= 0) {
       return validationError(res, 'Player number must be a positive integer')
     }
-    // Check if player number already exists in this team
-    const existingPlayer = await prisma.player.findFirst({ 
-      where: { 
-        number: num,
-        teamId: assignedTeamId
-      } 
-    })
-    if (existingPlayer) {
-      return conflict(res, `Player number ${num} is already taken in this team`)
+    // Check if player number already exists in this team (only for teams, free agents can choose any number)
+    if (assignedTeamId) {
+      const existingPlayer = await prisma.player.findFirst({ 
+        where: { 
+          number: num,
+          teamId: assignedTeamId
+        } 
+      })
+      if (existingPlayer) {
+        return conflict(res, `El dorsal #${num} ya está en uso en el equipo seleccionado`)
+      }
     }
   }
   
