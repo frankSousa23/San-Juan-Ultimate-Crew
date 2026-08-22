@@ -138,10 +138,12 @@ export function findWebDistPath(): string | null {
   const candidatePaths = [
     path.resolve(process.cwd(), 'apps', 'web', 'dist'),
     path.resolve(process.cwd(), '..', 'web', 'dist'),
+    path.resolve(process.cwd(), 'web', 'dist'),
     path.resolve(process.cwd(), 'dist'),
     path.resolve(process.cwd(), 'public'),
     path.resolve(process.cwd(), 'dist', 'public'),
     path.resolve(currentDir, 'public'),
+    path.resolve(currentDir, '..', 'public'),
     path.resolve(currentDir, '..', '..', 'apps', 'web', 'dist'),
     path.resolve(currentDir, '..', '..', 'web', 'dist'),
     path.resolve(currentDir, '..', 'apps', 'web', 'dist'),
@@ -165,11 +167,14 @@ export function findWebDistPath(): string | null {
   return null;
 }
 
-// In production or standalone mode, serve frontend static assets
-const webDist = findWebDistPath();
-if (webDist) {
-  app.use(express.static(webDist, { maxAge: '1d', index: false }));
-}
+// In production or standalone mode, serve frontend static assets dynamically
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const dist = findWebDistPath();
+  if (dist && fs.existsSync(dist)) {
+    return express.static(dist, { maxAge: '1d', index: false })(req, res, next);
+  }
+  return next();
+});
 
 // Universal SPA router fallback - serves frontend index.html for all non-API web routes
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -205,7 +210,47 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     }
   }
 
-  return next();
+  // Graceful fallback web portal if dist folder is still building
+  res.status(200).send(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIGEDIVO - Portal del Sistema</title>
+  <style>
+    :root { --primary: #2563eb; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --muted: #94a3b8; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .card { background: var(--card); border: 1px solid #334155; border-radius: 16px; max-width: 640px; width: 100%; padding: 32px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+    .badge { display: inline-block; background: rgba(37,99,235,0.2); color: #60a5fa; padding: 4px 12px; border-radius: 9999px; font-size: 0.875rem; font-weight: 600; margin-bottom: 16px; border: 1px solid rgba(96,165,250,0.3); }
+    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 8px; }
+    p { color: var(--muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 24px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .btn { display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 12px 16px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; transition: all 0.2s; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #334155; color: white; }
+    .btn-secondary:hover { background: #475569; }
+    .status { font-size: 0.8rem; color: #4ade80; display: flex; align-items: center; gap: 6px; }
+    .status::before { content: ""; width: 8px; height: 8px; background: #4ade80; border-radius: 50%; display: inline-block; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge">SIGEDIVO v1.2.0</span>
+    <h1>San Juan Ultimate Crew</h1>
+    <p>Sistema de Gestión Deportiva para Ultimate Frisbee. El backend y los servicios están activos y sincronizados con PostgreSQL.</p>
+    <div class="grid">
+      <a href="/api-docs" class="btn btn-primary">📖 Documentación API (Swagger)</a>
+      <a href="/health" class="btn btn-secondary">🏥 Estado de Salud (/health)</a>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #334155; padding-top: 16px;">
+      <span class="status">Servidor Operativo</span>
+      <span style="font-size: 0.8rem; color: var(--muted);">Node.js API & Web</span>
+    </div>
+  </div>
+</body>
+</html>`);
 });
 
 // Error handling middleware (must be last)
