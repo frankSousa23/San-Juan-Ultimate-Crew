@@ -34,7 +34,7 @@ describe('Event Participants API', () => {
     const plCreated = await createPl
       .send({
         name: 'Participant Test Player ' + Date.now(),
-        number: Math.floor(1000 + Math.random() * 9000),
+        number: Math.floor(100 + Math.random() * 800),
         position: 'HANDLER',
         status: 'ACTIVE'
       })

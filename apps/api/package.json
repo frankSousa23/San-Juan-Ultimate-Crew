@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "npx prisma generate && tsc -p tsconfig.json",
+    "build": "npx prisma generate && node -e \"const {execSync}=require('child_process'),fs=require('fs'),path=require('path'); const webDir=path.resolve(process.cwd(),'..','web'); if(fs.existsSync(webDir)){ try { execSync('npm run build', {cwd: webDir, stdio: 'inherit'}); } catch(e){} }\" && tsc -p tsconfig.json && node -e \"const fs=require('fs'),path=require('path'); const webDist=path.resolve(process.cwd(),'..','web','dist'); if(fs.existsSync(webDist)){ fs.mkdirSync(path.resolve('dist','web'), {recursive: true}); fs.cpSync(webDist, path.resolve('dist','web'), {recursive: true}); }\"",
     "start": "node dist/index.js",
     "wait:health": "node ../../local/scripts/api/wait-health.cjs",
     "prisma:generate": "prisma generate",

@@ -1,6 +1,6 @@
 import request from 'supertest'
 import { app } from './app.js'
-import { prisma } from './tests/setup.js'
+import { prisma } from './lib/prisma.js'
 
 const AUTH_ON = String(process.env.AUTH_REQUIRED || 'false').toLowerCase() === 'true'
 

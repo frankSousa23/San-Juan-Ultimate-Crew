@@ -138,24 +138,29 @@ app.use(errorLogger);
 app.use(errorHandler);
 
 // Static files & SPA Fallback serving
-const possibleWebDistDirs = [
-  path.resolve(process.cwd(), 'apps', 'web', 'dist'),
-  path.resolve(process.cwd(), 'dist'),
-  path.resolve(process.cwd(), 'apps', 'api', 'dist', 'web'),
-  path.resolve(currentDir, '..', '..', 'web', 'dist'),
-  path.resolve(currentDir, '..', 'web', 'dist'),
-  path.resolve(currentDir, '..', 'dist'),
-  path.resolve(currentDir, 'web'),
-  path.resolve(currentDir, 'dist'),
-  '/app/apps/web/dist',
-  '/app/dist',
-  '/app/apps/api/dist/web',
-];
+function getWebDistCandidates() {
+  return [
+    path.resolve(process.cwd(), 'apps', 'web', 'dist'),
+    path.resolve(process.cwd(), '..', 'web', 'dist'),
+    path.resolve(process.cwd(), 'dist', 'web'),
+    path.resolve(process.cwd(), 'dist'),
+    path.resolve(process.cwd(), 'apps', 'api', 'dist', 'web'),
+    path.resolve(currentDir, '..', '..', 'web', 'dist'),
+    path.resolve(currentDir, '..', 'web', 'dist'),
+    path.resolve(currentDir, '..', 'dist', 'web'),
+    path.resolve(currentDir, '..', 'dist'),
+    path.resolve(currentDir, 'web'),
+    path.resolve(currentDir, 'dist'),
+    path.resolve(currentDir, 'dist', 'web'),
+    '/app/apps/web/dist',
+    '/app/dist',
+    '/app/apps/api/dist/web',
+    '/apps/web/dist',
+  ];
+}
 
-const registeredStaticDirs = new Set<string>();
-for (const d of possibleWebDistDirs) {
-  if (d && fs.existsSync(d) && !registeredStaticDirs.has(d)) {
-    registeredStaticDirs.add(d);
+for (const d of getWebDistCandidates()) {
+  if (d && fs.existsSync(d)) {
     app.use(express.static(d));
   }
 }
@@ -176,25 +181,37 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     return next();
   }
 
-  const candidateIndexPaths = [
+  // 1. Try to serve specific requested static asset if available
+  const cleanPath = urlPath.replace(/^\/+/, '');
+  for (const distDir of getWebDistCandidates()) {
+    if (distDir && fs.existsSync(distDir)) {
+      const assetPath = path.join(distDir, cleanPath);
+      if (fs.existsSync(assetPath) && fs.statSync(assetPath).isFile()) {
+        return res.sendFile(assetPath);
+      }
+    }
+  }
+
+  // 2. Otherwise serve SPA index.html
+  for (const distDir of getWebDistCandidates()) {
+    if (distDir && fs.existsSync(distDir)) {
+      const candidateIndex = path.join(distDir, 'index.html');
+      if (fs.existsSync(candidateIndex)) {
+        return res.sendFile(candidateIndex);
+      }
+    }
+  }
+
+  // Fallback direct paths
+  const directIndexCandidates = [
     path.resolve(process.cwd(), 'dist', 'index.html'),
     path.resolve(process.cwd(), 'apps', 'web', 'dist', 'index.html'),
-    path.resolve(process.cwd(), 'apps', 'api', 'dist', 'web', 'index.html'),
-    path.resolve(currentDir, '..', '..', 'web', 'dist', 'index.html'),
-    path.resolve(currentDir, '..', 'web', 'dist', 'index.html'),
-    path.resolve(currentDir, 'web', 'index.html'),
-    path.resolve(currentDir, 'dist', 'index.html'),
-    path.resolve(currentDir, 'index.html'),
-    path.resolve(currentDir, '..', 'dist', 'index.html'),
     path.resolve(process.cwd(), 'apps', 'web', 'index.html'),
-    '/app/dist/index.html',
-    '/app/apps/web/dist/index.html',
-    '/app/apps/api/dist/web/index.html',
+    path.resolve(currentDir, 'index.html'),
   ];
-
-  for (const candidate of candidateIndexPaths) {
-    if (candidate && fs.existsSync(candidate)) {
-      return res.sendFile(candidate);
+  for (const directIndex of directIndexCandidates) {
+    if (fs.existsSync(directIndex)) {
+      return res.sendFile(directIndex);
     }
   }
 

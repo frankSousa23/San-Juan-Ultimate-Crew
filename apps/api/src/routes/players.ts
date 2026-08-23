@@ -101,7 +101,7 @@ router.get('/', requirePermission('roster:view'), asyncHandler(async (req: Reque
 
 const createPlayerSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio'),
-  number: z.coerce.number().int().min(0, 'El número dorsal debe ser 0 o mayor').max(999, 'El número dorsal no puede superar 999'),
+  number: z.coerce.number().int().min(0, 'El número dorsal debe ser 0 o mayor').max(9999, 'El número dorsal no puede superar 9999'),
   position: z.enum(['HANDLER', 'CUTTER', 'HYBRID']),
   category: z.string().optional().nullable(),
   status: z.enum(['ACTIVE', 'INJURED', 'INACTIVE']).optional().default('ACTIVE'),

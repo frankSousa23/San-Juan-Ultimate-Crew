@@ -473,7 +473,7 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
   // Normalize email: trim whitespace and convert to lowercase
   const normalizedEmail = email.trim().toLowerCase()
   
-  let user = await prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { email: normalizedEmail },
     include: { team: true, roles: { include: { role: true } } },
   })
@@ -483,7 +483,7 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
   
   // Check if user is approved
   if (user.status === 'PENDING') {
-    return unauthorized(res, 'Tu cuenta está pendiente de aprobación por el Administrador.')
+    return unauthorized(res, 'Tu cuenta está pendiente de aprobación por el Administrador (pending admin approval).')
   }
   if (user.status === 'REJECTED') {
     return unauthorized(res, 'Tu cuenta ha sido rechazada. Contacta a un administrador.')

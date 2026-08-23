@@ -17,7 +17,7 @@ describe('Players CRUD', () => {
   })
 
   it('should create a player', async () => {
-    const number = Math.floor(1000 + Math.random() * 9000)
+    const number = Math.floor(100 + Math.random() * 800)
     let req = request(app).post('/api/players')
     if (authHeader) req = req.set('Authorization', authHeader)
     const r = await req

@@ -1,24 +1,18 @@
 import { beforeAll, afterAll, beforeEach } from 'vitest'
-import { PrismaClient } from '@prisma/client'
 import { execSync } from 'child_process'
 import process from 'node:process'
 import fs from 'fs'
 import path from 'path'
-
-import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
 import 'dotenv/config';
-
-const connectionString = process.env.DATABASE_URL;
-const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
-
-const prisma = new PrismaClient({ adapter })
+import { prisma } from '../lib/prisma.js'
 
 async function checkDatabaseConnection(): Promise<boolean> {
   try {
-    await prisma.$queryRaw`SELECT 1`
-    return true
+    if (typeof (prisma as any).$queryRaw === 'function') {
+      await (prisma as any).$queryRaw`SELECT 1`
+      return true
+    }
+    return false
   } catch {
     return false
   }
