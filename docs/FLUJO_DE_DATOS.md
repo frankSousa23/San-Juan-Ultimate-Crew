@@ -82,6 +82,7 @@ El sistema implementa un modelo estricto de control de acceso basado en roles (*
 | **coach** | Lectura/Escritura | Lectura/Escritura | Lectura/Escritura | No | Lectura | No | No |
 | **annotator** | Lectura | Lectura | Lectura/Escritura | No | Lectura | No | No |
 | **treasurer** | Lectura | Lectura | Lectura | Lectura/Escritura | Lectura | No | No |
+| **marketing** | Lectura | Lectura | Lectura | No | Lectura | No | No |
 | **player** | Lectura (propia edición) | Lectura / Asistencia | Lectura | No | Lectura | No | No |
 | **guest** | Lectura | Lectura | Lectura | No | Lectura | No | No |
 

@@ -175,6 +175,67 @@ export const RESOURCE_DOCS: Record<number | string, ResourceDocumentConfig> = {
       },
     ],
   },
+  6: {
+    id: 6,
+    title: 'Protocolo Oficial de Mesa Técnica y Anotación en Vivo',
+    category: 'Mesa Técnica y Arbitraje',
+    subtitle: 'Procedimientos Estandarizados para Registro Play-by-Play, Cronometraje y Rúbrica SOTG',
+    sections: [
+      {
+        heading: '1. Responsabilidades del Anotador Oficial',
+        body: [
+          '• Verificación de Rosters: Antes del inicio del encuentro, confirmar con los capitanes la lista de jugadores activos y sus respectivos dorsales.',
+          '• Registro Inmediato: Anotar en tiempo real cada gol indicando el número del anotador y del asistente (o marcar "Sin Asistencia / Callahan").',
+          '• Seguimiento de Defensas y Pérdidas: Registrar bloqueos defensivos (D) y clasificar la causa de pérdidas de posesión (Drop, Pase interceptado, Stall Out, Fuera de límites).',
+        ],
+      },
+      {
+        heading: '2. Cronometraje y Tiempos Fuera (Timeouts)',
+        body: [
+          '• Tiempos Fuera: Cada equipo dispone de dos tiempos fuera de 75 segundos por mitad (y 1 tiempo en tiempo extra / Universe Point).',
+          '• Mitad de Tiempo: Se declara cuando el primer equipo alcanza 8 puntos (partidos a 15) o al cumplirse el minuto 45/50 según el reglamento del torneo.',
+          '• Cap de Tiempo (Soft Cap y Hard Cap): Al sonar la señal del Soft Cap, se finaliza el punto actual y se suma 1 al marcador más alto para fijar el nuevo objetivo de victoria. En Hard Cap, el partido finaliza de inmediato si un equipo tiene ventaja.',
+        ],
+      },
+      {
+        heading: '3. Cierre de Acta y Evaluación de Espíritu de Juego (SOTG)',
+        body: [
+          '• Al culminar el partido, convocar a ambos capitanes a la mesa técnica para verificar el marcador final y validar las estadísticas individuales.',
+          '• Supervisar que ambos equipos entreguen la rúbrica SOTG de 5 criterios antes de que abandonen las inmediaciones del campo.',
+        ],
+      },
+    ],
+  },
+  7: {
+    id: 7,
+    title: 'Guía de Ejercicios (Drills), Condicionamiento y Formaciones Tácticas',
+    category: 'Entrenamiento Técnico',
+    subtitle: 'Planificación de Sesiones de Entrenamiento, Circuitos de Pase y Patrones Ofensivos / Defensivos',
+    sections: [
+      {
+        heading: '1. Drills Fundamentales de Lanzamiento y Calentamiento',
+        body: [
+          '• Kung Fu Throwing: Rutina de 10 minutos en parejas alternando lanzamientos rápidos de Revés, Forehand, Hammer y Scoober desde diferentes ángulos de pivote.',
+          '• Box Drill (Cuadrado de Cortes): 4 conos en cuadrado de 10x10 metros practicando cortes en "V", cambios de dirección explosivos y recepción a dos manos (Pancake Catch).',
+          '• Endzone Drill: Ejercicio de 3 vs 3 en espacio reducido para acelerar la toma de decisiones del manejador con conteo de stall rápido a 5 segundos.',
+        ],
+      },
+      {
+        heading: '2. Estructuras Ofensivas: Vertical Stack vs Horizontal Stack',
+        body: [
+          '• Vertical Stack: Facilita la lectura de cortes individuales. Requiere paciencia de los cortadores en la columna para no colapsar el espacio del lanzador.',
+          '• Horizontal Stack: Maximiza los espacios en los carriles laterales. Ideal frente a equipos con defensas individuales agresivas o en condiciones de poco viento.',
+        ],
+      },
+      {
+        heading: '3. Acondicionamiento Físico y Agilidad Específica para Ultimate',
+        body: [
+          '• Sprints de Intervalos de Alta Intensidad (HIIT): Repeticiones de 30 a 50 metros simulando puntos largos de rotación continua.',
+          '• Fortalecimiento de Tobillos y Rodillas: Ejercicios de propiocepción sobre superficies inestables para prevenir esguinces y lesiones de ligamento cruzado (LCA).',
+        ],
+      },
+    ],
+  },
 }
 
 export function generateResourcePdf(docId: number | string): jsPDF {
