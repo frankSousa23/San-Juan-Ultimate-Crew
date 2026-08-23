@@ -47,4 +47,5 @@ ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE 3000
 
-CMD ["node", "dist/server.cjs"]
+# Compatible start script: starts server.cjs if present, otherwise starts api/dist/index.js
+CMD ["node", "-e", "const fs=require('fs'); if(fs.existsSync('dist/server.cjs')){ require('./dist/server.cjs'); } else { require('./apps/api/dist/index.js'); }"]
