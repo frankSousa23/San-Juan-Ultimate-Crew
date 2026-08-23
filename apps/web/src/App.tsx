@@ -14,7 +14,7 @@ import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import Profile from './pages/Profile'
 import About from './pages/About'
-import ErrorPage from './pages/ErrorPage'
+import NotFoundPage from './pages/NotFoundPage'
 
 // Lazy loaded heavy components
 const Roster = lazy(() => import('./pages/Roster'))
@@ -102,22 +102,22 @@ function AppRoutes() {
         <Route path="/perfil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/about" element={<ProtectedRoute><About /></ProtectedRoute>} />
         
-        {/* Player, Captain, Coach, Directiva, Annotator & Admin Routes */}
-        <Route path="/roster" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'guest']}><Roster /></ProtectedRoute>} />
-        <Route path="/eventos" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'guest']}><Events /></ProtectedRoute>} />
-        <Route path="/anotaciones" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'guest']}><Annotations /></ProtectedRoute>} />
-        {/* Communications: accessible to all authenticated users, but with different permissions */}
+        {/* Player, Captain, Coach, Directiva, Annotator, Marketing, Treasurer & Admin Routes */}
+        <Route path="/roster" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest']}><Roster /></ProtectedRoute>} />
+        <Route path="/eventos" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest']}><Events /></ProtectedRoute>} />
+        <Route path="/anotaciones" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest']}><Annotations /></ProtectedRoute>} />
+        {/* Communications: accessible to all authenticated users */}
         <Route path="/comunicacion" element={<ProtectedRoute><Communications /></ProtectedRoute>} />
         {/* Statistics: accessible to all authenticated users (including guest for demo/showcase) */}
         <Route path="/estadisticas" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
-        <Route path="/lesiones" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'guest']}><Injuries /></ProtectedRoute>} />
-        <Route path="/rivales" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'guest']}><Rivals /></ProtectedRoute>} />
-        <Route path="/jugadas" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'guest']}><Plays /></ProtectedRoute>} />
-        <Route path="/roster-torneo" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'guest']}><RosterTorneo /></ProtectedRoute>} />
-        <Route path="/recursos" element={<ProtectedRoute requiredRole={['player', 'coach', 'admin', 'directiva', 'captain', 'guest']}><Resources /></ProtectedRoute>} />
+        <Route path="/lesiones" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest']}><Injuries /></ProtectedRoute>} />
+        <Route path="/rivales" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest']}><Rivals /></ProtectedRoute>} />
+        <Route path="/jugadas" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest']}><Plays /></ProtectedRoute>} />
+        <Route path="/roster-torneo" element={<ProtectedRoute requiredRole={['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest']}><RosterTorneo /></ProtectedRoute>} />
+        <Route path="/recursos" element={<ProtectedRoute requiredRole={['player', 'coach', 'admin', 'directiva', 'captain', 'marketing', 'treasurer', 'annotator', 'guest']}><Resources /></ProtectedRoute>} />
 
         {/* Treasurer & Admin Routes */}
-        <Route path="/finanzas" element={<ProtectedRoute requiredRole={['treasurer', 'admin', 'directiva']}><Finances /></ProtectedRoute>} />
+        <Route path="/finanzas" element={<ProtectedRoute requiredRole={['treasurer', 'admin', 'directiva', 'guest']}><Finances /></ProtectedRoute>} />
         <Route path="/admin/usuarios" element={<ProtectedRoute requiredRole={['admin', 'directiva']}><AdminUsers /></ProtectedRoute>} />
         <Route path="/admin/equipos" element={<ProtectedRoute requiredRole={['admin', 'directiva']}><AdminTeams /></ProtectedRoute>} />
         <Route path="/admin/feedback" element={<ProtectedRoute requiredRole="admin"><AdminFeedback /></ProtectedRoute>} />
@@ -130,8 +130,8 @@ function AppRoutes() {
         <Route path="/stats" element={<Navigate to="/estadisticas" replace />} />
 
         {/* Catch-all fallback */}
-        <Route path="/404" element={<ErrorPage code="404" title="Página No Encontrada" message="La página o vista que intentas acceder no existe en el sistema." />} />
-        <Route path="*" element={<ErrorPage code="404" title="Página No Encontrada" message="La página o recurso que buscas no existe o ha sido movido." />} />
+        <Route path="/404" element={<NotFoundPage code="404" title="Página No Encontrada" message="La página o vista que intentas acceder no existe en el sistema." />} />
+        <Route path="*" element={<NotFoundPage code="404" title="Página No Encontrada" message="La página o recurso que buscas no existe o ha sido movido." />} />
         </Routes>
       </Suspense>
     </Layout>

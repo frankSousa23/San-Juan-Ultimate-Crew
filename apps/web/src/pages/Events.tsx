@@ -555,14 +555,17 @@ export default function Events() {
     )}
 
     {detailEvent && (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setDetailEvent(null)}>
-        <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
-          <div className="bg-gradient-to-r from-amber-600 to-orange-700 p-4 text-white flex items-center justify-between">
+      <div 
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+        onClick={(e) => { if (e.target === e.currentTarget) setDetailEvent(null) }}
+      >
+        <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl my-auto animate-in fade-in zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
+          <div className="bg-gradient-to-r from-amber-600 to-orange-700 p-4 sm:p-5 text-white flex items-center justify-between">
             <div>
-              <div className="text-xs uppercase tracking-wider opacity-90">Detalles del Evento</div>
-              <div className="text-xl font-bold">{detailEvent.title}</div>
+              <div className="text-xs uppercase tracking-wider opacity-90 font-bold">Detalles del Evento</div>
+              <div className="text-xl font-bold mt-0.5">{detailEvent.title}</div>
             </div>
-            <button onClick={() => setDetailEvent(null)} className="text-white/80 hover:text-white text-xl font-bold p-1">✕</button>
+            <button onClick={() => setDetailEvent(null)} className="w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition text-sm font-bold">✕</button>
           </div>
           <div className="p-5 space-y-4 text-sm">
             <div className="bg-orange-50 p-4 rounded-xl flex items-center justify-between border border-orange-100">
@@ -651,8 +654,8 @@ export default function Events() {
         editTarget={editTarget}
         setCreateOpen={setCreateOpen}
         setEditTarget={setEditTarget}
-        createEvent={async (data) => { await createEvent(data) }}
-        updateEvent={async (id, data) => { await updateEvent(id, data) }}
+        createEvent={async (data) => { return await createEvent(data) }}
+        updateEvent={async (id, data) => { return await updateEvent(id, data) }}
       />
       {rescheduleTarget && (
         <RescheduleModal
@@ -681,12 +684,16 @@ export default function Events() {
         <AnnotationsModal eventItem={annotEvent} onClose={() => setAnnotEvent(null)} />
       )}
       {selectedDateEvents && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedDateEvents(null)}>
-          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-4">
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto" 
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedDateEvents(null) }}
+        >
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto overflow-hidden shadow-2xl my-auto animate-in fade-in zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-4 sm:p-5 flex items-center justify-between">
               <div className="text-lg font-bold">
                 Eventos del {selectedDateEvents.date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </div>
+              <button onClick={() => setSelectedDateEvents(null)} className="w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition text-sm font-bold">✕</button>
             </div>
             <div className="p-4 max-h-96 overflow-y-auto">
               {selectedDateEvents.events.length === 0 ? (
@@ -937,10 +944,14 @@ function AttendanceModal({ eventItem, onClose }: { eventItem: EventItem; onClose
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="bg-gradient-to-r from-teal-600 to-indigo-600 text-white p-4">
+    <div 
+      className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto" 
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto overflow-hidden shadow-2xl my-auto animate-in fade-in zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
+        <div className="bg-gradient-to-r from-teal-600 to-indigo-600 text-white p-4 sm:p-5 flex items-center justify-between">
           <div className="text-lg font-bold">Asistencia — {eventItem.title}</div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition text-sm font-bold">✕</button>
         </div>
         <div className="p-4">
           {loading && <div className="text-gray-600">Cargando…</div>}
@@ -1091,8 +1102,11 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
   const isFullDay = eventItem.type === 'FULL_DAY_OPEN' || eventItem.type === 'FULL_DAY_MIXTO'
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+    <div 
+      className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto" 
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl my-auto animate-in fade-in zoom-in-95 duration-150" onClick={e => e.stopPropagation()}>
         <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 sm:p-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>

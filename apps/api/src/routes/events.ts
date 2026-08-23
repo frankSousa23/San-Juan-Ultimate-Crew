@@ -96,23 +96,31 @@ router.get('/:id', asyncHandler(async (req: Request, res: Response) => {
   return success(res, event);
 }));
 
+const flexibleDateSchema = z.union([z.string(), z.date()]).refine(val => !isNaN(new Date(val).getTime()), {
+  message: 'Formato de fecha u hora no válido'
+}).transform(val => typeof val === 'string' ? new Date(val).toISOString() : val.toISOString());
+
+const flexibleOptionalDateSchema = z.union([z.string(), z.date()]).optional().nullable().refine(val => !val || !isNaN(new Date(val).getTime()), {
+  message: 'Formato de fecha u hora de fin no válido'
+}).transform(val => val ? (typeof val === 'string' ? new Date(val).toISOString() : val.toISOString()) : null);
+
 const createEventSchema = z.object({
-  title: z.string().min(1),
+  title: z.string().min(1, 'El título es obligatorio'),
   description: z.string().optional().nullable(),
   type: z.enum(['TRAINING', 'TOURNAMENT', 'SOCIAL', 'WORKSHOP', 'FULL_DAY_OPEN', 'FULL_DAY_MIXTO', 'AMISTOSO', 'MATCH']),
   status: z.enum(['UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED']).optional().default('UPCOMING'),
   location: z.string().optional().nullable(),
-  startsAt: z.string().datetime(),
-  endsAt: z.string().datetime().optional().nullable(),
-  parentId: z.number().optional().nullable(),
+  startsAt: flexibleDateSchema,
+  endsAt: flexibleOptionalDateSchema,
+  parentId: z.union([z.number(), z.string()]).optional().nullable().transform(v => v ? Number(v) : null),
   windSpeed: z.number().optional().nullable(),
-  windDirection: z.string().optional(),
-  teamId: z.number().optional().nullable(),
-  awayTeamId: z.number().optional().nullable(),
-  officialAnnotatorId: z.number().optional().nullable(),
+  windDirection: z.string().optional().nullable(),
+  teamId: z.union([z.number(), z.string()]).optional().nullable().transform(v => v ? Number(v) : null),
+  awayTeamId: z.union([z.number(), z.string()]).optional().nullable().transform(v => v ? Number(v) : null),
+  officialAnnotatorId: z.union([z.number(), z.string()]).optional().nullable().transform(v => v ? Number(v) : null),
   isAnnotatorLocked: z.boolean().optional(),
   matchCategory: z.enum(['GROUP_STAGE', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINALS', 'PLACEMENT']).optional().nullable(),
-  rivalId: z.number().optional().nullable(),
+  rivalId: z.union([z.number(), z.string()]).optional().nullable().transform(v => v ? Number(v) : null),
   isInternalScrimmage: z.boolean().optional(),
 });
 
@@ -134,49 +142,52 @@ const updateEventSchema = createEventSchema.partial();
  *               - title
  *               - type
  *               - startsAt
- *             properties:
- *               title:
- *                 type: string
- *               description:
- *                 type: string
- *               type:
- *                 type: string
- *                 enum: [TRAINING, TOURNAMENT, SOCIAL, WORKSHOP, FULL_DAY_OPEN, FULL_DAY_MIXTO, AMISTOSO]
- *               status:
- *                 type: string
- *                 enum: [UPCOMING, ONGOING, COMPLETED, CANCELLED]
- *                 default: UPCOMING
- *               location:
- *                 type: string
- *               startsAt:
- *                 type: string
- *                 format: date-time
- *               endsAt:
- *                 type: string
- *                 format: date-time
- *               parentId:
- *                 type: integer
- *               windSpeed:
- *                 type: number
- *               windDirection:
- *                 type: string
  *     responses:
  *       201:
  *         description: Event created successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Event'
  *       400:
  *         description: Invalid input
  */
 router.post('/', requirePermission('events:manage'), validateBody(createEventSchema), asyncHandler(async (req: Request, res: Response) => {
   const payload = req.body;
+
+  if (isGuestRequest(req)) {
+    const newGuestEvent: any = {
+      id: Date.now(),
+      title: payload.title,
+      description: payload.description || '',
+      type: payload.type,
+      status: payload.status || 'UPCOMING',
+      location: payload.location || 'Cancha Principal',
+      startsAt: payload.startsAt,
+      endsAt: payload.endsAt || null,
+      teamId: payload.teamId || 1,
+      team: { id: payload.teamId || 1, name: 'Warao Ultimate Club', color: '#f59e0b', logoUrl: null },
+      awayTeamId: payload.awayTeamId || null,
+      awayTeam: payload.awayTeamId ? { id: payload.awayTeamId, name: 'Equipo Rival', color: '#b91c1c', logoUrl: null } : null,
+      rivalId: payload.rivalId || null,
+      matchCategory: payload.matchCategory || null,
+      isInternalScrimmage: Boolean(payload.isInternalScrimmage),
+      officialAnnotatorId: payload.officialAnnotatorId || null,
+      officialAnnotator: payload.officialAnnotatorId ? { id: payload.officialAnnotatorId, name: 'Franco Rivas (Mesa)', email: 'franco@sigedivo.com' } : null,
+      isAnnotatorLocked: Boolean(payload.isAnnotatorLocked),
+      parentId: payload.parentId || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      children: [],
+      participants: [],
+      attendances: [],
+      annotations: [],
+    };
+    GUEST_EVENTS.unshift(newGuestEvent);
+    return created(res, newGuestEvent);
+  }
+
   const u = (req as any).user;
-  const isAdmin = u?.roles?.includes('admin');
+  const isAdmin = u?.roles?.includes('admin') || u?.roles?.includes('directiva');
   const userTeamId = u?.teamId || (req as any).userTeamId;
   
-  const assignedTeamId = payload.teamId !== undefined 
+  const assignedTeamId = payload.teamId !== undefined && payload.teamId !== null
     ? (payload.teamId ? Number(payload.teamId) : null)
     : (!isAdmin && userTeamId ? Number(userTeamId) : null);
 
@@ -184,16 +195,28 @@ router.post('/', requirePermission('events:manage'), validateBody(createEventSch
     data: { 
       ...payload, 
       teamId: assignedTeamId,
+      awayTeamId: payload.awayTeamId ? Number(payload.awayTeamId) : null,
+      parentId: payload.parentId ? Number(payload.parentId) : null,
+      rivalId: payload.rivalId ? Number(payload.rivalId) : null,
+      officialAnnotatorId: payload.officialAnnotatorId ? Number(payload.officialAnnotatorId) : null,
       startsAt: new Date(payload.startsAt), 
       endsAt: payload.endsAt ? new Date(payload.endsAt) : undefined 
-    } 
+    },
+    include: {
+      team: { select: { id: true, name: true, color: true, logoUrl: true } },
+      awayTeam: { select: { id: true, name: true, color: true, logoUrl: true } },
+      officialAnnotator: { select: { id: true, name: true, email: true } },
+      children: true,
+    }
   });
+
   const audit = createAuditHelper(req);
   await audit.log('CREATE', 'Event', event.id, {
     type: event.type,
     title: event.title,
     teamId: event.teamId,
   });
+
   return created(res, event);
 }));
 
@@ -203,13 +226,13 @@ const batchFixtureItemSchema = z.object({
   type: z.enum(['MATCH', 'AMISTOSO', 'TRAINING', 'TOURNAMENT', 'SOCIAL', 'WORKSHOP', 'FULL_DAY_OPEN', 'FULL_DAY_MIXTO']).optional().default('MATCH'),
   status: z.enum(['UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED']).optional().default('UPCOMING'),
   location: z.string().optional().nullable(),
-  startsAt: z.string().datetime(),
-  endsAt: z.string().datetime().optional().nullable(),
-  teamId: z.number().optional().nullable(),
-  awayTeamId: z.number().optional().nullable(),
-  rivalId: z.number().optional().nullable(),
+  startsAt: flexibleDateSchema,
+  endsAt: flexibleOptionalDateSchema,
+  teamId: z.union([z.number(), z.string()]).optional().nullable().transform(v => v ? Number(v) : null),
+  awayTeamId: z.union([z.number(), z.string()]).optional().nullable().transform(v => v ? Number(v) : null),
+  rivalId: z.union([z.number(), z.string()]).optional().nullable().transform(v => v ? Number(v) : null),
   matchCategory: z.enum(['GROUP_STAGE', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINALS', 'PLACEMENT']).optional().nullable(),
-  officialAnnotatorId: z.number().optional().nullable(),
+  officialAnnotatorId: z.union([z.number(), z.string()]).optional().nullable().transform(v => v ? Number(v) : null),
   isAnnotatorLocked: z.boolean().optional(),
   isInternalScrimmage: z.boolean().optional(),
 });
@@ -229,6 +252,51 @@ const batchFixturesSchema = z.object({
  */
 router.post('/tournament/:id/fixtures', requirePermission('events:manage'), asyncHandler(async (req: Request, res: Response) => {
   const tournamentId = Number(req.params.id);
+
+  if (isGuestRequest(req)) {
+    const tournament = GUEST_EVENTS.find(e => e.id === tournamentId);
+    if (!tournament) return notFound(res, 'Tournament not found');
+
+    const parsed = batchFixturesSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Datos de cruces inválidos', details: parsed.error.issues });
+    }
+
+    const { fixtures } = parsed.data;
+    const createdMatches = fixtures.map((f, idx) => {
+      const match = {
+        id: Date.now() + idx + 1,
+        title: f.title,
+        description: f.description || `Partido correspondiente a ${tournament.title}`,
+        type: 'MATCH',
+        status: f.status || 'UPCOMING',
+        location: f.location || tournament.location || 'Cancha Principal',
+        startsAt: f.startsAt,
+        endsAt: f.endsAt || new Date(new Date(f.startsAt).getTime() + 75 * 60 * 1000).toISOString(),
+        parentId: tournamentId,
+        teamId: f.teamId || 1,
+        team: { id: f.teamId || 1, name: 'Warao Ultimate Club', color: '#f59e0b', logoUrl: null },
+        awayTeamId: f.awayTeamId || null,
+        awayTeam: f.awayTeamId ? { id: f.awayTeamId, name: 'Equipo Rival', color: '#b91c1c', logoUrl: null } : null,
+        rivalId: f.rivalId || null,
+        matchCategory: f.matchCategory || 'GROUP_STAGE',
+        officialAnnotatorId: f.officialAnnotatorId || tournament.officialAnnotatorId || null,
+        isAnnotatorLocked: f.isAnnotatorLocked !== undefined ? f.isAnnotatorLocked : Boolean(tournament.isAnnotatorLocked),
+        isInternalScrimmage: Boolean(f.isInternalScrimmage),
+        children: []
+      };
+      if (!tournament.children) tournament.children = [];
+      tournament.children.push(match);
+      GUEST_EVENTS.push(match);
+      return match;
+    });
+
+    return created(res, {
+      message: `${createdMatches.length} partidos y cruces programados con éxito para ${tournament.title}`,
+      matches: createdMatches
+    });
+  }
+
   const tournament = await prisma.event.findUnique({ where: { id: tournamentId } });
   if (!tournament) return notFound(res, 'Tournament not found');
 
@@ -283,76 +351,48 @@ const eventIdSchema = z.object({
   id: z.coerce.number().int().positive()
 });
 
-/**
- * @swagger
- * /api/events/{id}:
- *   put:
- *     summary: Update an event
- *     tags: [Events]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *               description:
- *                 type: string
- *               type:
- *                 type: string
- *                 enum: [TRAINING, TOURNAMENT, SOCIAL, WORKSHOP, FULL_DAY_OPEN, FULL_DAY_MIXTO, AMISTOSO]
- *               status:
- *                 type: string
- *                 enum: [UPCOMING, ONGOING, COMPLETED, CANCELLED]
- *               location:
- *                 type: string
- *               startsAt:
- *                 type: string
- *                 format: date-time
- *               endsAt:
- *                 type: string
- *                 format: date-time
- *               parentId:
- *                 type: integer
- *               windSpeed:
- *                 type: number
- *               windDirection:
- *                 type: string
- *     responses:
- *       200:
- *         description: Event updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Event'
- *       400:
- *         description: Invalid input
- *       404:
- *         description: Event not found
- */
 router.put('/:id', requirePermission('events:manage'), validateParams(eventIdSchema), validateBody(updateEventSchema), asyncHandler(async (req: Request, res: Response) => {
   const id = Number(req.params.id);
   const payload = req.body;
+
+  if (isGuestRequest(req)) {
+    const idx = GUEST_EVENTS.findIndex(e => e.id === id);
+    if (idx === -1) return notFound(res, 'Event not found');
+    GUEST_EVENTS[idx] = {
+      ...GUEST_EVENTS[idx],
+      ...payload,
+      startsAt: payload.startsAt || GUEST_EVENTS[idx].startsAt,
+      endsAt: payload.endsAt !== undefined ? payload.endsAt : GUEST_EVENTS[idx].endsAt,
+      updatedAt: new Date()
+    };
+    return updated(res, GUEST_EVENTS[idx]);
+  }
+
   const event = await prisma.event.update({
     where: { id },
     data: {
       ...payload,
       startsAt: payload.startsAt ? new Date(payload.startsAt) : undefined,
-      endsAt: payload.endsAt ? new Date(payload.endsAt) : undefined,
+      endsAt: payload.endsAt !== undefined ? (payload.endsAt ? new Date(payload.endsAt) : null) : undefined,
+      teamId: payload.teamId !== undefined ? (payload.teamId ? Number(payload.teamId) : null) : undefined,
+      awayTeamId: payload.awayTeamId !== undefined ? (payload.awayTeamId ? Number(payload.awayTeamId) : null) : undefined,
+      rivalId: payload.rivalId !== undefined ? (payload.rivalId ? Number(payload.rivalId) : null) : undefined,
+      officialAnnotatorId: payload.officialAnnotatorId !== undefined ? (payload.officialAnnotatorId ? Number(payload.officialAnnotatorId) : null) : undefined,
+      parentId: payload.parentId !== undefined ? (payload.parentId ? Number(payload.parentId) : null) : undefined,
     },
+    include: {
+      team: { select: { id: true, name: true, color: true, logoUrl: true } },
+      awayTeam: { select: { id: true, name: true, color: true, logoUrl: true } },
+      officialAnnotator: { select: { id: true, name: true, email: true } },
+      children: true,
+    }
   });
+
   const audit = createAuditHelper(req);
   await audit.log('UPDATE', 'Event', id, {
     changes: Object.keys(payload),
   });
+
   return updated(res, event);
 }));
 

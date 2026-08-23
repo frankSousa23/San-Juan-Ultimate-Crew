@@ -40,11 +40,24 @@ export default function TournamentBracket({
   const [viewLayout, setViewLayout] = useState<'cards' | 'table'>('cards')
   const [deletingId, setDeletingId] = useState<number | null>(null)
 
+  const safeFormatDate = (dateVal: any, formatStr: string = "d MMM, h:mm a") => {
+    if (!dateVal) return 'Por definir'
+    try {
+      const d = new Date(dateVal)
+      if (isNaN(d.getTime())) return 'Fecha pendiente'
+      return format(d, formatStr, { locale: es })
+    } catch {
+      return 'Fecha pendiente'
+    }
+  }
+
   // Sort matches chronologically
   const sortedMatches = useMemo(() => {
-    return [...matches].sort(
-      (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()
-    )
+    return [...matches].sort((a, b) => {
+      const timeA = a.startsAt ? new Date(a.startsAt).getTime() : 0
+      const timeB = b.startsAt ? new Date(b.startsAt).getTime() : 0
+      return (isNaN(timeA) ? 0 : timeA) - (isNaN(timeB) ? 0 : timeB)
+    })
   }, [matches])
 
   // Filtered by Phase
@@ -445,7 +458,7 @@ export default function TournamentBracket({
                       {/* Time & Court Details */}
                       <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-gray-600">
                         <span className="font-medium flex items-center gap-1 text-slate-700">
-                          🕒 {format(new Date(m.startsAt), "d MMM, h:mm a", { locale: es })}
+                          🕒 {safeFormatDate(m.startsAt)}
                         </span>
                         {m.location && (
                           <span className="text-slate-500 font-medium truncate max-w-[120px]">
@@ -555,7 +568,7 @@ export default function TournamentBracket({
                             </div>
                           </td>
                           <td className="px-4 py-3 text-gray-600 font-medium whitespace-nowrap">
-                            {format(new Date(m.startsAt), "d MMM, h:mm a", { locale: es })}
+                            {safeFormatDate(m.startsAt)}
                           </td>
                           <td className="px-4 py-3 text-gray-600">{m.location || '-'}</td>
                           <td className="px-4 py-3 text-center">

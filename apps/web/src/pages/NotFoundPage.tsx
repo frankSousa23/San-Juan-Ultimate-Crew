@@ -1,13 +1,13 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-interface ErrorPageProps {
+interface NotFoundPageProps {
   code?: string | number;
   title?: string;
   message?: string;
 }
 
-export const ErrorPage: React.FC<ErrorPageProps> = ({
+export const NotFoundPage: React.FC<NotFoundPageProps> = ({
   code = '404',
   title = 'Página No Encontrada',
   message = 'Lo sentimos, la página o recurso que buscas no existe o ha sido movido.',
@@ -23,7 +23,7 @@ export const ErrorPage: React.FC<ErrorPageProps> = ({
 
         <div className="space-y-2">
           <span className="inline-block px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-mono text-sm font-bold rounded-full">
-            Error {code}
+            Estado {code}
           </span>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             {title}
@@ -57,4 +57,4 @@ export const ErrorPage: React.FC<ErrorPageProps> = ({
   );
 };
 
-export default ErrorPage;
+export default NotFoundPage;

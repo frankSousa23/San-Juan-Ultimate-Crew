@@ -37,9 +37,9 @@ const OFFICIAL_PRESETS: CategoryPreset[] = [
   { label: '🥏 Caimanera Interno', type: 'TRAINING', titlePrefix: 'Caimanera Interno', isInternalScrimmage: true, description: 'Partido de práctica entre escuadras internas (Claro vs Oscuro). Anotación rápida habilitada para cualquier jugador.', color: 'bg-amber-50 text-amber-800 border-amber-200' },
 ]
 
-export default function EventForm({ mode, initial, onCancel, onSubmit, onSubmitAndAnnotate }: Props) {
+export default function EventForm({ mode, initial, onCancel, onSubmit, onSubmitAndAnnotate, onSubmitAndPlanTournament }: Props) {
   const [form, setForm] = useState<CreateEventInput | UpdateEventInput>({
-    title: '', description: '', type: 'TRAINING', status: 'UPCOMING', location: '', startsAt: '', endsAt: '', isInternalScrimmage: false, rivalId: null, matchCategory: null, parentId: null, officialAnnotatorId: null, isAnnotatorLocked: false
+    title: '', description: '', type: 'TRAINING', status: 'UPCOMING', location: '', startsAt: '', endsAt: '', isInternalScrimmage: false, rivalId: null, matchCategory: null, parentId: null, officialAnnotatorId: null, isAnnotatorLocked: false, teamId: null, awayTeamId: null
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -51,7 +51,9 @@ export default function EventForm({ mode, initial, onCancel, onSubmit, onSubmitA
   useEffect(() => {
     rivalsApi.list().then(setRivals).catch(() => {})
     eventsApi.list().then(all => {
-      setTournaments(all.filter(e => e.type === 'TOURNAMENT' || e.type === 'FULL_DAY_OPEN' || e.type === 'FULL_DAY_MIXTO'))
+      if (Array.isArray(all)) {
+        setTournaments(all.filter(e => e.type === 'TOURNAMENT' || e.type === 'FULL_DAY_OPEN' || e.type === 'FULL_DAY_MIXTO'))
+      }
     }).catch(() => {})
     adminUsersApi.list().then(setUsers).catch(() => {})
     teamsApi.list().then(setTeams).catch(() => {})
@@ -65,8 +67,8 @@ export default function EventForm({ mode, initial, onCancel, onSubmit, onSubmitA
         type: initial.type,
         status: initial.status,
         location: initial.location ?? '',
-        startsAt: initial.startsAt ? initial.startsAt.slice(0,16) : '',
-        endsAt: initial.endsAt ? initial.endsAt.slice(0,16) : '',
+        startsAt: initial.startsAt ? new Date(new Date(initial.startsAt).getTime() - new Date(initial.startsAt).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '',
+        endsAt: initial.endsAt ? new Date(new Date(initial.endsAt).getTime() - new Date(initial.endsAt).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '',
         isInternalScrimmage: initial.isInternalScrimmage ?? false,
         rivalId: initial.rivalId ?? null,
         matchCategory: initial.matchCategory ?? null,
@@ -77,38 +79,103 @@ export default function EventForm({ mode, initial, onCancel, onSubmit, onSubmitA
         awayTeamId: initial.awayTeamId ?? null,
       })
     } else {
-      setForm({ title: '', description: '', type: 'TRAINING', status: 'UPCOMING', location: '', startsAt: '', endsAt: '', isInternalScrimmage: false, rivalId: null, matchCategory: null, parentId: null, officialAnnotatorId: null, isAnnotatorLocked: false, teamId: null, awayTeamId: null })
+      const now = new Date()
+      const tzOffset = now.getTimezoneOffset() * 60000
+      const localStartsAt = new Date(now.getTime() - tzOffset).toISOString().slice(0, 16)
+      const localEndsAt = new Date(now.getTime() + 2 * 3600 * 1000 - tzOffset).toISOString().slice(0, 16)
+      setForm({ 
+        title: '', 
+        description: '', 
+        type: 'TRAINING', 
+        status: 'UPCOMING', 
+        location: 'Cancha Principal', 
+        startsAt: localStartsAt, 
+        endsAt: localEndsAt, 
+        isInternalScrimmage: false, 
+        rivalId: null, 
+        matchCategory: null, 
+        parentId: null, 
+        officialAnnotatorId: null, 
+        isAnnotatorLocked: false, 
+        teamId: null, 
+        awayTeamId: null 
+      })
     }
   }, [mode, initial])
 
   const handleChange = <K extends keyof (CreateEventInput & UpdateEventInput)>(
     k: K,
     v: (CreateEventInput & UpdateEventInput)[K]
-  ) => setForm(prev => ({ ...prev, [k]: v }))
+  ) => {
+    setForm(prev => {
+      const updated = { ...prev, [k]: v }
+      // Si cambia de tipo a torneo/full day, sugerir título si está vacío
+      if (k === 'type') {
+        const t = v as EventType
+        if (!prev.title || prev.title.startsWith('Torneo') || prev.title.startsWith('Full Day') || prev.title.startsWith('Entrenamiento') || prev.title.startsWith('Amistoso') || prev.title.startsWith('Partido')) {
+          if (t === 'TOURNAMENT') updated.title = 'Torneo Oficial de Ultimate'
+          else if (t === 'FULL_DAY_OPEN') updated.title = 'Jornada Full Day Open'
+          else if (t === 'FULL_DAY_MIXTO') updated.title = 'Jornada Full Day Mixto'
+          else if (t === 'AMISTOSO') updated.title = 'Partido Amistoso'
+          else if (t === 'MATCH') updated.title = 'Partido Oficial'
+          else if (t === 'TRAINING') updated.title = 'Entrenamiento / Caimanera'
+          else if (t === 'WORKSHOP') updated.title = 'Clínica / Taller Técnico'
+          else if (t === 'SOCIAL') updated.title = 'Actividad Recreativa / Social'
+        }
+      }
+      return updated
+    })
+  }
 
   const applyPreset = (preset: CategoryPreset) => {
     setForm(prev => ({
       ...prev,
       type: preset.type,
-      title: prev.title ? prev.title : preset.titlePrefix,
-      description: prev.description ? prev.description : preset.description,
+      title: preset.titlePrefix,
+      description: preset.description,
       isInternalScrimmage: preset.isInternalScrimmage ?? false,
     }))
   }
 
   const buildPayload = (): CreateEventInput | UpdateEventInput => {
-    const payload: CreateEventInput | UpdateEventInput = { ...form }
+    const payload: any = { ...form }
+    
+    // Fallback title if blank
+    if (!payload.title || !payload.title.trim()) {
+      payload.title = payload.type === 'TOURNAMENT' ? 'Torneo Oficial' :
+                      payload.type === 'FULL_DAY_OPEN' ? 'Jornada Full Day Open' :
+                      payload.type === 'FULL_DAY_MIXTO' ? 'Jornada Full Day Mixto' :
+                      payload.type === 'MATCH' ? 'Partido Oficial' :
+                      payload.type === 'AMISTOSO' ? 'Partido Amistoso' : 'Entrenamiento';
+    }
+
+    // Process startsAt safely
     if (payload.startsAt) {
-      payload.startsAt = new Date(payload.startsAt as string).toISOString()
+      const d = new Date(payload.startsAt)
+      payload.startsAt = isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString()
+    } else {
+      payload.startsAt = new Date().toISOString()
     }
-    if (payload.endsAt) {
-      payload.endsAt = new Date(payload.endsAt as string).toISOString()
+
+    // Process endsAt safely
+    if (payload.endsAt && String(payload.endsAt).trim()) {
+      const d = new Date(payload.endsAt)
+      payload.endsAt = isNaN(d.getTime()) ? null : d.toISOString()
+    } else {
+      payload.endsAt = null
     }
+
+    // Convert IDs to numbers or null
+    payload.teamId = payload.teamId ? Number(payload.teamId) : null
+    payload.awayTeamId = payload.awayTeamId ? Number(payload.awayTeamId) : null
+    payload.rivalId = payload.rivalId ? Number(payload.rivalId) : null
+    payload.parentId = payload.parentId ? Number(payload.parentId) : null
+    payload.officialAnnotatorId = payload.officialAnnotatorId ? Number(payload.officialAnnotatorId) : null
+
     if (mode === 'edit') {
       Object.keys(payload).forEach(k => {
-        const key = k as keyof typeof payload
-        if (payload[key] === '' || payload[key] === undefined) {
-          delete (payload as Record<string, unknown>)[key]
+        if (payload[k] === '' || payload[k] === undefined) {
+          delete payload[k]
         }
       })
     }

@@ -30,11 +30,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     // Statistics: accessible to all authenticated users (including guest for demo/showcase)
     { name: 'Estadísticas', href: '/estadisticas', icon: '📊', roles: [] },
     
-    { name: 'Lesiones', href: '/lesiones', icon: '🏥', roles: ['player', 'captain', 'coach', 'admin', 'directiva', 'guest'] },
-    { name: 'Equipos Rivales', href: '/rivales', icon: '⚔️', roles: ['player', 'captain', 'admin', 'coach', 'directiva', 'annotator', 'guest'] },
-    { name: 'Jugadas', href: '/jugadas', icon: '🎯', roles: ['player', 'captain', 'coach', 'admin', 'directiva', 'guest'] },
-    { name: 'Roster Torneo', href: '/roster-torneo', icon: '🏆', roles: ['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'guest'] },
-    { name: 'Recursos', href: '/recursos', icon: '📁', roles: ['player', 'coach', 'admin', 'marketing', 'guest', 'directiva', 'captain'] },
+    { name: 'Lesiones', href: '/lesiones', icon: '🏥', roles: ['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest'] },
+    { name: 'Equipos Rivales', href: '/rivales', icon: '⚔️', roles: ['player', 'captain', 'admin', 'coach', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest'] },
+    { name: 'Jugadas', href: '/jugadas', icon: '🎯', roles: ['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest'] },
+    { name: 'Roster Torneo', href: '/roster-torneo', icon: '🏆', roles: ['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest'] },
+    { name: 'Recursos', href: '/recursos', icon: '📁', roles: ['player', 'coach', 'admin', 'marketing', 'guest', 'directiva', 'captain', 'treasurer', 'annotator'] },
     
     // Treasurer & Admin
     { name: 'Finanzas', href: '/finanzas', icon: '💰', roles: ['treasurer', 'admin', 'directiva', 'guest'] },

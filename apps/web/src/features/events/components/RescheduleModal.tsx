@@ -80,9 +80,27 @@ export default function RescheduleModal({ event, onClose, onSave }: Props) {
     }
   }
 
+  const [backdropMouseDown, setBackdropMouseDown] = useState(false)
+
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-gray-100" onClick={e => e.stopPropagation()}>
+    <div 
+      className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) setBackdropMouseDown(true)
+        else setBackdropMouseDown(false)
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && backdropMouseDown) {
+          onClose()
+        }
+        setBackdropMouseDown(false)
+      }}
+    >
+      <div 
+        className="bg-white rounded-2xl max-w-lg w-full max-h-[92vh] flex flex-col shadow-2xl border border-gray-100 my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-150" 
+        onClick={e => e.stopPropagation()}
+        onMouseDown={e => e.stopPropagation()}
+      >
         <div className="bg-gradient-to-r from-amber-600 to-indigo-600 p-4 text-white">
           <div className="flex items-center justify-between">
             <span className="text-xs uppercase tracking-wider font-semibold opacity-90">Mesa Técnica & Control de Eventualidades</span>

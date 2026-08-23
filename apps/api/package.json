@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "npm --prefix ../web run build || (npm -w apps/web run build) || true; tsc -p tsconfig.json",
+    "build": "npx prisma generate && tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "wait:health": "node ../../local/scripts/api/wait-health.cjs",
     "prisma:generate": "prisma generate",
