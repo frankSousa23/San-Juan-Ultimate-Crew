@@ -172,9 +172,87 @@ class InMemoryDB {
     assignPerms('treasurer', ['finance:manage', 'finance:view', 'roster:view', 'events:view', 'statistics:view']);
     assignPerms('guest', ['events:view', 'roster:view', 'injuries:view', 'rivals:view', 'plays:view', 'resources:view', 'statistics:view', 'annotations:view']);
 
-    // 3. Equipos del Ecosistema Beta Multi-Equipo
-    this.teams = [];
-    this.nextId['team'] = 1;
+    // 3. Equipos del Ecosistema Multi-Equipo por Defecto
+    this.teams = [
+      {
+        id: 1,
+        name: 'El Pueblito',
+        tag: 'EPB',
+        categories: 'Open Masculino',
+        color: '#111827',
+        notes: 'Equipo Open Masculino - Color representativo Negro',
+        logoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 2,
+        name: 'Warao',
+        tag: 'WAR',
+        categories: 'Open Masculino',
+        color: '#1f2937',
+        notes: 'Equipo Open Masculino - Color representativo Negro',
+        logoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 3,
+        name: 'Medusa',
+        tag: 'MED',
+        categories: 'Open Femenino y Mixto',
+        color: '#7e22ce',
+        notes: 'Equipo Open Femenino y Mixto - Color representativo Púrpura',
+        logoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 4,
+        name: 'MotherFlowers',
+        tag: 'MOF',
+        categories: 'Open Femenino',
+        color: '#ec4899',
+        notes: 'Equipo Open Femenino - Color representativo Rosado',
+        logoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 5,
+        name: 'Raza',
+        tag: 'RAZ',
+        categories: 'Open Masculino',
+        color: '#dc2626',
+        notes: 'Equipo Open Masculino - Color representativo Rojo',
+        logoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 6,
+        name: 'Harakiri',
+        tag: 'HKR',
+        categories: 'Open Masculino',
+        color: '#800020',
+        notes: 'Equipo Open Masculino - Color representativo Vinotinto',
+        logoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 7,
+        name: 'Ad Astra',
+        tag: 'AST',
+        categories: 'Mixto',
+        color: '#1d4ed8',
+        notes: 'Equipo Mixto - Color representativo Azul',
+        logoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+    this.nextId['team'] = 8;
 
     // 4. Players (Roster por Equipo + Agentes Libres / Sin Equipo)
     this.players = [];
@@ -204,8 +282,36 @@ class InMemoryDB {
     });
 
     // 6. Rivales y Jugadores Oponentes
-    this.rivals = [];
-    this.nextId['rival'] = 1;
+    this.rivals = [
+      {
+        id: 1,
+        name: 'Comunidad El Oso',
+        strengths: 'Juego vertical rápido, defensa de zona cerrada',
+        weaknesses: 'Pases forzados bajo presión en la línea final',
+        lastPlayedAt: null,
+        notes: 'Rival tradicional categoría Open y Mixto',
+        createdAt: new Date(),
+      },
+      {
+        id: 2,
+        name: 'Revolution Ultimate',
+        strengths: 'Gran precisión en hucks largos, alto atletismo',
+        weaknesses: 'Desgaste físico en segundas mitades de torneos',
+        lastPlayedAt: null,
+        notes: 'Equipo élite de referencia',
+        createdAt: new Date(),
+      },
+      {
+        id: 3,
+        name: 'Discolocos',
+        strengths: 'Handlers experimentados con lanzamientos invertidos (scoobers/hammers)',
+        weaknesses: 'Vulnerables a marcas hombre a hombre asfixiantes',
+        lastPlayedAt: null,
+        notes: 'Rival de circuito regional',
+        createdAt: new Date(),
+      },
+    ];
+    this.nextId['rival'] = 4;
 
     this.rivalPlayers = [];
     this.nextId['rivalPlayer'] = 1;

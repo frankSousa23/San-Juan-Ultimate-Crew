@@ -8,7 +8,7 @@ export const Register: React.FC = () => {
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [selectedTeamId, setSelectedTeamId] = useState<string>('')
-  const [availableTeams, setAvailableTeams] = useState<Array<{ id: number; name: string }>>([])
+  const [availableTeams, setAvailableTeams] = useState<Array<{ id: number; name: string; tag?: string | null; categories?: string | null; color?: string | null; logoUrl?: string | null }>>([])
   const [willBePlayer, setWillBePlayer] = useState(false)
   const [playerNumber, setPlayerNumber] = useState('')
   const [playerPosition, setPlayerPosition] = useState<'HANDLER' | 'CUTTER' | 'HYBRID'>('CUTTER')
@@ -73,13 +73,13 @@ export const Register: React.FC = () => {
     
     // Validate player data if willBePlayer is true
     if (willBePlayer) {
-      if (!playerNumber || !playerPosition) {
-        setError('Si te registrarás como jugador, el número y la posición son requeridos')
+      if (playerNumber === '' || !playerPosition) {
+        setError('Si te registrarás como jugador, el número dorsal y la posición son requeridos')
         return
       }
       const num = Number(playerNumber)
-      if (!Number.isInteger(num) || num <= 0) {
-        setError('El número de jugador debe ser un número entero positivo')
+      if (!Number.isInteger(num) || num < 0 || num > 999) {
+        setError('El número de dorsal debe ser un número entero entre 0 y 999')
         return
       }
     }
@@ -117,6 +117,8 @@ export const Register: React.FC = () => {
       setIsLoading(false)
     }
   }
+
+  const activeSelectedTeam = availableTeams.find(t => String(t.id) === selectedTeamId)
 
   if (success) {
     return (
@@ -214,20 +216,41 @@ export const Register: React.FC = () => {
           </label>
           <select
             id="register-team"
-            className="w-full border rounded px-3 py-2 text-sm bg-white"
+            className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500"
             value={selectedTeamId}
             onChange={e => setSelectedTeamId(e.target.value)}
           >
-            <option value="">🏃 Agente Libre / Sin equipo fijo (Pruebas / Refuerzo)</option>
+            <option value="">🏃 Agente Libre / Sin equipo fijo (Refuerzo / Pruebas)</option>
             {availableTeams.map(t => (
               <option key={t.id} value={t.id}>
-                🛡️ {t.name}
+                🛡️ {t.name} {t.categories ? `(${t.categories})` : ''} {t.tag ? `[${t.tag}]` : ''}
               </option>
             ))}
           </select>
-          <p className="text-xs text-gray-500 mt-1">
-            Los agentes libres pueden elegir cualquier dorsal y llevar sus estadísticas personales o actuar como refuerzo.
-          </p>
+          
+          {activeSelectedTeam ? (
+            <div className="mt-2 flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded-md text-xs">
+              <div 
+                className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0" 
+                style={{ backgroundColor: activeSelectedTeam.color || '#4f46e5' }}
+              />
+              <span className="font-semibold text-gray-800">{activeSelectedTeam.name}</span>
+              {activeSelectedTeam.tag && (
+                <span className="px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded font-mono text-[10px]">
+                  {activeSelectedTeam.tag}
+                </span>
+              )}
+              {activeSelectedTeam.categories && (
+                <span className="text-gray-500 truncate">
+                  • {activeSelectedTeam.categories}
+                </span>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500 mt-1">
+              Los agentes libres pueden elegir cualquier dorsal y llevar sus estadísticas personales o actuar como refuerzo en eventos.
+            </p>
+          )}
         </div>
         
         <div className="border-t pt-3 mt-3">
@@ -251,23 +274,27 @@ export const Register: React.FC = () => {
             
             <div>
               <label htmlFor="player-number" className="block text-sm font-medium mb-1">
-                Número de Jugador <span className="text-red-500">*</span>
+                Número Dorsal <span className="text-red-500">*</span>
               </label>
               <input
                 id="player-number"
                 type="number"
-                min="1"
+                min="0"
+                max="999"
                 required={willBePlayer}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border rounded px-3 py-2 text-sm bg-white"
                 value={playerNumber}
                 onChange={e => {
                   const val = e.target.value
-                  if (val === '' || (Number(val) > 0 && Number.isInteger(Number(val)))) {
+                  if (val === '' || (Number(val) >= 0 && Number.isInteger(Number(val)) && Number(val) <= 999)) {
                     setPlayerNumber(val)
                   }
                 }}
-                placeholder="Ej: 7"
+                placeholder="Ej: 0, 7, 23, 99"
               />
+              <p className="text-[11px] text-gray-500 mt-1">
+                Dorsal asignado al jugador (0 al 999).
+              </p>
             </div>
             
             <div>

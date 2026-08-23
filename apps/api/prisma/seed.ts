@@ -92,6 +92,96 @@ async function main() {
     }
   })
 
+  console.log('🛡️ Creando equipos oficiales por defecto...')
+  const defaultTeams = [
+    {
+      name: 'El Pueblito',
+      tag: 'EPB',
+      categories: 'Open Masculino',
+      color: '#111827',
+      notes: 'Equipo Open Masculino - Color representativo Negro',
+    },
+    {
+      name: 'Warao',
+      tag: 'WAR',
+      categories: 'Open Masculino',
+      color: '#1f2937',
+      notes: 'Equipo Open Masculino - Color representativo Negro',
+    },
+    {
+      name: 'Medusa',
+      tag: 'MED',
+      categories: 'Open Femenino y Mixto',
+      color: '#7e22ce',
+      notes: 'Equipo Open Femenino y Mixto - Color representativo Púrpura',
+    },
+    {
+      name: 'MotherFlowers',
+      tag: 'MOF',
+      categories: 'Open Femenino',
+      color: '#ec4899',
+      notes: 'Equipo Open Femenino - Color representativo Rosado',
+    },
+    {
+      name: 'Raza',
+      tag: 'RAZ',
+      categories: 'Open Masculino',
+      color: '#dc2626',
+      notes: 'Equipo Open Masculino - Color representativo Rojo',
+    },
+    {
+      name: 'Harakiri',
+      tag: 'HKR',
+      categories: 'Open Masculino',
+      color: '#800020',
+      notes: 'Equipo Open Masculino - Color representativo Vinotinto',
+    },
+    {
+      name: 'Ad Astra',
+      tag: 'AST',
+      categories: 'Mixto',
+      color: '#1d4ed8',
+      notes: 'Equipo Mixto - Color representativo Azul',
+    },
+  ]
+
+  for (const team of defaultTeams) {
+    await prisma.team.upsert({
+      where: { name: team.name },
+      update: team,
+      create: team,
+    })
+  }
+
+  console.log('⚔️ Creando rivales base por defecto...')
+  const defaultRivals = [
+    {
+      name: 'Comunidad El Oso',
+      strengths: 'Juego vertical rápido, defensa de zona cerrada',
+      weaknesses: 'Pases forzados bajo presión en la línea final',
+      notes: 'Rival tradicional categoría Open y Mixto',
+    },
+    {
+      name: 'Revolution Ultimate',
+      strengths: 'Gran precisión en hucks largos, alto atletismo',
+      weaknesses: 'Desgaste físico en segundas mitades de torneos',
+      notes: 'Equipo élite de referencia',
+    },
+    {
+      name: 'Discolocos',
+      strengths: 'Handlers experimentados con lanzamientos invertidos (scoobers/hammers)',
+      weaknesses: 'Vulnerables a marcas hombre a hombre asfixiantes',
+      notes: 'Rival de circuito regional',
+    },
+  ]
+
+  for (const rival of defaultRivals) {
+    const existing = await prisma.rival.findFirst({ where: { name: rival.name } })
+    if (!existing) {
+      await prisma.rival.create({ data: rival })
+    }
+  }
+
   console.log('✅ Limpieza y seeder completado con éxito!')
   console.log('🔑 Cuentas disponibles:')
   console.log(' - Admin: frankalfonso1988@gmail.com (pass: passWORD23)')

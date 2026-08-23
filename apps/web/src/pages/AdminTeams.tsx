@@ -244,10 +244,14 @@ export default function AdminTeams() {
                       </span>
                       <div className="flex flex-wrap gap-1.5">
                         {[
-                          { label: 'Warao', col: '#1E40AF', tag: 'WAR', cat: 'Open Masculino, Mixto' },
-                          { label: 'Medusa', col: '#7C3AED', tag: 'MED', cat: 'Mixto' },
-                          { label: 'Motherflowers', col: '#E11D48', tag: 'MF', cat: 'Mixto, Femenino' },
-                          { label: 'Agente Libre / Refuerzo', col: '#64748b', tag: 'LIB', cat: '' }
+                          { label: 'El Pueblito', col: '#111827', tag: 'EPB', cat: 'Open Masculino' },
+                          { label: 'Warao', col: '#1F2937', tag: 'WAR', cat: 'Open Masculino' },
+                          { label: 'Medusa', col: '#7E22CE', tag: 'MED', cat: 'Open Femenino y Mixto' },
+                          { label: 'MotherFlowers', col: '#EC4899', tag: 'MOF', cat: 'Open Femenino' },
+                          { label: 'Raza', col: '#DC2626', tag: 'RAZ', cat: 'Open Masculino' },
+                          { label: 'Harakiri', col: '#800020', tag: 'HKR', cat: 'Open Masculino' },
+                          { label: 'Ad Astra', col: '#1D4ED8', tag: 'AST', cat: 'Mixto' },
+                          { label: 'Agente Libre / Refuerzo', col: '#64748B', tag: 'LIB', cat: 'General' },
                         ].map(sug => (
                           <button
                             key={sug.label}

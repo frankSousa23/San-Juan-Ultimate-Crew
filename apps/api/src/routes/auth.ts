@@ -306,15 +306,15 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
   
   // Validate player data if willBePlayer is true
   if (willBePlayer && playerData) {
-    if (!playerData.number || !playerData.position) {
+    if (playerData.number === undefined || playerData.number === null || playerData.number === '' || !playerData.position) {
       return validationError(res, 'If registering as player, number and position are required')
     }
     if (!['HANDLER', 'CUTTER', 'HYBRID'].includes(playerData.position)) {
       return validationError(res, 'Invalid position. Must be HANDLER, CUTTER, or HYBRID')
     }
     const num = Number(playerData.number)
-    if (!Number.isInteger(num) || num <= 0) {
-      return validationError(res, 'Player number must be a positive integer')
+    if (!Number.isInteger(num) || num < 0 || num > 999) {
+      return validationError(res, 'Player number must be an integer between 0 and 999')
     }
     // Check if player number already exists in this team (only for teams, free agents can choose any number)
     if (assignedTeamId) {
