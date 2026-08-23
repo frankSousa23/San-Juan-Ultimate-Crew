@@ -67,6 +67,15 @@ const upsertSchema = z.object({
   isRefuerzo: z.boolean().optional(),
 })
 
+const batchUpsertSchema = z.object({
+  eventId: z.coerce.number().int(),
+  playerIds: z.array(z.coerce.number().int()),
+  role: z.string().optional().nullable(),
+  status: z.string().optional().nullable(),
+  teamSide: z.string().optional().nullable(),
+  isRefuerzo: z.boolean().optional(),
+})
+
 const deleteQuerySchema = z.object({
   eventId: z.coerce.number().int().positive(),
   playerId: z.coerce.number().int().positive(),
@@ -108,21 +117,76 @@ const deleteQuerySchema = z.object({
  *     responses:
  *       200:
  *         description: Event participant created or updated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/EventParticipant'
  *       400:
- *         description: Invalid input
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden - Admin role required
+ *         description: Invalid input or missing dorsal number
+ *       409:
+ *         description: Dorsal collision in the same team/side for this event
  */
 router.put('/', requirePermission('roster:manage'), asyncHandler(async (req: Request, res: Response) => {
   const parsed = upsertSchema.safeParse(req.body)
   if (!parsed.success) return validationError(res, 'Invalid input', parsed.error.issues)
   const { eventId, playerId, role, status, lineType, teamSide, isRefuerzo } = parsed.data
+
+  // Fetch the player
+  const player = await prisma.player.findUnique({
+    where: { id: playerId },
+    include: { team: true }
+  })
+  if (!player) return notFound(res, 'Jugador no encontrado')
+
+  // Rule: El número dorsal es estrictamente obligatorio para cargar en el roster del evento
+  if (player.number === null || player.number === undefined || isNaN(player.number) || player.number < 0) {
+    return res.status(400).json({
+      error: `El jugador "${player.name}" no tiene un número dorsal válido asignado. El dorsal es obligatorio para convocar al roster de un evento.`
+    })
+  }
+
+  // Check event exists
+  const event = await prisma.event.findUnique({ where: { id: eventId } })
+  if (!event) return notFound(res, 'Evento no encontrado')
+
+  // Determine the target side and team
+  const targetSide = teamSide || 'HOME'
+  const targetTeamId = player.teamId
+
+  // Fetch other participants in this event to verify dorsal uniqueness within the same team/side
+  const existingParticipants = await prisma.eventParticipant.findMany({
+    where: {
+      eventId,
+      playerId: { not: playerId }
+    },
+    include: {
+      player: {
+        include: { team: true }
+      }
+    }
+  })
+
+  const duplicate = existingParticipants.find((ep) => {
+    if (!ep.player) return false
+    if (ep.player.number !== player.number) return false
+
+    // Si ambos pertenecen al mismo equipo
+    if (targetTeamId && ep.player.teamId && targetTeamId === ep.player.teamId) {
+      return true
+    }
+
+    // O si están jugando en el mismo lado (ej. HOME vs HOME o AWAY vs AWAY)
+    const epSide = ep.teamSide || 'HOME'
+    if (epSide === targetSide) {
+      return true
+    }
+
+    return false
+  })
+
+  if (duplicate && duplicate.player) {
+    const teamOrSideName = duplicate.player.team?.name || (targetSide === 'AWAY' ? 'Equipo Visitante' : 'Equipo Local')
+    return res.status(409).json({
+      error: `Conflicto de dorsal en el evento: El número #${player.number} ya está registrado para "${duplicate.player.name}" en ${teamOrSideName}. El responsable no puede cargar dos jugadores con el mismo número dentro de su equipo.`
+    })
+  }
+
   const participant = await prisma.eventParticipant.upsert({
     where: { eventId_playerId: { eventId, playerId } },
     create: { 
@@ -143,6 +207,84 @@ router.put('/', requirePermission('roster:manage'), asyncHandler(async (req: Req
     },
   })
   return updated(res, participant)
+}))
+
+/**
+ * @swagger
+ * /api/event-participants/batch:
+ *   post:
+ *     summary: Batch add or update event participants with dorsal validation
+ *     tags: [EventParticipants]
+ */
+router.post('/batch', requirePermission('roster:manage'), asyncHandler(async (req: Request, res: Response) => {
+  const parsed = batchUpsertSchema.safeParse(req.body)
+  if (!parsed.success) return validationError(res, 'Datos de lote inválidos', parsed.error.issues)
+  const { eventId, playerIds, role, status, teamSide, isRefuerzo } = parsed.data
+
+  const [event, requestedPlayers, existingParticipants] = await Promise.all([
+    prisma.event.findUnique({ where: { id: eventId } }),
+    prisma.player.findMany({ where: { id: { in: playerIds } }, include: { team: true } }),
+    prisma.eventParticipant.findMany({ where: { eventId }, include: { player: { include: { team: true } } } })
+  ])
+
+  if (!event) return notFound(res, 'Evento no encontrado')
+
+  const targetSide = teamSide || 'HOME'
+  const added: any[] = []
+  const skippedErrors: string[] = []
+
+  // Track existing registered dorsals by team or side: key -> playerName
+  const registeredDorsals = new Map<string, string>()
+
+  existingParticipants.forEach(ep => {
+    if (ep.player && ep.player.number !== undefined && ep.player.number !== null) {
+      const side = ep.teamSide || 'HOME'
+      const key = ep.player.teamId ? `team_${ep.player.teamId}_${ep.player.number}` : `side_${side}_${ep.player.number}`
+      registeredDorsals.set(key, ep.player.name)
+    }
+  })
+
+  for (const pl of requestedPlayers) {
+    if (pl.number === null || pl.number === undefined || isNaN(pl.number) || pl.number < 0) {
+      skippedErrors.push(`"${pl.name}" omitido: no tiene número dorsal asignado.`)
+      continue
+    }
+
+    const teamKey = pl.teamId ? `team_${pl.teamId}_${pl.number}` : `side_${targetSide}_${pl.number}`
+    if (registeredDorsals.has(teamKey)) {
+      const occupant = registeredDorsals.get(teamKey)
+      skippedErrors.push(`"${pl.name}" (dorsal #${pl.number}) omitido: dorsal ya ocupado por "${occupant}" en el mismo equipo.`)
+      continue
+    }
+
+    const part = await prisma.eventParticipant.upsert({
+      where: { eventId_playerId: { eventId, playerId: pl.id } },
+      create: {
+        eventId,
+        playerId: pl.id,
+        role: role ?? undefined,
+        status: status ?? undefined,
+        teamSide: teamSide ?? undefined,
+        isRefuerzo: isRefuerzo ?? false,
+      },
+      update: {
+        role: role ?? undefined,
+        status: status ?? undefined,
+        teamSide: teamSide ?? undefined,
+        isRefuerzo: isRefuerzo ?? undefined,
+      }
+    })
+
+    registeredDorsals.set(teamKey, pl.name)
+    added.push(part)
+  }
+
+  return success(res, {
+    addedCount: added.length,
+    skippedCount: skippedErrors.length,
+    errors: skippedErrors,
+    participants: added,
+  })
 }))
 
 /**

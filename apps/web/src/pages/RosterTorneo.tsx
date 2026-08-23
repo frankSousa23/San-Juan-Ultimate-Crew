@@ -69,6 +69,24 @@ export default function RosterTorneo() {
     return m
   }, [players])
 
+  // Compute map of registered dorsals in the current event roster:
+  // Key: team_teamId_number or side_teamSide_number
+  const registeredDorsalsMap = useMemo(() => {
+    const map = new Map<string, { name: string; number: number; teamId?: number | null; teamSide?: string | null }>()
+    participants.forEach(p => {
+      const pl = p.player || playerById.get(p.playerId)
+      if (pl && pl.number !== undefined && pl.number !== null) {
+        const side = p.teamSide || 'HOME'
+        if (pl.teamId) {
+          map.set(`team_${pl.teamId}_${pl.number}`, { name: pl.name, number: pl.number, teamId: pl.teamId, teamSide: side })
+        } else {
+          map.set(`side_${side}_${pl.number}`, { name: pl.name, number: pl.number, teamId: null, teamSide: side })
+        }
+      }
+    })
+    return map
+  }, [participants, playerById])
+
   const selectedIds = new Set<number>(participants.map(p => p.playerId))
   const availablePlayers = players
     .filter(p => !selectedIds.has(p.id))
@@ -91,13 +109,32 @@ export default function RosterTorneo() {
 
   async function addPlayer(pid: number) {
     if (!eventId) return
+    const pl = playerById.get(pid)
+    if (!pl) return
+
+    if (pl.number === null || pl.number === undefined || isNaN(pl.number) || pl.number < 0) {
+      toasts.error(`El jugador "${pl.name}" no tiene número dorsal asignado. Es obligatorio para el roster del evento.`)
+      return
+    }
+
+    // Pre-check collision locally
+    const lookupKey = pl.teamId ? `team_${pl.teamId}_${pl.number}` : `side_HOME_${pl.number}`
+    if (registeredDorsalsMap.has(lookupKey)) {
+      const occupant = registeredDorsalsMap.get(lookupKey)
+      toasts.error(`Conflicto: El dorsal #${pl.number} ya está registrado para "${occupant?.name}" en este equipo.`)
+      return
+    }
+
     setLoading(true)
     try {
       await eventParticipantsApi.upsert({ eventId, playerId: pid })
       const fresh = await eventParticipantsApi.listByEvent(eventId)
       setParticipants(fresh)
+      toasts.success(`"${pl.name}" (#${pl.number}) agregado al roster`)
     } catch (e: any) {
-      setError(e?.message || 'No se pudo agregar')
+      const msg = e?.response?.data?.error || e?.message || 'No se pudo agregar al roster'
+      setError(msg)
+      toasts.error(msg)
     } finally { setLoading(false) }
   }
 
@@ -107,6 +144,7 @@ export default function RosterTorneo() {
     try {
       await eventParticipantsApi.remove(eventId, pid)
       setParticipants(prev => prev.filter(p => p.playerId !== pid))
+      toasts.info('Jugador retirado del evento')
     } catch (e: any) {
       setError(e?.message || 'No se pudo quitar')
     } finally { setLoading(false) }
@@ -117,8 +155,8 @@ export default function RosterTorneo() {
     // Optimistic update
     setParticipants(prev => prev.map(p => p.playerId === pid ? { ...p, role } : p))
     try {
-  await eventParticipantsApi.upsert({ eventId, playerId: pid, role: role.trim() === '' ? null : role })
-  toasts.success('Rol actualizado')
+      await eventParticipantsApi.upsert({ eventId, playerId: pid, role: role.trim() === '' ? null : role })
+      toasts.success('Rol actualizado')
     } catch (e: any) {
       setError(e?.message || 'No se pudo guardar el rol')
     }
@@ -156,7 +194,9 @@ export default function RosterTorneo() {
       await eventParticipantsApi.upsert({ eventId, playerId: pid, teamSide: val })
       toasts.success('Lado/Equipo asignado')
     } catch (e: any) {
-      setError(e?.message || 'No se pudo asignar lado de equipo')
+      const msg = e?.response?.data?.error || e?.message || 'No se pudo asignar lado de equipo'
+      setError(msg)
+      toasts.error(msg)
     }
   }
 
@@ -180,12 +220,21 @@ export default function RosterTorneo() {
     if (availablePlayers.length === 0) return
     setLoading(true)
     try {
-  await Promise.allSettled(availablePlayers.map(p => eventParticipantsApi.upsert({ eventId, playerId: p.id })))
+      const res = await eventParticipantsApi.batchUpsert({
+        eventId,
+        playerIds: availablePlayers.map(p => p.id)
+      })
       const fresh = await eventParticipantsApi.listByEvent(eventId)
       setParticipants(fresh)
-  toasts.success(`Agregados ${availablePlayers.length} jugadores`)
+      if (res.skippedCount > 0) {
+        toasts.warn(`Se agregaron ${res.addedCount} jugadores. ${res.skippedCount} omitidos por conflicto de dorsal en el mismo equipo.`)
+      } else {
+        toasts.success(`Agregados ${res.addedCount} jugadores al roster`)
+      }
     } catch (e: any) {
-      setError(e?.message || 'No se pudo agregar en lote')
+      const msg = e?.response?.data?.error || e?.message || 'No se pudo agregar en lote'
+      setError(msg)
+      toasts.error(msg)
     } finally { setLoading(false) }
   }
 
@@ -267,10 +316,17 @@ export default function RosterTorneo() {
         </div>
       </div>
       {eventId && (
-        <div className="text-sm text-gray-600">Evento actual: <span className="font-medium">{events.find(e => e.id === eventId)?.title}</span></div>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 bg-purple-50 border border-purple-200 rounded-lg text-sm text-purple-900">
+          <div>
+            <span className="font-semibold">Evento seleccionado:</span> {events.find(e => e.id === eventId)?.title}
+          </div>
+          <div className="text-xs text-purple-700">
+            📌 <strong>Regla de Roster:</strong> Los dorsales son obligatorios y únicos por equipo en cada evento.
+          </div>
+        </div>
       )}
 
-      {error && <div className="p-2 bg-red-100 text-red-700 rounded">{error}</div>}
+      {error && <div className="p-3 bg-red-100 border border-red-200 text-red-700 rounded-lg text-sm">{error}</div>}
       {/* global toasts via ToastProvider */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -321,7 +377,7 @@ export default function RosterTorneo() {
               }}>Limpiar filtros</button>
         {authed && (
     <button className="px-2 py-1 rounded bg-indigo-600 text-white disabled:opacity-50 whitespace-nowrap"
-      onClick={() => setConfirmState({ message: `¿Agregar ${availablePlayers.length} jugadores filtrados?`, onYes: addAllFiltered })}
+      onClick={() => setConfirmState({ message: `¿Agregar ${availablePlayers.length} jugadores filtrados al roster?`, onYes: addAllFiltered })}
       disabled={loading || availablePlayers.length === 0}>Agregar todos</button>
         )}
             </div>
@@ -329,11 +385,17 @@ export default function RosterTorneo() {
           <div className="max-h-96 overflow-auto divide-y">
             {availablePlayers.map(p => {
               const playerTeam = teams.find(t => t.id === p.teamId)
+              const hasNoNumber = p.number === null || p.number === undefined || isNaN(p.number) || p.number < 0
+              const teamKey = p.teamId ? `team_${p.teamId}_${p.number}` : `side_HOME_${p.number}`
+              const conflictOccupant = !hasNoNumber ? registeredDorsalsMap.get(teamKey) : null
+
               return (
-                <div key={p.id} className="py-2 flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">#{p.number} {p.name}</span>
+                <div key={p.id} className="py-2 flex items-center justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-gray-900">
+                        {hasNoNumber ? '(Sin #)' : `#${p.number}`} {p.name}
+                      </span>
                       {playerTeam && (
                         <span 
                           className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
@@ -346,16 +408,45 @@ export default function RosterTorneo() {
                           {playerTeam.name}
                         </span>
                       )}
+                      {conflictOccupant && (
+                        <span className="text-[10px] bg-red-100 text-red-700 border border-red-200 px-1.5 py-0.5 rounded font-semibold">
+                          ⚠️ #{p.number} ocupado por {conflictOccupant.name}
+                        </span>
+                      )}
+                      {hasNoNumber && (
+                        <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded font-semibold">
+                          ⚠️ Sin dorsal asignado
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-gray-500">
                       {p.position === 'HANDLER' ? 'Manejador' : p.position === 'CUTTER' ? 'Cortador' : 'Híbrido'} · {p.status === 'ACTIVE' ? 'Activo' : p.status === 'INACTIVE' ? 'Inactivo' : 'Lesionado'}
                     </div>
                   </div>
-                  {authed && <button className="px-2 py-1 text-sm rounded bg-indigo-600 text-white" onClick={() => addPlayer(p.id)} disabled={loading}>Agregar</button>}
+                  {authed && (
+                    <button 
+                      className={`px-2 py-1 text-sm rounded whitespace-nowrap ${
+                        conflictOccupant || hasNoNumber 
+                          ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed' 
+                          : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                      }`} 
+                      onClick={() => addPlayer(p.id)} 
+                      disabled={loading || Boolean(conflictOccupant) || hasNoNumber}
+                      title={
+                        hasNoNumber 
+                          ? 'Debe asignar un dorsal al jugador antes de convocarlo' 
+                          : conflictOccupant 
+                          ? `Dorsal #${p.number} ya usado por ${conflictOccupant.name} en el equipo` 
+                          : 'Agregar al roster'
+                      }
+                    >
+                      {conflictOccupant ? 'Dorsal en uso' : hasNoNumber ? 'Sin dorsal' : 'Agregar'}
+                    </button>
+                  )}
                 </div>
               )
             })}
-            {availablePlayers.length === 0 && <div className="text-sm text-gray-500">No hay jugadores disponibles.</div>}
+            {availablePlayers.length === 0 && <div className="text-sm text-gray-500 py-4 text-center">No hay jugadores disponibles.</div>}
           </div>
         </div>
 

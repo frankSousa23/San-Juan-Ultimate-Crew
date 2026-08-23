@@ -100,13 +100,13 @@ router.get('/', requirePermission('roster:view'), asyncHandler(async (req: Reque
 }));
 
 const createPlayerSchema = z.object({
-  name: z.string().min(1),
-  number: z.coerce.number().int().positive(),
+  name: z.string().min(1, 'El nombre es obligatorio'),
+  number: z.coerce.number().int().min(0, 'El número dorsal debe ser 0 o mayor').max(999, 'El número dorsal no puede superar 999'),
   position: z.enum(['HANDLER', 'CUTTER', 'HYBRID']),
   category: z.string().optional().nullable(),
   status: z.enum(['ACTIVE', 'INJURED', 'INACTIVE']).optional().default('ACTIVE'),
-  heightCm: z.coerce.number().int().positive().optional(),
-  experience: z.string().optional(),
+  heightCm: z.coerce.number().int().positive().optional().nullable(),
+  experience: z.string().optional().nullable(),
   teamId: z.number().optional().nullable(),
 });
 
@@ -135,7 +135,7 @@ const updatePlayerSchema = createPlayerSchema.partial();
  *                 type: string
  *               number:
  *                 type: integer
- *                 minimum: 1
+ *                 minimum: 0
  *               position:
  *                 type: string
  *                 enum: [HANDLER, CUTTER, HYBRID]
@@ -171,7 +171,7 @@ router.post('/', requirePermission('roster:manage'), validateBody(createPlayerSc
   }
 
   // Only check number uniqueness if assigned to a specific team (free agents can use any number)
-  if (data.teamId && data.number) {
+  if (data.teamId && data.number !== undefined && data.number !== null) {
     const existing = await prisma.player.findFirst({
       where: {
         teamId: data.teamId,
@@ -179,7 +179,7 @@ router.post('/', requirePermission('roster:manage'), validateBody(createPlayerSc
       }
     });
     if (existing) {
-      return res.status(409).json({ error: `El dorsal #${data.number} ya está en uso en este equipo` });
+      return res.status(409).json({ error: `El dorsal #${data.number} ya está en uso en este equipo (${existing.name})` });
     }
   }
 
@@ -257,7 +257,7 @@ router.put('/:id', requireSelfOrAdminForPlayer(), validateParams(playerIdSchema)
   const targetNumber = req.body.number !== undefined ? Number(req.body.number) : existingPlayer.number;
 
   // Only check number collision if assigned to a team (free agents are unrestricted)
-  if (targetTeamId && targetNumber) {
+  if (targetTeamId && targetNumber !== undefined && targetNumber !== null) {
     const clash = await prisma.player.findFirst({
       where: {
         id: { not: id },
@@ -266,7 +266,7 @@ router.put('/:id', requireSelfOrAdminForPlayer(), validateParams(playerIdSchema)
       }
     });
     if (clash) {
-      return res.status(409).json({ error: `El dorsal #${targetNumber} ya está en uso en este equipo` });
+      return res.status(409).json({ error: `El dorsal #${targetNumber} ya está en uso en este equipo (${clash.name})` });
     }
   }
 

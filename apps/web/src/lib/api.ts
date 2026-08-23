@@ -390,6 +390,16 @@ export const eventParticipantsApi = {
   }): Promise<EventParticipant> => (
     await http.put<EventParticipant>('/api/event-participants', payload)
   ).data,
+  batchUpsert: async (payload: {
+    eventId: number;
+    playerIds: number[];
+    role?: string | null;
+    status?: string | null;
+    teamSide?: string | null;
+    isRefuerzo?: boolean;
+  }): Promise<{ addedCount: number; skippedCount: number; errors: string[]; participants: EventParticipant[] }> => (
+    await http.post<{ addedCount: number; skippedCount: number; errors: string[]; participants: EventParticipant[] }>('/api/event-participants/batch', payload)
+  ).data,
   remove: async (eventId: number, playerId: number): Promise<void> => {
     await http.delete('/api/event-participants', { params: { eventId, playerId } })
   },
