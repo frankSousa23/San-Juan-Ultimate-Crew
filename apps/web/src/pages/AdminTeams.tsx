@@ -251,6 +251,10 @@ export default function AdminTeams() {
                           { label: 'Raza', col: '#DC2626', tag: 'RAZ', cat: 'Open Masculino' },
                           { label: 'Harakiri', col: '#800020', tag: 'HKR', cat: 'Open Masculino' },
                           { label: 'Ad Astra', col: '#1D4ED8', tag: 'AST', cat: 'Mixto' },
+                          { label: 'Araguaney', col: '#EAB308', tag: 'ARA', cat: 'Open Masculino' },
+                          { label: 'Voladores', col: '#F8FAFC', tag: 'VOL', cat: 'Open Masculino' },
+                          { label: 'Trébol', col: '#16A34A', tag: 'TRE', cat: 'Open Masculino' },
+                          { label: 'Alianza', col: '#EA580C', tag: 'ALI', cat: 'Open Masculino' },
                           { label: 'Agente Libre / Refuerzo', col: '#64748B', tag: 'LIB', cat: 'General' },
                         ].map(sug => (
                           <button

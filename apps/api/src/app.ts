@@ -137,3 +137,77 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 app.use(errorLogger);
 app.use(errorHandler);
 
+// Static files & SPA Fallback serving
+const possibleWebDistDirs = [
+  path.resolve(process.cwd(), 'apps', 'web', 'dist'),
+  path.resolve(process.cwd(), 'dist'),
+  path.resolve(process.cwd(), 'apps', 'api', 'dist', 'web'),
+  path.resolve(currentDir, '..', '..', 'web', 'dist'),
+  path.resolve(currentDir, '..', 'web', 'dist'),
+  path.resolve(currentDir, '..', 'dist'),
+  path.resolve(currentDir, 'web'),
+  path.resolve(currentDir, 'dist'),
+  '/app/apps/web/dist',
+  '/app/dist',
+  '/app/apps/api/dist/web',
+];
+
+const registeredStaticDirs = new Set<string>();
+for (const d of possibleWebDistDirs) {
+  if (d && fs.existsSync(d) && !registeredStaticDirs.has(d)) {
+    registeredStaticDirs.add(d);
+    app.use(express.static(d));
+  }
+}
+
+// Wildcard SPA Handler for all frontend routes
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    return next();
+  }
+
+  const urlPath = req.path || req.url;
+  if (
+    urlPath.startsWith('/api') ||
+    urlPath.startsWith('/health') ||
+    urlPath.startsWith('/uploads') ||
+    urlPath.startsWith('/api-docs')
+  ) {
+    return next();
+  }
+
+  const candidateIndexPaths = [
+    path.resolve(process.cwd(), 'dist', 'index.html'),
+    path.resolve(process.cwd(), 'apps', 'web', 'dist', 'index.html'),
+    path.resolve(process.cwd(), 'apps', 'api', 'dist', 'web', 'index.html'),
+    path.resolve(currentDir, '..', '..', 'web', 'dist', 'index.html'),
+    path.resolve(currentDir, '..', 'web', 'dist', 'index.html'),
+    path.resolve(currentDir, 'web', 'index.html'),
+    path.resolve(currentDir, 'dist', 'index.html'),
+    path.resolve(currentDir, 'index.html'),
+    path.resolve(currentDir, '..', 'dist', 'index.html'),
+    path.resolve(process.cwd(), 'apps', 'web', 'index.html'),
+    '/app/dist/index.html',
+    '/app/apps/web/dist/index.html',
+    '/app/apps/api/dist/web/index.html',
+  ];
+
+  for (const candidate of candidateIndexPaths) {
+    if (candidate && fs.existsSync(candidate)) {
+      return res.sendFile(candidate);
+    }
+  }
+
+  // Graceful fallback if frontend bundle has not been built yet
+  return res.json({
+    name: 'SIGEDIVO (Sistema de Gestión para el Disco Volador) API',
+    status: 'online',
+    version: '1.2.0',
+    endpoints: {
+      health: '/health',
+      api: '/api',
+      documentation: '/api-docs',
+    },
+  });
+});
+

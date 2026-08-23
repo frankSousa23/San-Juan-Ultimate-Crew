@@ -251,8 +251,52 @@ class InMemoryDB {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
+      {
+        id: 8,
+        name: 'Araguaney',
+        tag: 'ARA',
+        categories: 'Open Masculino',
+        color: '#eab308',
+        notes: 'Equipo Open Masculino - Color representativo Amarillo',
+        logoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 9,
+        name: 'Voladores',
+        tag: 'VOL',
+        categories: 'Open Masculino',
+        color: '#f8fafc',
+        notes: 'Equipo Open Masculino - Color representativo Blanco',
+        logoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 10,
+        name: 'Trébol',
+        tag: 'TRE',
+        categories: 'Open Masculino',
+        color: '#16a34a',
+        notes: 'Equipo Open Masculino - Color representativo Verde',
+        logoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 11,
+        name: 'Alianza',
+        tag: 'ALI',
+        categories: 'Open Masculino',
+        color: '#ea580c',
+        notes: 'Equipo Open Masculino - Color representativo Naranja',
+        logoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     ];
-    this.nextId['team'] = 8;
+    this.nextId['team'] = 12;
 
     // 4. Players (Roster por Equipo + Agentes Libres / Sin Equipo)
     this.players = [];

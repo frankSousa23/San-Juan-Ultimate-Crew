@@ -10,7 +10,7 @@
     "test": "npm --workspace apps/api run test",
     "test:api": "npm --workspace apps/api run test",
     "lint": "npm -w apps/web run build",
-    "build": "npm -w apps/web run build && npm -w apps/api run build && esbuild server.ts --bundle --platform=node --format=cjs --external:bcryptjs --external:pg --external:@prisma/client --external:@prisma/adapter-pg --external:multer --sourcemap --outfile=dist/server.cjs && node -e \"const fs=require('fs'); if(fs.existsSync('apps/web/dist')) fs.cpSync('apps/web/dist', 'dist', {recursive: true});\"",
+    "build": "npm -w apps/web run build && npm -w apps/api run build && esbuild server.ts --bundle --platform=node --format=cjs --external:bcryptjs --external:pg --external:@prisma/client --external:@prisma/adapter-pg --external:multer --sourcemap --outfile=dist/server.cjs && node -e \"const fs=require('fs'); if(fs.existsSync('apps/web/dist')) { fs.cpSync('apps/web/dist', 'dist', {recursive: true}); fs.mkdirSync('apps/api/dist/web', {recursive: true}); fs.cpSync('apps/web/dist', 'apps/api/dist/web', {recursive: true}); }\"",
     "start": "node dist/server.cjs",
     "dev:api": "npm --workspace apps/api run dev",
     "dev:web": "npm --workspace apps/web run dev",

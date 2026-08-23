@@ -143,6 +143,34 @@ async function main() {
       color: '#1d4ed8',
       notes: 'Equipo Mixto - Color representativo Azul',
     },
+    {
+      name: 'Araguaney',
+      tag: 'ARA',
+      categories: 'Open Masculino',
+      color: '#eab308',
+      notes: 'Equipo Open Masculino - Color representativo Amarillo',
+    },
+    {
+      name: 'Voladores',
+      tag: 'VOL',
+      categories: 'Open Masculino',
+      color: '#f8fafc',
+      notes: 'Equipo Open Masculino - Color representativo Blanco',
+    },
+    {
+      name: 'Trébol',
+      tag: 'TRE',
+      categories: 'Open Masculino',
+      color: '#16a34a',
+      notes: 'Equipo Open Masculino - Color representativo Verde',
+    },
+    {
+      name: 'Alianza',
+      tag: 'ALI',
+      categories: 'Open Masculino',
+      color: '#ea580c',
+      notes: 'Equipo Open Masculino - Color representativo Naranja',
+    },
   ]
 
   for (const team of defaultTeams) {
