@@ -125,7 +125,7 @@ for (const uDir of possibleUploadDirs) {
 }
 app.use('/uploads', express.static(activeUploadsDir));
 
-app.get('/api', (_req: Request, res: Response) => res.json({ name: 'SIGEDIVO (Sistema de Gestión para el Disco Volador) API', ok: true }));
+app.get('/api', (_req: Request, res: Response) => res.json({ name: 'SIGEDIVO (Sistema de Gestión para el Disco Volador) API', ok: true, version: '1.2.0' }));
 
 // Swagger documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
@@ -133,6 +133,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customSiteTitle: 'SIGEDIVO (Sistema de Gestión para el Disco Volador) API Documentation',
 }));
 
-// Error handling middleware (must be last for API)
+// Error handling middleware (for API errors)
 app.use(errorLogger);
 app.use(errorHandler);
+

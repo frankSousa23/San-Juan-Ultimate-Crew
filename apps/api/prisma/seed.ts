@@ -183,8 +183,6 @@ async function main() {
   }
 
   console.log('✅ Limpieza y seeder completado con éxito!')
-  console.log('🔑 Cuentas disponibles:')
-  console.log(' - Admin: frankalfonso1988@gmail.com (pass: passWORD23)')
 }
 
 main()

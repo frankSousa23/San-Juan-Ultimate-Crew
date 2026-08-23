@@ -61,37 +61,8 @@ export const Login: React.FC = () => {
         </div>
 
         
-        {/* Accesos Rápidos: Modo Administrador & Modo Invitado */}
+        {/* Acceso Modo Invitado */}
         <div className="mb-6 space-y-3">
-          <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-4 sm:p-5">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xl shrink-0 shadow-sm">
-                👑
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-sm text-indigo-950">Acceso Administrador Principal</h3>
-                  <span className="text-[10px] font-bold uppercase bg-indigo-200 text-indigo-900 px-2 py-0.5 rounded-full">
-                    Admin
-                  </span>
-                </div>
-                <p className="text-xs text-indigo-800 mt-1 leading-relaxed">
-                  Cuenta: <strong>frankalfonso1988@gmail.com</strong> con control total de torneos, planillas, nóminas, finanzas y usuarios.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('frankalfonso1988@gmail.com')
-                    setPassword('passWORD23')
-                  }}
-                  className="mt-2.5 text-xs text-indigo-700 bg-white border border-indigo-300 hover:bg-indigo-50 font-semibold px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1.5 shadow-sm"
-                >
-                  <span>✍️ Rellenar credenciales de Admin</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
           <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-4 sm:p-5">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xl shrink-0 shadow-sm">

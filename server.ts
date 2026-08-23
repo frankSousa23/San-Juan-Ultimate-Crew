@@ -23,24 +23,35 @@ function getWebPaths() {
     }
   }
 
-  const possibleDistDirs = [
-    path.join(webDir, 'dist'),
-    path.resolve(process.cwd(), 'apps', 'web', 'dist'),
-    path.resolve(currentDir, 'dist'),
+  const candidateIndexPaths = [
+    path.resolve(process.cwd(), 'dist', 'index.html'),
+    path.resolve(currentDir, 'index.html'),
+    path.resolve(process.cwd(), 'apps', 'web', 'dist', 'index.html'),
+    path.resolve(currentDir, '..', 'apps', 'web', 'dist', 'index.html'),
+    path.resolve(currentDir, 'apps', 'web', 'dist', 'index.html'),
+    path.resolve(currentDir, 'dist', 'index.html'),
   ];
 
-  let distPath = possibleDistDirs[0];
-  for (const dir of possibleDistDirs) {
-    if (fs.existsSync(dir)) {
-      distPath = dir;
+  let distIndexPath = '';
+  let distPath = '';
+
+  for (const candidate of candidateIndexPaths) {
+    if (fs.existsSync(candidate)) {
+      distIndexPath = candidate;
+      distPath = path.dirname(candidate);
       break;
     }
+  }
+
+  if (!distPath) {
+    distPath = path.resolve(process.cwd(), 'dist');
+    distIndexPath = path.join(distPath, 'index.html');
   }
 
   return {
     webDir,
     distPath,
-    distIndexPath: path.join(distPath, 'index.html'),
+    distIndexPath,
     sourceIndexPath: path.join(webDir, 'index.html'),
   };
 }
@@ -89,9 +100,23 @@ async function startServer() {
       }
     });
   } else {
-    if (fs.existsSync(distPath)) {
-      app.use(express.static(distPath));
+    // Serve static assets from the found distPath and fallback dist directories
+    const staticDirs = [
+      distPath,
+      path.resolve(process.cwd(), 'dist'),
+      path.resolve(process.cwd(), 'apps', 'web', 'dist'),
+      path.resolve(currentDir),
+      path.resolve(currentDir, '..', 'apps', 'web', 'dist'),
+    ];
+
+    const registeredDirs = new Set<string>();
+    for (const sDir of staticDirs) {
+      if (sDir && fs.existsSync(sDir) && !registeredDirs.has(sDir)) {
+        registeredDirs.add(sDir);
+        app.use(express.static(sDir));
+      }
     }
+
     app.use((req: Request, res: Response, next: NextFunction) => {
       if (req.method !== 'GET' && req.method !== 'HEAD') return next();
       const url = req.originalUrl || req.url;
@@ -103,12 +128,23 @@ async function startServer() {
       ) {
         return next();
       }
-      if (fs.existsSync(distIndexPath)) {
-        return res.sendFile(distIndexPath);
+
+      const candidateFiles = [
+        distIndexPath,
+        path.resolve(process.cwd(), 'dist', 'index.html'),
+        path.resolve(process.cwd(), 'apps', 'web', 'dist', 'index.html'),
+        path.resolve(currentDir, 'index.html'),
+        path.resolve(currentDir, 'dist', 'index.html'),
+        path.resolve(currentDir, '..', 'apps', 'web', 'dist', 'index.html'),
+        sourceIndexPath,
+      ];
+
+      for (const filePath of candidateFiles) {
+        if (filePath && fs.existsSync(filePath)) {
+          return res.sendFile(filePath);
+        }
       }
-      if (fs.existsSync(sourceIndexPath)) {
-        return res.sendFile(sourceIndexPath);
-      }
+
       return next();
     });
   }
