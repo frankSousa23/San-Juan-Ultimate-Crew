@@ -197,6 +197,88 @@ router.post('/', requirePermission('events:manage'), validateBody(createEventSch
   return created(res, event);
 }));
 
+const batchFixtureItemSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional().nullable(),
+  type: z.enum(['MATCH', 'AMISTOSO', 'TRAINING', 'TOURNAMENT', 'SOCIAL', 'WORKSHOP', 'FULL_DAY_OPEN', 'FULL_DAY_MIXTO']).optional().default('MATCH'),
+  status: z.enum(['UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED']).optional().default('UPCOMING'),
+  location: z.string().optional().nullable(),
+  startsAt: z.string().datetime(),
+  endsAt: z.string().datetime().optional().nullable(),
+  teamId: z.number().optional().nullable(),
+  awayTeamId: z.number().optional().nullable(),
+  rivalId: z.number().optional().nullable(),
+  matchCategory: z.enum(['GROUP_STAGE', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINALS', 'PLACEMENT']).optional().nullable(),
+  officialAnnotatorId: z.number().optional().nullable(),
+  isAnnotatorLocked: z.boolean().optional(),
+  isInternalScrimmage: z.boolean().optional(),
+});
+
+const batchFixturesSchema = z.object({
+  fixtures: z.array(batchFixtureItemSchema).min(1, 'At least one fixture is required')
+});
+
+/**
+ * @swagger
+ * /api/events/tournament/{id}/fixtures:
+ *   post:
+ *     summary: Batch create match fixtures for a tournament
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post('/tournament/:id/fixtures', requirePermission('events:manage'), asyncHandler(async (req: Request, res: Response) => {
+  const tournamentId = Number(req.params.id);
+  const tournament = await prisma.event.findUnique({ where: { id: tournamentId } });
+  if (!tournament) return notFound(res, 'Tournament not found');
+
+  const parsed = batchFixturesSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Datos de cruces inválidos', details: parsed.error.issues });
+  }
+
+  const { fixtures } = parsed.data;
+
+  const createdMatches = await prisma.$transaction(
+    fixtures.map(f => prisma.event.create({
+      data: {
+        title: f.title,
+        description: f.description || `Partido correspondiente a ${tournament.title}`,
+        type: 'MATCH',
+        status: f.status || 'UPCOMING',
+        location: f.location || tournament.location || 'Cancha Principal',
+        startsAt: new Date(f.startsAt),
+        endsAt: f.endsAt ? new Date(f.endsAt) : new Date(new Date(f.startsAt).getTime() + 75 * 60 * 1000),
+        parentId: tournamentId,
+        teamId: f.teamId ? Number(f.teamId) : null,
+        awayTeamId: f.awayTeamId ? Number(f.awayTeamId) : null,
+        rivalId: f.rivalId ? Number(f.rivalId) : null,
+        matchCategory: f.matchCategory || 'GROUP_STAGE',
+        officialAnnotatorId: f.officialAnnotatorId || tournament.officialAnnotatorId || null,
+        isAnnotatorLocked: f.isAnnotatorLocked !== undefined ? f.isAnnotatorLocked : Boolean(tournament.isAnnotatorLocked),
+        isInternalScrimmage: Boolean(f.isInternalScrimmage),
+      },
+      include: {
+        team: { select: { id: true, name: true, color: true, logoUrl: true } },
+        awayTeam: { select: { id: true, name: true, color: true, logoUrl: true } },
+        officialAnnotator: { select: { id: true, name: true, email: true } },
+      }
+    }))
+  );
+
+  const audit = createAuditHelper(req);
+  await audit.log('CREATE', 'Event', tournamentId, {
+    action: 'BATCH_CREATE_FIXTURES',
+    tournamentTitle: tournament.title,
+    matchesCount: createdMatches.length,
+  });
+
+  return created(res, {
+    message: `${createdMatches.length} partidos y cruces programados con éxito para ${tournament.title}`,
+    matches: createdMatches
+  });
+}));
+
 const eventIdSchema = z.object({
   id: z.coerce.number().int().positive()
 });

@@ -529,10 +529,7 @@ export default function Events() {
                     matches={events.filter(m => m.parentId === tournament.id)} 
                     canManage={canManageEvents}
                     onEditMatch={(m) => setEditTarget(m)}
-                    onAddMatch={(t) => {
-                      setEditTarget(null)
-                      setCreateOpen(true)
-                    }}
+                    onRefresh={() => loadEvents()}
                   />
                 ))
               )}

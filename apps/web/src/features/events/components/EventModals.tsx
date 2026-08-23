@@ -29,6 +29,14 @@ export function EventModals({
     }
   }
 
+  const handleCreateAndPlanTournament = async (data: any) => {
+    const created = await createEvent(data)
+    if (created && created.id) {
+      setCreateOpen(false)
+      navigate(`/eventos?tab=tournaments`)
+    }
+  }
+
   return (
     <>
       {createOpen && (
@@ -44,6 +52,7 @@ export function EventModals({
                 onCancel={() => setCreateOpen(false)}
                 onSubmit={(data) => createEvent(data)}
                 onSubmitAndAnnotate={handleCreateAndAnnotate}
+                onSubmitAndPlanTournament={handleCreateAndPlanTournament}
               />
             </div>
           </div>

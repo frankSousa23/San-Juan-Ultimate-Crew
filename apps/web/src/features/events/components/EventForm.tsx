@@ -10,6 +10,7 @@ interface Props {
   onCancel: () => void
   onSubmit: (data: CreateEventInput | UpdateEventInput) => Promise<void>
   onSubmitAndAnnotate?: (data: CreateEventInput | UpdateEventInput) => Promise<void>
+  onSubmitAndPlanTournament?: (data: CreateEventInput | UpdateEventInput) => Promise<void>
 }
 
 const typeOptions: EventType[] = ['TOURNAMENT', 'FULL_DAY_OPEN', 'FULL_DAY_MIXTO', 'MATCH', 'AMISTOSO', 'TRAINING', 'SOCIAL', 'WORKSHOP']
@@ -148,6 +149,21 @@ export default function EventForm({ mode, initial, onCancel, onSubmit, onSubmitA
     try {
       const payload = buildPayload()
       await onSubmitAndAnnotate(payload)
+    } catch (err) {
+      const error = err as Error
+      setError(error?.message || 'Error al enviar el formulario')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleCreateAndPlanTournament = async () => {
+    if (!onSubmitAndPlanTournament) return
+    setError(null)
+    setSubmitting(true)
+    try {
+      const payload = buildPayload()
+      await onSubmitAndPlanTournament(payload)
     } catch (err) {
       const error = err as Error
       setError(error?.message || 'Error al enviar el formulario')
@@ -421,7 +437,18 @@ export default function EventForm({ mode, initial, onCancel, onSubmit, onSubmitA
         <button disabled={submitting} type="submit" className="flex-1 bg-amber-600 text-white py-2.5 px-4 rounded-lg hover:bg-amber-700 font-bold text-sm disabled:opacity-60 transition shadow">
           {mode === 'create' ? 'Crear Evento' : 'Guardar Cambios'}
         </button>
-        {mode === 'create' && onSubmitAndAnnotate && (
+        {mode === 'create' && isMajorEvent && onSubmitAndPlanTournament && (
+          <button 
+            disabled={submitting} 
+            type="button" 
+            onClick={handleCreateAndPlanTournament} 
+            className="flex-1 bg-gradient-to-r from-amber-600 via-orange-600 to-indigo-700 text-white py-2.5 px-4 rounded-lg hover:opacity-95 font-bold text-sm disabled:opacity-60 shadow transition flex items-center justify-center gap-1.5"
+          >
+            <span>🏆</span>
+            <span>Crear y Planificar Cruces / Fixture</span>
+          </button>
+        )}
+        {mode === 'create' && onSubmitAndAnnotate && !isMajorEvent && (
           <button 
             disabled={submitting} 
             type="button" 

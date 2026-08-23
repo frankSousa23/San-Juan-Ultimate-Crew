@@ -296,6 +296,10 @@ export const eventsApi = {
     const { data } = await http.post(`/api/events/${id}/mesa-tecnica/shift-change`, payload)
     return data.data || data
   },
+  createFixtures: async (tournamentId: number, fixtures: any[]): Promise<{ message: string; matches: EventItem[] }> => {
+    const { data } = await http.post(`/api/events/tournament/${tournamentId}/fixtures`, { fixtures })
+    return data.data || data
+  },
   remove: async (id: number): Promise<void> => {
     await http.delete(`/api/events/${id}`)
   }
