@@ -36,7 +36,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 animate-in fade-in duration-200">
       <div 
-        className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-300 w-full max-w-6xl h-[94vh] max-h-[960px] flex flex-col overflow-hidden"
+        className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-300 dark:border-slate-800 w-full max-w-6xl h-[94vh] max-h-[960px] flex flex-col overflow-hidden text-slate-900 dark:text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         
@@ -81,13 +81,13 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
         </div>
 
         {/* Tab Navigation - Fixed shrink-0 with guaranteed non-clipping padding */}
-        <div className="shrink-0 bg-slate-100/90 border-b border-slate-200 px-3 sm:px-6 py-2.5 overflow-x-auto scrollbar-thin flex items-center gap-1.5 sm:gap-2">
+        <div className="shrink-0 bg-slate-100/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 py-2.5 overflow-x-auto scrollbar-thin flex items-center gap-1.5 sm:gap-2">
           <button
             onClick={() => setActiveTab('roles')}
             className={`shrink-0 px-3.5 py-2 text-xs sm:text-sm font-black rounded-xl transition-all duration-150 whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'roles'
                 ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-600/30'
-                : 'text-slate-700 bg-white hover:bg-slate-200 border border-slate-200/80'
+                : 'text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700'
             }`}
           >
             <span>👥</span> Roles y Permisos
@@ -97,7 +97,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
             className={`shrink-0 px-3.5 py-2 text-xs sm:text-sm font-black rounded-xl transition-all duration-150 whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'flow'
                 ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-600/30'
-                : 'text-slate-700 bg-white hover:bg-slate-200 border border-slate-200/80'
+                : 'text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700'
             }`}
           >
             <span>🛡️</span> Aprobación & Seguridad
@@ -107,7 +107,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
             className={`shrink-0 px-3.5 py-2 text-xs sm:text-sm font-black rounded-xl transition-all duration-150 whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'modules'
                 ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-600/30'
-                : 'text-slate-700 bg-white hover:bg-slate-200 border border-slate-200/80'
+                : 'text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700'
             }`}
           >
             <span>🖥️</span> Vistas & Capturas
@@ -117,7 +117,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
             className={`shrink-0 px-3.5 py-2 text-xs sm:text-sm font-black rounded-xl transition-all duration-150 whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'tactics'
                 ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-600/30'
-                : 'text-slate-700 bg-white hover:bg-slate-200 border border-slate-200/80'
+                : 'text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700'
             }`}
           >
             <span>📐</span> Cancha & Táctica WFDF
@@ -127,7 +127,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
             className={`shrink-0 px-3.5 py-2 text-xs sm:text-sm font-black rounded-xl transition-all duration-150 whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'license'
                 ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-600/30'
-                : 'text-slate-700 bg-white hover:bg-slate-200 border border-slate-200/80'
+                : 'text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700'
             }`}
           >
             <span>📜</span> Licencia & Normativa
@@ -137,7 +137,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
             className={`shrink-0 px-3.5 py-2 text-xs sm:text-sm font-black rounded-xl transition-all duration-150 whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'guest'
                 ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-600/30'
-                : 'text-slate-700 bg-white hover:bg-slate-200 border border-slate-200/80'
+                : 'text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700'
             }`}
           >
             <span>🌟</span> Modo Invitado (Guest)
@@ -147,7 +147,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
             className={`shrink-0 px-3.5 py-2 text-xs sm:text-sm font-black rounded-xl transition-all duration-150 whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'faq'
                 ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-600/30'
-                : 'text-slate-700 bg-white hover:bg-slate-200 border border-slate-200/80'
+                : 'text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700'
             }`}
           >
             <span>❓</span> Preguntas Frecuentes
@@ -155,7 +155,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
         </div>
 
         {/* Content Body - Scrollable Area */}
-        <div className="p-4 sm:p-6 md:p-8 overflow-y-auto flex-1 text-slate-800 space-y-6 text-sm bg-slate-50/50">
+        <div className="p-4 sm:p-6 md:p-8 overflow-y-auto flex-1 text-slate-800 dark:text-slate-100 space-y-6 text-sm bg-slate-50/50 dark:bg-slate-900/60">
           
           {/* TAB: ROLES & PERMISSIONS */}
           {activeTab === 'roles' && (
@@ -180,34 +180,34 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
               </div>
 
               {/* Graphic Diagram: Role Hierarchy */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                <h4 className="font-black text-slate-900 text-sm flex items-center gap-2">
+              <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                <h4 className="font-black text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
                   <span>📊</span> Esquema Gráfico de Dependencias y Roles
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-center">
-                  <div className="p-3 bg-purple-50 border-2 border-purple-300 rounded-xl">
+                  <div className="p-3 bg-purple-50 dark:bg-purple-950/40 border-2 border-purple-300 dark:border-purple-800/80 rounded-xl">
                     <div className="text-lg">👑</div>
-                    <div className="font-black text-xs text-purple-900">ADMINISTRACIÓN</div>
-                    <div className="text-[11px] text-purple-700 font-bold mt-1">Super Admin</div>
-                    <div className="text-[10px] text-purple-600 mt-1 bg-white p-1 rounded border border-purple-200">Aprobación, Auditoría, Configuración</div>
+                    <div className="font-black text-xs text-purple-900 dark:text-purple-200">ADMINISTRACIÓN</div>
+                    <div className="text-[11px] text-purple-700 dark:text-purple-300 font-bold mt-1">Super Admin</div>
+                    <div className="text-[10px] text-purple-600 dark:text-purple-300 mt-1 bg-white dark:bg-slate-900 p-1 rounded border border-purple-200 dark:border-purple-800/80">Aprobación, Auditoría, Configuración</div>
                   </div>
-                  <div className="p-3 bg-emerald-50 border-2 border-emerald-300 rounded-xl">
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-300 dark:border-emerald-800/80 rounded-xl">
                     <div className="text-lg">🧢 📋</div>
-                    <div className="font-black text-xs text-emerald-900">CUERPO TÉCNICO</div>
-                    <div className="text-[11px] text-emerald-700 font-bold mt-1">Capitán • Entrenador</div>
-                    <div className="text-[10px] text-emerald-600 mt-1 bg-white p-1 rounded border border-emerald-200">Alineaciones, Táctica, Asistencias</div>
+                    <div className="font-black text-xs text-emerald-900 dark:text-emerald-200">CUERPO TÉCNICO</div>
+                    <div className="text-[11px] text-emerald-700 dark:text-emerald-300 font-bold mt-1">Capitán • Entrenador</div>
+                    <div className="text-[10px] text-emerald-600 dark:text-emerald-300 mt-1 bg-white dark:bg-slate-900 p-1 rounded border border-emerald-200 dark:border-emerald-800/80">Alineaciones, Táctica, Asistencias</div>
                   </div>
-                  <div className="p-3 bg-teal-50 border-2 border-teal-300 rounded-xl">
+                  <div className="p-3 bg-teal-50 dark:bg-teal-950/40 border-2 border-teal-300 dark:border-teal-800/80 rounded-xl">
                     <div className="text-lg">💰 🎯</div>
-                    <div className="font-black text-xs text-teal-900">OPERACIONES</div>
-                    <div className="text-[11px] text-teal-700 font-bold mt-1">Tesorero • Anotador</div>
-                    <div className="text-[10px] text-teal-600 mt-1 bg-white p-1 rounded border border-teal-200">Finanzas, Marcador en Vivo, SOTG</div>
+                    <div className="font-black text-xs text-teal-900 dark:text-teal-200">OPERACIONES</div>
+                    <div className="text-[11px] text-teal-700 dark:text-teal-300 font-bold mt-1">Tesorero • Anotador</div>
+                    <div className="text-[10px] text-teal-600 dark:text-teal-300 mt-1 bg-white dark:bg-slate-900 p-1 rounded border border-teal-200 dark:border-teal-800/80">Finanzas, Marcador en Vivo, SOTG</div>
                   </div>
-                  <div className="p-3 bg-sky-50 border-2 border-sky-300 rounded-xl">
+                  <div className="p-3 bg-sky-50 dark:bg-sky-950/40 border-2 border-sky-300 dark:border-sky-800/80 rounded-xl">
                     <div className="text-lg">🏃 🌟</div>
-                    <div className="font-black text-xs text-sky-900">PLANTEL & DEMO</div>
-                    <div className="text-[11px] text-sky-700 font-bold mt-1">Jugador • Invitado</div>
-                    <div className="text-[10px] text-sky-600 mt-1 bg-white p-1 rounded border border-sky-200">Convocatorias, Playbook, Muestra</div>
+                    <div className="font-black text-xs text-sky-900 dark:text-sky-200">PLANTEL & DEMO</div>
+                    <div className="text-[11px] text-sky-700 dark:text-sky-300 font-bold mt-1">Jugador • Invitado</div>
+                    <div className="text-[10px] text-sky-600 dark:text-sky-300 mt-1 bg-white dark:bg-slate-900 p-1 rounded border border-sky-200 dark:border-sky-800/80">Convocatorias, Playbook, Muestra</div>
                   </div>
                 </div>
               </div>
@@ -215,138 +215,138 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
               {/* Roles Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Super Admin */}
-                <div className="p-5 rounded-2xl border-2 border-purple-200 bg-purple-50/60 space-y-3 shadow-sm hover:shadow transition">
+                <div className="p-5 rounded-2xl border-2 border-purple-300 dark:border-purple-800/80 bg-purple-50/70 dark:bg-purple-950/40 space-y-3 shadow-sm hover:shadow transition">
                   <div className="flex items-center justify-between">
-                    <span className="font-black text-purple-950 flex items-center gap-2 text-base">
+                    <span className="font-black text-purple-950 dark:text-purple-100 flex items-center gap-2 text-base">
                       <span>👑</span> Super Admin (admin)
                     </span>
-                    <span className="text-xs font-black px-2.5 py-1 rounded-full bg-purple-200 text-purple-900 border border-purple-300">
+                    <span className="text-xs font-black px-2.5 py-1 rounded-full bg-purple-200 dark:bg-purple-900 text-purple-950 dark:text-purple-100 border border-purple-300 dark:border-purple-700">
                       Control Total
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-purple-950 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-normal">
                     Máxima autoridad técnica y administrativa. Aprueba nuevos usuarios registrados, asigna roles, monitorea logs inmutables de auditoría, gestiona finanzas globales y configura los parámetros de la plataforma.
                   </p>
-                  <div className="text-xs font-mono text-purple-900 bg-white/90 p-2.5 rounded-xl border border-purple-200 space-y-1">
-                    <strong className="block text-[11px] uppercase tracking-wider text-purple-700">Permisos Activos:</strong>
+                  <div className="text-xs font-mono text-purple-950 dark:text-purple-200 bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-xl border border-purple-200 dark:border-purple-900/70 space-y-1">
+                    <strong className="block text-[11px] uppercase tracking-wider text-purple-800 dark:text-purple-300">Permisos Activos:</strong>
                     <div className="flex flex-wrap gap-1">
                       {['users:manage', 'audit:view', 'roster:manage', 'events:manage', 'finance:manage', 'annotations:manage', 'plays:manage', 'injuries:manage', 'rivals:manage'].map(p => (
-                        <span key={p} className="px-1.5 py-0.5 bg-purple-100 rounded text-[10px] font-bold text-purple-800">{p}</span>
+                        <span key={p} className="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-950/90 rounded text-[10px] font-bold text-purple-900 dark:text-purple-200 border border-purple-200/80 dark:border-purple-800/60">{p}</span>
                       ))}
                     </div>
                   </div>
                 </div>
 
                 {/* Capitán */}
-                <div className="p-5 rounded-2xl border-2 border-blue-200 bg-blue-50/60 space-y-3 shadow-sm hover:shadow transition">
+                <div className="p-5 rounded-2xl border-2 border-blue-300 dark:border-blue-800/80 bg-blue-50/70 dark:bg-blue-950/40 space-y-3 shadow-sm hover:shadow transition">
                   <div className="flex items-center justify-between">
-                    <span className="font-black text-blue-950 flex items-center gap-2 text-base">
+                    <span className="font-black text-blue-950 dark:text-blue-100 flex items-center gap-2 text-base">
                       <span>🧢</span> Capitán de Equipo (captain)
                     </span>
-                    <span className="text-xs font-black px-2.5 py-1 rounded-full bg-blue-200 text-blue-900 border border-blue-300">
+                    <span className="text-xs font-black px-2.5 py-1 rounded-full bg-blue-200 dark:bg-blue-900 text-blue-950 dark:text-blue-100 border border-blue-300 dark:border-blue-700">
                       Liderazgo Deportivo
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-blue-950 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-normal">
                     Gestiona el roster de torneos, define líneas (Línea O ofensiva y Línea D defensiva), convoca jugadores, registra anotaciones en vivo durante partidos y evalúa el Espíritu de Juego (SOTG).
                   </p>
-                  <div className="text-xs font-mono text-blue-900 bg-white/90 p-2.5 rounded-xl border border-blue-200 space-y-1">
-                    <strong className="block text-[11px] uppercase tracking-wider text-blue-700">Permisos Activos:</strong>
+                  <div className="text-xs font-mono text-blue-950 dark:text-blue-200 bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-xl border border-blue-200 dark:border-blue-900/70 space-y-1">
+                    <strong className="block text-[11px] uppercase tracking-wider text-blue-800 dark:text-blue-300">Permisos Activos:</strong>
                     <div className="flex flex-wrap gap-1">
                       {['roster:manage', 'events:manage', 'annotations:manage', 'attendance:manage', 'plays:manage', 'rivals:manage', 'injuries:manage'].map(p => (
-                        <span key={p} className="px-1.5 py-0.5 bg-blue-100 rounded text-[10px] font-bold text-blue-800">{p}</span>
+                        <span key={p} className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-950/90 rounded text-[10px] font-bold text-blue-900 dark:text-blue-200 border border-blue-200/80 dark:border-blue-800/60">{p}</span>
                       ))}
                     </div>
                   </div>
                 </div>
 
                 {/* Entrenador */}
-                <div className="p-5 rounded-2xl border-2 border-emerald-200 bg-emerald-50/60 space-y-3 shadow-sm hover:shadow transition">
+                <div className="p-5 rounded-2xl border-2 border-emerald-300 dark:border-emerald-800/80 bg-emerald-50/70 dark:bg-emerald-950/40 space-y-3 shadow-sm hover:shadow transition">
                   <div className="flex items-center justify-between">
-                    <span className="font-black text-emerald-950 flex items-center gap-2 text-base">
+                    <span className="font-black text-emerald-950 dark:text-emerald-100 flex items-center gap-2 text-base">
                       <span>📋</span> Entrenador / Coach (coach)
                     </span>
-                    <span className="text-xs font-black px-2.5 py-1 rounded-full bg-emerald-200 text-emerald-900 border border-emerald-300">
+                    <span className="text-xs font-black px-2.5 py-1 rounded-full bg-emerald-200 dark:bg-emerald-900 text-emerald-950 dark:text-emerald-100 border border-emerald-300 dark:border-emerald-700">
                       Técnico y Táctico
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-emerald-950 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-normal">
                     Planifica sesiones de entrenamiento, publica jugadas tácticas en el pizarrón, supervisa la asistencia semanal y monitorea el estado clínico y lesiones del plantel.
                   </p>
-                  <div className="text-xs font-mono text-emerald-900 bg-white/90 p-2.5 rounded-xl border border-emerald-200 space-y-1">
-                    <strong className="block text-[11px] uppercase tracking-wider text-emerald-700">Permisos Activos:</strong>
+                  <div className="text-xs font-mono text-emerald-950 dark:text-emerald-200 bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-900/70 space-y-1">
+                    <strong className="block text-[11px] uppercase tracking-wider text-emerald-800 dark:text-emerald-300">Permisos Activos:</strong>
                     <div className="flex flex-wrap gap-1">
                       {['events:manage', 'plays:manage', 'attendance:manage', 'resources:manage', 'injuries:manage', 'annotations:manage'].map(p => (
-                        <span key={p} className="px-1.5 py-0.5 bg-emerald-100 rounded text-[10px] font-bold text-emerald-800">{p}</span>
+                        <span key={p} className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-950/90 rounded text-[10px] font-bold text-emerald-900 dark:text-emerald-200 border border-emerald-200/80 dark:border-emerald-800/60">{p}</span>
                       ))}
                     </div>
                   </div>
                 </div>
 
                 {/* Tesorero */}
-                <div className="p-5 rounded-2xl border-2 border-teal-200 bg-teal-50/60 space-y-3 shadow-sm hover:shadow transition">
+                <div className="p-5 rounded-2xl border-2 border-teal-300 dark:border-teal-800/80 bg-teal-50/70 dark:bg-teal-950/40 space-y-3 shadow-sm hover:shadow transition">
                   <div className="flex items-center justify-between">
-                    <span className="font-black text-teal-950 flex items-center gap-2 text-base">
+                    <span className="font-black text-teal-950 dark:text-teal-100 flex items-center gap-2 text-base">
                       <span>💰</span> Tesorero (treasurer)
                     </span>
-                    <span className="text-xs font-black px-2.5 py-1 rounded-full bg-teal-200 text-teal-900 border border-teal-300">
+                    <span className="text-xs font-black px-2.5 py-1 rounded-full bg-teal-200 dark:bg-teal-900 text-teal-950 dark:text-teal-100 border border-teal-300 dark:border-teal-700">
                       Gestión Financiera
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-teal-950 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-normal">
                     Control de cuentas bancarias y caja chica. Registra ingresos (cuotas, inscripciones) y egresos (alquiler de canchas, uniformes, hidratación) y exporta balances contables.
                   </p>
-                  <div className="text-xs font-mono text-teal-900 bg-white/90 p-2.5 rounded-xl border border-teal-200 space-y-1">
-                    <strong className="block text-[11px] uppercase tracking-wider text-teal-700">Permisos Activos:</strong>
+                  <div className="text-xs font-mono text-teal-950 dark:text-teal-200 bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-xl border border-teal-200 dark:border-teal-900/70 space-y-1">
+                    <strong className="block text-[11px] uppercase tracking-wider text-teal-800 dark:text-teal-300">Permisos Activos:</strong>
                     <div className="flex flex-wrap gap-1">
                       {['finance:manage', 'finance:view', 'roster:view', 'events:view', 'statistics:view'].map(p => (
-                        <span key={p} className="px-1.5 py-0.5 bg-teal-100 rounded text-[10px] font-bold text-teal-800">{p}</span>
+                        <span key={p} className="px-1.5 py-0.5 bg-teal-100 dark:bg-teal-950/90 rounded text-[10px] font-bold text-teal-900 dark:text-teal-200 border border-teal-200/80 dark:border-teal-800/60">{p}</span>
                       ))}
                     </div>
                   </div>
                 </div>
 
                 {/* Anotador */}
-                <div className="p-5 rounded-2xl border-2 border-amber-200 bg-amber-50/60 space-y-3 shadow-sm hover:shadow transition">
+                <div className="p-5 rounded-2xl border-2 border-amber-300 dark:border-amber-800/80 bg-amber-50/70 dark:bg-amber-950/40 space-y-3 shadow-sm hover:shadow transition">
                   <div className="flex items-center justify-between">
-                    <span className="font-black text-amber-950 flex items-center gap-2 text-base">
+                    <span className="font-black text-amber-950 dark:text-amber-100 flex items-center gap-2 text-base">
                       <span>🎯</span> Mesa Técnica / Anotador (annotator)
                     </span>
-                    <span className="text-xs font-black px-2.5 py-1 rounded-full bg-amber-200 text-amber-900 border border-amber-300">
+                    <span className="text-xs font-black px-2.5 py-1 rounded-full bg-amber-200 dark:bg-amber-900 text-amber-950 dark:text-amber-100 border border-amber-300 dark:border-amber-700">
                       Estadísticas Oficiales
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-amber-950 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-normal">
                     Registro jugada a jugada durante partidos: goles, asistencias, defensas, drops y turnovers. Cálculo automático de la tabla de posiciones y rubricación SOTG.
                   </p>
-                  <div className="text-xs font-mono text-amber-900 bg-white/90 p-2.5 rounded-xl border border-amber-200 space-y-1">
-                    <strong className="block text-[11px] uppercase tracking-wider text-amber-700">Permisos Activos:</strong>
+                  <div className="text-xs font-mono text-amber-950 dark:text-amber-200 bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-xl border border-amber-200 dark:border-amber-900/70 space-y-1">
+                    <strong className="block text-[11px] uppercase tracking-wider text-amber-800 dark:text-amber-300">Permisos Activos:</strong>
                     <div className="flex flex-wrap gap-1">
                       {['annotations:manage', 'annotations:view', 'statistics:view', 'events:view', 'roster:view', 'rivals:view'].map(p => (
-                        <span key={p} className="px-1.5 py-0.5 bg-amber-100 rounded text-[10px] font-bold text-amber-800">{p}</span>
+                        <span key={p} className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-950/90 rounded text-[10px] font-bold text-amber-900 dark:text-amber-200 border border-amber-200/80 dark:border-amber-800/60">{p}</span>
                       ))}
                     </div>
                   </div>
                 </div>
 
                 {/* Jugador */}
-                <div className="p-5 rounded-2xl border-2 border-sky-200 bg-sky-50/60 space-y-3 shadow-sm hover:shadow transition">
+                <div className="p-5 rounded-2xl border-2 border-sky-300 dark:border-sky-800/80 bg-sky-50/70 dark:bg-sky-950/40 space-y-3 shadow-sm hover:shadow transition">
                   <div className="flex items-center justify-between">
-                    <span className="font-black text-sky-950 flex items-center gap-2 text-base">
+                    <span className="font-black text-sky-950 dark:text-sky-100 flex items-center gap-2 text-base">
                       <span>🏃</span> Jugador del Roster (player)
                     </span>
-                    <span className="text-xs font-black px-2.5 py-1 rounded-full bg-sky-200 text-sky-900 border border-sky-300">
+                    <span className="text-xs font-black px-2.5 py-1 rounded-full bg-sky-200 dark:bg-sky-900 text-sky-950 dark:text-sky-100 border border-sky-300 dark:border-sky-700">
                       Miembro Activo
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-sky-950 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-normal">
                     Consulta el calendario de entrenamientos y torneos, confirma asistencia con un clic, revisa sus estadísticas individuales, visualiza el pizarrón táctico y participa en los canales.
                   </p>
-                  <div className="text-xs font-mono text-sky-900 bg-white/90 p-2.5 rounded-xl border border-sky-200 space-y-1">
-                    <strong className="block text-[11px] uppercase tracking-wider text-sky-700">Permisos Activos:</strong>
+                  <div className="text-xs font-mono text-sky-950 dark:text-sky-200 bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-xl border border-sky-200 dark:border-sky-900/70 space-y-1">
+                    <strong className="block text-[11px] uppercase tracking-wider text-sky-800 dark:text-sky-300">Permisos Activos:</strong>
                     <div className="flex flex-wrap gap-1">
                       {['roster:view', 'events:view', 'attendance:view', 'statistics:view', 'plays:view', 'communications:manage'].map(p => (
-                        <span key={p} className="px-1.5 py-0.5 bg-sky-100 rounded text-[10px] font-bold text-sky-800">{p}</span>
+                        <span key={p} className="px-1.5 py-0.5 bg-sky-100 dark:bg-sky-950/90 rounded text-[10px] font-bold text-sky-900 dark:text-sky-200 border border-sky-200/80 dark:border-sky-800/60">{p}</span>
                       ))}
                     </div>
                   </div>
@@ -369,61 +369,61 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
 
               {/* Interactive Visual Stepper with SVG graphics */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white p-5 rounded-2xl border-2 border-blue-200 shadow-sm relative space-y-2">
+                <div className="bg-white dark:bg-slate-800/90 p-5 rounded-2xl border-2 border-blue-200 dark:border-blue-800/70 shadow-sm relative space-y-2">
                   <div className="w-10 h-10 rounded-full bg-blue-600 text-white font-black flex items-center justify-center text-base shadow">
                     1
                   </div>
-                  <h4 className="font-black text-slate-900 text-sm">Registro Web</h4>
-                  <p className="text-xs text-slate-600">
-                    El deportista ingresa en <code className="bg-blue-50 text-blue-700 font-bold px-1 rounded">/register</code>, indica nombre, correo y contraseña.
+                  <h4 className="font-black text-slate-900 dark:text-slate-100 text-sm">Registro Web</h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
+                    El deportista ingresa en <code className="bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-bold px-1 rounded">/register</code>, indica nombre, correo y contraseña.
                   </p>
                   <div className="pt-2">
-                    <span className="px-2 py-1 bg-amber-100 text-amber-800 text-[10px] font-black rounded-md border border-amber-300">
+                    <span className="px-2 py-1 bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 text-[10px] font-black rounded-md border border-amber-300 dark:border-amber-700">
                       ESTADO: PENDING
                     </span>
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border-2 border-amber-200 shadow-sm relative space-y-2">
+                <div className="bg-white dark:bg-slate-800/90 p-5 rounded-2xl border-2 border-amber-200 dark:border-amber-800/70 shadow-sm relative space-y-2">
                   <div className="w-10 h-10 rounded-full bg-amber-600 text-white font-black flex items-center justify-center text-base shadow">
                     2
                   </div>
-                  <h4 className="font-black text-slate-900 text-sm">Validación Admin</h4>
-                  <p className="text-xs text-slate-600">
-                    El Super Admin accede a <code className="bg-amber-50 text-amber-800 font-bold px-1 rounded">/admin/usuarios</code> y visualiza la solicitud pendiente.
+                  <h4 className="font-black text-slate-900 dark:text-slate-100 text-sm">Validación Admin</h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
+                    El Super Admin accede a <code className="bg-amber-50 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 font-bold px-1 rounded">/admin/usuarios</code> y visualiza la solicitud pendiente.
                   </p>
                   <div className="pt-2">
-                    <span className="px-2 py-1 bg-purple-100 text-purple-800 text-[10px] font-black rounded-md border border-purple-300">
+                    <span className="px-2 py-1 bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 text-[10px] font-black rounded-md border border-purple-300 dark:border-purple-700">
                       ASIGNACIÓN DE ROL
                     </span>
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border-2 border-purple-200 shadow-sm relative space-y-2">
+                <div className="bg-white dark:bg-slate-800/90 p-5 rounded-2xl border-2 border-purple-200 dark:border-purple-800/70 shadow-sm relative space-y-2">
                   <div className="w-10 h-10 rounded-full bg-purple-600 text-white font-black flex items-center justify-center text-base shadow">
                     3
                   </div>
-                  <h4 className="font-black text-slate-900 text-sm">Vinculación Roster</h4>
-                  <p className="text-xs text-slate-600">
+                  <h4 className="font-black text-slate-900 dark:text-slate-100 text-sm">Vinculación Roster</h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
                     Se vincula con un jugador existente del Roster o se crea uno nuevo con su dorsal y posición oficial.
                   </p>
                   <div className="pt-2">
-                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-[10px] font-black rounded-md border border-blue-300">
+                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 text-[10px] font-black rounded-md border border-blue-300 dark:border-blue-700">
                       DORSAL & FICHA
                     </span>
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border-2 border-emerald-200 shadow-sm relative space-y-2">
+                <div className="bg-white dark:bg-slate-800/90 p-5 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800/70 shadow-sm relative space-y-2">
                   <div className="w-10 h-10 rounded-full bg-emerald-600 text-white font-black flex items-center justify-center text-base shadow">
                     4
                   </div>
-                  <h4 className="font-black text-slate-900 text-sm">Acceso Concedido</h4>
-                  <p className="text-xs text-slate-600">
+                  <h4 className="font-black text-slate-900 dark:text-slate-100 text-sm">Acceso Concedido</h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
                     El usuario inicia sesión inmediatamente con sus credenciales y accede a todas las funciones habilitadas.
                   </p>
                   <div className="pt-2">
-                    <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-black rounded-md border border-emerald-300">
+                    <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-[10px] font-black rounded-md border border-emerald-300 dark:border-emerald-700">
                       ESTADO: APPROVED ✓
                     </span>
                   </div>
@@ -458,7 +458,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
               <div className="space-y-5">
                 
                 {/* 1. Roster */}
-                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                <div className="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
                   <div className="bg-slate-900 text-white px-5 py-3 flex items-center justify-between">
                     <span className="font-black text-sm sm:text-base flex items-center gap-2">
                       <span>1️⃣</span> Roster del Equipo & Jugadores (/roster)
@@ -468,7 +468,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
                     </span>
                   </div>
                   <div className="p-5 space-y-4">
-                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                    <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                       Permite administrar la nómina activa de atletas. Incluye filtros por posición: <strong>Manejador (Handler)</strong> para control de disco, <strong>Cortador (Cutter)</strong> para ataque en profundidad e <strong>Híbrido</strong> para polivalencia.
                     </p>
                     {/* Visual Mockup Card */}
@@ -499,7 +499,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
                 </div>
 
                 {/* 2. Anotaciones en Vivo */}
-                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                <div className="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
                   <div className="bg-slate-900 text-white px-5 py-3 flex items-center justify-between">
                     <span className="font-black text-sm sm:text-base flex items-center gap-2">
                       <span>2️⃣</span> Anotaciones en Vivo & Mesa Técnica (/eventos/:id/anotaciones)
@@ -509,7 +509,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
                     </span>
                   </div>
                   <div className="p-5 space-y-4">
-                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                    <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                       Pizarra táctica de alta velocidad para registro de eventos en partidos oficiales y amistosos multiequipo. Permite computar goles, asistencias cruzadas, bloqueos (D), pérdidas de posesión (turnovers) y rubricar el Espíritu de Juego (SOTG).
                     </p>
                     {/* Visual Mockup Card */}
@@ -538,7 +538,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
                 </div>
 
                 {/* 3. Finanzas */}
-                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                <div className="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
                   <div className="bg-slate-900 text-white px-5 py-3 flex items-center justify-between">
                     <span className="font-black text-sm sm:text-base flex items-center gap-2">
                       <span>3️⃣</span> Finanzas & Libro Contable (/finanzas)
@@ -548,7 +548,7 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
                     </span>
                   </div>
                   <div className="p-5 space-y-4">
-                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                    <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                       Administración transparente de cuentas (Banco, Caja Chica, Pago Móvil), balance de ingresos por cuotas de pretemporada y egresos por canchas e hidratación.
                     </p>
                     <div className="bg-slate-950 p-4 rounded-xl text-white border border-slate-800 font-mono text-xs shadow-inner flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
@@ -575,12 +575,12 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
               </div>
 
               {/* Visual Field Diagram (SVG) */}
-              <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+              <div className="bg-white dark:bg-slate-800/90 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                  <h4 className="font-black text-slate-900 dark:text-slate-100 text-sm sm:text-base flex items-center gap-2">
                     <span>🏟️</span> Dimensiones Reglamentarias WFDF (Césped)
                   </h4>
-                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
                     100m x 37m
                   </span>
                 </div>
@@ -615,29 +615,29 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
 
               {/* Tactical Formations Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white p-5 rounded-2xl border-2 border-emerald-200 shadow-sm space-y-2">
-                  <div className="font-black text-emerald-950 text-sm flex items-center gap-1.5">
+                <div className="bg-white dark:bg-slate-800/90 p-5 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800/70 shadow-sm space-y-2">
+                  <div className="font-black text-emerald-950 dark:text-emerald-300 text-sm flex items-center gap-1.5">
                     <span>1️⃣</span> Vertical Stack (V-Stack)
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     2 o 3 Manejadores en la base con 4 o 5 Cortadores alineados en columna central, abriendo pasillos laterales despejados a los lados abierto y cerrado (break side).
                   </p>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border-2 border-blue-200 shadow-sm space-y-2">
-                  <div className="font-black text-blue-950 text-sm flex items-center gap-1.5">
+                <div className="bg-white dark:bg-slate-800/90 p-5 rounded-2xl border-2 border-blue-200 dark:border-blue-800/70 shadow-sm space-y-2">
+                  <div className="font-black text-blue-950 dark:text-blue-300 text-sm flex items-center gap-1.5">
                     <span>2️⃣</span> Horizontal Stack (H-Stack)
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     3 Manejadores en abanico y 4 Cortadores distribuidos a lo ancho del campo. Crea dos carriles de aislamiento centrales ideales para pases largos (hucks).
                   </p>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border-2 border-purple-200 shadow-sm space-y-2">
-                  <div className="font-black text-purple-950 text-sm flex items-center gap-1.5">
+                <div className="bg-white dark:bg-slate-800/90 p-5 rounded-2xl border-2 border-purple-200 dark:border-purple-800/70 shadow-sm space-y-2">
+                  <div className="font-black text-purple-950 dark:text-purple-300 text-sm flex items-center gap-1.5">
                     <span>3️⃣</span> Zona 3-3-1 Cup
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     Defensa de contención contra viento: 3 jugadores en la Copa (Cup) asfixian lanzamientos, 3 medios cubren pases flotados y 1 fondo previene el huck largo.
                   </p>
                 </div>
@@ -658,24 +658,24 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                  <h4 className="font-black text-slate-900 text-sm flex items-center gap-2">
+                <div className="bg-white dark:bg-slate-800/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+                  <h4 className="font-black text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
                     <span>⚖️</span> Licencia Institucional SIGEDIVO 2026
                   </h4>
-                  <p className="text-xs text-slate-600 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     Este software ha sido desarrollado para modernizar y facilitar la administración técnica, arbitral y financiera de clubes, ligas y federaciones de Disco Volador.
                   </p>
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs font-mono text-slate-700">
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-700 dark:text-slate-300">
                     Autor: Frank Sousa (frankalfonso1988@gmail.com)<br />
                     Edición: 2026 Oficial • San Juan de los Morros
                   </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                  <h4 className="font-black text-slate-900 text-sm flex items-center gap-2">
+                <div className="bg-white dark:bg-slate-800/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+                  <h4 className="font-black text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
                     <span>🏅</span> Cumplimiento de Reglas WFDF 2025-2028
                   </h4>
-                  <p className="text-xs text-slate-600 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     El sistema de anotaciones, rubricación de faltas y evaluación SOTG (Espíritu de Juego) se rigen íntegramente por los estándares oficiales de la World Flying Disc Federation (WFDF) y la Federación Venezolana de Disco Volador (FMDV).
                   </p>
                 </div>
@@ -696,11 +696,11 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-5 rounded-2xl border-2 border-emerald-200 bg-white shadow-sm space-y-2">
-                  <h4 className="font-black text-emerald-900 text-sm flex items-center gap-2">
+                <div className="p-5 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800/70 bg-white dark:bg-slate-800/90 shadow-sm space-y-2">
+                  <h4 className="font-black text-emerald-900 dark:text-emerald-300 text-sm flex items-center gap-2">
                     <span>✅</span> Funciones Habilitadas:
                   </h4>
-                  <ul className="text-xs text-slate-700 space-y-1.5 pl-4 list-disc">
+                  <ul className="text-xs text-slate-700 dark:text-slate-300 space-y-1.5 pl-4 list-disc">
                     <li>Exploración del <strong>Roster de Jugadores</strong> y dorsales.</li>
                     <li>Consulta del <strong>Calendario de Eventos</strong> y torneos.</li>
                     <li>Estadísticas globales de goles, asistencias y defensas.</li>
@@ -709,11 +709,11 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
                   </ul>
                 </div>
 
-                <div className="p-5 rounded-2xl border-2 border-rose-200 bg-white shadow-sm space-y-2">
-                  <h4 className="font-black text-rose-900 text-sm flex items-center gap-2">
+                <div className="p-5 rounded-2xl border-2 border-rose-200 dark:border-rose-800/70 bg-white dark:bg-slate-800/90 shadow-sm space-y-2">
+                  <h4 className="font-black text-rose-900 dark:text-rose-300 text-sm flex items-center gap-2">
                     <span>🚫</span> Restricciones por Seguridad:
                   </h4>
-                  <ul className="text-xs text-slate-700 space-y-1.5 pl-4 list-disc">
+                  <ul className="text-xs text-slate-700 dark:text-slate-300 space-y-1.5 pl-4 list-disc">
                     <li>No puede modificar marcadores ni anotaciones en vivo.</li>
                     <li>No tiene acceso al módulo contable de <strong>Finanzas</strong>.</li>
                     <li>No puede editar fichas médicas ni historiales de lesiones.</li>
@@ -727,24 +727,24 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
           {/* TAB: FAQ */}
           {activeTab === 'faq' && (
             <div className="space-y-4 animate-in fade-in duration-150">
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                <h4 className="font-black text-slate-900 text-sm">¿Por qué mi cuenta recién registrada dice "Pendiente de Aprobación"?</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
+              <div className="bg-white dark:bg-slate-800/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+                <h4 className="font-black text-slate-900 dark:text-slate-100 text-sm">¿Por qué mi cuenta recién registrada dice "Pendiente de Aprobación"?</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                   Por seguridad e integridad de las alineaciones y datos contables, el Super Administrador debe verificar la identidad del deportista y asignarle su rol oficial antes de permitir el ingreso.
                 </p>
               </div>
 
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                <h4 className="font-black text-slate-900 text-sm">¿Cómo se descarga este manual completo en PDF?</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
+              <div className="bg-white dark:bg-slate-800/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+                <h4 className="font-black text-slate-900 dark:text-slate-100 text-sm">¿Cómo se descarga este manual completo en PDF?</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                   Haz clic en el botón azul <strong>"📥 Descargar PDF"</strong> en la cabecera o pie de este diálogo. Se generará un PDF de alta calidad listo para imprimir o enviar por correo.
                 </p>
               </div>
 
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                <h4 className="font-black text-slate-900 text-sm">¿Cómo contactar al cuerpo técnico o administración?</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Puedes escribir directamente a <code className="bg-blue-50 text-blue-800 font-bold px-1.5 py-0.5 rounded">contacto@sigedivo.com</code> o enviar un comentario mediante la sección "Acerca de SIGEDIVO".
+              <div className="bg-white dark:bg-slate-800/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+                <h4 className="font-black text-slate-900 dark:text-slate-100 text-sm">¿Cómo contactar al cuerpo técnico o administración?</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                  Puedes escribir directamente a <code className="bg-blue-50 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 font-bold px-1.5 py-0.5 rounded">contacto@sigedivo.com</code> o enviar un comentario mediante la sección "Acerca de SIGEDIVO".
                 </p>
               </div>
             </div>
@@ -753,9 +753,9 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
         </div>
 
         {/* Modal Footer - Fixed shrink-0 */}
-        <div className="shrink-0 bg-slate-100 border-t border-slate-200 px-4 py-3 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-inner">
-          <div className="flex items-center gap-2 text-xs text-slate-600">
-            <span className="font-black text-slate-800">SIGEDIVO © 2026</span>
+        <div className="shrink-0 bg-slate-100 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 px-4 py-3 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-inner">
+          <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+            <span className="font-black text-slate-800 dark:text-slate-200">SIGEDIVO © 2026</span>
             <span>•</span>
             <span>Documentación & Manual Oficial</span>
           </div>
@@ -770,14 +770,14 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
             {user && (
               <button
                 onClick={handleLogout}
-                className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs sm:text-sm rounded-xl transition active:scale-95 cursor-pointer"
+                className="px-3.5 py-2 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-bold text-xs sm:text-sm rounded-xl transition active:scale-95 cursor-pointer"
               >
                 <span>🚪 Salir</span>
               </button>
             )}
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs sm:text-sm rounded-xl transition cursor-pointer"
+              className="px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs sm:text-sm rounded-xl transition cursor-pointer"
             >
               Cerrar
             </button>
