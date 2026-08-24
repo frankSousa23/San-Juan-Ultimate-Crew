@@ -98,7 +98,13 @@ testsprite_tests/
 
 # Generated Artifacts & Backups
 swagger-postman.json
-backups/ 
+backups/
+scratch/
+temp/
+*.scratch.*
+*.bak
+*.backup
+
 # Database
 *.db
 *.sqlite
