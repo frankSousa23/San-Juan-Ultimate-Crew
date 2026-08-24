@@ -246,6 +246,8 @@ Distribuido bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para m�
 
 ## 📚 Documentación Técnica Adicional
 
+- [Reporte de Evaluación Beta y Deploy](./docs/REPORTE_BETA_DEPLOY.md): Auditoría completa del sistema en producción en Seenode con capturas de pantalla y matriz de estado.
+- [Presentación Oficial para Exposición Pública](./docs/presentacion_sigedivo_publico.html): Diapositivas interactivas animadas listas para proyectar ante federaciones, clubes y conferencias (con exportación a PDF).
 - [Guía Oficial de Despliegue en Producción](./docs/DEPLOYMENT_GUIDE.md): Configuración de Docker, PostgreSQL, variables de entorno, dominio y certificados SSL.
 - [Diagramas de Flujo Oficiales del Sistema](./docs/DIAGRAMAS_DE_FLUJO.md): Documentación visual unificada con todos los diagramas de arquitectura, seguridad, partidos en vivo y finanzas en Mermaid.
 - [Visualizador Interactivo de Diagramas](./docs/diagramas_flujo_visualizador.html): Visor gráfico autónomo con renderizado en tiempo real y exportación a PDF.

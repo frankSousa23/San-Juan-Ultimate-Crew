@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIGEDIVO — Presentación Oficial para Exposición Pública</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            outfit: ['Outfit', 'sans-serif'],
+            inter: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #090d16;
+      color: #f1f5f9;
+      overflow: hidden;
+    }
+    h1, h2, h3, h4, .font-heading {
+      font-family: 'Outfit', sans-serif;
+    }
+    .slide {
+      display: none;
+      opacity: 0;
+      transform: scale(0.97) translateY(10px);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .slide.active {
+      display: flex;
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+    .glow-bg {
+      background: radial-gradient(circle at 50% 30%, rgba(56, 189, 248, 0.15), rgba(99, 102, 241, 0.05) 50%, transparent 80%);
+    }
+    .card-glass {
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+    }
+    @media print {
+      body { overflow: visible !important; background: white !important; color: black !important; }
+      .slide { display: flex !important; opacity: 1 !important; page-break-after: always; height: 100vh; transform: none !important; }
+      .no-print { display: none !important; }
+      .card-glass { background: white !important; border: 1px solid #ddd !important; box-shadow: none !important; color: black !important; }
+    }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between select-none glow-bg">
+
+  <!-- Top Bar Navigation -->
+  <header class="w-full px-8 py-4 flex items-center justify-between z-50 no-print border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-emerald-400 flex items-center justify-center font-black text-lg text-white shadow-lg shadow-sky-500/20">
+        🥏
+      </div>
+      <div>
+        <span class="font-extrabold text-sm tracking-wider uppercase bg-gradient-to-r from-sky-400 to-indigo-300 bg-clip-text text-transparent">
+          SIGEDIVO
+        </span>
+        <span class="text-xs text-slate-400 ml-2 hidden sm:inline font-medium">| Sistema de Gestión para el Disco Volador</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <span id="slide-counter" class="text-xs font-semibold px-3 py-1 bg-slate-800 text-sky-400 rounded-full border border-slate-700">
+        1 / 10
+      </span>
+      <button onclick="toggleFullScreen()" title="Pantalla Completa (F)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg border border-slate-700 transition">
+        ⛶ Fullscreen
+      </button>
+      <button onclick="window.print()" title="Imprimir o Exportar PDF" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg shadow-md transition">
+        🖨️ PDF
+      </button>
+      <a href="https://san-juan-ultimate-crew.seenode.app/" target="_blank" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-md transition flex items-center gap-1">
+        ⚡ Ir a la App en Vivo
+      </a>
+    </div>
+  </header>
+
+  <!-- Presentation Slides Container -->
+  <main class="flex-1 flex items-center justify-center p-6 sm:p-12 relative overflow-hidden">
+
+    <!-- SLIDE 1: PORTADA -->
+    <div class="slide active flex-col items-center justify-center text-center max-w-5xl mx-auto space-y-6">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/30 text-sky-400 text-xs font-bold uppercase tracking-widest">
+        🚀 Lanzamiento Beta en Producción 2026
+      </div>
+      <h1 class="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-none">
+        <span class="bg-gradient-to-r from-sky-400 via-indigo-300 to-emerald-400 bg-clip-text text-transparent">SIGEDIVO</span>
+      </h1>
+      <p class="text-lg sm:text-2xl text-slate-300 font-normal max-w-3xl leading-relaxed">
+        Plataforma Deportiva Integral de Gestión, Mesa Técnica, Estadísticas en Tiempo Real y Táctica para el <strong>Ultimate Frisbee</strong>.
+      </p>
+      <div class="flex flex-wrap items-center justify-center gap-4 pt-4">
+        <div class="card-glass px-5 py-3 rounded-xl text-left border-l-4 border-sky-500">
+          <p class="text-xs text-slate-400 uppercase font-semibold">Creador & Desarrollador</p>
+          <p class="text-sm font-bold text-white">Frank Sousa (<code class="text-sky-400">@frankSousa23</code>)</p>
+        </div>
+        <div class="card-glass px-5 py-3 rounded-xl text-left border-l-4 border-emerald-500">
+          <p class="text-xs text-slate-400 uppercase font-semibold">Comunidad Oficial</p>
+          <p class="text-sm font-bold text-white">San Juan Ultimate Crew — Guárico, VE</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: CONTEXTO Y PROPÓSITO -->
+    <div class="slide flex-col justify-center max-w-5xl mx-auto space-y-8 w-full">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-widest text-sky-400">Contexto Deportivo</span>
+        <h2 class="text-3xl sm:text-5xl font-black text-white mt-1">El Desafío y Nuestra Misión</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card-glass p-6 rounded-2xl border-t-4 border-rose-500 space-y-3">
+          <div class="text-2xl font-black text-rose-400">01. La Necesidad</div>
+          <h3 class="text-lg font-bold text-white">Falta de Automatización</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Las estadísticas en campo, marcadores y actas oficiales se llevaban manualmente en papel o planillas propensas a errores y pérdidas de datos.
+          </p>
+        </div>
+        <div class="card-glass p-6 rounded-2xl border-t-4 border-sky-500 space-y-3">
+          <div class="text-2xl font-black text-sky-400">02. La Solución</div>
+          <h3 class="text-lg font-bold text-white">SIGEDIVO Digital</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Una plataforma web ultra-rápida y táctil para tablets y móviles en cancha que registra goles, asistencias, defensas y SOTG al instante.
+          </p>
+        </div>
+        <div class="card-glass p-6 rounded-2xl border-t-4 border-emerald-500 space-y-3">
+          <div class="text-2xl font-black text-emerald-400">03. El Impacto</div>
+          <h3 class="text-lg font-bold text-white">Federaciones y Clubes</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Diseñado para respaldar formalmente a la <strong>FDVV</strong>, a la <strong>AADV</strong> y sentar las bases organizativas de la <strong>AGDV</strong> con código libre (MIT).
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: ARQUITECTURA TECNOLÓGICA -->
+    <div class="slide flex-col justify-center max-w-5xl mx-auto space-y-8 w-full">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Arquitectura Moderna</span>
+        <h2 class="text-3xl sm:text-5xl font-black text-white mt-1">Stack Tecnológico de Alto Rendimiento</h2>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-5">
+        <div class="card-glass p-5 rounded-xl text-center space-y-2">
+          <div class="text-3xl">⚛️</div>
+          <h4 class="font-bold text-white text-base">React 18 + Vite 6</h4>
+          <p class="text-xs text-slate-400">SPA reactiva y diseño táctil responsivo optimizado para móviles.</p>
+        </div>
+        <div class="card-glass p-5 rounded-xl text-center space-y-2">
+          <div class="text-3xl">🚀</div>
+          <h4 class="font-bold text-white text-base">Node.js + Express</h4>
+          <p class="text-xs text-slate-400">Backend modular con validación Zod, JWT y auditoría en tiempo real.</p>
+        </div>
+        <div class="card-glass p-5 rounded-xl text-center space-y-2">
+          <div class="text-3xl">🐘</div>
+          <h4 class="font-bold text-white text-base">PostgreSQL 16</h4>
+          <p class="text-xs text-slate-400">Persistencia transaccional robusta gestionada con Prisma ORM 7.</p>
+        </div>
+        <div class="card-glass p-5 rounded-xl text-center space-y-2">
+          <div class="text-3xl">🛡️</div>
+          <h4 class="font-bold text-white text-base">RBAC & Multi-Equipo</h4>
+          <p class="text-xs text-slate-400">Aislamiento por equipo con dorsales independientes (1-99).</p>
+        </div>
+      </div>
+      <div class="card-glass p-4 rounded-xl flex items-center justify-between text-xs text-slate-300">
+        <span>🌐 <strong>Despliegue Activo en Producción:</strong> Node.js 22 LTS en Seenode PaaS</span>
+        <span class="text-emerald-400 font-bold">● 99.9% Uptime</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: MÓDULO DE PARTIDOS Y ANOTACIONES -->
+    <div class="slide flex-col justify-center max-w-5xl mx-auto space-y-6 w-full">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-widest text-emerald-400">El Corazón del Sistema</span>
+        <h2 class="text-3xl sm:text-5xl font-black text-white mt-1">Pizarra Táctica y Anotaciones en Vivo</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+        <div class="space-y-4 text-sm text-slate-300">
+          <div class="flex items-start gap-3">
+            <span class="p-2 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold">⚽</span>
+            <div>
+              <h4 class="font-bold text-white">Registro Instantáneo de Goles y Asistencias</h4>
+              <p class="text-xs text-slate-400">Selección táctil con asignación de asistente, Callahan o error rival en 1 solo toque.</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="p-2 rounded-lg bg-sky-500/20 text-sky-400 font-bold">🛡️</span>
+            <div>
+              <h4 class="font-bold text-white">Defensas (D's) y Pérdidas (Turnovers)</h4>
+              <p class="text-xs text-slate-400">Alimenta en vivo las métricas de posesión y eficiencia individual (+/- Plus/Minus).</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="p-2 rounded-lg bg-amber-500/20 text-amber-400 font-bold">🔄</span>
+            <div>
+              <h4 class="font-bold text-white">Fusión de Invitados (Merge Guest)</h4>
+              <p class="text-xs text-slate-400">Permite anotar estadísticas a refuerzos en caimaneras y fusionarlas atómicamente a su cuenta oficial.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card-glass p-6 rounded-2xl border-l-4 border-emerald-500 space-y-3">
+          <h4 class="text-base font-bold text-emerald-300">Diseñado para el Campo de Juego</h4>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Botones de gran tamaño adaptados para pantallas táctiles bajo luz solar directa, con marcador gigante sticky siempre visible.
+          </p>
+          <div class="pt-2 flex gap-2">
+            <span class="text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-300">Modo Torneo Oficial</span>
+            <span class="text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-300">Modo Caimanera Práctica</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: SIMULADOR TÁCTICO Y PLAYBOOK -->
+    <div class="slide flex-col justify-center max-w-5xl mx-auto space-y-6 w-full">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-widest text-sky-400">Estrategia y Formación</span>
+        <h2 class="text-3xl sm:text-5xl font-black text-white mt-1">Libro de Jugadas & Pizarra Interactiva</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="card-glass p-5 rounded-xl space-y-2">
+          <h4 class="font-bold text-sky-400 text-sm">📐 Simulaciones Animadas</h4>
+          <p class="text-xs text-slate-300">
+            Paso a paso interactivo de jugadas como <em>Vertical Stack</em>, <em>Horizontal Stack</em> y <em>Defensa Zona Cup 3-3-1</em>.
+          </p>
+        </div>
+        <div class="card-glass p-5 rounded-xl space-y-2">
+          <h4 class="font-bold text-indigo-400 text-sm">⏱️ Control de Velocidades</h4>
+          <p class="text-xs text-slate-300">
+            Reproducción a 0.5x, 1x, 1.5x o 2x con notas tácticas y desglose de roles de cada jugador.
+          </p>
+        </div>
+        <div class="card-glass p-5 rounded-xl space-y-2">
+          <h4 class="font-bold text-emerald-400 text-sm">🎨 Pizarra Libre en Vivo</h4>
+          <p class="text-xs text-slate-300">
+            Dibuja rutas de pase, ubica atacantes, defensores y discos con herramientas de borrado y exportación.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: TORNEOS Y MESA TÉCNICA -->
+    <div class="slide flex-col justify-center max-w-5xl mx-auto space-y-6 w-full">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-widest text-amber-400">Logística de Eventos</span>
+        <h2 class="text-3xl sm:text-5xl font-black text-white mt-1">Torneos, Convocatorias y SOTG</h2>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div class="card-glass p-6 rounded-2xl space-y-3">
+          <div class="text-emerald-400 font-black text-xl">🏆 Gestión de Fases</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Creación jerárquica de torneos con fases de grupos, cuartos de final, semifinales y gran final. Tablas de posiciones computadas automáticamente.
+          </p>
+        </div>
+        <div class="card-glass p-6 rounded-2xl space-y-3">
+          <div class="text-sky-400 font-black text-xl">🌟 Espíritu de Juego (SOTG)</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Evaluación oficial conforme al reglamento WFDF: conocimiento de reglas, contacto físico, actitud positiva y comunicación justa.
+          </p>
+        </div>
+        <div class="card-glass p-6 rounded-2xl space-y-3">
+          <div class="text-purple-400 font-black text-xl">📋 Convocatorias & Líneas</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Organización del roster en <strong>O-Line</strong> (Ataque), <strong>D-Line</strong> (Defensa) y <strong>Flex</strong> con confirmación de asistencia RSVP en tiempo real.
+          </p>
+        </div>
+        <div class="card-glass p-6 rounded-2xl space-y-3">
+          <div class="text-indigo-400 font-black text-xl">📄 Actas Oficiales Certificadas</div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Generación y exportación de actas oficiales con firmas de capitanes y mesa técnica para entrega formal a federaciones.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 7: SALUD, ROSTER Y FINANZAS -->
+    <div class="slide flex-col justify-center max-w-5xl mx-auto space-y-6 w-full">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-widest text-rose-400">Gestión Integral</span>
+        <h2 class="text-3xl sm:text-5xl font-black text-white mt-1">Roster, Salud Médica y Tesorería</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card-glass p-6 rounded-2xl border-t-4 border-sky-500 space-y-3">
+          <h4 class="font-bold text-white text-base">🏃 Roster de Atletas</h4>
+          <p class="text-xs text-slate-300">
+            Perfiles de jugadores con posiciones (Handler, Cutter, Híbrido), dorsales únicos, historial de partidos y métricas de rendimiento.
+          </p>
+        </div>
+        <div class="card-glass p-6 rounded-2xl border-t-4 border-rose-500 space-y-3">
+          <h4 class="font-bold text-white text-base">🏥 Historial Médico</h4>
+          <p class="text-xs text-slate-300">
+            Seguimiento de lesiones desde el diagnóstico (Leve, Moderada, Severa) y fisioterapia hasta el alta médica definitiva.
+          </p>
+        </div>
+        <div class="card-glass p-6 rounded-2xl border-t-4 border-emerald-500 space-y-3">
+          <h4 class="font-bold text-white text-base">💰 Control de Tesorería</h4>
+          <p class="text-xs text-slate-300">
+            Registro auditable de cuotas, compra de discos oficiales, alquiler de canchas y balance en vivo de caja chica y banco.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 8: DEMOSTRACIÓN EN VIVO -->
+    <div class="slide flex-col items-center justify-center text-center max-w-4xl mx-auto space-y-6">
+      <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl font-black mx-auto">
+        ⚡
+      </div>
+      <h2 class="text-3xl sm:text-5xl font-black text-white">¡Pruébalo en Vivo Ahora Mismo!</h2>
+      <p class="text-base sm:text-lg text-slate-300 max-w-2xl leading-relaxed">
+        El sistema está 100% disponible con un entorno de demostración precargado que incluye partidos, atletas y estadísticas reales.
+      </p>
+      <div class="card-glass p-6 rounded-2xl inline-block max-w-xl mx-auto border-2 border-emerald-500/50">
+        <p class="text-xs text-slate-400 uppercase font-bold tracking-wider mb-2">Enlace Oficial de Acceso</p>
+        <a href="https://san-juan-ultimate-crew.seenode.app/" target="_blank" class="text-lg sm:text-xl font-mono text-emerald-400 hover:text-emerald-300 underline font-bold">
+          https://san-juan-ultimate-crew.seenode.app/
+        </a>
+        <p class="text-xs text-slate-400 mt-3">👉 Haz clic en <strong>"Probar Modo Invitado"</strong> para explorar sin registro.</p>
+      </div>
+    </div>
+
+    <!-- SLIDE 9: ROADMAP Y VISIÓN -->
+    <div class="slide flex-col justify-center max-w-5xl mx-auto space-y-8 w-full">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-widest text-sky-400">Próximos Pasos</span>
+        <h2 class="text-3xl sm:text-5xl font-black text-white mt-1">Roadmap de Evolución Futura</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="card-glass p-6 rounded-2xl space-y-3">
+          <span class="text-xs px-2.5 py-1 bg-sky-500/20 text-sky-400 rounded-md font-bold">Fase 1 (Actual)</span>
+          <h4 class="font-bold text-white text-base">Consolidación Beta</h4>
+          <p class="text-xs text-slate-300">Despliegue público, modo invitado, exportación de actas oficiales en PDF y pruebas en torneos locales.</p>
+        </div>
+        <div class="card-glass p-6 rounded-2xl space-y-3">
+          <span class="text-xs px-2.5 py-1 bg-indigo-500/20 text-indigo-400 rounded-md font-bold">Fase 2 (Próxima)</span>
+          <h4 class="font-bold text-white text-base">Marcadores en Vivo (WebSockets)</h4>
+          <p class="text-xs text-slate-300">Transmisión en directo del marcador y jugadas punto a punto para espectadores vía streaming.</p>
+        </div>
+        <div class="card-glass p-6 rounded-2xl space-y-3">
+          <span class="text-xs px-2.5 py-1 bg-emerald-500/20 text-emerald-400 rounded-md font-bold">Fase 3 (Federación)</span>
+          <h4 class="font-bold text-white text-base">Red Federada Nacional</h4>
+          <p class="text-xs text-slate-300">Ranking nacional por clubes, ligas inter-estados y validación de licencias de atletas.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 10: CIERRE Y PREGUNTAS -->
+    <div class="slide flex-col items-center justify-center text-center max-w-4xl mx-auto space-y-6">
+      <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-3xl font-black mx-auto shadow-xl">
+        🥏
+      </div>
+      <h2 class="text-4xl sm:text-6xl font-black text-white">¡Muchas Gracias!</h2>
+      <p class="text-lg text-slate-300 max-w-2xl leading-relaxed">
+        <em>"Unidos por el deporte más bonito del mundo: el Ultimate Frisbee."</em>
+      </p>
+      <div class="flex flex-wrap items-center justify-center gap-4 pt-4">
+        <a href="https://github.com/frankSousa23/San-Juan-Ultimate-Crew" target="_blank" class="card-glass px-6 py-3 rounded-xl hover:border-sky-500 transition text-sm font-bold text-slate-200">
+          ⭐ Repositorio GitHub (Open Source)
+        </a>
+        <a href="https://san-juan-ultimate-crew.seenode.app/" target="_blank" class="card-glass px-6 py-3 rounded-xl hover:border-emerald-500 transition text-sm font-bold text-emerald-400">
+          🚀 Abrir SIGEDIVO en Producción
+        </a>
+      </div>
+      <p class="text-xs text-slate-500 pt-6">Sesión abierta para Preguntas y Demostración en Vivo</p>
+    </div>
+
+  </main>
+
+  <!-- Bottom Navigation Controls -->
+  <footer class="w-full px-8 py-4 flex items-center justify-between z-50 no-print border-t border-slate-800/80 bg-slate-900/60 backdrop-blur-md">
+    <div class="text-xs text-slate-400">
+      Usa las teclas <kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700 text-slate-300 font-mono">←</kbd> <kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700 text-slate-300 font-mono">→</kbd> o la <kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700 text-slate-300 font-mono">Barra Espaciadora</kbd> para navegar.
+    </div>
+    
+    <div class="flex items-center gap-3">
+      <button onclick="prevSlide()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs rounded-xl border border-slate-700 transition">
+        ← Anterior
+      </button>
+      <button onclick="nextSlide()" class="px-5 py-2 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-sky-500/20 transition">
+        Siguiente →
+      </button>
+    </div>
+  </footer>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const counter = document.getElementById('slide-counter');
+
+    function updateSlide() {
+      slides.forEach((slide, index) => {
+        slide.classList.toggle('active', index === currentSlide);
+      });
+      if (counter) {
+        counter.textContent = `${currentSlide + 1} / ${slides.length}`;
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlide < slides.length - 1) {
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        prevSlide();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullScreen();
+      }
+    });
+  </script>
+</body>
+</html>
