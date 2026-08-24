@@ -2,11 +2,14 @@
 
 ![CI](https://github.com/frankSousa23/San-Juan-Ultimate-Crew/actions/workflows/ci.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Deploy](https://img.shields.io/badge/Live%20Deploy-Seenode%20PaaS-success?logo=vercel)
 ![React](https://img.shields.io/badge/Frontend-React%2018%20%2B%20Vite%206-blue)
 ![Express](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-lightgrey)
 ![Prisma](https://img.shields.io/badge/ORM-Prisma%207%20%2B%20PostgreSQL-indigo)
-![Multi-Team](https://img.shields.io/badge/Architecture-Multi--Team%20Production-success)
 ![Release](https://img.shields.io/badge/Release-v1.2.0%20Open%20Source-purple)
+
+> 🚀 **Instancia en Producción Activa:** [https://san-juan-ultimate-crew.seenode.app/](https://san-juan-ultimate-crew.seenode.app/)  
+> *(Cuenta con **Modo Invitado de 1 Clic** para explorar todo el sistema y sus datos de demostración sin necesidad de registro).*
 
 ---
 
