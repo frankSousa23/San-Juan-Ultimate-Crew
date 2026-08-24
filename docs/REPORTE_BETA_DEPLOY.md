@@ -72,7 +72,10 @@ Durante la auditoría exhaustiva en tiempo real sobre el entorno de producción,
 
 ---
 
-## 🚀 4. Recursos para Exposición Pública
+## 🚀 4. Recursos para Exposición y Promoción Pública
 
-1. **Diapositivas Interactivas:** Abre [`docs/presentacion_sigedivo_publico.html`](./presentacion_sigedivo_publico.html) para proyectar la presentación oficial con diapositivas animadas, notas de orador y botón de exportación a PDF.
-2. **Diagramas de Arquitectura:** Consulta [`docs/DIAGRAMAS_DE_FLUJO.md`](./DIAGRAMAS_DE_FLUJO.md) y [`docs/diagramas_flujo_visualizador.html`](./diagramas_flujo_visualizador.html) para exponer la arquitectura técnica del sistema.
+1. **🎬 Video Promocional Explicativo (MP4 Full HD 1080p):**
+   * Archivo de Video MP4: [`docs/SIGEDIVO_Video_Promocional_Beta.mp4`](./SIGEDIVO_Video_Promocional_Beta.mp4) (1.34 MB, 1 minuto de duración, 1080p a 30 FPS con títulos, descripciones y capturas del sistema).
+   * Reproductor Web Local: Abre [`docs/video_promocional_player.html`](./video_promocional_player.html) con doble clic para ver el video con controles y botón de descarga directa.
+2. **📽️ Diapositivas Interactivas:** Abre [`docs/presentacion_sigedivo_publico.html`](./presentacion_sigedivo_publico.html) para proyectar la presentación oficial con diapositivas animadas, notas de orador y botón de exportación a PDF.
+3. **📊 Diagramas de Arquitectura:** Consulta [`docs/DIAGRAMAS_DE_FLUJO.md`](./DIAGRAMAS_DE_FLUJO.md) y [`docs/diagramas_flujo_visualizador.html`](./diagramas_flujo_visualizador.html) para exponer la arquitectura técnica del sistema.

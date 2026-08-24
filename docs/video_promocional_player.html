@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIGEDIVO — Video Promocional Oficial (Beta en Producción)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at 50% 20%, #0f172a 0%, #020617 100%);
+    }
+    h1, h2, h3, h4 {
+      font-family: 'Outfit', sans-serif;
+    }
+    .card-glass {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col items-center justify-center p-4 sm:p-8">
+
+  <div class="max-w-5xl w-full space-y-6">
+    
+    <!-- Top Header -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 card-glass p-5 rounded-2xl border border-slate-800">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center text-2xl font-black">
+          🥏
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-black text-white">SIGEDIVO — Video Promocional</h1>
+          <p class="text-xs text-sky-400 font-medium">Plataforma Oficial de Gestión para el Disco Volador • Versión Beta</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="./SIGEDIVO_Video_Promocional_Beta.mp4" download class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-emerald-900/40">
+          📥 Descargar MP4 (1.34 MB)
+        </a>
+        <a href="https://san-juan-ultimate-crew.seenode.app/" target="_blank" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-sky-900/40">
+          🚀 Ir a la App en Vivo
+        </a>
+      </div>
+    </div>
+
+    <!-- Video Player Container -->
+    <div class="card-glass p-3 sm:p-4 rounded-3xl border border-slate-700/60 shadow-2xl overflow-hidden relative group">
+      <video 
+        id="promoVideo" 
+        controls 
+        autoplay 
+        playsinline
+        class="w-full h-auto rounded-2xl border border-slate-800 aspect-video bg-black shadow-inner"
+        src="./SIGEDIVO_Video_Promocional_Beta.mp4"
+      >
+        Tu navegador no soporta la reproducción de video HTML5.
+      </video>
+    </div>
+
+    <!-- Explanatory Modules Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs text-slate-300">
+      <div class="card-glass p-4 rounded-xl space-y-1 border-t-2 border-emerald-500">
+        <div class="font-bold text-white text-sm">⚡ Modo Invitado (1-Clic)</div>
+        <p class="text-slate-400">Prueba inmediata sin registro de credenciales.</p>
+      </div>
+      <div class="card-glass p-4 rounded-xl space-y-1 border-t-2 border-sky-500">
+        <div class="font-bold text-white text-sm">⏱️ Mesa Técnica & Pizarra</div>
+        <p class="text-slate-400">Marcador táctil en vivo optimizado para tablets.</p>
+      </div>
+      <div class="card-glass p-4 rounded-xl space-y-1 border-t-2 border-indigo-500">
+        <div class="font-bold text-white text-sm">📐 Playbook & Simulador</div>
+        <p class="text-slate-400">Animaciones de jugadas y pizarra libre.</p>
+      </div>
+      <div class="card-glass p-4 rounded-xl space-y-1 border-t-2 border-amber-500">
+        <div class="font-bold text-white text-sm">🌟 Torneos & SOTG</div>
+        <p class="text-slate-400">Espíritu de juego oficial según normativa WFDF.</p>
+      </div>
+    </div>
+
+    <!-- Footer Notes -->
+    <div class="text-center text-xs text-slate-500 space-y-1">
+      <p>Diseñado para San Juan Ultimate Crew y la comunidad de Ultimate Frisbee en Venezuela e internacional.</p>
+      <p>💡 Comparte este video con atletas y clubes durante la fase de prueba en <strong class="text-slate-400">san-juan-ultimate-crew.seenode.app</strong>.</p>
+    </div>
+
+  </div>
+
+</body>
+</html>
