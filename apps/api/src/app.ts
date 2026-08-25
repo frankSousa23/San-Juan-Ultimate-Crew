@@ -1,3 +1,31 @@
+/**
+ * ============================================================================
+ * SIGEDIVO (Sistema de Gestión para el Disco Volador)
+ * APLICACIÓN PRINCIPAL EXPRESS & ENRUTAMIENTO API (apps/api/src/app.ts)
+ * ============================================================================
+ * 
+ * Este módulo configura y exporta la instancia principal de la aplicación Express (`app`).
+ * 
+ * RESPONSABILIDADES Y MIDDLEWARES:
+ * 1. Encabezados de Seguridad (Helmet / Custom CSP):
+ *    - Protección contra ataques XSS, Clickjacking, MIME-sniffing e inyecciones.
+ * 2. Políticas CORS Dinámicas:
+ *    - Admite peticiones desde el frontend web y entornos de previsualización.
+ * 3. Compresión GZIP/Brotli:
+ *    - Optimiza transferencias reduciendo drásticamente el peso de payloads JSON y estáticos.
+ * 4. Control de Tasa (Rate Limiting):
+ *    - Limitadores globales y específicos para login, registro y endpoints de escritura.
+ * 5. Sanitización y Logs Auditables:
+ *    - Limpieza recursiva de entradas y registro estructurado de actividad en consola.
+ * 6. Enrutamiento Modular REST:
+ *    - Equipos, Usuarios, Roster, Partidos, Anotaciones en Vivo, Finanzas, Salud, Táctica.
+ * 7. Documentación Interactiva OpenAPI / Swagger (/api-docs):
+ *    - Especificación completa de contratos y schemas en Swagger UI.
+ * 8. Fallback SPA (Single Page Application):
+ *    - Asegura la recarga directa en cualquier ruta del frontend React.
+ * ============================================================================
+ */
+
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -6,9 +34,20 @@ import swaggerUi from 'swagger-ui-express';
 import 'dotenv/config';
 import { errorHandler } from './middleware/errorHandler.js';
 import { requestLogger, errorLogger } from './middleware/logging.js';
-import { generalLimiter, authLimiter, passwordResetLimiter, uploadLimiter, writeLimiter, readLimiter, securityHeaders, sanitizeRequest, corsOptions } from './middleware/security.js';
+import { 
+  generalLimiter, 
+  authLimiter, 
+  passwordResetLimiter, 
+  uploadLimiter, 
+  writeLimiter, 
+  readLimiter, 
+  securityHeaders, 
+  sanitizeRequest, 
+  corsOptions 
+} from './middleware/security.js';
 import { swaggerSpec } from './lib/swagger.js';
 
+// --- ENRUTADORES MODULARES DE LA API ---
 import healthRouter from './routes/health.js';
 import playersRouter from './routes/players.js';
 import eventsRouter from './routes/events.js';
@@ -35,79 +74,124 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
-const currentFilename = typeof __filename !== 'undefined' ? __filename : fileURLToPath(import.meta.url || 'file://' + process.cwd() + '/index.js');
-const currentDir = typeof __dirname !== 'undefined' ? __dirname : path.dirname(currentFilename);
+const currentFilename = typeof __filename !== 'undefined' 
+  ? __filename 
+  : fileURLToPath(import.meta.url || 'file://' + process.cwd() + '/index.js');
+const currentDir = typeof __dirname !== 'undefined' 
+  ? __dirname 
+  : path.dirname(currentFilename);
 
 export const app = express();
+
+// Confianza en proxies inversos (Cloud Run / Nginx / Traefik / Seenode)
 app.set('trust proxy', 1);
 
-// Security middleware
+// ============================================================================
+// 1. CAPA DE SEGURIDAD Y OPTIMIZACIÓN HTTP
+// ============================================================================
 app.use(securityHeaders);
 app.use(cors(corsOptions));
 
-// Compression middleware (should be before body parsing)
+// Compresión de respuestas (nivel 6 para óptimo balance CPU/tamaño)
 app.use(compression({
   filter: (req: Request, res: Response) => {
-    // Don't compress if client doesn't support it
     if (req.headers['x-no-compression']) {
       return false;
     }
-    // Use compression filter function
     return compression.filter(req, res);
   },
-  level: 6, // Compression level (0-9, 6 is a good balance)
-  threshold: 1024, // Only compress responses larger than 1KB
+  level: 6,
+  threshold: 1024, // Solo comprimir respuestas mayores a 1KB
 }));
 
+// Parseo de cuerpos de petición JSON y URL-encoded (límite 10MB para adjuntos)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Logging middleware
+// ============================================================================
+// 2. LOGGING Y CONTROL DE TASA (RATE LIMITING)
+// ============================================================================
 app.use(requestLogger);
 app.use(morgan('combined'));
 
-// Rate limiting - Apply general limiter first, then specific limiters on routes
+// Rate limiting general y diferenciado por operaciones
 app.use(generalLimiter);
-// Apply read/write specific limiters
 app.use(readLimiter);
 app.use(writeLimiter);
 
-// Request sanitization
+// Sanitización de entradas contra inyecciones NoSQL / scripts maliciosos
 app.use(sanitizeRequest);
 
+// ============================================================================
+// 3. REGISTRO DE RUTAS DE LA API REST
+// ============================================================================
+
+// Verificación de estado del servicio y dependencias
 app.use('/health', healthRouter);
 app.use('/api/health', healthRouter);
+
+// Gestión de Equipos y Divisiones Multi-Club
+app.use('/api/teams', teamsRouter);
+
+// Plantilla de Atletas y Roster Oficial
 app.use('/api/players', playersRouter);
+
+// Calendario, Torneos, Partidos y Convocatorias
 app.use('/api/events', eventsRouter);
+app.use('/api/event-participants', eventParticipantsRouter);
+app.use('/api/attendance', attendanceRouter);
+
+// Mesa Técnica y Anotaciones en Vivo (Puntos, Goles, Asistencias, D's, SOTG)
+app.use('/api/annotations', annotationsRouter);
+
+// Estadísticas de Rendimiento y Tablas de Líderes
+app.use('/api/stats', statsRouter);
+
+// Comunicaciones, Canales y Mensajería Interna
 app.use('/api/channels', channelsRouter);
 app.use('/api/messages', messagesRouter);
+app.use('/api/news', newsRouter);
+
+// Finanzas, Libro Diario y Tesorería
 app.use('/api/accounts', accountsRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/transactions', transactionsRouter);
-app.use('/api/stats', statsRouter);
-app.use('/api/attendance', attendanceRouter);
+
+// Salud Médica y Fichas de Lesiones
 app.use('/api/injuries', injuriesRouter);
+
+// Inteligencia Táctica y Scouting de Adversarios
 app.use('/api/rivals', rivalsRouter);
+
+// Pizarrón Táctico y Libro de Jugadas (Playbook)
 app.use('/api/plays', playsRouter);
-app.use('/api/event-participants', eventParticipantsRouter);
+
+// Biblioteca de Recursos y Documentos Oficiales WFDF
 app.use('/api/resources', resourcesRouter);
-app.use('/api/annotations', annotationsRouter);
-app.use('/api/news', newsRouter);
-app.use('/api/teams', teamsRouter);
+
+// Buzón de Comentarios y Feedback
 app.use('/api/feedback', feedbackRouter);
-// Apply specific rate limiting to auth routes
+
+// Autenticación, Registro y Gestión de Sesiones (con Rate Limit estricto)
 app.use('/api/auth', authLimiter);
-// Apply stricter rate limiting to password reset endpoints
 app.use('/api/auth/forgot-password', passwordResetLimiter);
 app.use('/api/auth/reset-password', passwordResetLimiter);
 app.use('/api/auth', authRouter);
+
+// Gestión de Usuarios y Permisos RBAC (Panel Super Admin)
 app.use('/api/users', usersRouter);
+
+// Pista de Auditoría Inmutable (Audit Trail)
 app.use('/api/audit', auditRouter);
 
-// Apply upload rate limiting to resource uploads
+// Límite de carga para archivos adjuntos
 app.use('/api/resources/upload', uploadLimiter);
 
-// Serve uploaded files statically
+// ============================================================================
+// 4. ARCHIVOS ESTÁTICOS Y DOCUMENTACIÓN SWAGGER
+// ============================================================================
+
+// Servir archivos subidos (avatares, documentos, tácticas)
 const possibleUploadDirs = [
   path.resolve(process.cwd(), 'apps', 'api', 'uploads'),
   path.resolve(process.cwd(), 'uploads'),
@@ -125,19 +209,26 @@ for (const uDir of possibleUploadDirs) {
 }
 app.use('/uploads', express.static(activeUploadsDir));
 
-app.get('/api', (_req: Request, res: Response) => res.json({ name: 'SIGEDIVO (Sistema de Gestión para el Disco Volador) API', ok: true, version: '1.2.0' }));
+// Endpoint raíz de confirmación API
+app.get('/api', (_req: Request, res: Response) => 
+  res.json({ name: 'SIGEDIVO (Sistema de Gestión para el Disco Volador) API', ok: true, version: '1.2.0' })
+);
 
-// Swagger documentation
+// Interfaz Interactiva de Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'SIGEDIVO (Sistema de Gestión para el Disco Volador) API Documentation',
 }));
 
-// Error handling middleware (for API errors)
+// ============================================================================
+// 5. MANEJO GLOBAL DE ERRORES DE LA API
+// ============================================================================
 app.use(errorLogger);
 app.use(errorHandler);
 
-// Static files & SPA Fallback serving
+// ============================================================================
+// 6. SERVIDO ESTÁTICO DE LA SPA & ENRUTAMIENTO WILDCARD
+// ============================================================================
 function getWebDistCandidates() {
   return [
     path.resolve(process.cwd(), 'apps', 'web', 'dist'),
@@ -159,13 +250,14 @@ function getWebDistCandidates() {
   ];
 }
 
+// Registrar directorios estáticos disponibles
 for (const d of getWebDistCandidates()) {
   if (d && fs.existsSync(d)) {
     app.use(express.static(d));
   }
 }
 
-// Wildcard SPA Handler for all frontend routes
+// Wildcard SPA Fallback: Cualquier ruta que no sea API entrega index.html
 app.use((req: Request, res: Response, next: NextFunction) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     return next();
@@ -181,7 +273,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     return next();
   }
 
-  // 1. Try to serve specific requested static asset if available
+  // 1. Intentar servir activo estático solicitado si existe en el build
   const cleanPath = urlPath.replace(/^\/+/, '');
   for (const distDir of getWebDistCandidates()) {
     if (distDir && fs.existsSync(distDir)) {
@@ -192,7 +284,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     }
   }
 
-  // 2. Otherwise serve SPA index.html
+  // 2. De lo contrario, entregar el index.html de la SPA
   for (const distDir of getWebDistCandidates()) {
     if (distDir && fs.existsSync(distDir)) {
       const candidateIndex = path.join(distDir, 'index.html');
@@ -202,7 +294,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     }
   }
 
-  // Fallback direct paths
+  // Fallback a rutas directas comunes
   const directIndexCandidates = [
     path.resolve(process.cwd(), 'dist', 'index.html'),
     path.resolve(process.cwd(), 'apps', 'web', 'dist', 'index.html'),
@@ -215,7 +307,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     }
   }
 
-  // Graceful fallback if frontend bundle has not been built yet
+  // Respuesta de contingencia si el frontend aún no ha sido compilado
   return res.json({
     name: 'SIGEDIVO (Sistema de Gestión para el Disco Volador) API',
     status: 'online',
@@ -227,4 +319,3 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     },
   });
 });
-

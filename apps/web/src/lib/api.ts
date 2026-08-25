@@ -1,3 +1,29 @@
+/**
+ * ============================================================================
+ * SIGEDIVO (Sistema de Gestión para el Disco Volador)
+ * CLIENTE HTTP Y ADAPTADOR DE SERVICIOS API REST (apps/web/src/lib/api.ts)
+ * ============================================================================
+ * 
+ * Este módulo centraliza todas las llamadas HTTP entre el frontend React y el backend Express.
+ * 
+ * CARACTERÍSTICAS Y ARQUITECTURA:
+ * 1. Cliente HTTP Resiliente (`http`):
+ *    - Basado en `fetch` nativo con tipado genérico `<T>`, inyección automática del
+ *      header `Authorization: Bearer <token>` e interceptor de errores normalizados.
+ * 2. Gestión de Tokens JWT:
+ *    - `setAuthToken(token)`: Guarda/elimina el token en `localStorage`.
+ *    - `getAuthToken()`: Recupera el token para peticiones autenticadas.
+ * 3. Servicios API Especializados Exportados:
+ *    - `authApi`: Login, registro, me, guest-login, recuperación de credenciales.
+ *    - `teamsApi`: Equipos públicos, gestión multi-club y categorías.
+ *    - `playersApi`: Plantilla del Roster, estados médicos y estadísticas.
+ *    - `eventsApi`: Calendario, torneos, partidos por fases y convocatorias.
+ *    - `annotationsApi`: Mesa técnica en vivo (goles, asistencias, defensas, SOTG, fusión de invitados).
+ *    - `statsApi`: Resumen del Dashboard y analítica de torneo.
+ *    - `financesApi`, `playsApi`, `injuriesApi`, `rivalsApi`, `communicationsApi`, `newsApi`.
+ * ============================================================================
+ */
+
 import axios from 'axios'
 import { Player, CreatePlayerInput, UpdatePlayerInput } from '../types/player'
 import { EventItem, CreateEventInput, UpdateEventInput } from '../types/event'

@@ -1,3 +1,28 @@
+/**
+ * ============================================================================
+ * SIGEDIVO (Sistema de Gestión para el Disco Volador)
+ * ENRUTADOR DE GESTIÓN MULTI-EQUIPO Y DIVISIONES (apps/api/src/routes/teams.ts)
+ * ============================================================================
+ * 
+ * Este módulo administra los equipos, clubes y divisiones (Open, Femenino, Mixto,
+ * Master) que conviven dentro de la plataforma con aislamiento de datos.
+ * 
+ * ENDPOINTS Y RESPONSABILIDADES:
+ * 1. `GET /public`:
+ *    - Catálogo público de equipos activos para los selectores de registro y landing.
+ * 2. `GET /`:
+ *    - Listado integral con agregaciones de atletas, eventos y usuarios vinculados.
+ * 3. `GET /:id`:
+ *    - Detalle de un equipo específico con su plantilla oficial ordenada por dorsal.
+ * 4. `POST /` (Admin/Directiva):
+ *    - Creación de nuevo equipo con validación Zod de nombre, tag, colores y división.
+ * 5. `PUT /:id` (Admin/Directiva):
+ *    - Actualización de identidad de marca (escudo, paleta de color, categorías).
+ * 6. `DELETE /:id` (Admin/Directiva):
+ *    - Eliminación de equipo con protección referencial (requiere desvincular atletas).
+ * ============================================================================
+ */
+
 import { Router, Request, Response } from 'express'
 import { prisma } from '../lib/prisma.js'
 import { requireRole } from './auth.js'

@@ -1,3 +1,28 @@
+/**
+ * ============================================================================
+ * SIGEDIVO (Sistema de Gestión para el Disco Volador)
+ * MIDDLEWARE DE CONTROL DE ACCESO A MESA TÉCNICA (annotationAccess.ts)
+ * ============================================================================
+ * 
+ * Este middleware protege todas las operaciones de registro y consulta de
+ * anotaciones en vivo (goles, asistencias, defensas, pérdidas, espíritu SOTG).
+ * 
+ * REGLAS DE ACCESO Y SEGURIDAD:
+ * 1. Autenticación Requerida:
+ *    - Valida que la petición cuente con un token JWT válido y extrae el usuario.
+ * 2. Bloqueo de Mesa Técnica Oficial (`isAnnotatorLocked`):
+ *    - Si un partido está marcado como "bloqueado por mesa técnica", SOLO el
+ *      anotador oficial asignado (`officialAnnotatorId`) o usuarios con rol
+ *      `admin` / `directiva` pueden realizar mutaciones (POST, PUT, DELETE, PATCH).
+ * 3. Aislamiento Multi-Equipo (Tenant Isolation):
+ *    - Verifica que el usuario pertenezca al equipo local, al equipo rival o figure
+ *      en la lista de participantes/refuerzos de la convocatoria del evento.
+ * 4. Inyección de Contexto en Request:
+ *    - Inyecta `req.userRoles`, `req.userPermissions` y `req.userData` para
+ *      evitar consultas redundantes en los controladores subsecuentes.
+ * ============================================================================
+ */
+
 import { Request, Response, NextFunction } from 'express'
 import { prisma } from '../lib/prisma.js'
 

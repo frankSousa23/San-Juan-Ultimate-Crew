@@ -1,3 +1,27 @@
+/**
+ * ============================================================================
+ * SIGEDIVO (Sistema de Gestión para el Disco Volador)
+ * ENRUTADOR DE EVENTOS, TORNEOS Y CONVOCATORIAS (apps/api/src/routes/events.ts)
+ * ============================================================================
+ * 
+ * Este módulo gestiona el ciclo de vida de actividades deportivas: Torneos padres,
+ * partidos por fases (`GROUP_STAGE`, `SEMI_FINALS`, `FINALS`), prácticas,
+ * caimaneras internas y amistosos interclubes.
+ * 
+ * CAPACIDADES CLAVE:
+ * 1. Jerarquía de Torneos y Partidos Asociados:
+ *    - Admite eventos de tipo `TOURNAMENT` que agrupan múltiples `MATCH` vinculados por `parentEventId`.
+ * 2. Convocatoria Táctica de Líneas:
+ *    - Asignación de atletas a líneas ofensivas (`O-Line`), defensivas (`D-Line`) o `Flex`.
+ * 3. Mesa Técnica Oficial y Asignación de Anotador:
+ *    - Control de `officialAnnotatorId` y bandera `isAnnotatorLocked` para blindar actas.
+ * 4. Presets y Plantillas de Creación Rápida:
+ *    - Plantillas para Torneo Open Masc/Fem, Full Day Open/Mixto, Amistoso Interclub y Caimanera.
+ * 5. Control de Asistencia y RSVP:
+ *    - Confirmación previa de asistencia y pase de lista en cancha (`presente`, `tarde`, `ausente`).
+ * ============================================================================
+ */
+
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { requirePermission } from './auth.js';

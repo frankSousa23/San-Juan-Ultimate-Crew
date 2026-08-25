@@ -1,3 +1,32 @@
+/**
+ * ============================================================================
+ * SIGEDIVO (Sistema de Gestión para el Disco Volador)
+ * CONTROLADOR DE AUTENTICACIÓN Y SEGURIDAD RBAC (apps/api/src/routes/auth.ts)
+ * ============================================================================
+ * 
+ * Este módulo centraliza todas las operaciones de autenticación, emisión de tokens
+ * JWT, autorización basada en roles (RBAC) y gestión del ciclo de vida de usuarios.
+ * 
+ * FUNCIONALIDADES PRINCIPALES:
+ * 1. `POST /login`:
+ *    - Valida credenciales con `bcrypt`, verifica el estado de la cuenta (aprobada/pendiente)
+ *      y genera un JWT firmado con payload que incluye el ID, email y roles del usuario.
+ * 2. `POST /register`:
+ *    - Registro de nuevos atletas y cuerpo técnico; asigna estado `PENDING` para
+ *      revisión por la Directiva/Admin y asocia opcionalmente el equipo seleccionado.
+ * 3. `POST /guest-login`:
+ *    - Acceso instantáneo de 1-Clic en modo demostración con rol `guest` y datos semilla.
+ * 4. `GET /me`:
+ *    - Consulta el perfil del usuario autenticado, roles asociados, permisos y jugador vinculado.
+ * 5. `POST /forgot-password` & `POST /reset-password`:
+ *    - Flujo seguro de recuperación de contraseña con tokens criptográficos de un solo uso.
+ * 6. Middlewares de Autorización Exportados:
+ *    - `requireAuth`: Exige token Bearer válido en el header Authorization.
+ *    - `requireRole(roles)`: Exige al menos uno de los roles especificados (o acceso universal 'admin').
+ *    - `requirePermission(perm)`: Valida permisos atómicos granulares calculados por rol.
+ * ============================================================================
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Router, Request, Response, NextFunction } from 'express'
 import { prisma } from '../lib/prisma.js'

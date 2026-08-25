@@ -1,3 +1,31 @@
+/**
+ * ============================================================================
+ * SIGEDIVO (Sistema de Gestión para el Disco Volador)
+ * ENRUTADOR DE ANOTACIONES EN VIVO Y MESA TÉCNICA (apps/api/src/routes/annotations.ts)
+ * ============================================================================
+ * 
+ * Este módulo es el núcleo estadístico del sistema. Procesa en tiempo real todas
+ * las acciones ocurridas en la cancha durante partidos oficiales, torneos y caimaneras.
+ * 
+ * CAPACIDADES CLAVE:
+ * 1. `POST /`:
+ *    - Registra eventos de partido: Goles (`GOAL`), Asistencias (`ASSIST`),
+ *      Defensas (`DEFENSE` / D's) y Pérdidas (`TURNOVER`).
+ *    - Maneja asistencias vinculadas (`relatedPlayerId`) y soporte para anotaciones
+ *      sin asistencia (Callahan, Error Forzado Rival o Infield Turnover).
+ * 2. `GET /`:
+ *    - Filtra anotaciones por evento, jugador, tipo de jugada o línea táctica (O-Line / D-Line).
+ * 3. `POST /sotg` & `GET /sotg/:eventId`:
+ *    - Evaluación y cálculo oficial del Espíritu de Juego (SOTG) según las 5 reglas WFDF:
+ *      (Conocimiento de reglas, Faltas y contacto, Imparcialidad, Actitud positiva, Comunicación).
+ * 4. `POST /merge-guest`:
+ *    - Fusión atómica de registros: Transfiere el historial acumulado por un invitado
+ *      o refuerzo en una caimanera hacia la cuenta oficial del atleta una vez aprobada.
+ * 5. Integración con Middleware `requireAnnotationAccess`:
+ *    - Garantiza control de acceso, aislamiento multi-equipo y bloqueo por Mesa Técnica.
+ * ============================================================================
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Router, Request, Response } from 'express'
 import { z } from 'zod'

@@ -1,13 +1,45 @@
+/**
+ * ============================================================================
+ * SIGEDIVO (Sistema de Gestión para el Disco Volador)
+ * SERVIDOR PRINCIPAL Y ENTRADA DE LA APLICACIÓN (server.ts)
+ * ============================================================================
+ * 
+ * Este archivo actúa como el punto de entrada unificado para el despliegue tanto
+ * en entornos de desarrollo local como en producción (Cloud Run / VPS / PaaS).
+ * 
+ * ARQUITECTURA DE SERVICIO:
+ * 1. API Express (/api/*, /health, /uploads, /api-docs) servida a través de `app`.
+ * 2. En DESARROLLO (NODE_ENV !== 'production'):
+ *    - Se monta Vite en modo middleware para transformar y servir módulos TSX/CSS
+ *      en caliente de forma nativa sobre el puerto 3000.
+ * 3. En PRODUCCIÓN (NODE_ENV === 'production'):
+ *    - Se buscan y sirven los artefactos estáticos compilados en `dist/` o `apps/web/dist/`
+ *    - Todas las rutas no-API son redirigidas a `index.html` (SPA Fallback) para que
+ *      React Router maneje la navegación del cliente sin errores 404.
+ * 
+ * PUERTO Y SEGURIDAD:
+ * - Escucha estrictamente en '0.0.0.0' y puerto 3000 (o process.env.PORT si se define).
+ * ============================================================================
+ */
+
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import express, { Request, Response, NextFunction } from 'express';
 import { app } from './apps/api/src/app.js';
 
+// Determinación segura de __filename y __dirname para compatibilidad ESM / Node.js
+const currentFilename = typeof __filename !== 'undefined' 
+  ? __filename 
+  : fileURLToPath(import.meta.url || 'file://' + process.cwd() + '/index.js');
+const currentDir = typeof __dirname !== 'undefined' 
+  ? __dirname 
+  : path.dirname(currentFilename);
 
-const currentFilename = typeof __filename !== 'undefined' ? __filename : fileURLToPath(import.meta.url || 'file://' + process.cwd() + '/index.js');
-const currentDir = typeof __dirname !== 'undefined' ? __dirname : path.dirname(currentFilename);
-
+/**
+ * Resuelve dinámicamente las rutas del frontend tanto en mono-repositorio
+ * como en entornos de despliegue empaquetados.
+ */
 function getWebPaths() {
   const possibleWebDirs = [
     path.resolve(process.cwd(), 'apps', 'web'),
@@ -23,6 +55,7 @@ function getWebPaths() {
     }
   }
 
+  // Candidatos para encontrar el index.html compilado en producción
   const candidateIndexPaths = [
     path.resolve(process.cwd(), 'dist', 'index.html'),
     path.resolve(currentDir, 'index.html'),
@@ -56,11 +89,17 @@ function getWebPaths() {
   };
 }
 
+/**
+ * Inicializador asíncrono del servidor web y API REST.
+ */
 async function startServer() {
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   const { webDir, distPath, distIndexPath, sourceIndexPath } = getWebPaths();
 
   if (process.env.NODE_ENV !== 'production') {
+    // ========================================================================
+    // MODO DESARROLLO: Vite Server Middleware
+    // ========================================================================
     const { createServer: createViteServer } = await import("vite"); 
     const vite = await createViteServer({
       server: { middlewareMode: true, host: '0.0.0.0', port: PORT },
@@ -68,14 +107,15 @@ async function startServer() {
       root: webDir,
     });
 
-    // 1. Use vite's connect instance as middleware
+    // 1. Inyectar middlewares de Vite para servir módulos HMR/ESM bajo demanda
     app.use(vite.middlewares);
 
-    // 2. Serve index.html for all non-API GET/HEAD requests
+    // 2. Servir e inyectar scripts en index.html para cualquier ruta GET del frontend
     app.use(async (req: Request, res: Response, next: NextFunction) => {
       if (req.method !== 'GET' && req.method !== 'HEAD') return next();
 
       const url = req.originalUrl || req.url;
+      // Omitir endpoints de backend para que continúen al enrutador de Express
       if (
         url.startsWith('/api') ||
         url.startsWith('/health') ||
@@ -100,7 +140,9 @@ async function startServer() {
       }
     });
   } else {
-    // Serve static assets from the found distPath and fallback dist directories
+    // ========================================================================
+    // MODO PRODUCCIÓN: Servir ficheros estáticos precompilados
+    // ========================================================================
     const staticDirs = [
       distPath,
       path.resolve(process.cwd(), 'dist'),
@@ -117,6 +159,7 @@ async function startServer() {
       }
     }
 
+    // Wildcard SPA Fallback para React Router en producción
     app.use((req: Request, res: Response, next: NextFunction) => {
       if (req.method !== 'GET' && req.method !== 'HEAD') return next();
       const url = req.originalUrl || req.url;
@@ -149,12 +192,14 @@ async function startServer() {
     });
   }
 
+  // Inicio de escucha en la interfaz de red
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Server] SIGEDIVO (Sistema de Gestión para el Disco Volador) running at http://0.0.0.0:${PORT}`);
+    console.log(`[Server] SIGEDIVO (Sistema de Gestión para el Disco Volador) activo en http://0.0.0.0:${PORT}`);
   });
 }
 
+// Ejecución con captura de excepciones fatales
 startServer().catch((err) => {
-  console.error('[Server Error]', err);
+  console.error('[Server Error Fatal]', err);
   process.exit(1);
 });

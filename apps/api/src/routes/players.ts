@@ -1,3 +1,29 @@
+/**
+ * ============================================================================
+ * SIGEDIVO (Sistema de Gestión para el Disco Volador)
+ * ENRUTADOR DE PLANTILLA Y ROSTER OFICIAL (apps/api/src/routes/players.ts)
+ * ============================================================================
+ * 
+ * Este módulo gestiona las fichas técnicas de los atletas, dorsales de juego,
+ * posiciones tácticas, estados físicos y vinculación con cuentas de usuario.
+ * 
+ * CARACTERÍSTICAS Y RESPONSABILIDADES:
+ * 1. `GET /`:
+ *    - Obtiene la lista de jugadores (con paginación, filtros por equipo, estado y posición).
+ *    - Incluye estadísticas agregadas y estado médico activo.
+ * 2. `GET /:id`:
+ *    - Detalle completo del atleta: historial de goles, asistencias, defensas, lesiones y SOTG.
+ * 3. `POST /` (Capitán/Entrenador/Directiva/Admin):
+ *    - Alta de un nuevo atleta con validación de dorsal único por equipo `(teamId, number)`.
+ * 4. `PUT /:id`:
+ *    - Actualización de perfil con protección `requireSelfOrAdminForPlayer` (un jugador
+ *      puede actualizar su información personal, pero solo la directiva puede modificar
+ *      roles tácticos o estado administrativo).
+ * 5. `DELETE /:id` (Directiva/Admin):
+ *    - Baja o desvinculación con registro de auditoría.
+ * ============================================================================
+ */
+
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { requirePermission } from './auth.js';

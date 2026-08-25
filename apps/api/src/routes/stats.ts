@@ -1,3 +1,25 @@
+/**
+ * ============================================================================
+ * SIGEDIVO (Sistema de Gestión para el Disco Volador)
+ * ENRUTADOR DE ESTADÍSTICAS Y ANALÍTICA DE RENDIMIENTO (apps/api/src/routes/stats.ts)
+ * ============================================================================
+ * 
+ * Este módulo realiza el cómputo y agregación analítica de datos en tiempo real:
+ * tablas de líderes del club, estadísticas acumuladas de torneo, métricas individuales
+ * y resúmenes para el Dashboard Principal.
+ * 
+ * CAPACIDADES CLAVE:
+ * 1. `GET /`:
+ *    - Métricas agregadas para el Dashboard: conteo de atletas activos/lesionados,
+ *      próximos eventos, balance financiero y actividad reciente.
+ * 2. `GET /tournament/:id`:
+ *    - Estadísticas globales de un torneo específico: goles totales, líderes anotadores,
+ *      máximos asistidores, bloqueos defensivos (D's), pérdidas y ranking de Espíritu (SOTG).
+ * 3. `GET /players/:id`:
+ *    - Ficha analítica individual con histórico de puntos jugados, eficiencia de pase y diferencial `+/-`.
+ * ============================================================================
+ */
+
 import { Router, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../lib/prisma.js'

@@ -1,4 +1,26 @@
 
+/**
+ * ============================================================================
+ * SIGEDIVO (Sistema de Gestión para el Disco Volador)
+ * ENRUTADOR PRINCIPAL DEL FRONTEND REACT (apps/web/src/App.tsx)
+ * ============================================================================
+ * 
+ * Este módulo define el árbol de navegación del cliente SPA utilizando `react-router-dom`.
+ * 
+ * ARQUITECTURA DE ENRUTAMIENTO:
+ * 1. Control de Estado de Sesión (`AuthProvider` & `useAuth`):
+ *    - Determina dinámicamente si mostrar la `Landing` pública o el `Dashboard` en la raíz (`/`).
+ * 2. Carga Diferida (Code Splitting con `React.lazy` y `Suspense`):
+ *    - Los módulos pesados (`Events`, `Plays`, `Finances`, `LiveAnnotations`, etc.) se
+ *      cargan bajo demanda, reduciendo el bundle inicial y acelerando el tiempo de carga.
+ * 3. Rutas Protegidas por Rol (`ProtectedRoute`):
+ *    - Restringe vistas según la matriz RBAC (`admin`, `captain`, `coach`, `treasurer`, `annotator`).
+ *    - Redirige usuarios no autorizados de vuelta al Dashboard con notificaciones toast claras.
+ * 4. Tolerancia a Fallos (`FaultBoundary`):
+ *    - Captura excepciones inesperadas en cualquier componente hijo sin romper la aplicación completa.
+ * ============================================================================
+ */
+
 import React, { Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'

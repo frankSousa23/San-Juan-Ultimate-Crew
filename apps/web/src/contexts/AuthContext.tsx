@@ -1,32 +1,56 @@
+/**
+ * ============================================================================
+ * SIGEDIVO (Sistema de Gestión para el Disco Volador)
+ * CONTEXTO DE AUTENTICACIÓN Y SESIÓN (apps/web/src/contexts/AuthContext.tsx)
+ * ============================================================================
+ * 
+ * Este módulo gestiona el estado global de autenticación, la persistencia del token
+ * JWT, la validación de roles de usuario (RBAC) y el ciclo de vida de la sesión.
+ * 
+ * FUNCIONALIDADES CLAVE:
+ * 1. Verificación Inicial de Sesión (on mount):
+ *    - Recupera el token guardado en `localStorage` y llama a `/api/auth/me` para
+ *      reconstruir el perfil del usuario, roles y permisos activos.
+ * 2. Inicio de Sesión Estándar y Modo Invitado (1-Clic):
+ *    - Guarda el token JWT, actualiza el estado reactivo `user` y muestra notificaciones toast.
+ * 3. Matriz de Permisos y Roles (RBAC):
+ *    - Helper `hasRole(roleName)`: Comprueba si el usuario tiene asignado un rol específico.
+ *    - Helper `hasPermission(permissionName)`: Valida permisos granulares, otorgando
+ *      acceso universal irrestricto al rol `admin`.
+ * 4. Refresco Periódico de Sesión:
+ *    - Ejecuta un sondeo suave cada 5 minutos para sincronizar cambios de rol o aprobaciones.
+ * ============================================================================
+ */
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useToast } from '../hooks/useToast';
 import { authApi, setAuthToken, getAuthToken } from '../lib/api';
 
-// Define types for AuthContext
-interface Role {
+// Definición de Interfaces del Sistema de Autenticación
+export interface Role {
   id: number;
   name: string;
   permissions: Permission[];
 }
 
-interface Permission {
+export interface Permission {
   id: number;
   name: string;
 }
 
-interface User {
+export interface User {
   id: number;
   email: string;
   name?: string;
-  roles?: string[]; // Changed from Role[] to string[] to match authApi.me() response
-  permissions?: string[]; // Permissions from roles
+  roles?: string[];       // Nombres normalizados de roles (e.g. 'admin', 'captain', 'coach', 'guest')
+  permissions?: string[]; // Permisos calculados a partir de los roles
   playerId?: number | null;
   teamId?: number | null;
   teamName?: string | null;
   status?: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -41,16 +65,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] =  useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const { showSuccessToast, showErrorToast } = useToast();
 
-  // Check for existing session on mount and periodically
+  // ==========================================================================
+  // EFECTO: Verificación de sesión existente al cargar la aplicación
+  // ==========================================================================
   useEffect(() => {
     let mounted = true;
     let isCheckingSession = false;
     
     const checkSession = async (silent = false) => {
-      // Prevent multiple simultaneous checks
+      // Prevenir verificaciones simultáneas redundantes
       if (isCheckingSession) return;
       isCheckingSession = true;
       
@@ -62,7 +88,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (result.user) {
               setUser(result.user as User);
             } else {
-              // No user data returned - clear token
+              // Token inválido o sin datos de usuario: limpiar credenciales locales
               setAuthToken();
               setUser(null);
             }
@@ -73,17 +99,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         }
       } catch (error: any) {
-        // Not logged in or session expired
+        // Manejo seguro cuando la sesión expira o es inválida
         if (mounted) {
           setUser(null);
-          // Only clear token if it's a 401 (invalid/expired token)
-          // Don't clear token for 404 (endpoint doesn't exist) or other errors
           if (error?.response?.status === 401) {
-            setAuthToken(); // Clear invalid token
+            setAuthToken(); // Limpiar token revocado
           }
-          // Only log errors if not silent and not a 401 or 404
           if (!silent && error?.response?.status !== 401 && error?.response?.status !== 404) {
-            console.error('Session check failed:', error);
+            console.error('[Auth] Error al verificar sesión:', error);
           }
         }
       } finally {
@@ -94,36 +117,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     };
 
-    // Initial check - silent to avoid errors on first load
+    // Verificación inicial silenciosa
     checkSession(true);
     
-    // Check session periodically (every 5 minutes) to refresh user data
+    // Sondeo de sincronización cada 5 minutos
     const interval = setInterval(() => {
       const token = getAuthToken();
       if (token) {
         checkSession(false);
       }
-    }, 5 * 60 * 1000); // 5 minutes
+    }, 5 * 60 * 1000);
 
     return () => {
       mounted = false;
       clearInterval(interval);
     };
-  }, []); // Empty dependency array - only run on mount
+  }, []);
 
+  // ==========================================================================
+  // ACCIÓN: Inicio de Sesión
+  // ==========================================================================
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
       const { token, user: loggedInUser } = await authApi.login(email, password);
       setAuthToken(token);
       setUser(loggedInUser as User);
-      // Only show success toast, don't show errors from session check
       showSuccessToast(`Bienvenido, ${loggedInUser.name || loggedInUser.email}`);
     } catch (error: any) {
-      // Don't show error toast here if it's already handled by the login page
-      // The login page will handle displaying the error
       const message = error?.response?.data?.error || 'Error al iniciar sesión';
-      // Only show error if it's not a 401 (which is handled by interceptor)
       if (error?.response?.status !== 401) {
         showErrorToast(message);
       }
@@ -133,7 +155,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Function to refresh user data (useful after profile updates)
+  // ==========================================================================
+  // ACCIÓN: Refrescar Perfil del Usuario
+  // ==========================================================================
   const refreshUser = async () => {
     try {
       const token = getAuthToken();
@@ -153,37 +177,40 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return null;
   };
 
+  // ==========================================================================
+  // ACCIÓN: Cierre de Sesión
+  // ==========================================================================
   const logout = async () => {
     try {
       await authApi.logout();
-      setAuthToken(); // Clear token
+      setAuthToken();
       setUser(null);
       showSuccessToast('Sesión cerrada correctamente');
     } catch (error) {
-      console.error('Error logging out:', error);
-      // Force local logout anyway
+      console.error('[Auth] Error durante logout:', error);
       setAuthToken();
       setUser(null);
     }
   };
 
+  // ==========================================================================
+  // HELPERS RBAC: Comprobación de Roles y Permisos
+  // ==========================================================================
   const hasRole = (roleName: string): boolean => {
     if (!user || !user.roles) return false;
-    // roles is now always string[]
     return user.roles.includes(roleName);
   };
 
   const hasPermission = (permissionName: string): boolean => {
-    // Admin always has all permissions
+    // El rol 'admin' dispone de autorización universal
     if (hasRole('admin')) return true;
-    // Check if user has the specific permission
     if (user?.permissions && Array.isArray(user.permissions)) {
       return user.permissions.includes(permissionName);
     }
     return false;
   };
 
-  const value = {
+  const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
     isLoading,
@@ -197,10 +224,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+/**
+ * Hook personalizado para acceder al estado y métodos de autenticación
+ */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth debe ser utilizado dentro de un AuthProvider');
   }
   return context;
 };
