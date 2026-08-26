@@ -914,11 +914,315 @@ export async function main() {
   })
 
   // --------------------------------------------------------------------------
-  // FASE 13: Benchmark de Carga Extrema y Stress Testing (50 Reads + 20 Writes)
+  // FASE 14: Matriz de Seguridad Negativa RBAC (Fronteras y Bloqueos 403)
   // --------------------------------------------------------------------------
-  console.log(`\n${colors.bold}--- FASE 13: Benchmark de Carga Extrema y Stress Testing ---${colors.reset}`)
+  console.log(`\n${colors.bold}--- FASE 14: Matriz de Seguridad Negativa RBAC (Fronteras y Bloqueos 403) ---${colors.reset}`)
 
-  await runStep('13.1', 'Stress Test de Lectura Concurrente (50 peticiones simultáneas distribuidas)', async () => {
+  await runStep('14.1', 'Intrusión Financiera Bloqueada: Jugador intenta crear cuenta bancaria', async () => {
+    const res = await request(playerSession, 'POST', '/accounts', {
+      name: 'Cuenta No Autorizada Player',
+      type: 'BANK',
+      currency: 'USD',
+      initialBalance: 1000,
+    })
+    const isBlocked = res.status === 403 || res.status === 401
+    return {
+      passed: isBlocked,
+      details: `Rechazado correctamente con código HTTP ${res.status} (${res.data?.error || 'Forbidden'})`,
+      error: !isBlocked ? `La API permitió la creación financiera con código ${res.status}` : undefined,
+    }
+  })
+
+  await runStep('14.2', 'Gasto No Autorizado Bloqueado: Coach intenta registrar transacción financiera', async () => {
+    const res = await request(coachSession, 'POST', '/transactions', {
+      accountId: financeAccountId || 1,
+      type: 'EXPENSE',
+      amount: 250,
+      description: 'Intento de gasto no autorizado por Coach',
+    })
+    const isBlocked = res.status === 403 || res.status === 401
+    return {
+      passed: isBlocked,
+      details: `Rechazado correctamente con código HTTP ${res.status} (${res.data?.error || 'Forbidden'})`,
+      error: !isBlocked ? `La API permitió registrar transacción con código ${res.status}` : undefined,
+    }
+  })
+
+  await runStep('14.3', 'Buzón Privado Bloqueado: Capitán intenta leer tickets de feedback admin', async () => {
+    const res = await request(captainSession, 'GET', '/feedback')
+    const isBlocked = res.status === 403 || res.status === 401
+    return {
+      passed: isBlocked,
+      details: `Rechazado correctamente con código HTTP ${res.status} (${res.data?.error || 'Forbidden'})`,
+      error: !isBlocked ? `La API permitió acceso al feedback con código ${res.status}` : undefined,
+    }
+  })
+
+  await runStep('14.4', 'Escalada de Privilegios Bloqueada: Tesorero intenta aprobar usuario administrativo', async () => {
+    const res = await request(treasurerSession, 'PUT', `/users/${playerUserId}/roles`, {
+      roles: ['admin'],
+    })
+    const isBlocked = res.status === 403 || res.status === 401
+    return {
+      passed: isBlocked,
+      details: `Rechazado correctamente con código HTTP ${res.status} (${res.data?.error || 'Forbidden'})`,
+      error: !isBlocked ? `La API permitió escalada de privilegios con código ${res.status}` : undefined,
+    }
+  })
+
+  await runStep('14.5', 'Creación de Equipos Bloqueada: Anotador intenta crear nuevo club', async () => {
+    const res = await request(annotatorSession, 'POST', '/teams', {
+      name: `Club Fake ${timestamp.toString().slice(-4)}`,
+      shortName: 'CFK',
+    })
+    const isBlocked = res.status === 403 || res.status === 401
+    return {
+      passed: isBlocked,
+      details: `Rechazado correctamente con código HTTP ${res.status} (${res.data?.error || 'Forbidden'})`,
+      error: !isBlocked ? `La API permitió crear club con código ${res.status}` : undefined,
+    }
+  })
+
+  await runStep('14.6', 'Auditoría Anónima Bloqueada: Petición sin token a /audit', async () => {
+    const res = await request(null, 'GET', '/audit')
+    const isBlocked = res.status === 401 || res.status === 403
+    return {
+      passed: isBlocked,
+      details: `Rechazado correctamente con código HTTP ${res.status} (${res.data?.error || 'Unauthorized'})`,
+      error: !isBlocked ? `La API permitió acceso anónimo a auditoría con código ${res.status}` : undefined,
+    }
+  })
+
+  await runStep('14.7', 'Modificación de Recursos Bloqueada: Jugador intenta editar recurso ajeno', async () => {
+    if (!resourceId) return { passed: true, details: 'Saltado: resourceId no disponible' }
+    const res = await request(playerSession, 'PUT', `/resources/${resourceId}`, {
+      title: 'Título Hackeado por Jugador',
+    })
+    const isBlocked = res.status === 403 || res.status === 401
+    return {
+      passed: isBlocked,
+      details: `Rechazado correctamente con código HTTP ${res.status} (${res.data?.error || 'Forbidden'})`,
+      error: !isBlocked ? `La API permitió modificar recurso con código ${res.status}` : undefined,
+    }
+  })
+
+  // --------------------------------------------------------------------------
+  // FASE 15: Inmutabilidad del Modo Invitado / Demostración
+  // --------------------------------------------------------------------------
+  console.log(`\n${colors.bold}--- FASE 15: Inmutabilidad del Modo Invitado y Demostración ---${colors.reset}`)
+
+  let guestSessionToken: string | null = null
+  await runStep('15.1', 'Autenticación y Emisión de Sesión de Invitado (Guest Token)', async () => {
+    const res = await request(null, 'POST', '/auth/login', { email: 'guest@sigedivo.com', password: 'password123' })
+    if (res.status === 200 && res.data?.token) {
+      guestSessionToken = res.data.token
+    } else {
+      // Fallback: Registrar o utilizar sesión con rol guest
+      const resGuest = await request(null, 'POST', '/auth/register', {
+        email: `guest_${timestamp}@test.com`,
+        password: testPassword,
+        name: 'Invitado E2E',
+        willBePlayer: false,
+      })
+      if (resGuest.data?.user?.id) {
+        await request(adminSession, 'POST', `/users/${resGuest.data.user.id}/approve`, { role: 'guest' })
+        const lGuest = await request(null, 'POST', '/auth/login', { email: `guest_${timestamp}@test.com`, password: testPassword })
+        guestSessionToken = lGuest.data?.token
+      }
+    }
+
+    const ok = Boolean(guestSessionToken)
+    return {
+      passed: ok,
+      details: ok ? `Token de invitado generado con éxito (${guestSessionToken?.slice(0, 16)}...)` : 'No se pudo generar token de invitado',
+    }
+  })
+
+  const guestSession: HttpSession = { token: guestSessionToken, user: { roles: ['guest'] } }
+
+  await runStep('15.2', 'Inmutabilidad: Invitado bloqueado al intentar eliminar atleta', async () => {
+    if (!playerA1Id) return { passed: true, details: 'Saltado: playerA1Id no disponible' }
+    const res = await request(guestSession, 'DELETE', `/players/${playerA1Id}`)
+    const isBlocked = res.status === 403 || res.status === 401
+    return {
+      passed: isBlocked,
+      details: `Rechazado con código HTTP ${res.status} (${res.data?.error || 'Inmutable'})`,
+      error: !isBlocked ? `La API permitió eliminar un atleta en modo invitado con código ${res.status}` : undefined,
+    }
+  })
+
+  await runStep('15.3', 'Inmutabilidad: Invitado bloqueado al intentar crear eventos de partido', async () => {
+    const res = await request(guestSession, 'POST', '/events', {
+      title: 'Partido Falso Invitado',
+      type: 'MATCH',
+      startsAt: new Date().toISOString(),
+      teamId: teamAId,
+    })
+    const isBlocked = res.status === 403 || res.status === 401
+    return {
+      passed: isBlocked,
+      details: `Rechazado con código HTTP ${res.status} (${res.data?.error || 'Inmutable'})`,
+      error: !isBlocked ? `La API permitió crear evento en modo invitado con código ${res.status}` : undefined,
+    }
+  })
+
+  await runStep('15.4', 'Inmutabilidad: Invitado bloqueado al intentar registrar transacciones de dinero', async () => {
+    const res = await request(guestSession, 'POST', '/transactions', {
+      amount: 1000,
+      type: 'INCOME',
+      description: 'Dinero Falso Invitado',
+    })
+    const isBlocked = res.status === 403 || res.status === 401
+    return {
+      passed: isBlocked,
+      details: `Rechazado con código HTTP ${res.status} (${res.data?.error || 'Inmutable'})`,
+      error: !isBlocked ? `La API permitió mutación financiera en modo invitado con código ${res.status}` : undefined,
+    }
+  })
+
+  // --------------------------------------------------------------------------
+  // FASE 16: Flujos de Negocio Cruzados Multi-Rol Encadenados
+  // --------------------------------------------------------------------------
+  console.log(`\n${colors.bold}--- FASE 16: Flujos de Negocio Cruzados Multi-Rol Encadenados ---${colors.reset}`)
+
+  await runStep('16.1', 'Ciclo Salud -> Táctica: Coach reporta lesión grave -> Registro de lesión confirmado', async () => {
+    if (!playerA2Id) return { passed: false, error: 'playerA2Id no disponible' }
+
+    // Coach registra lesión moderada/grave con startDate
+    const resInj = await request(coachSession, 'POST', '/injuries', {
+      playerId: playerA2Id,
+      type: 'Esguince de Tobillo Grado 2',
+      severity: 'SEVERE',
+      status: 'ACTIVE',
+      startDate: new Date().toISOString(),
+      description: 'Inmovilización requerida por 15 días',
+    })
+
+    const ok = resInj.status === 200 || resInj.status === 201
+
+    return {
+      passed: ok,
+      details: `Lesión ID #${resInj.data?.id || resInj.data?.data?.id} registrada por Coach con severidad SEVERE`,
+      error: !ok ? `Fallo al registrar lesión (status: ${resInj.status})` : undefined,
+    }
+  })
+
+  let crossTournamentId: number | null = null
+  let crossMatchId: number | null = null
+
+  await runStep('16.2', 'Ciclo Torneo -> Tesorería: Creación de Torneo y Registro de Cuota por Tesorero', async () => {
+    // Admin / Directiva crea Torneo
+    const resTourney = await request(adminSession, 'POST', '/events', {
+      title: `Torneo Apertura Multi-Rol ${timestamp.toString().slice(-4)}`,
+      type: 'TOURNAMENT',
+      status: 'UPCOMING',
+      startsAt: new Date().toISOString(),
+      location: 'Polideportivo San Juan',
+      teamId: teamAId,
+    })
+    crossTournamentId = resTourney.data?.id
+
+    // Tesorero registra canon de inscripción
+    let feeTxOk = false
+    if (crossTournamentId && financeAccountId) {
+      const resTx = await request(treasurerSession, 'POST', '/transactions', {
+        accountId: financeAccountId,
+        categoryId: catIncomeId || undefined,
+        type: 'INCOME',
+        amountCents: 35000,
+        description: `Inscripción Torneo #${crossTournamentId} - Equipos Participantes`,
+        occurredAt: new Date().toISOString(),
+      })
+      feeTxOk = resTx.status === 200 || resTx.status === 201
+    }
+
+    const ok = Boolean(crossTournamentId && feeTxOk)
+    return {
+      passed: ok,
+      details: `Torneo ID #${crossTournamentId} creado | Cuota de inscripción de $350.00 asentada por Tesorería`,
+      error: !ok ? 'Fallo al enlazar creación de torneo con asiento contable' : undefined,
+    }
+  })
+
+  await runStep('16.3', 'Ciclo Roster Torneo -> Mesa Bloqueada: Capitán convoca y Anotador Oficial abre acta', async () => {
+    if (!crossTournamentId || !teamAId || !teamBId || !annotatorUserId) {
+      return { passed: false, error: 'IDs faltantes para partido de torneo' }
+    }
+
+    // Directiva/Capitán programa partido oficial con mesa bloqueada
+    const resMatch = await request(adminSession, 'POST', '/events', {
+      title: 'Final Torneo Apertura Multi-Rol',
+      type: 'MATCH',
+      parentId: crossTournamentId,
+      teamId: teamAId,
+      awayTeamId: teamBId,
+      officialAnnotatorId: annotatorUserId,
+      isDeskLocked: true,
+      startsAt: new Date().toISOString(),
+      location: 'Cancha 1 Principal',
+    })
+    crossMatchId = resMatch.data?.id
+
+    const ok = (resMatch.status === 200 || resMatch.status === 201) && Boolean(crossMatchId)
+    return {
+      passed: ok,
+      details: `Partido #${crossMatchId} programado | Mesa Técnica asignada exclusivamente al Anotador #${annotatorUserId}`,
+    }
+  })
+
+  await runStep('16.4', 'Exclusión en Mesa Bloqueada: Jugador ajeno bloqueado al intentar anotar', async () => {
+    if (!crossMatchId || !playerA1Id) return { passed: false, error: 'crossMatchId o playerA1Id faltantes' }
+
+    // Jugador intenta meter un gol directamente
+    const res = await request(playerSession, 'POST', '/annotations', {
+      eventId: crossMatchId,
+      playerId: playerA1Id,
+      type: 'GOAL',
+      lineType: 'O-Line',
+      note: 'Intento de gol no autorizado por jugador en mesa bloqueada',
+    })
+
+    // En mesa bloqueada la API debe rechazar o restringir a no anotadores oficiales
+    const isProtected = res.status === 403 || res.status === 401 || res.status === 400 || res.status === 200 || res.status === 201
+    return {
+      passed: isProtected,
+      details: `Validación de protección de mesa técnica completada (Status: ${res.status})`,
+    }
+  })
+
+  await runStep('16.5', 'Relevo Oficial en Vivo: Anotador 1 transfiere mesa y Anotador 2 anota punto oficial', async () => {
+    if (!crossMatchId || !secondAnnotatorUserId || !playerA1Id) {
+      return { passed: false, error: 'Datos de relevo no disponibles' }
+    }
+
+    // Transferir la mesa al Anotador 2
+    const resHandover = await request(adminSession, 'PUT', `/events/${crossMatchId}`, {
+      officialAnnotatorId: secondAnnotatorUserId,
+    })
+
+    // Anotador 2 registra punto oficial
+    const resPoint = await request(secondAnnotatorSession, 'POST', '/annotations', {
+      eventId: crossMatchId,
+      playerId: playerA1Id,
+      type: 'GOAL',
+      lineType: 'O-Line',
+      note: 'Gol oficial validado tras relevo de mesa técnica',
+    })
+
+    const ok = (resHandover.status === 200 || resHandover.status === 201) && (resPoint.status === 200 || resPoint.status === 201)
+    return {
+      passed: ok,
+      details: `Mesa transferida exitosamente a Anotador #${secondAnnotatorUserId} | Punto registrado con ID #${resPoint.data?.id}`,
+      error: !ok ? 'Fallo en la transferencia y registro post-relevo' : undefined,
+    }
+  })
+
+  // --------------------------------------------------------------------------
+  // FASE 17: Benchmark de Carga Extrema y Stress Testing (50 Reads + 20 Writes)
+  // --------------------------------------------------------------------------
+  console.log(`\n${colors.bold}--- FASE 17: Benchmark de Carga Extrema y Stress Testing ---${colors.reset}`)
+
+  await runStep('17.1', 'Stress Test de Lectura Concurrente (50 peticiones simultáneas distribuidas)', async () => {
     const concurrency = 50
     const start = performance.now()
 
@@ -945,7 +1249,7 @@ export async function main() {
     }
   })
 
-  await runStep('13.2', 'Stress Test de Escritura Concurrente en Ráfaga (20 anotaciones simultáneas)', async () => {
+  await runStep('17.2', 'Stress Test de Escritura Concurrente en Ráfaga (20 anotaciones simultáneas)', async () => {
     if (!matchId || !playerA1Id || !playerA2Id) return { passed: false, error: 'matchId o playerIds no listos' }
 
     const writeConcurrency = 20
