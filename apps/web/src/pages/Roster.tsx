@@ -223,39 +223,26 @@ export default function Roster() {
         )}
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4">
+      {/* Filters & Quick Pills */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 space-y-4">
+        {/* Main Search and Selects */}
         <div className="flex flex-col sm:flex-row items-stretch gap-3">
-          <input
-            value={q}
-            onChange={e => setQ(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                const params: Record<string, string> = {}
-                if (q.trim()) params.q = q.trim()
-                if (pos) params.pos = pos
-                if (st) params.st = st
-                if (selectedTeamId) params.teamId = selectedTeamId
-                setSearchParams(params)
-              } else if (e.key === 'Escape') {
-                setQ('')
-                const params: Record<string, string> = {}
-                if (pos) params.pos = pos
-                if (st) params.st = st
-                if (selectedTeamId) params.teamId = selectedTeamId
-                setSearchParams(params)
-              }
-            }}
-            placeholder="Buscar jugador..."
-            className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm sm:text-base"
-          />
+          <div className="relative flex-1">
+            <input
+              value={q}
+              onChange={e => setQ(e.target.value)}
+              placeholder="Buscar por nombre o número de dorsal..."
+              className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm font-medium"
+            />
+            <span className="absolute left-3 top-2.5 text-slate-400 text-sm">🔍</span>
+          </div>
           <select 
             aria-label="Filtrar por equipo o categoría" 
             value={selectedTeamId} 
             onChange={e => setSelectedTeamId(e.target.value)} 
-            className="px-3 sm:px-4 py-2 border rounded-lg text-sm sm:text-base font-medium text-gray-700 bg-white"
+            className="px-3 sm:px-4 py-2 border border-slate-300 rounded-xl text-sm font-semibold text-slate-700 bg-white"
           >
-            <option value=''>Todos los equipos / Categorías</option>
+            <option value=''>Todos los Equipos</option>
             {teams.map(t => (
               <option key={t.id} value={String(t.id)}>
                 {t.name}
@@ -263,42 +250,110 @@ export default function Roster() {
             ))}
             <option value='none'>Sin equipo asignado</option>
           </select>
-          <select aria-label="Filtrar por posición" value={pos} onChange={e => setPos(e.target.value as '' | Position)} className="px-3 sm:px-4 py-2 border rounded-lg text-sm sm:text-base">
-            <option value=''>Todas las posiciones</option>
-            <option value='HANDLER'>Manejador</option>
-            <option value='CUTTER'>Cortador</option>
-            <option value='HYBRID'>Híbrido</option>
-          </select>
-          <select aria-label="Filtrar por estado" value={st} onChange={e => setSt(e.target.value as '' | Status)} className="px-3 sm:px-4 py-2 border rounded-lg text-sm sm:text-base">
-            <option value=''>Todos los estados</option>
-            <option value='ACTIVE'>Activo</option>
-            <option value='INJURED'>Lesionado</option>
-            <option value='INACTIVE'>Inactivo</option>
-          </select>
+        </div>
+
+        {/* Quick Pill Filters */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+          {/* Posiciones */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-extrabold uppercase text-slate-400 text-[10px] mr-1">Posición:</span>
+            <button
+              onClick={() => setPos('')}
+              className={`px-3 py-1 rounded-lg font-bold transition active:scale-95 ${
+                !pos ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              Todas
+            </button>
+            <button
+              onClick={() => setPos('HANDLER')}
+              className={`px-3 py-1 rounded-lg font-bold transition active:scale-95 ${
+                pos === 'HANDLER' ? 'bg-sky-600 text-white shadow-xs' : 'bg-sky-50 text-sky-700 hover:bg-sky-100'
+              }`}
+            >
+              Manejador (Handler)
+            </button>
+            <button
+              onClick={() => setPos('CUTTER')}
+              className={`px-3 py-1 rounded-lg font-bold transition active:scale-95 ${
+                pos === 'CUTTER' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+              }`}
+            >
+              Cortador (Cutter)
+            </button>
+            <button
+              onClick={() => setPos('HYBRID')}
+              className={`px-3 py-1 rounded-lg font-bold transition active:scale-95 ${
+                pos === 'HYBRID' ? 'bg-purple-600 text-white shadow-xs' : 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+              }`}
+            >
+              Híbrido
+            </button>
+          </div>
+
+          {/* Estado de Salud */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-extrabold uppercase text-slate-400 text-[10px] mr-1">Disponibilidad:</span>
+            <button
+              onClick={() => setSt('')}
+              className={`px-3 py-1 rounded-lg font-bold transition active:scale-95 ${
+                !st ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              Todos
+            </button>
+            <button
+              onClick={() => setSt('ACTIVE')}
+              className={`px-3 py-1 rounded-lg font-bold transition active:scale-95 flex items-center gap-1 ${
+                st === 'ACTIVE' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span>Activos / Aptos</span>
+            </button>
+            <button
+              onClick={() => setSt('INJURED')}
+              className={`px-3 py-1 rounded-lg font-bold transition active:scale-95 flex items-center gap-1 ${
+                st === 'INJURED' ? 'bg-rose-600 text-white shadow-xs' : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-rose-400" />
+              <span>Baja Médica</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         {paginatedPlayers.map(p => (
-          <button key={p.id} onClick={() => setSelected(p)} className="text-left bg-white rounded-xl shadow-md overflow-hidden hover:-translate-y-0.5 transition-transform flex flex-col justify-between border border-gray-100">
+          <button key={p.id} onClick={() => setSelected(p)} className="text-left bg-white rounded-2xl shadow-sm hover:shadow-md overflow-hidden hover:-translate-y-1 transition-all flex flex-col justify-between border border-slate-200 active:scale-[0.99] group">
             <div>
               <div className={`${posClass(p.position)} p-4 text-white text-center relative`}>
-                <div className="text-lg font-bold">#{p.number}</div>
+                <div className="text-2xl font-black tracking-tight drop-shadow-sm">#{p.number}</div>
+                {/* Health Indicator Badge */}
+                <div className="absolute top-2.5 left-2.5 flex items-center gap-1 bg-black/40 backdrop-blur-xs px-2 py-0.5 rounded-full text-[10px] font-bold text-white">
+                  <span className={`w-2 h-2 rounded-full ${p.status === 'ACTIVE' ? 'bg-emerald-400' : p.status === 'INJURED' ? 'bg-rose-400 animate-pulse' : 'bg-slate-400'}`} />
+                  <span>{p.status === 'ACTIVE' ? 'Apto' : p.status === 'INJURED' ? 'Lesionado' : 'Inactivo'}</span>
+                </div>
                 {p.team && (
-                  <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 bg-black/40 backdrop-blur-xs text-white rounded-full">
+                  <span className="absolute top-2.5 right-2.5 text-[10px] font-bold px-2 py-0.5 bg-black/40 backdrop-blur-xs text-white rounded-full">
                     {p.team.name}
                   </span>
                 )}
               </div>
               <div className="p-4">
-                <h3 className="font-bold text-lg text-gray-800 mb-1">{p.name}</h3>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">
-                    {p.position === 'HANDLER' ? 'Manejador' : p.position === 'CUTTER' ? 'Cortador' : 'Híbrido'}
+                <h3 className="font-bold text-base text-slate-900 mb-1 group-hover:text-purple-600 transition truncate">{p.name}</h3>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-600 font-medium">
+                    {p.position === 'HANDLER' ? '🎯 Manejador' : p.position === 'CUTTER' ? '⚡ Cortador' : '🔄 Híbrido'}
                   </span>
-                  <span className={`text-xs font-semibold ${badgeColor[p.status]}`}>
-                    {p.status === 'ACTIVE' ? 'Activo' : p.status === 'INACTIVE' ? 'Inactivo' : 'Lesionado'}
+                  <span className={`font-bold text-[11px] px-2 py-0.5 rounded-md ${
+                    p.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' :
+                    p.status === 'INJURED' ? 'bg-rose-50 text-rose-700' :
+                    'bg-slate-100 text-slate-600'
+                  }`}>
+                    {p.status === 'ACTIVE' ? '🟢 Disponible' : p.status === 'INJURED' ? '🔴 En Tratamiento' : '⚪ Inactivo'}
                   </span>
                 </div>
               </div>

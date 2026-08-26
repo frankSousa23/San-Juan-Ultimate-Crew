@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from "../hooks/useTheme"
 import { useAuth } from '../contexts/AuthContext'
@@ -6,6 +6,21 @@ import SystemManualModal from './SystemManualModal'
 
 interface LayoutProps {
   children: React.ReactNode
+}
+
+interface NavItem {
+  name: string
+  href: string
+  icon: string
+  roles: string[]
+  badge?: string
+}
+
+interface NavCategory {
+  id: string
+  name: string
+  icon: string
+  items: NavItem[]
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
@@ -16,49 +31,115 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate()
   const { user, logout, hasRole } = useAuth()
 
-  const navigation = [
-    // Public/All authenticated users
-    { name: 'Panel Principal', href: '/', icon: '🏠', roles: [] },
-    { name: 'Portal Informativo', href: '/landing', icon: '🌐', roles: [] },
-    { name: 'Mi Perfil', href: '/perfil', icon: '👤', roles: [] },
-    
-    { name: 'Roster', href: '/roster', icon: '👥', roles: ['player', 'captain', 'coach', 'admin', 'treasurer', 'marketing', 'directiva', 'annotator', 'guest'] },
-    { name: 'Eventos', href: '/eventos', icon: '📅', roles: ['player', 'captain', 'coach', 'admin', 'treasurer', 'marketing', 'guest', 'directiva', 'annotator'] },
-    
-    // Communications: accessible to all authenticated users (guest can view)
-    { name: 'Comunicación', href: '/comunicacion', icon: '💬', roles: [] },
-    // Statistics: accessible to all authenticated users (including guest for demo/showcase)
-    { name: 'Estadísticas', href: '/estadisticas', icon: '📊', roles: [] },
-    
-    { name: 'Lesiones', href: '/lesiones', icon: '🏥', roles: ['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest'] },
-    { name: 'Equipos Rivales', href: '/rivales', icon: '⚔️', roles: ['player', 'captain', 'admin', 'coach', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest'] },
-    { name: 'Jugadas', href: '/jugadas', icon: '🎯', roles: ['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest'] },
-    { name: 'Roster Torneo', href: '/roster-torneo', icon: '🏆', roles: ['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest'] },
-    { name: 'Recursos', href: '/recursos', icon: '📁', roles: ['player', 'coach', 'admin', 'marketing', 'guest', 'directiva', 'captain', 'treasurer', 'annotator'] },
-    
-    // Treasurer & Admin
-    { name: 'Finanzas', href: '/finanzas', icon: '💰', roles: ['treasurer', 'admin', 'directiva', 'guest'] },
-    
-    // Admin & Directiva
-    { name: 'Equipos / Divisiones', href: '/admin/equipos', icon: '🛡️', roles: ['admin', 'directiva'] },
-    { name: 'Admin Usuarios', href: '/admin/usuarios', icon: '🔧', roles: ['admin', 'directiva'] },
-    { name: 'Feedback Recibido', href: '/admin/feedback', icon: '📬', roles: ['admin'] },
-    { name: 'Monitoreo', href: '/admin/monitoring', icon: '💻', roles: ['admin'] },
-    { name: 'Acerca de / Feedback', href: '/about', icon: 'ℹ️', roles: [] },
+  // Definición estructurada por módulos semánticos
+  const navCategories: NavCategory[] = [
+    {
+      id: 'quick',
+      name: 'General',
+      icon: '⚡',
+      items: [
+        { name: 'Panel Principal', href: '/', icon: '🏠', roles: [] },
+        { name: 'Portal Informativo', href: '/landing', icon: '🌐', roles: [] },
+        { name: 'Mi Perfil', href: '/perfil', icon: '👤', roles: [] },
+      ]
+    },
+    {
+      id: 'sports',
+      name: 'Operación Deportiva',
+      icon: '🎯',
+      items: [
+        { name: 'Roster & Atletas', href: '/roster', icon: '👥', roles: ['player', 'captain', 'coach', 'admin', 'treasurer', 'marketing', 'directiva', 'annotator', 'guest'] },
+        { name: 'Eventos & Calendario', href: '/eventos', icon: '📅', roles: ['player', 'captain', 'coach', 'admin', 'treasurer', 'marketing', 'guest', 'directiva', 'annotator'] },
+        { name: 'Roster de Torneo', href: '/roster-torneo', icon: '🏆', roles: ['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest'] },
+      ]
+    },
+    {
+      id: 'tactics',
+      name: 'Táctica & Rendimiento',
+      icon: '🧠',
+      items: [
+        { name: 'Pizarra Táctica (Playbook)', href: '/jugadas', icon: '🎯', roles: ['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest'] },
+        { name: 'Estadísticas & Rankings', href: '/estadisticas', icon: '📊', roles: [] },
+        { name: 'Equipos Rivales (Scouting)', href: '/rivales', icon: '⚔️', roles: ['player', 'captain', 'admin', 'coach', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest'] },
+      ]
+    },
+    {
+      id: 'club',
+      name: 'Club & Salud',
+      icon: '🏥',
+      items: [
+        { name: 'Control Médico & Lesiones', href: '/lesiones', icon: '🏥', roles: ['player', 'captain', 'coach', 'admin', 'directiva', 'annotator', 'treasurer', 'marketing', 'guest'] },
+        { name: 'Comunicación & Noticias', href: '/comunicacion', icon: '💬', roles: [] },
+        { name: 'Recursos & Manuales', href: '/recursos', icon: '📁', roles: ['player', 'coach', 'admin', 'marketing', 'guest', 'directiva', 'captain', 'treasurer', 'annotator'] },
+      ]
+    },
+    {
+      id: 'management',
+      name: 'Gestión & Tesorería',
+      icon: '💰',
+      items: [
+        { name: 'Finanzas del Club', href: '/finanzas', icon: '💰', roles: ['treasurer', 'admin', 'directiva', 'guest'] },
+        { name: 'Equipos / Divisiones', href: '/admin/equipos', icon: '🛡️', roles: ['admin', 'directiva'] },
+      ]
+    },
+    {
+      id: 'admin',
+      name: 'Administración',
+      icon: '⚙️',
+      items: [
+        { name: 'Admin Usuarios', href: '/admin/usuarios', icon: '🔧', roles: ['admin', 'directiva'] },
+        { name: 'Feedback Recibido', href: '/admin/feedback', icon: '📬', roles: ['admin'] },
+        { name: 'Monitoreo de Sistema', href: '/admin/monitoring', icon: '💻', roles: ['admin'] },
+        { name: 'Acerca de / Ayuda', href: '/about', icon: 'ℹ️', roles: [] },
+      ]
+    }
   ]
+
+  // Estado de categorías colapsables con persistencia
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('sigedivo_sidebar_collapsed')
+      return saved ? JSON.parse(saved) : {}
+    } catch {
+      return {}
+    }
+  })
+
+  const toggleCategory = (catId: string) => {
+    setCollapsedCategories(prev => {
+      const next = { ...prev, [catId]: !prev[catId] }
+      try {
+        localStorage.setItem('sigedivo_sidebar_collapsed', JSON.stringify(next))
+      } catch {}
+      return next
+    })
+  }
 
   const isActive = (href: string) => {
     return location.pathname === href
   }
 
-  const filteredNavigation = navigation.filter(item => {
-    // Public items (no role required)
-    if (item.roles.length === 0) return true
-    // If user is not authenticated, only show public items
-    if (!user) return false
-    // Check if user has any of the required roles for this item
-    return item.roles.some(role => hasRole(role))
-  })
+  // Filtrar categorías e items según roles RBAC
+  const visibleCategories = navCategories
+    .map(category => ({
+      ...category,
+      items: category.items.filter(item => {
+        if (item.roles.length === 0) return true
+        if (!user) return false
+        return item.roles.some(role => hasRole(role))
+      })
+    }))
+    .filter(category => category.items.length > 0)
+
+  // Abrir automáticamente la categoría que contiene la ruta activa
+  useEffect(() => {
+    visibleCategories.forEach(category => {
+      const containsActive = category.items.some(i => isActive(i.href))
+      if (containsActive && collapsedCategories[category.id]) {
+        setCollapsedCategories(prev => ({ ...prev, [category.id]: false }))
+      }
+    })
+  }, [location.pathname])
 
   const isLanding = location.pathname === '/landing' || location.pathname === '/inicio' || (!user && location.pathname === '/')
 
@@ -124,17 +205,28 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     )
   }
 
+  // Nombre de la página activa para el Header
+  const activeItemName = visibleCategories.flatMap(c => c.items).find(i => isActive(i.href))?.name || 'SIGEDIVO'
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 flex flex-col h-screen overflow-hidden`}>
-        <div className="flex items-center justify-between h-16 px-4 border-b bg-gray-900 text-white">
-          <h1 className="text-xl font-bold">SIGEDIVO</h1>
+      } lg:translate-x-0 flex flex-col h-screen overflow-hidden border-r border-slate-200`}>
+        
+        {/* Brand Header */}
+        <div className="flex items-center justify-between h-16 px-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white border-b border-slate-700">
+          <Link to="/" className="flex items-center gap-2">
+            <span className="text-2xl">🥏</span>
+            <div className="flex flex-col">
+              <span className="text-lg font-black tracking-tight text-white">SIGEDIVO</span>
+              <span className="text-[10px] text-blue-400 font-semibold uppercase tracking-wider">Ultimate Frisbee</span>
+            </div>
+          </Link>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-300 hover:text-white"
+            className="lg:hidden text-gray-300 hover:text-white p-1 rounded-lg hover:bg-slate-700"
           >
             ✕
           </button>
@@ -150,53 +242,99 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 navigate('/')
               }
             }}
-            className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 rounded-md"
+            className="flex items-center w-full px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-200 rounded-md transition"
           >
             <span className="mr-2">⬅</span> Volver
           </button>
         </div>
         
-        <nav className="flex-1 mt-4 px-2 overflow-y-auto overscroll-contain">
-          {filteredNavigation.map((item) => (
-            <Link
-              key={item.name}
-              to={item.href}
-              onClick={() => setSidebarOpen(false)}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md mb-1 transition-colors ${
-                isActive(item.href)
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-              }`}
-            >
-              <span className="mr-3 text-lg">{item.icon}</span>
-              {item.name}
-            </Link>
-          ))}
+        {/* Categorized Nav Scroll Container */}
+        <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-4 text-sm select-none">
+          {visibleCategories.map((category) => {
+            const isCollapsed = Boolean(collapsedCategories[category.id])
+            const hasActiveItem = category.items.some(item => isActive(item.href))
+
+            return (
+              <div key={category.id} className="space-y-1">
+                {/* Category Header */}
+                <button
+                  type="button"
+                  onClick={() => toggleCategory(category.id)}
+                  className={`w-full flex items-center justify-between px-2 py-1 text-xs font-bold uppercase tracking-wider rounded-md transition-colors ${
+                    hasActiveItem ? 'text-blue-700 dark:text-blue-400 font-extrabold' : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span>{category.icon}</span>
+                    <span>{category.name}</span>
+                  </span>
+                  <span className={`text-[10px] transition-transform duration-200 ${isCollapsed ? '-rotate-90' : 'rotate-0'}`}>
+                    ▼
+                  </span>
+                </button>
+
+                {/* Category Items */}
+                {!isCollapsed && (
+                  <div className="pl-1 space-y-0.5">
+                    {category.items.map((item) => {
+                      const active = isActive(item.href)
+                      return (
+                        <Link
+                          key={item.name}
+                          to={item.href}
+                          onClick={() => setSidebarOpen(false)}
+                          className={`flex items-center justify-between px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all active:scale-[0.98] ${
+                            active
+                              ? 'bg-blue-600 text-white shadow-sm font-bold translate-x-1'
+                              : 'text-gray-600 hover:bg-blue-50/70 hover:text-blue-900'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 truncate">
+                            <span className="text-base">{item.icon}</span>
+                            <span className="truncate">{item.name}</span>
+                          </div>
+                          {active && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                          )}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </nav>
 
         {/* User Profile / Logout Section */}
-        <div className="p-4 border-t bg-gray-50">
+        <div className="p-3 border-t bg-slate-50/90 border-slate-200">
           {user ? (
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-gray-900 truncate max-w-[120px]">{user.name || user.email}</span>
-                <span className="text-xs text-gray-500 capitalize">
-                  {user.roles?.[0] === 'guest'
-                    ? 'Refuerzo'
-                    : user.roles?.[0] || 'Jugador'}
-                </span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">
+                  {user.name ? user.name.slice(0, 2).toUpperCase() : 'U'}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-bold text-gray-900 truncate">{user.name || user.email}</span>
+                  <span className="text-[10px] text-blue-600 font-semibold capitalize truncate">
+                    {user.roles?.[0] === 'guest'
+                      ? 'Refuerzo / Demo'
+                      : user.roles?.[0] || 'Jugador'}
+                  </span>
+                </div>
               </div>
               <button
                 onClick={logout}
-                className="text-sm text-red-600 hover:text-red-800 font-medium"
+                className="px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 hover:text-red-800 font-bold rounded-md transition"
+                title="Cerrar sesión"
               >
                 Salir
               </button>
             </div>
           ) : (
-             <Link
+            <Link
               to="/login"
-              className="block w-full text-center bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors"
+              className="block w-full text-center bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-blue-700 shadow-sm transition"
             >
               Iniciar Sesión
             </Link>
@@ -211,98 +349,56 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="flex items-center gap-3 lg:gap-4">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-gray-500 hover:text-gray-700 p-2 rounded-md hover:bg-gray-100"
+              className="lg:hidden text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100"
             >
               <span className="text-xl">☰</span>
             </button>
-            <h2 className="text-lg font-semibold text-gray-800 truncate hidden sm:block">
-              {navigation.find(n => isActive(n.href))?.name || 'SIGEDIVO'}
+            <h2 className="text-base sm:text-lg font-bold text-gray-800 truncate hidden sm:block">
+              {activeItemName}
             </h2>
             
             {/* Contexto Multi-Equipo (Badge) */}
             {user && (
               <div 
-                className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-slate-800 to-slate-700 text-white text-xs sm:text-sm font-medium rounded-full shadow-sm border border-slate-600"
+                className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-slate-900 to-slate-800 text-white text-xs font-semibold rounded-full shadow-sm border border-slate-700"
                 title="Equipo actual de gestión"
               >
-                <span className="text-blue-300">🛡️</span>
+                <span className="text-blue-400">🛡️</span>
                 <span className="truncate max-w-[100px] sm:max-w-[200px]">
                   {user.teamName || (user.roles?.includes('admin') ? 'Admin Global' : 'Sin Equipo')}
                 </span>
               </div>
             )}
           </div>
-          
+
           <div className="flex items-center space-x-2 sm:space-x-3">
-            <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition" title="Cambiar tema"> {isDark ? "☀️" : "🌙"} </button>
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition"
+              title="Cambiar tema"
+            >
+              {isDark ? "☀️" : "🌙"}
+            </button>
+
             <button
               onClick={() => setManualOpen(true)}
-              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs sm:text-sm font-bold rounded-lg border border-blue-200 transition active:scale-95"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs sm:text-sm font-bold rounded-lg border border-blue-200 transition active:scale-95 shadow-sm"
               title="Ver manual y guía oficial del sistema"
             >
               <span>📘</span>
-              <span className="hidden sm:inline">Manual del Sistema</span>
+              <span className="hidden sm:inline">Manual Oficial</span>
               <span className="text-[10px] bg-blue-200 text-blue-900 px-1.5 py-0.2 rounded font-mono">PDF</span>
             </button>
-
-            {user ? (
-              <button
-                onClick={logout}
-                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs sm:text-sm font-bold rounded-lg border border-rose-200 transition active:scale-95"
-                title="Cerrar sesión en el sistema"
-              >
-                <span>🚪</span>
-                <span>Salir</span>
-              </button>
-            ) : (
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold rounded-lg shadow transition active:scale-95"
-              >
-                <span>Iniciar Sesión</span>
-              </Link>
-            )}
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 p-4 sm:p-4 lg:p-6 pb-20 sm:pb-20 lg:pb-6 overflow-x-hidden">
-          <div className="max-w-7xl mx-auto w-full">
-            {children}
-          </div>
+        {/* Dynamic Main View */}
+        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
+          {children}
         </main>
       </div>
 
-      {/* Modal del Manual del Sistema */}
       <SystemManualModal isOpen={manualOpen} onClose={() => setManualOpen(false)} />
-
-      {/* Overlay for mobile */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden backdrop-blur-sm transition-opacity"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Mobile Bottom Tab Bar */}
-      <nav className="lg:hidden fixed bottom-0 w-full bg-white border-t flex justify-around items-center h-16 z-40 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-          <Link to="/" className={`flex flex-col items-center justify-center w-full h-full ${isActive('/') ? 'text-blue-600' : 'text-gray-500'}`}>
-            <span className="text-xl mb-0.5">🏠</span>
-            <span className="text-[10px] font-medium">Inicio</span>
-          </Link>
-          <Link to="/eventos" className={`flex flex-col items-center justify-center w-full h-full ${isActive('/eventos') ? 'text-blue-600' : 'text-gray-500'}`}>
-            <span className="text-xl mb-0.5">📅</span>
-            <span className="text-[10px] font-medium">Eventos</span>
-          </Link>
-          <Link to="/roster" className={`flex flex-col items-center justify-center w-full h-full ${isActive('/roster') ? 'text-blue-600' : 'text-gray-500'}`}>
-            <span className="text-xl mb-0.5">👥</span>
-            <span className="text-[10px] font-medium">Roster</span>
-          </Link>
-          <Link to="/anotaciones" className={`flex flex-col items-center justify-center w-full h-full ${isActive('/anotaciones') ? 'text-blue-600' : 'text-gray-500'}`}>
-            <span className="text-xl mb-0.5">🎯</span>
-            <span className="text-[10px] font-medium">Pizarra</span>
-          </Link>
-      </nav>
     </div>
   )
 }

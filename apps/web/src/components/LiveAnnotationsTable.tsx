@@ -64,6 +64,7 @@ export default function LiveAnnotationsTable({ event: initialEvent, onClose, emb
   const [lineFilter, setLineFilter] = useState<LineFilter>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'HOME' | 'AWAY'>('HOME')
+  const [outdoorMode, setOutdoorMode] = useState(false)
 
   // Asistencia Modal State
   const [assistModal, setAssistModal] = useState<{
@@ -631,6 +632,18 @@ export default function LiveAnnotationsTable({ event: initialEvent, onClose, emb
                 <span>Modo Versus Rival</span>
               </label>
             )}
+            <button
+              onClick={() => setOutdoorMode(prev => !prev)}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1 shadow-xs active:scale-95 ${
+                outdoorMode
+                  ? 'bg-amber-300 text-slate-950 ring-2 ring-amber-400 font-black'
+                  : 'bg-white/20 hover:bg-white/30 text-white'
+              }`}
+              title="Activar modo de alto contraste para máxima visibilidad bajo sol en cancha"
+            >
+              <span>{outdoorMode ? '☀️ Modo Sol (Activo)' : '☀️ Modo Sol'}</span>
+            </button>
+
             <button 
               onClick={onClose}
               className="px-3 sm:px-4 py-1.5 bg-white/15 hover:bg-white/25 active:scale-95 text-white font-bold rounded-xl text-xs sm:text-sm transition-all"
@@ -880,7 +893,8 @@ export default function LiveAnnotationsTable({ event: initialEvent, onClose, emb
                 'indigo', 
                 canManage, 
                 handleGoalClick, 
-                quickAddAnnotation
+                quickAddAnnotation,
+                outdoorMode
               )}
             </div>
 
@@ -894,7 +908,8 @@ export default function LiveAnnotationsTable({ event: initialEvent, onClose, emb
                   'purple', 
                   canManage, 
                   handleGoalClick, 
-                  quickAddAnnotation
+                  quickAddAnnotation,
+                  outdoorMode
                 )}
               </div>
             )}
@@ -1057,19 +1072,22 @@ function renderTacticalPlayerList(
   theme: 'indigo' | 'purple', 
   canManage: boolean, 
   handleGoalClick: any, 
-  quickAddAnnotation: any
+  quickAddAnnotation: any,
+  outdoorMode: boolean = false
 ) {
-  const bgColor = theme === 'indigo' ? 'bg-gradient-to-r from-indigo-700 to-indigo-800' : 'bg-gradient-to-r from-purple-700 to-purple-800'
-  const borderColor = theme === 'indigo' ? 'border-indigo-200' : 'border-purple-200'
+  const bgColor = outdoorMode 
+    ? 'bg-black' 
+    : (theme === 'indigo' ? 'bg-gradient-to-r from-indigo-700 to-indigo-800' : 'bg-gradient-to-r from-purple-700 to-purple-800')
+  const borderColor = outdoorMode ? 'border-black' : (theme === 'indigo' ? 'border-indigo-200' : 'border-purple-200')
   
   return (
-    <div className={`bg-white border-2 ${borderColor} rounded-2xl overflow-hidden shadow-sm flex flex-col h-full select-none touch-manipulation`}>
+    <div className={`bg-white border-2 sm:border-3 ${borderColor} rounded-2xl overflow-hidden shadow-sm flex flex-col h-full select-none touch-manipulation ${outdoorMode ? 'ring-2 ring-black' : ''}`}>
       {/* Header Equipo */}
       <div className={`${bgColor} text-white px-4 py-3 text-center flex items-center justify-between shadow-sm`}>
         <span className="font-black text-base sm:text-lg uppercase tracking-wide truncate">
           {teamName}
         </span>
-        <span className="text-xs font-bold bg-white/20 px-2.5 py-1 rounded-full">
+        <span className="text-xs font-black bg-white/20 px-2.5 py-1 rounded-full">
           {stats.length} Jugadores
         </span>
       </div>

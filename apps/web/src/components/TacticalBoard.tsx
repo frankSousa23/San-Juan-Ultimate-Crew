@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
+import html2canvas from 'html2canvas'
 import type { PlayItem, PlayCategory } from '../types/plays'
 
 export interface TacticalPlayer {
@@ -544,9 +545,30 @@ export default function TacticalBoard({ play, onClose, isModal = false }: Tactic
   const [speed, setSpeed] = useState<number>(1) // 0.5x, 1x, 1.5x, 2x
   const [selectedPlayer, setSelectedPlayer] = useState<TacticalPlayer | null>(null)
   const [activeTab, setActiveTab] = useState<'board' | 'guide' | 'mistakes' | 'content'>('board')
+  const [isExporting, setIsExporting] = useState(false)
   const timerRef = useRef<any>(null)
+  const boardRef = useRef<HTMLDivElement>(null)
 
   const currentPhase = schema.phases[currentPhaseIndex] || schema.phases[0]
+
+  const exportAsPng = async () => {
+    if (!boardRef.current) return
+    setIsExporting(true)
+    try {
+      const canvas = await html2canvas(boardRef.current, {
+        backgroundColor: '#064e3b',
+        scale: 2,
+      })
+      const link = document.createElement('a')
+      link.download = `${schema.id || 'jugada'}_paso_${currentPhase.phaseNumber}.png`
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+    } catch (e) {
+      console.error('Error exporting play png:', e)
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   // Auto animation cycle
   useEffect(() => {
@@ -614,6 +636,17 @@ export default function TacticalBoard({ play, onClose, isModal = false }: Tactic
               </button>
             ))}
           </div>
+
+          {/* Export PNG Button */}
+          <button
+            onClick={exportAsPng}
+            disabled={isExporting}
+            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+            title="Descargar diagrama de la jugada en imagen PNG"
+          >
+            <span>{isExporting ? '⏳ Generando...' : '📸 Exportar PNG'}</span>
+          </button>
+
           {onClose && (
             <button onClick={onClose} className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors" title="Cerrar pizarra">
               ✕
@@ -663,7 +696,7 @@ export default function TacticalBoard({ play, onClose, isModal = false }: Tactic
         {activeTab === 'board' && (
           <div className="space-y-4">
             {/* Tactical Field Visualizer Canvas */}
-            <div className="relative w-full aspect-[2/1] sm:aspect-[2.2/1] max-h-[460px] bg-gradient-to-br from-emerald-800 via-emerald-700 to-green-800 rounded-2xl border-4 border-emerald-900/60 shadow-inner overflow-hidden select-none">
+            <div ref={boardRef} className="relative w-full aspect-[2/1] sm:aspect-[2.2/1] max-h-[460px] bg-gradient-to-br from-emerald-800 via-emerald-700 to-green-800 rounded-2xl border-4 border-emerald-900/60 shadow-inner overflow-hidden select-none">
               
               {/* Field Grass Texture and Grid Lines */}
               <div className="absolute inset-0 opacity-15 pointer-events-none" style={{
@@ -797,6 +830,22 @@ export default function TacticalBoard({ play, onClose, isModal = false }: Tactic
                   </button>
                 )
               })}
+            </div>
+
+            {/* Timeline Progress Scrubber */}
+            <div className="flex items-center gap-3 px-3 py-2 bg-slate-100/90 rounded-xl border border-slate-200 text-xs">
+              <span className="font-black text-slate-500 uppercase text-[10px] tracking-wider whitespace-nowrap">Línea de Tiempo:</span>
+              <input
+                type="range"
+                min={0}
+                max={schema.phases.length - 1}
+                value={currentPhaseIndex}
+                onChange={e => jumpToPhase(Number(e.target.value))}
+                className="flex-1 accent-indigo-600 cursor-pointer h-2 bg-slate-300 rounded-lg"
+              />
+              <span className="font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md whitespace-nowrap">
+                Paso {currentPhaseIndex + 1} de {schema.phases.length}
+              </span>
             </div>
 
             {/* Playback Controls & Synchronized Phase Selector */}
