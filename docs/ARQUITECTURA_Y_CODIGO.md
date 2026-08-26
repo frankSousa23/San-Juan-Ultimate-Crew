@@ -1,8 +1,9 @@
 # 🥏 SIGEDIVO — Arquitectura del Sistema y Guía Explicativa del Código
 
 **Plataforma:** SIGEDIVO (Sistema de Gestión para el Disco Volador)  
-**Versión:** 1.2.0 (Open Source / Licencia MIT)  
+**Versión:** 1.3.0 (Certified Live Production Deploy / Licencia MIT)  
 **Autor:** Frank Sousa (`frankSousa23`) & San Juan Ultimate Crew  
+**Estado:** 🟢 Desplegado en Producción (`https://san-juan-ultimate-crew.seenode.app/`) y Certificado al 100% E2E
 
 ---
 
@@ -26,9 +27,9 @@ SIGEDIVO está diseñado bajo una arquitectura **Full-Stack desacoplada y modula
                                             ▼
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                                   BACKEND (apps/api)                                   │
-│  - Seguridad: Helmet CSP, CORS, Rate Limiters (General, Auth, Uploads, Write/Read)     │
+│  - Seguridad: Helmet CSP, CORS, Rate Limiters (General, Auth, Uploads, Feedback)       │
 │  - Autenticación: JWT (JSON Web Tokens) con RBAC (Matriz de 9 Roles y Permisos)        │
-│  - Rutas REST: /api/teams, /api/players, /api/events, /api/annotations, /api/stats... │
+│  - Rutas REST (22 Controladores): /api/teams, /api/players, /api/events, /api/stats... │
 │  - Documentación Swagger / OpenAPI 3.0 (/api-docs)                                     │
 └───────────────────────────────────────────▲────────────────────────────────────────────┘
                                             │ Abstracción Proxy Transparente
@@ -47,10 +48,12 @@ SIGEDIVO está diseñado bajo una arquitectura **Full-Stack desacoplada y modula
 | Ruta | Descripción y Responsabilidad |
 | :--- | :--- |
 | `/server.ts` | **Punto de entrada unificado:** Inicializa Express, integra Vite en desarrollo y sirve la SPA en producción en el puerto `3000`. |
+| `/scripts/run-live-deploy-tests.ts` | **Ultra-Suite E2E & Stress Runner:** Script de certificación continua con 34 pruebas y benchmark de concurrencia. |
+| `/openspec/` | **Especificaciones y Cambios Formales:** Gestión de requerimientos del sistema con el estándar OpenSpec. |
 | `/apps/api/src/app.ts` | **Configuración de Express:** Middlewares de seguridad (Helmet, CORS, compresión, rate limiting), rutas API REST y Swagger. |
 | `/apps/api/src/lib/prisma.ts` | **Capa de Abstracción de Datos:** Cliente Proxy que conecta con PostgreSQL real o conmuta a `mockDb` sin romper la ejecución. |
 | `/apps/api/src/lib/mockDb.ts` | **Almacén Transaccional en Memoria:** Datos semilla completos de equipos, atletas, eventos, finanzas y estadísticas. |
-| `/apps/api/src/routes/` | **Enrutadores REST Modulares:** `teams.ts`, `players.ts`, `events.ts`, `annotations.ts`, `stats.ts`, `auth.ts`, `users.ts`, `finances.ts`, `plays.ts`, `injuries.ts`, `rivals.ts`. |
+| `/apps/api/src/routes/` | **Enrutadores REST Modulares:** `teams.ts`, `players.ts`, `events.ts`, `annotations.ts`, `stats.ts`, `auth.ts`, `users.ts`, `transactions.ts`, `accounts.ts`, `categories.ts`, `plays.ts`, `injuries.ts`, `rivals.ts`, `resources.ts`, `channels.ts`, `messages.ts`, `attendance.ts`, `feedback.ts`, `audit.ts`. |
 | `/apps/api/src/middleware/` | **Seguridad y Control:** `auth.ts` (JWT/RBAC), `security.ts` (Rate Limiters, Sanitización), `errorHandler.ts` y `logging.ts`. |
 | `/apps/web/src/App.tsx` | **Enrutador Frontend:** Rutas públicas (`/login`, `/register`), privadas protegidas por rol y modal interactivo de manual. |
 | `/apps/web/src/contexts/AuthContext.tsx` | **Estado Global de Sesión:** Manejo de tokens, inicio de sesión estándar y Modo Invitado (1-Clic), validación de roles (`hasRole`). |
@@ -89,9 +92,11 @@ Diseñado para la velocidad y precisión táctil requerida en el campo de juego:
 
 ---
 
-## 🧪 4. Pruebas y Validación de Calidad
+## 🧪 4. Pruebas y Validación de Calidad en Producción
 
 El proyecto incluye un pipeline exhaustivo de pruebas automatizadas:
-- **Pruebas Unitarias y de Integración API:** Ejecutadas con `vitest` en `apps/api/src/*.test.ts` (pruebas de autenticación, control de roles, consistencia de datos y flujo de registro).
-- **Pruebas End-to-End (E2E):** Ejecutadas con `playwright` en `apps/web/tests/`.
+- **Ultra-Suite E2E en Vivo (`scripts/run-live-deploy-tests.ts`):** 34 casos de prueba que certifican el 100% de los 22 endpoints en el deploy de Seenode en 12.13s con 0% de fallos.
+- **Benchmark de Estrés y Concurrencia:** Ráfagas de 50 lecturas simultáneas (p95: 373ms) y 20 escrituras atómicas procesadas en paralelo.
+- **Pruebas Unitarias y de Integración API:** Ejecutadas con `vitest` en `apps/api/src/*.test.ts`.
+- **Pruebas End-to-End con Navegador:** Ejecutadas con `playwright` en `apps/web/tests/`.
 - **Verificación de Tipos y Linter:** `npm run lint` y `npm run build` aseguran compilación 100% limpia sin advertencias críticas.

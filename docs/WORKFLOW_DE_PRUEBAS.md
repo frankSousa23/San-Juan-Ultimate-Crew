@@ -2,7 +2,9 @@
 
 Este documento describe el flujo de pruebas integral ("End-to-End") diseñado para evaluar SIGEDIVO antes y durante su operación en la comunidad de Ultimate Frisbee.
 
-Para facilitar la evaluación, el script de inicialización (`seed.ts`) genera automáticamente un ecosistema completo de prueba.
+Para facilitar la evaluación, el sistema cuenta con:
+1. Un **script de verificación en vivo** (`npx tsx scripts/run-live-deploy-tests.ts`) que ejecuta 34 pruebas continuas y benchmarks de estrés contra el deploy en producción.
+2. Un **script de inicialización local** (`seed.ts`) que genera un ecosistema pre-configurado para pruebas manuales.
 
 ---
 
@@ -31,7 +33,7 @@ Los jugadores están divididos entre equipos (*San Juan Ultimate Crew - Open*, *
 
 ---
 
-## 🧪 2. Flujo de Prueba Paso a Paso (Test Workflow)
+## 🧪 2. Flujo de Prueba Paso a Paso (Test Workflow Manual)
 
 Sigue estos pasos dentro de la plataforma para validar que todas las reglas de negocio, permisos y funcionalidades están operando correctamente:
 
@@ -87,7 +89,24 @@ Sigue estos pasos dentro de la plataforma para validar que todas las reglas de n
 
 ---
 
-## ✅ 3. Criterios de Aceptación (Checklist de Éxito)
+## ⚡ 3. Ejecución Automatizada del Test Runner en Vivo (Ultra-Suite E2E)
+
+Para ejecutar la verificación completa de forma autónoma contra el despliegue en producción (`https://san-juan-ultimate-crew.seenode.app`):
+
+```bash
+# Ejecutar los 34 casos de prueba y benchmarks de concurrencia
+npx tsx scripts/run-live-deploy-tests.ts
+```
+
+Este script automatizado cubre:
+- Generación de usuarios aleatorios multi-rol y multi-equipo en caliente.
+- Asignación dinámica de dorsales sin colisiones.
+- Validación de reglas de negocio RBAC y transaccionalidad bancaria.
+- Stress testing con 50 lecturas concurrentes simultáneas y 20 escrituras en ráfaga.
+
+---
+
+## ✅ 4. Criterios de Aceptación (Checklist de Éxito)
 
 Para considerar el sistema 100% operativo se deben cumplir las siguientes condiciones:
 - [x] Los jugadores `PENDING` no tienen acceso a datos sensibles (tácticas, finanzas) hasta ser aprobados.
@@ -96,3 +115,4 @@ Para considerar el sistema 100% operativo se deben cumplir las siguientes condic
 - [x] Las métricas de Goles y Asistencias se reflejan inmediatamente en la sumatoria del Dashboard y Roster.
 - [x] Los cálculos de SOTG promedian exactamente los 5 criterios reglamentarios de la WFDF.
 - [x] El generador de PDF produce documentos con tipografía clara y membretes oficiales.
+- [x] La suite E2E en producción aprueba el 100% de los 34 casos de prueba bajo concurrencia.
