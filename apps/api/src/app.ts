@@ -76,7 +76,7 @@ import { fileURLToPath } from 'url';
 
 const currentFilename = typeof __filename !== 'undefined' 
   ? __filename 
-  : fileURLToPath(import.meta.url || 'file://' + process.cwd() + '/index.js');
+  : (process.argv && process.argv[1]) || path.resolve(process.cwd(), 'index.js');
 const currentDir = typeof __dirname !== 'undefined' 
   ? __dirname 
   : path.dirname(currentFilename);
@@ -221,7 +221,106 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 }));
 
 // ============================================================================
-// 5. MANEJO GLOBAL DE ERRORES DE LA API
+// 5. SERVICIO DE APLICACIÓN WEB (SPA) Y ASSETS ESTÁTICOS DE PRODUCCIÓN
+// ============================================================================
+const possibleStaticDirs = [
+  path.resolve(process.cwd(), 'dist'),
+  path.resolve(process.cwd(), 'apps', 'web', 'dist'),
+  path.resolve(process.cwd(), 'apps', 'api', 'dist', 'web'),
+  path.resolve(currentDir, '..', '..', '..', 'dist'),
+  path.resolve(currentDir, '..', '..', 'web', 'dist'),
+  path.resolve(currentDir, '..', 'web'),
+  path.resolve(currentDir, 'web'),
+  path.resolve(currentDir, 'dist'),
+  path.resolve(currentDir),
+  '/app/dist',
+  '/app/apps/web/dist',
+  '/app/apps/api/dist/web',
+];
+
+const registeredStaticDirs = new Set<string>();
+for (const sDir of possibleStaticDirs) {
+  if (sDir && fs.existsSync(sDir) && !registeredStaticDirs.has(sDir)) {
+    registeredStaticDirs.add(sDir);
+    app.use(express.static(sDir, { maxAge: '1h', index: false }));
+  }
+}
+
+// Fallback para rutas API inexistentes (evita que caigan en el SPA HTML fallback)
+app.use('/api', (req: Request, res: Response) => {
+  res.status(404).json({
+    error: 'Not Found',
+    message: `API endpoint ${req.method} ${req.originalUrl} not found`,
+    statusCode: 404,
+  });
+});
+
+// Enrutador SPA Fallback: Sirve index.html para cualquier ruta GET del frontend
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    return next();
+  }
+
+  const url = req.originalUrl || req.url;
+  if (
+    url.startsWith('/api') ||
+    url.startsWith('/health') ||
+    url.startsWith('/uploads') ||
+    url.startsWith('/api-docs')
+  ) {
+    return next();
+  }
+
+  const candidateIndexPaths = [
+    path.resolve(process.cwd(), 'dist', 'index.html'),
+    path.resolve(process.cwd(), 'apps', 'web', 'dist', 'index.html'),
+    path.resolve(process.cwd(), 'apps', 'api', 'dist', 'web', 'index.html'),
+    path.resolve(currentDir, '..', '..', '..', 'dist', 'index.html'),
+    path.resolve(currentDir, '..', '..', 'web', 'dist', 'index.html'),
+    path.resolve(currentDir, '..', 'web', 'index.html'),
+    path.resolve(currentDir, 'web', 'index.html'),
+    path.resolve(currentDir, 'dist', 'index.html'),
+    path.resolve(currentDir, 'index.html'),
+    '/app/dist/index.html',
+    '/app/apps/web/dist/index.html',
+    '/app/apps/api/dist/web/index.html',
+  ];
+
+  for (const indexPath of candidateIndexPaths) {
+    if (indexPath && fs.existsSync(indexPath)) {
+      return res.sendFile(indexPath);
+    }
+  }
+
+  // Si no se encuentra un bundle compilado, retornar mensaje HTML informativo en lugar de un error 404 plano
+  return res.status(200).send(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIGEDIVO - Iniciando Servidor</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 32px; max-width: 480px; text-align: center; }
+    h1 { margin-top: 0; color: #38bdf8; font-size: 24px; }
+    p { color: #94a3b8; line-height: 1.6; }
+    .btn { display: inline-block; margin-top: 16px; background: #0284c7; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; }
+  </style>
+  <script>setTimeout(function(){ location.reload(); }, 3000);</script>
+</head>
+<body>
+  <div class="card">
+    <h1>SIGEDIVO (Sistema de Gestión para el Disco Volador)</h1>
+    <p>El servidor API está activo. Los artefactos del frontend se están cargando...</p>
+    <p><small>Recargando automáticamente en 3 segundos...</small></p>
+    <a href="/api/health" class="btn">Ver Estado del Backend</a>
+  </div>
+</body>
+</html>`);
+});
+
+// ============================================================================
+// 6. MANEJO GLOBAL DE ERRORES DE LA API
 // ============================================================================
 app.use(errorLogger);
 app.use(errorHandler);

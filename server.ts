@@ -31,7 +31,7 @@ import { app } from './apps/api/src/app.js';
 // Determinación segura de __filename y __dirname para compatibilidad ESM / Node.js
 const currentFilename = typeof __filename !== 'undefined' 
   ? __filename 
-  : fileURLToPath(import.meta.url || 'file://' + process.cwd() + '/index.js');
+  : (process.argv && process.argv[1]) || path.resolve(process.cwd(), 'server.js');
 const currentDir = typeof __dirname !== 'undefined' 
   ? __dirname 
   : path.dirname(currentFilename);
@@ -96,100 +96,61 @@ async function startServer() {
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   const { webDir, distPath, distIndexPath, sourceIndexPath } = getWebPaths();
 
-  if (process.env.NODE_ENV !== 'production') {
-    // ========================================================================
-    // MODO DESARROLLO: Vite Server Middleware
-    // ========================================================================
-    const { createServer: createViteServer } = await import("vite"); 
-    const vite = await createViteServer({
-      server: { middlewareMode: true, host: '0.0.0.0', port: PORT },
-      appType: 'custom',
-      root: webDir,
-    });
+  const isProduction = 
+    process.env.NODE_ENV === 'production' || 
+    !fs.existsSync(path.resolve(webDir, 'src')) || 
+    fs.existsSync(distIndexPath);
 
-    // 1. Inyectar middlewares de Vite para servir módulos HMR/ESM bajo demanda
-    app.use(vite.middlewares);
+  if (!isProduction) {
+    try {
+      // ========================================================================
+      // MODO DESARROLLO: Vite Server Middleware
+      // ========================================================================
+      const { createServer: createViteServer } = await import("vite"); 
+      const vite = await createViteServer({
+        server: { middlewareMode: true, host: '0.0.0.0', port: PORT },
+        appType: 'custom',
+        root: webDir,
+      });
 
-    // 2. Servir e inyectar scripts en index.html para cualquier ruta GET del frontend
-    app.use(async (req: Request, res: Response, next: NextFunction) => {
-      if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+      // 1. Inyectar middlewares de Vite para servir módulos HMR/ESM bajo demanda
+      app.use(vite.middlewares);
 
-      const url = req.originalUrl || req.url;
-      // Omitir endpoints de backend para que continúen al enrutador de Express
-      if (
-        url.startsWith('/api') ||
-        url.startsWith('/health') ||
-        url.startsWith('/uploads') ||
-        url.startsWith('/api-docs')
-      ) {
-        return next();
-      }
+      // 2. Servir e inyectar scripts en index.html para cualquier ruta GET del frontend
+      app.use(async (req: Request, res: Response, next: NextFunction) => {
+        if (req.method !== 'GET' && req.method !== 'HEAD') return next();
 
-      try {
-        const indexPath = fs.existsSync(sourceIndexPath) ? sourceIndexPath : path.resolve(webDir, 'index.html');
-        let template = fs.readFileSync(indexPath, 'utf-8');
-        template = await vite.transformIndexHtml(url, template);
-        res.status(200).set({ 'Content-Type': 'text/html' });
-        if (req.method === 'HEAD') {
-          return res.end();
+        const url = req.originalUrl || req.url;
+        // Omitir endpoints de backend para que continúen al enrutador de Express
+        if (
+          url.startsWith('/api') ||
+          url.startsWith('/health') ||
+          url.startsWith('/uploads') ||
+          url.startsWith('/api-docs')
+        ) {
+          return next();
         }
-        res.end(template);
-      } catch (e: any) {
-        vite.ssrFixStacktrace(e);
-        next(e);
-      }
-    });
-  } else {
-    // ========================================================================
-    // MODO PRODUCCIÓN: Servir ficheros estáticos precompilados
-    // ========================================================================
-    const staticDirs = [
-      distPath,
-      path.resolve(process.cwd(), 'dist'),
-      path.resolve(process.cwd(), 'apps', 'web', 'dist'),
-      path.resolve(currentDir),
-      path.resolve(currentDir, '..', 'apps', 'web', 'dist'),
-    ];
 
-    const registeredDirs = new Set<string>();
-    for (const sDir of staticDirs) {
-      if (sDir && fs.existsSync(sDir) && !registeredDirs.has(sDir)) {
-        registeredDirs.add(sDir);
-        app.use(express.static(sDir));
-      }
+        try {
+          const indexPath = fs.existsSync(sourceIndexPath) ? sourceIndexPath : path.resolve(webDir, 'index.html');
+          if (fs.existsSync(indexPath)) {
+            let template = fs.readFileSync(indexPath, 'utf-8');
+            template = await vite.transformIndexHtml(url, template);
+            res.status(200).set({ 'Content-Type': 'text/html' });
+            if (req.method === 'HEAD') {
+              return res.end();
+            }
+            return res.end(template);
+          }
+          return next();
+        } catch (e: any) {
+          vite.ssrFixStacktrace(e);
+          next(e);
+        }
+      });
+    } catch (viteErr) {
+      console.warn('[Server Warning] No se pudo inicializar Vite Middleware en desarrollo, utilizando servicio estático:', viteErr);
     }
-
-    // Wildcard SPA Fallback para React Router en producción
-    app.use((req: Request, res: Response, next: NextFunction) => {
-      if (req.method !== 'GET' && req.method !== 'HEAD') return next();
-      const url = req.originalUrl || req.url;
-      if (
-        url.startsWith('/api') ||
-        url.startsWith('/health') ||
-        url.startsWith('/uploads') ||
-        url.startsWith('/api-docs')
-      ) {
-        return next();
-      }
-
-      const candidateFiles = [
-        distIndexPath,
-        path.resolve(process.cwd(), 'dist', 'index.html'),
-        path.resolve(process.cwd(), 'apps', 'web', 'dist', 'index.html'),
-        path.resolve(currentDir, 'index.html'),
-        path.resolve(currentDir, 'dist', 'index.html'),
-        path.resolve(currentDir, '..', 'apps', 'web', 'dist', 'index.html'),
-        sourceIndexPath,
-      ];
-
-      for (const filePath of candidateFiles) {
-        if (filePath && fs.existsSync(filePath)) {
-          return res.sendFile(filePath);
-        }
-      }
-
-      return next();
-    });
   }
 
   // Inicio de escucha en la interfaz de red

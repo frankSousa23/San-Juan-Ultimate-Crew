@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import html2canvas from 'html2canvas'
 import type { PlayItem, PlayCategory } from '../types/plays'
 
 export interface TacticalPlayer {
@@ -555,6 +554,8 @@ export default function TacticalBoard({ play, onClose, isModal = false }: Tactic
     if (!boardRef.current) return
     setIsExporting(true)
     try {
+      const html2canvasModule = await import('html2canvas')
+      const html2canvas = html2canvasModule.default || html2canvasModule
       const canvas = await html2canvas(boardRef.current, {
         backgroundColor: '#064e3b',
         scale: 2,
