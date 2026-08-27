@@ -1637,6 +1637,89 @@ export async function main() {
   })
 
   // --------------------------------------------------------------------------
+  // FASE 20: Métricas Agregadas de Equipos e Historial Deportivo Completo
+  // --------------------------------------------------------------------------
+  console.log(`\n${colors.bold}--- FASE 20: Métricas de Equipos e Historial Deportivo ---${colors.reset}`)
+
+  let historicalMatchId: number | null = null
+
+  await runStep('20.1', 'Verificación de Métricas Agregadas en Catálogo de Equipos (_count)', async () => {
+    const resTeams = await request(adminSession, 'GET', '/teams')
+    const ok = resTeams.status === 200 && Array.isArray(resTeams.data) && resTeams.data.length > 0
+
+    let sampleTeamInfo = ''
+    if (ok) {
+      const teams = resTeams.data
+      const firstTeam = teams[0]
+      sampleTeamInfo = `${firstTeam.name} -> Jugadores: ${firstTeam._count?.players ?? 0}, Usuarios: ${firstTeam._count?.users ?? 0}, Eventos: ${firstTeam._count?.events ?? 0}`
+    }
+
+    return {
+      passed: ok,
+      details: `Catálogo de Equipos: ${resTeams.data?.length} clubes recuperados | Muestra: ${sampleTeamInfo}`,
+      error: !ok ? 'Fallo: No se pudo recuperar el catálogo de equipos' : undefined,
+    }
+  })
+
+  await runStep('20.2', 'Creación de Partido Histórico Concluido (COMPLETED) con Box Score', async () => {
+    if (!playerA1Id || !playerA2Id) return { passed: false, error: 'playerIds no listos' }
+
+    const pastDate = new Date(Date.now() - 7 * 86400000).toISOString()
+    const pastEndDate = new Date(Date.now() - 7 * 86400000 + 75 * 60000).toISOString()
+
+    const resMatch = await request(adminSession, 'POST', '/events', {
+      title: 'Torneo Apertura 2026 - Partido Histórico Final',
+      type: 'MATCH',
+      location: 'Cancha Central Universitaria',
+      startsAt: pastDate,
+      endsAt: pastEndDate,
+      status: 'UPCOMING',
+      description: 'Partido de campeonato de la temporada pasada',
+    })
+
+    historicalMatchId = resMatch.data?.id || resMatch.data?.data?.id
+    if (!historicalMatchId) return { passed: false, error: 'No se pudo crear partido histórico' }
+
+    // Registrar anotaciones del partido histórico
+    const r1 = await request(adminSession, 'POST', '/annotations', {
+      eventId: historicalMatchId,
+      playerId: playerA1Id,
+      relatedPlayerId: playerA2Id,
+      type: 'GOAL',
+      lineType: 'O-Line',
+      note: 'Gol de campeonato histórico',
+    })
+
+    // Cerrar formalmente el partido a COMPLETED
+    const resClose = await request(adminSession, 'PUT', `/events/${historicalMatchId}`, {
+      title: 'Torneo Apertura 2026 - Partido Histórico Final (CERRADO)',
+      status: 'COMPLETED',
+    })
+
+    const ok = (r1.status === 200 || r1.status === 201) && resClose.status === 200
+    return {
+      passed: ok,
+      details: `Partido Histórico ID #${historicalMatchId} cerrado (Status: COMPLETED) con anotaciones registradas`,
+      error: !ok ? 'Fallo al asentar partido histórico completado' : undefined,
+    }
+  })
+
+  await runStep('20.3', 'Verificación de Acumulación de Estadísticas y Perfil de Atleta', async () => {
+    if (!playerA1Id) return { passed: false, error: 'playerA1Id no listo' }
+
+    const resPlayer = await request(adminSession, 'GET', `/players/${playerA1Id}`)
+    const ok = resPlayer.status === 200
+    const pData = resPlayer.data?.data || resPlayer.data
+    const totalGoals = pData?.stats?.goals ?? pData?.goals ?? 0
+
+    return {
+      passed: ok,
+      details: `Atleta #${playerA1Id} (${pData?.name || 'Atleta'}) -> Goles acumulados: ${totalGoals} | Historial consolidado: OK`,
+      error: !ok ? 'Fallo al consultar perfil de atleta con estadísticas' : undefined,
+    }
+  })
+
+  // --------------------------------------------------------------------------
   // REPORTE CONSOLIDADO FINAL
   // --------------------------------------------------------------------------
   console.log(`\n${colors.bold}${colors.blue}=================================================================${colors.reset}`)

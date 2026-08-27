@@ -776,15 +776,23 @@ function hydrateItem(tableName: string, item: any, include?: any): any {
     }
   }
 
-  if (tableName === 'roleRequest') {
-    if (include.user) {
-      clone.user = dbInstance.users.find((u) => u.id === item.userId) || null;
+  if (tableName === 'team') {
+    if (include.players) {
+      let pls = dbInstance.players.filter((p) => p.teamId === item.id);
+      if (include.players.orderBy?.number === 'asc') {
+        pls = [...pls].sort((a, b) => (a.number || 0) - (b.number || 0));
+      }
+      clone.players = pls;
     }
-    if (include.player) {
-      clone.player = dbInstance.players.find((p) => p.id === item.playerId) || null;
-    }
-    if (include.decidedBy) {
-      clone.decidedBy = dbInstance.users.find((u) => u.id === item.decidedById) || null;
+    if (include._count) {
+      const playersCount = dbInstance.players.filter((p) => p.teamId === item.id).length;
+      const usersCount = dbInstance.users.filter((u) => u.teamId === item.id).length;
+      const eventsCount = dbInstance.events.filter((e) => e.teamId === item.id || e.awayTeamId === item.id).length;
+      clone._count = {
+        players: playersCount,
+        users: usersCount,
+        events: eventsCount,
+      };
     }
   }
 
