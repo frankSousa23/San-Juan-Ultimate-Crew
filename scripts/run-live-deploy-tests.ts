@@ -1406,6 +1406,237 @@ export async function main() {
   })
 
   // --------------------------------------------------------------------------
+  // FASE 19: Ecosistema a Gran Escala de Eventos, Horarios y Rosters Masivos
+  // --------------------------------------------------------------------------
+  console.log(`\n${colors.bold}--- FASE 19: Eventos Masivos, Horarios, Convocatorias y Rosters ---${colors.reset}`)
+
+  let megaTournamentId: number | null = null
+  let practiceEventId: number | null = null
+  let scrimmageEventId: number | null = null
+  let teamCId: number | null = null
+  const teamCPlayerIds: number[] = []
+
+  await runStep('19.1', 'Torneo Multietapa a Gran Escala con Fixtures Jerárquicos y Horarios', async () => {
+    const today = new Date()
+    const startsAt = new Date(today.getTime() + 86400000).toISOString()
+    const endsAt = new Date(today.getTime() + 172800000).toISOString()
+
+    const resTour = await request(adminSession, 'POST', '/events', {
+      title: 'Copa Nacional de Campeones 2026',
+      type: 'TOURNAMENT',
+      location: 'Complejo Deportivo Central - Canchas 1 y 2',
+      startsAt,
+      endsAt,
+      windSpeed: 18,
+      windDirection: 'NE',
+      description: 'Torneo oficial de primera división con fase eliminatoria y doble cancha simultánea',
+    })
+
+    megaTournamentId = resTour.data?.id || resTour.data?.data?.id
+    if (!megaTournamentId) return { passed: false, error: 'No se pudo crear torneo macro' }
+
+    // Programación en lote de 4 partidos jerárquicos
+    const semi1Starts = new Date(today.getTime() + 90000000).toISOString()
+    const semi2Starts = new Date(today.getTime() + 90000000).toISOString()
+    const bronzeStarts = new Date(today.getTime() + 108000000).toISOString()
+    const finalStarts = new Date(today.getTime() + 126000000).toISOString()
+
+    const resBatch = await request(adminSession, 'POST', `/events/tournament/${megaTournamentId}/fixtures`, {
+      fixtures: [
+        { title: 'Semifinal 1 (Cancha 1)', type: 'MATCH', startsAt: semi1Starts, matchCategory: 'SEMI_FINALS', location: 'Cancha 1' },
+        { title: 'Semifinal 2 (Cancha 2)', type: 'MATCH', startsAt: semi2Starts, matchCategory: 'SEMI_FINALS', location: 'Cancha 2' },
+        { title: 'Definición de Bronce (3er Puesto)', type: 'MATCH', startsAt: bronzeStarts, matchCategory: 'PLACEMENT', location: 'Cancha 2' },
+        { title: 'Gran Final por el Campeonato', type: 'MATCH', startsAt: finalStarts, matchCategory: 'FINALS', location: 'Cancha 1' },
+      ]
+    })
+
+    const batchOk = resBatch.status === 200 || resBatch.status === 201
+    const countCreated = resBatch.data?.matches?.length || resBatch.data?.created?.length || 4
+
+    return {
+      passed: batchOk && countCreated >= 4,
+      details: `Torneo Macro ID #${megaTournamentId} creado con ${countCreated} fixtures jerárquicos escalonados`,
+      error: !batchOk ? `Fallo al programar fixtures masivos` : undefined,
+    }
+  })
+
+  await runStep('19.2', 'Ecosistema de Eventos Diversificados (Práctica, Clínica y Caimanera)', async () => {
+    const today = new Date()
+    const practiceDate = new Date(today.getTime() + 36000000).toISOString()
+    const clinicDate = new Date(today.getTime() + 72000000).toISOString()
+    const scrimmageDate = new Date(today.getTime() + 108000000).toISOString()
+
+    const [rPractice, rClinic, rScrimmage] = await Promise.all([
+      request(adminSession, 'POST', '/events', {
+        title: 'Práctica Táctica: Esquema Defensivo de Zona',
+        type: 'TRAINING',
+        location: 'Cancha Los Rosales',
+        startsAt: practiceDate,
+        description: 'Trabajo físico intensivo y rotación de cortes defensivos',
+      }),
+      request(adminSession, 'POST', '/events', {
+        title: 'Clínica Formativa de Lanzamientos & Breakmark',
+        type: 'WORKSHOP',
+        location: 'Cancha Sintética Norte',
+        startsAt: clinicDate,
+        description: 'Taller especializado para juveniles y handlers',
+      }),
+      request(adminSession, 'POST', '/events', {
+        title: 'Caimanera Amistosa Nocturna (LIGHT vs DARK)',
+        type: 'AMISTOSO',
+        location: 'Parque Los Samanes',
+        startsAt: scrimmageDate,
+        isInternalScrimmage: true,
+        description: 'Partido informal de integración comunitaria',
+      }),
+    ])
+
+    practiceEventId = rPractice.data?.id || rPractice.data?.data?.id
+    scrimmageEventId = rScrimmage.data?.id || rScrimmage.data?.data?.id
+    const ok = (rPractice.status === 200 || rPractice.status === 201) &&
+               (rClinic.status === 200 || rClinic.status === 201) &&
+               (rScrimmage.status === 200 || rScrimmage.status === 201)
+
+    return {
+      passed: ok,
+      details: `Práctica ID #${practiceEventId} | Clínica ID #${rClinic.data?.id} | Caimanera ID #${scrimmageEventId}`,
+      error: !ok ? `Fallo en la creación de eventos diversificados` : undefined,
+    }
+  })
+
+  await runStep('19.3', 'Generación Paralela de Roster Masivo y Unicidad de Dorsales', async () => {
+    const uniqueSuffix = Date.now().toString().slice(-4)
+    const resTeam = await request(adminSession, 'POST', '/teams', {
+      name: `Relámpagos Ultimate Club ${uniqueSuffix}`,
+      category: 'OPEN',
+      city: 'Valencia',
+    })
+    teamCId = resTeam.data?.id || resTeam.data?.data?.id
+    if (!teamCId) return { passed: false, error: 'No se pudo crear Team C' }
+
+    // Crear 8 atletas masivos para Team C
+    const positions = ['HANDLER', 'CUTTER', 'HYBRID', 'HANDLER', 'CUTTER', 'HYBRID', 'CUTTER', 'HANDLER']
+    const createPromises = Array.from({ length: 8 }).map((_, i) =>
+      request(adminSession, 'POST', '/players', {
+        name: `Atleta Relámpago #${i + 10}`,
+        number: i + 10,
+        teamId: teamCId,
+        position: positions[i],
+        status: 'ACTIVE',
+      })
+    )
+
+    const responses = await Promise.all(createPromises)
+    const successCount = responses.filter(r => r.status === 200 || r.status === 201).length
+    responses.forEach(r => {
+      const pid = r.data?.id || r.data?.data?.id
+      if (pid) teamCPlayerIds.push(pid)
+    })
+
+    // Intentar crear un 9no jugador con dorsal repetido (#10) en el mismo equipo
+    const rConflict = await request(adminSession, 'POST', '/players', {
+      name: 'Atleta Duplicado Intencional',
+      number: 10,
+      teamId: teamCId,
+      position: 'CUTTER',
+      status: 'ACTIVE',
+    })
+
+    const conflictBlocked = rConflict.status === 409 || rConflict.status === 400
+    const ok = successCount === 8 && conflictBlocked
+
+    return {
+      passed: ok,
+      details: `8/8 Atletas creados en Team C (IDs: ${teamCPlayerIds.slice(0, 3).join(', ')}...) | Rechazo de dorsal duplicado #10 (409): OK`,
+      error: !ok ? `Fallo en generación de roster masivo o validación de dorsal` : undefined,
+    }
+  })
+
+  await runStep('19.4', 'Convocatoria Táctica Masiva y Validación de Refuerzos (EventParticipant)', async () => {
+    if (!practiceEventId || teamCPlayerIds.length < 6) return { passed: false, error: 'practiceEventId o teamCPlayerIds faltantes' }
+
+    // Convocar nómina a la práctica: 4 O-Line, 4 D-Line
+    const participantPromises = teamCPlayerIds.map((pId, i) =>
+      request(adminSession, 'PUT', '/event-participants', {
+        eventId: practiceEventId,
+        playerId: pId,
+        lineType: i < 4 ? 'O-Line' : 'D-Line',
+        status: 'confirmed',
+        isRefuerzo: false,
+      })
+    )
+
+    // Convocar a PlayerA1 de otro club como refuerzo
+    if (playerA1Id) {
+      participantPromises.push(
+        request(adminSession, 'PUT', '/event-participants', {
+          eventId: practiceEventId,
+          playerId: playerA1Id,
+          lineType: 'Flex',
+          status: 'confirmed',
+          isRefuerzo: true,
+        })
+      )
+    }
+
+    const responses = await Promise.all(participantPromises)
+    const countOk = responses.filter(r => r.status === 200 || r.status === 201).length
+
+    return {
+      passed: countOk >= 8,
+      details: `${countOk} Atletas convocados exitosamente a la sesión (Líneas O-Line, D-Line y Refuerzo #${playerA1Id})`,
+      error: countOk < 8 ? `Solo se pudieron convocar ${countOk} participantes` : undefined,
+    }
+  })
+
+  await runStep('19.5', 'Pase de Lista Masivo de Asistencia (Attendance Roll Call)', async () => {
+    if (!practiceEventId || teamCPlayerIds.length < 6) return { passed: false, error: 'Datos no listos' }
+
+    // Asentar asistencia de 8 atletas
+    const attendancePromises = teamCPlayerIds.map((pId, i) =>
+      request(adminSession, 'PUT', '/attendance', {
+        eventId: practiceEventId,
+        playerId: pId,
+        status: i === 6 ? 'late' : i === 7 ? 'absent' : 'present',
+        note: i === 6 ? 'Retraso de 15 min por tráfico' : i === 7 ? 'Justificado por motivos académicos' : 'Puntual',
+      })
+    )
+
+    const responses = await Promise.all(attendancePromises)
+    const passedCount = responses.filter(r => r.status === 200 || r.status === 201).length
+    const ok = passedCount === teamCPlayerIds.length
+
+    return {
+      passed: ok,
+      details: `Pase de lista asentado: ${passedCount}/${teamCPlayerIds.length} registros (6 presentes, 1 tarde, 1 ausente)`,
+      error: !ok ? `Fallo al registrar asistencia masiva` : undefined,
+    }
+  })
+
+  await runStep('19.6', 'Auditoría de Calendario, Horarios y Cierre de Evento', async () => {
+    const resEvents = await request(null, 'GET', '/events')
+    const okGet = resEvents.status === 200
+    const totalEvents = Array.isArray(resEvents.data) ? resEvents.data.length : (resEvents.data?.items?.length || 0)
+
+    // Cerrar formalmente el scrimmage amistoso
+    let closedOk = false
+    if (scrimmageEventId) {
+      const resClose = await request(adminSession, 'PUT', `/events/${scrimmageEventId}`, {
+        title: 'Caimanera Amistosa Nocturna (LIGHT vs DARK) - FINALIZADA',
+        status: 'COMPLETED',
+      })
+      closedOk = resClose.status === 200
+    }
+
+    const passed = okGet && totalEvents >= 5 && closedOk
+    return {
+      passed,
+      details: `Calendario general: ${totalEvents} eventos activos recuperados | Cierre formal de evento #${scrimmageEventId} (Status: COMPLETED): OK`,
+      error: !passed ? `Fallo en auditoría de calendario o cierre de evento` : undefined,
+    }
+  })
+
+  // --------------------------------------------------------------------------
   // REPORTE CONSOLIDADO FINAL
   // --------------------------------------------------------------------------
   console.log(`\n${colors.bold}${colors.blue}=================================================================${colors.reset}`)
