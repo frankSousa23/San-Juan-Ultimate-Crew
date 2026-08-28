@@ -52,6 +52,7 @@ El portal de acceso seguro del sistema. Cuenta con validación JWT, un diseño r
 ### 📊 2. Dashboard Principal
 El panel de control (Dashboard) ofrece una vista panorámica en tiempo real del club. Integra widgets rápidos de estado del Roster (jugadores activos y lesionados), próximos torneos y un resumen financiero inmediato.
 ![Dashboard Principal](./docs/images/01_dashboard.png)
+![Dashboard de Rendimiento del Equipo](./docs/images/19_team_performance_dashboard.jpg)
 
 ### 🏃 3. Roster y Perfil de Atletas
 Gestión completa de la plantilla oficial. Permite organizar a los jugadores por línea de juego, posición (Handler, Cutter, Híbrido), y enlazar su estado médico y estadísticas históricas.
@@ -79,6 +80,7 @@ Herramienta contable dedicada a la Directiva y Tesorería del club. Seguimiento 
 ### 📋 8. Libro de Jugadas (Playbook) Tácticas
 Un espacio formativo y estratégico donde los entrenadores (Coaches) publican las formaciones oficiales del equipo (e.g. *Vertical Stack*, *Horizontal Stack*, *Defensa Cup*).
 ![Playbook Táctico](./docs/images/07_jugadas_tacticas.png)
+![Pizarrón Táctico Vertical Stack](./docs/images/24_tactical_drill_board.jpg)
 
 ### 🏥 9. Parte Médico y Gestión de Lesiones
 Un seguimiento evolutivo de las lesiones de los atletas, desde el momento del incidente hasta la recuperación total (Alta médica), permitiendo a los entrenadores proteger la salud física del roster.
@@ -95,6 +97,8 @@ Panel exclusivo para la Administración. Desde aquí se aprueban las solicitudes
 ---
 
 ## 🚀 Módulos y Funcionalidades del Sistema
+
+![Mapa de Funcionalidades del Sistema](./docs/images/22_features_mapping.jpg)
 
 ### 0. 🛡️ Arquitectura Multi-Equipo y Multi-División
 - **Aislamiento Seguro de Datos:** Soporte nativo para la coexistencia de múltiples equipos, clubes o categorías (Open, Femenino, Mixto, Master) en una sola instancia.
@@ -152,6 +156,8 @@ Panel exclusivo para la Administración. Desde aquí se aprueban las solicitudes
 
 ## 👥 Matriz de Roles y Permisos (RBAC)
 
+![Roles de Usuario del Sistema](./docs/images/23_system_user_roles.jpg)
+
 | Rol | Roster | Eventos / Torneos | Anotaciones en Vivo | Finanzas | Jugadas / Playbook | Admin Usuarios / Equipos |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **admin** | Total | Total | Total | Total | Total | Total |
@@ -167,6 +173,11 @@ Panel exclusivo para la Administración. Desde aquí se aprueban las solicitudes
 ---
 
 ## 🛠️ Stack Tecnológico
+
+<div align="center">
+  <img src="./docs/images/20_web_application_architecture.jpg" width="48%" alt="Arquitectura Técnica Web" />
+  <img src="./docs/images/21_arquitectura_tecnica.jpg" width="48%" alt="Arquitectura en la Nube" />
+</div>
 
 | Capa | Tecnología |
 | :--- | :--- |
