@@ -346,12 +346,57 @@ export const GUEST_MATCH_STATS = GUEST_PLAYERS.map(pl => {
 })
 
 export const GUEST_PLAYS = [
-  { id: 301, name: 'Vertical Stack Estándar (Cortes Open y Break Side)', category: 'OFFENSE', description: 'Formación clásica en columna vertical. Cortadores atacan sucesivamente desde el fondo hacia el lado abierto o lado cerrado con resets rápidos en stall 6.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
-  { id: 302, name: 'Horizontal Stack (H-Stack) con Variación Deep Iso', category: 'OFFENSE', description: 'Formación en línea transversal con 3 handlers y 4 cutters. Genera pasillos abiertos en carriles centrales e incorpora corte profundo aislado para receptores veloces.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
-  { id: 303, name: 'Defensa en Zona Cup (3-3-1 Cup Defense)', category: 'DEFENSE', description: 'Sistema de copa de 3 defensas (Mark, Middle, Point), 3 intermedios (Short Deep y Wings) y 1 Deep-Deep. Excelente para frenar ataques en días de viento.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
-  { id: 304, name: 'Defensa Dome / Clam (Cúpula Modular)', category: 'DEFENSE', description: 'Esquema defensivo híbrido en domo que colapsa el centro del campo contra stacks verticales, forzando tiros difíciles hacia las bandas e induciendo stall outs.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
-  { id: 305, name: 'Variación Endzone Iso (Aislamiento de Anotación)', category: 'OFFENSE', description: 'Jugada en zona roja (últimos 15 metros). Cutters despejan al lado débil dejando espacio libre de 1 contra 1 para el cortador principal.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
-  { id: 306, name: 'Drill de Lanzamientos con Presión (Dump-Swing)', category: 'DRILL', description: 'Ejercicio dinámico de 3 atletas para mecanizar pases en movimiento, cambio rápido de frente (swing) y desahogo con pivoteo bajo marca estricta.', createdAt: new Date('2025-01-08T10:00:00Z'), updatedAt: new Date('2025-01-08T10:00:00Z') },
+  {
+    id: 301,
+    name: 'Vertical Stack: Corte al Break-side (70 yd)',
+    category: 'OFFENSE',
+    description: 'Formación oficial reglamentaria WFDF en 70 yardas. O1 ataca el Break-Side tras corte explosivo de O4, con despeje de O3 y opción dump-swing con O2 en stall 6.',
+    content: '## Drill Táctico Oficial WFDF: Vertical Stack & Break-Side Cut\n\n### Dimensiones Reglamentarias:\n- Campo Central: 70 yardas (64 m)\n- Ancho: 40 yardas (37 m)\n- Zonas de Gol (Endzones): 20/40 yardas\n- Marcas de Brick: 20 yardas de la línea de gol\n\n### Asignación de Roles (7v7):\n- **O1 (Handler con Disco)**: Pivotea para romper la marca (Break Mark).\n- **O2 (Reset Handler)**: Soporte a 45° detrás para desahogo en stall 6.\n- **O3 (Front Cutter / Clear)**: Limpia el carril frontal para no congestionar.\n- **O4 (Break-Side Cutter)**: Corte explosivo hacia el espacio abierto en la Endzone.\n- **O5, O6, O7 (Stack Vertical)**: Mantienen profundidad y orden para continuaciones.\n\n### Claves de Éxito:\n1. Timing perfecto del corte antes de la marca estricta.\n2. Pase adelantado con trayectoria tensa.\n3. Resistencia al stall out con desahogo fluido.',
+    createdAt: new Date('2025-01-08T10:00:00Z'),
+    updatedAt: new Date('2025-01-08T10:00:00Z')
+  },
+  {
+    id: 302,
+    name: 'Horizontal Stack (H-Stack) con Variación Deep Iso',
+    category: 'OFFENSE',
+    description: 'Formación en línea transversal con 3 handlers y 4 cutters. Genera pasillos abiertos en carriles centrales e incorpora corte profundo aislado para receptores veloces.',
+    content: '## Horizontal Stack con Deep Iso\n\nEstructura en línea horizontal que dispersa a los 4 cortadores en el ancho de la cancha.',
+    createdAt: new Date('2025-01-08T10:00:00Z'),
+    updatedAt: new Date('2025-01-08T10:00:00Z')
+  },
+  {
+    id: 303,
+    name: 'Defensa Zonal 3-3-1 (Cup, Wall, Deep)',
+    category: 'DEFENSE',
+    description: 'Esquema defensivo zonal: Copa de 3 presionando al lanzador, Muro de 3 conteniendo pases intermedios y 1 Deep-Deep custodiando lanzamientos profundos.',
+    content: '## Defensa Zonal 3-3-1 Cup\n\n### Estructura de Bloqueo:\n- **Copa (3 defensores)**: Mark, Middle, Point. Encierran al lanzador rival.\n- **Muro / Contención (3 defensores)**: Short Deep, Left Wing, Right Wing. Niegan pases a las bandas.\n- **Deep-Deep (1 defensor)**: Custodia la zona profunda de la Endzone.\n\n### Aplicación Táctica:\n- Máxima efectividad contra vientos fuertes.\n- Neutraliza ofensivas verticales forzando pases laterales de alto riesgo.',
+    createdAt: new Date('2025-01-08T10:00:00Z'),
+    updatedAt: new Date('2025-01-08T10:00:00Z')
+  },
+  {
+    id: 304,
+    name: 'Defensa Dome / Clam (Cúpula Modular)',
+    category: 'DEFENSE',
+    description: 'Esquema defensivo híbrido en domo que colapsa el centro del campo contra stacks verticales, forzando tiros difíciles hacia las bandas e induciendo stall outs.',
+    createdAt: new Date('2025-01-08T10:00:00Z'),
+    updatedAt: new Date('2025-01-08T10:00:00Z')
+  },
+  {
+    id: 305,
+    name: 'Variación Endzone Iso (Aislamiento de Anotación)',
+    category: 'OFFENSE',
+    description: 'Jugada en zona roja (últimos 15 metros). Cutters despejan al lado débil dejando espacio libre de 1 contra 1 para el cortador principal.',
+    createdAt: new Date('2025-01-08T10:00:00Z'),
+    updatedAt: new Date('2025-01-08T10:00:00Z')
+  },
+  {
+    id: 306,
+    name: 'Drill de Lanzamientos con Presión (Dump-Swing)',
+    category: 'DRILL',
+    description: 'Ejercicio dinámico de 3 atletas para mecanizar pases en movimiento, cambio rápido de frente (swing) y desahogo con pivoteo bajo marca estricta.',
+    createdAt: new Date('2025-01-08T10:00:00Z'),
+    updatedAt: new Date('2025-01-08T10:00:00Z')
+  },
 ]
 
 export const GUEST_INJURIES = [

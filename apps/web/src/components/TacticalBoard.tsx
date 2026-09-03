@@ -42,100 +42,125 @@ export interface TacticalPlaySchema {
 export const PRESET_TACTICAL_PLAYS: Record<string, TacticalPlaySchema> = {
   'vertical-stack': {
     id: 'vertical-stack',
-    name: 'Vertical Stack Estándar (Cortes Open y Break Side)',
+    name: 'Vertical Stack: Corte al Break-side (70 yd)',
     category: 'OFFENSE',
     fieldOrientation: 'horizontal',
-    summary: 'Alineación en columna central de 4 cortadores y 2-3 lanzadores en la base. Maximiza los carriles laterales para cortes sucesivos.',
-    idealConditions: 'Excelente contra marcaje individual (Man-to-Man) en condiciones de viento moderado a bajo.',
-    counteredBy: 'Defensa en zona o cúpula central (Dome Defense).',
+    summary: 'Formación reglamentaria WFDF en campo de 70 yardas. O1 rompe la marca hacia el Break-Side tras corte explosivo de O4, despeje de O3 y opción dump-swing con O2 en stall 6.',
+    idealConditions: 'Efectiva contra marcas individuales Man-to-Man (Force Open). Permite aislar cortes en pasillos limpios.',
+    counteredBy: 'Defensa zonal 3-3-1 Cup o cúpula central (Dome/Clam).',
     keyPositions: [
-      { role: 'Handler 1 (Lanzador)', responsibility: 'Mantiene posesión activa, lee al defensor del stack y lanza al espacio abierto.' },
-      { role: 'Handler 2 (Dump)', responsibility: 'Se posiciona 45° detrás del lanzador para desahogo de emergencia en stall 6.' },
-      { role: 'Cutter 1 (Fondo Stack)', responsibility: 'Inicia el primer corte explosivo desde el fondo de la columna hacia el lado abierto.' },
-      { role: 'Cutter 2 (Continuación)', responsibility: 'Lee la recepción de Cutter 1 y corta de inmediato hacia la zona de anotación.' },
+      { role: 'Handler O1 (Lanzador)', responsibility: 'Pivotea con solidez para romper la marca (Break Mark) y asiste al espacio de gol.' },
+      { role: 'Reset O2 (Dump Handler)', responsibility: 'Soporte seguro a 45° detrás del disco para desahogo rápido al stall count 6.' },
+      { role: 'Cutter O3 (Front Clear)', responsibility: 'Limpia el carril frontal abriendo hacia el Open Side para evitar congestionar.' },
+      { role: 'Cutter O4 (Break-Side Cut)', responsibility: 'Ejecuta corte fulgurante en diagonal hacia la esquina de la Endzone en el Break Side.' },
+      { role: 'Stack O5, O6, O7', responsibility: 'Columna central que mantiene profundidad y disciplina para cortes de continuación.' },
     ],
     commonMistakes: [
-      'Cortar dos personas al mismo tiempo y amontonar el espacio.',
-      'Esperar hasta el stall 8 para pedir el pase de desahogo (dump).',
-      'No recolocarse al centro del stack si el corte no recibe el pase.',
+      'Cortar hacia el mismo carril simultáneamente y congestionar la línea de pase.',
+      'Esperar hasta el stall 8 para buscar el pase de seguridad hacia el reset O2.',
+      'No recolocarse en la columna si el defensor anticipa el corte.',
     ],
     phases: [
       {
         phaseNumber: 1,
-        title: 'Fase 1: Formación Base y Lectura',
-        subtitle: 'Estructura vertical alineada en el centro del campo.',
-        discPosition: { x: 22, y: 50 },
-        holdingPlayerId: 'H1',
-        tacticalNotes: 'H1 tiene el disco en la base. Los 4 cutters están ordenados en fila india en el centro. El defensor de marca (Force) guía el tiro hacia el lado abierto.',
-        keyTips: ['Stack debe mantener 3-4 metros entre cada jugador.', 'H2 atento a 5 metros en ángulo de 45°.'],
+        title: 'Fase 1: Alineación 7v7 y Lectura de Marca',
+        subtitle: 'Columna vertical central en campo reglamentario de 70 yardas.',
+        discPosition: { x: 22, y: 56 },
+        holdingPlayerId: 'O1',
+        tacticalNotes: 'O1 tiene el disco en la base forzado al lado abierto. O2 se ubica como reset a 45°. O3 a O7 alineados verticalmente con marcas pegadas (Tight Marks).',
+        keyTips: [
+          'Mantener 3 a 4 metros de separación en la columna.',
+          'Reset O2 activo a 5 metros para desahogo en stall 6.'
+        ],
         players: [
-          { id: 'H1', label: 'H1', role: 'Handler Principal', team: 'offense', x: 22, y: 50, actionDesc: 'Con disco, amagando al lado cerrado' },
-          { id: 'H2', label: 'H2', role: 'Dump Handler', team: 'offense', x: 16, y: 30, actionDesc: 'Posición de desahogo a 45°' },
-          { id: 'C4', label: 'C4', role: 'Cutter Front', team: 'offense', x: 45, y: 50, actionDesc: 'Frente del stack, abriendo carril' },
-          { id: 'C3', label: 'C3', role: 'Cutter Mid', team: 'offense', x: 56, y: 50, actionDesc: 'Manteniendo espacio central' },
-          { id: 'C2', label: 'C2', role: 'Cutter Deep', team: 'offense', x: 67, y: 50, actionDesc: 'Preparando corte de continuación' },
-          { id: 'C1', label: 'C1', role: 'Cutter Iniciador', team: 'offense', x: 78, y: 50, actionDesc: 'Fondo del stack, listo para explotar' },
-          // Defensas
-          { id: 'D-H1', label: 'M1', role: 'Marcador (Force)', team: 'defense', x: 25, y: 46, actionDesc: 'Forzando al lado abierto (hacia arriba)' },
-          { id: 'D-H2', label: 'M2', role: 'Defensa Dump', team: 'defense', x: 18, y: 26, actionDesc: 'Negando pase directo' },
-          { id: 'D-C1', label: 'DC1', role: 'Defensa Fondo', team: 'defense', x: 80, y: 46, actionDesc: 'Tratando de evitar el corte abierto' },
-          { id: 'D-C2', label: 'DC2', role: 'Defensa Medio', team: 'defense', x: 69, y: 47, actionDesc: 'En posición de recuperación' },
+          // 7 Atacantes (Ofensiva O)
+          { id: 'O1', label: 'O1', role: 'Handler O1', team: 'offense', x: 22, y: 56, actionDesc: 'Con disco, amagando al Open Side' },
+          { id: 'O2', label: 'O2', role: 'Reset O2', team: 'offense', x: 15, y: 36, actionDesc: 'Reset de seguridad a 45°' },
+          { id: 'O3', label: 'O3', role: 'Cutter O3', team: 'offense', x: 44, y: 50, actionDesc: 'Frente del stack, listo para despejar' },
+          { id: 'O4', label: 'O4', role: 'Cutter O4', team: 'offense', x: 54, y: 50, actionDesc: 'Cortador activo, listo para romper' },
+          { id: 'O5', label: 'O5', role: 'Stack O5', team: 'offense', x: 64, y: 50, actionDesc: 'Stack medio, fijando su marca' },
+          { id: 'O6', label: 'O6', role: 'Stack O6', team: 'offense', x: 74, y: 50, actionDesc: 'Stack medio-fondo' },
+          { id: 'O7', label: 'O7', role: 'Stack O7', team: 'offense', x: 84, y: 50, actionDesc: 'Fondo del stack vertical' },
+          // 7 Defensores (Marcas X)
+          { id: 'X1', label: 'X1', role: 'Marca X1', team: 'defense', x: 25, y: 52, actionDesc: 'Marca activa forzando hacia Open Side' },
+          { id: 'X2', label: 'X2', role: 'Marca X2', team: 'defense', x: 17, y: 32, actionDesc: 'Negando pase directo de dump' },
+          { id: 'X3', label: 'X3', role: 'Defensa X3', team: 'defense', x: 46, y: 46, actionDesc: 'Marca pegada en corte frontal' },
+          { id: 'X4', label: 'X4', role: 'Defensa X4', team: 'defense', x: 56, y: 46, actionDesc: 'Cuidando el lado abierto' },
+          { id: 'X5', label: 'X5', role: 'Defensa X5', team: 'defense', x: 66, y: 46, actionDesc: 'Marcaje individual' },
+          { id: 'X6', label: 'X6', role: 'Defensa X6', team: 'defense', x: 76, y: 46, actionDesc: 'Marcaje individual' },
+          { id: 'X7', label: 'X7', role: 'Defensa X7', team: 'defense', x: 86, y: 46, actionDesc: 'Custodiando corte profundo' },
         ]
       },
       {
         phaseNumber: 2,
-        title: 'Fase 2: Corte Primario Explosivo',
-        subtitle: 'Cutter 1 engaña al lado cerrado y ataca el lado abierto en "V".',
-        discPosition: { x: 22, y: 50 },
-        holdingPlayerId: 'H1',
-        passingToPlayerId: 'C1',
-        tacticalNotes: 'Cutter 1 hace una finta rápida de 2 pasos hacia el lado cerrado y quiebra con fuerza hacia el espacio abierto a 45°. H1 arma el lanzamiento.',
-        keyTips: ['El corte debe ser decidido a máxima velocidad.', 'H1 lanza al espacio libre por delante del corredor.'],
-        passTrajectory: { from: { x: 22, y: 50 }, to: { x: 52, y: 25 } },
+        title: 'Fase 2: Corte al Break-side & Despeje de Carril',
+        subtitle: 'O3 despeja hacia Open Side; O4 corta explosivo al Break-side hacia la Endzone.',
+        discPosition: { x: 22, y: 56 },
+        holdingPlayerId: 'O1',
+        passingToPlayerId: 'O4',
+        tacticalNotes: 'O3 corre hacia el lado abierto para despejar el carril. O4 aprovecha el espacio y quiebra hacia el Break-Side hacia la zona de gol. O1 pivotea y suelta el tiro tensado.',
+        keyTips: [
+          'Corte de O4 a máxima velocidad sin titubeos.',
+          'O1 debe quebrar la muñeca para superar la marca X1 hacia el lado cerrado.',
+          'Opción de reset con O2 si stall count alcanza 6.'
+        ],
+        passTrajectory: { from: { x: 22, y: 56 }, to: { x: 88, y: 76 } },
         movementTrails: [
-          { playerId: 'C1', from: { x: 78, y: 50 }, to: { x: 52, y: 25 } },
-          { playerId: 'C2', from: { x: 67, y: 50 }, to: { x: 74, y: 45 } },
+          { playerId: 'O3', from: { x: 44, y: 50 }, to: { x: 38, y: 22 } },
+          { playerId: 'O4', from: { x: 54, y: 50 }, to: { x: 88, y: 76 } },
         ],
         players: [
-          { id: 'H1', label: 'H1', role: 'Handler Principal', team: 'offense', x: 22, y: 50, actionDesc: 'Soltando pase líder hacia C1' },
-          { id: 'H2', label: 'H2', role: 'Dump Handler', team: 'offense', x: 16, y: 30, actionDesc: 'Acompañando la línea de juego' },
-          { id: 'C4', label: 'C4', role: 'Cutter Front', team: 'offense', x: 45, y: 50, actionDesc: 'Manteniendo quieto a su defensor' },
-          { id: 'C3', label: 'C3', role: 'Cutter Mid', team: 'offense', x: 56, y: 50, actionDesc: 'Preparando reemplazo en el stack' },
-          { id: 'C2', label: 'C2', role: 'Cutter Deep', team: 'offense', x: 74, y: 45, actionDesc: 'Avanzando al fondo del stack' },
-          { id: 'C1', label: 'C1', role: 'Cutter Iniciador', team: 'offense', x: 52, y: 25, actionDesc: 'Recibiendo en carrera en lado abierto' },
-          // Defensas
-          { id: 'D-H1', label: 'M1', role: 'Marcador', team: 'defense', x: 26, y: 47, actionDesc: 'Intentando bloquear el pase' },
-          { id: 'D-H2', label: 'M2', role: 'Defensa Dump', team: 'defense', x: 18, y: 26, actionDesc: 'Cubriendo pase hacia atrás' },
-          { id: 'D-C1', label: 'DC1', role: 'Defensa Fondo', team: 'defense', x: 57, y: 29, actionDesc: 'Superado por el corte en velocidad' },
-          { id: 'D-C2', label: 'DC2', role: 'Defensa Medio', team: 'defense', x: 76, y: 47, actionDesc: 'Siguiendo a C2' },
+          // 7 Atacantes
+          { id: 'O1', label: 'O1', role: 'Handler O1', team: 'offense', x: 22, y: 56, actionDesc: 'Soltando tiro tenso al Break Side' },
+          { id: 'O2', label: 'O2', role: 'Reset O2', team: 'offense', x: 15, y: 36, actionDesc: 'Manteniendo línea de dump en stall 6' },
+          { id: 'O3', label: 'O3', role: 'Cutter O3', team: 'offense', x: 38, y: 22, actionDesc: 'Despejando carril hacia Open Side' },
+          { id: 'O4', label: 'O4', role: 'Cutter O4', team: 'offense', x: 88, y: 76, actionDesc: 'Atacando la esquina de la Endzone' },
+          { id: 'O5', label: 'O5', role: 'Stack O5', team: 'offense', x: 62, y: 50, actionDesc: 'Avanza ocupando posición frontal' },
+          { id: 'O6', label: 'O6', role: 'Stack O6', team: 'offense', x: 72, y: 50, actionDesc: 'Stack medio' },
+          { id: 'O7', label: 'O7', role: 'Stack O7', team: 'offense', x: 82, y: 50, actionDesc: 'Fondo del stack' },
+          // 7 Defensores
+          { id: 'X1', label: 'X1', role: 'Marca X1', team: 'defense', x: 25, y: 54, actionDesc: 'Superado por el pivote al break' },
+          { id: 'X2', label: 'X2', role: 'Marca X2', team: 'defense', x: 17, y: 32, actionDesc: 'Siguiendo a O2' },
+          { id: 'X3', label: 'X3', role: 'Defensa X3', team: 'defense', x: 41, y: 25, actionDesc: 'Arrastrado por el corte de O3' },
+          { id: 'X4', label: 'X4', role: 'Defensa X4', team: 'defense', x: 82, y: 72, actionDesc: 'Superado por el corte en velocidad' },
+          { id: 'X5', label: 'X5', role: 'Defensa X5', team: 'defense', x: 64, y: 48, actionDesc: 'Siguiendo a O5' },
+          { id: 'X6', label: 'X6', role: 'Defensa X6', team: 'defense', x: 74, y: 48, actionDesc: 'Siguiendo a O6' },
+          { id: 'X7', label: 'X7', role: 'Defensa X7', team: 'defense', x: 84, y: 48, actionDesc: 'Siguiendo a O7' },
         ]
       },
       {
         phaseNumber: 3,
-        title: 'Fase 3: Pase de Continuación & Golpe a Endzone',
-        subtitle: 'Recepción limpia y corte de anotación en profundidad.',
-        discPosition: { x: 52, y: 25 },
-        holdingPlayerId: 'C1',
-        passingToPlayerId: 'C2',
-        tacticalNotes: 'C1 atrapa el disco, gira de inmediato y busca la continuación hacia la zona de anotación (Endzone). C2 corta hacia el cono frontal.',
-        keyTips: ['Atrapar con dos manos (Pancake Catch) para máxima seguridad.', 'Giro rápido en pivote sin perder tiempo de stall.'],
-        passTrajectory: { from: { x: 52, y: 25 }, to: { x: 91, y: 35 } },
+        title: 'Fase 3: Recepción de Gol en Endzone & Continuación',
+        subtitle: 'Anotación consolidada en la Endzone con apoyo de lanzadores.',
+        discPosition: { x: 91, y: 76 },
+        holdingPlayerId: 'O4',
+        tacticalNotes: 'O4 asegura la atrapada en la Endzone (20 yardas) completando la jugada reglamentaria. Los lanzadores O1 y O2 acompañan la jugada.',
+        keyTips: [
+          'Asegurar posesión total en zona de gol.',
+          'Pancake catch a dos manos o rim catch.',
+          'Consolidar la línea táctica para el siguiente punto.'
+        ],
         movementTrails: [
-          { playerId: 'C2', from: { x: 74, y: 45 }, to: { x: 91, y: 35 } },
-          { playerId: 'H1', from: { x: 22, y: 50 }, to: { x: 38, y: 25 } },
+          { playerId: 'O1', from: { x: 22, y: 56 }, to: { x: 42, y: 56 } },
+          { playerId: 'O2', from: { x: 15, y: 36 }, to: { x: 32, y: 40 } },
         ],
         players: [
-          { id: 'H1', label: 'H1', role: 'Handler Principal', team: 'offense', x: 38, y: 25, actionDesc: 'Avanza para ser nuevo dump de apoyo' },
-          { id: 'H2', label: 'H2', role: 'Dump Handler', team: 'offense', x: 24, y: 40, actionDesc: 'Ocupa el centro del campo' },
-          { id: 'C4', label: 'C4', role: 'Cutter Front', team: 'offense', x: 50, y: 60, actionDesc: 'Limpia espacio hacia el lado opuesto' },
-          { id: 'C3', label: 'C3', role: 'Cutter Mid', team: 'offense', x: 62, y: 60, actionDesc: 'Limpia carril de anotación' },
-          { id: 'C2', label: 'C2', role: 'Cutter Deep', team: 'offense', x: 91, y: 35, actionDesc: 'Atrapa gol en la Endzone' },
-          { id: 'C1', label: 'C1', role: 'Cutter Iniciador', team: 'offense', x: 52, y: 25, actionDesc: 'Lanzando pase de anotación con revés raso' },
-          // Defensas
-          { id: 'D-H1', label: 'M1', role: 'Marcador', team: 'defense', x: 42, y: 28, actionDesc: 'Corriendo a recuperar' },
-          { id: 'D-H2', label: 'M2', role: 'Defensa Dump', team: 'defense', x: 28, y: 42, actionDesc: 'Marcando a H2' },
-          { id: 'D-C1', label: 'DC1', role: 'Defensa', team: 'defense', x: 54, y: 27, actionDesc: 'Estableciendo nueva marca' },
-          { id: 'D-C2', label: 'DC2', role: 'Defensa Fondo', team: 'defense', x: 87, y: 39, actionDesc: 'Llega un segundo tarde al corte' },
+          // 7 Atacantes
+          { id: 'O1', label: 'O1', role: 'Handler O1', team: 'offense', x: 42, y: 56, actionDesc: 'Acompaña la anotación' },
+          { id: 'O2', label: 'O2', role: 'Reset O2', team: 'offense', x: 32, y: 40, actionDesc: 'Avanza en soporte' },
+          { id: 'O3', label: 'O3', role: 'Cutter O3', team: 'offense', x: 48, y: 24, actionDesc: 'Soporte en banda abierta' },
+          { id: 'O4', label: 'O4', role: 'Cutter O4', team: 'offense', x: 91, y: 76, actionDesc: '¡GOL! Recepción en Endzone' },
+          { id: 'O5', label: 'O5', role: 'Stack O5', team: 'offense', x: 62, y: 50, actionDesc: 'Celebrando anotación' },
+          { id: 'O6', label: 'O6', role: 'Stack O6', team: 'offense', x: 72, y: 50, actionDesc: 'Celebrando anotación' },
+          { id: 'O7', label: 'O7', role: 'Stack O7', team: 'offense', x: 82, y: 50, actionDesc: 'Celebrando anotación' },
+          // 7 Defensores
+          { id: 'X1', label: 'X1', role: 'Marca X1', team: 'defense', x: 45, y: 56, actionDesc: 'Fin de punto' },
+          { id: 'X2', label: 'X2', role: 'Marca X2', team: 'defense', x: 35, y: 40, actionDesc: 'Fin de punto' },
+          { id: 'X3', label: 'X3', role: 'Defensa X3', team: 'defense', x: 50, y: 26, actionDesc: 'Fin de punto' },
+          { id: 'X4', label: 'X4', role: 'Defensa X4', team: 'defense', x: 88, y: 74, actionDesc: 'Llegó tarde al tiro' },
+          { id: 'X5', label: 'X5', role: 'Defensa X5', team: 'defense', x: 65, y: 50, actionDesc: 'Fin de punto' },
+          { id: 'X6', label: 'X6', role: 'Defensa X6', team: 'defense', x: 75, y: 50, actionDesc: 'Fin de punto' },
+          { id: 'X7', label: 'X7', role: 'Defensa X7', team: 'defense', x: 85, y: 50, actionDesc: 'Fin de punto' },
         ]
       }
     ]
@@ -426,7 +451,7 @@ export const PRESET_TACTICAL_PLAYS: Record<string, TacticalPlaySchema> = {
 export function getTacticalSchemaForPlay(play: PlayItem): TacticalPlaySchema {
   const normalizedName = (play.name || '').toLowerCase()
   
-  if (normalizedName.includes('vert') || normalizedName.includes('columna')) {
+  if (normalizedName.includes('vert') || normalizedName.includes('columna') || normalizedName.includes('break')) {
     return { ...PRESET_TACTICAL_PLAYS['vertical-stack'], name: play.name, id: `custom-${play.id}` }
   }
   if (normalizedName.includes('horiz') || normalizedName.includes('h-stack')) {
@@ -697,7 +722,7 @@ export default function TacticalBoard({ play, onClose, isModal = false }: Tactic
         {activeTab === 'board' && (
           <div className="space-y-4">
             {/* Tactical Field Visualizer Canvas */}
-            <div ref={boardRef} className="relative w-full aspect-[2/1] sm:aspect-[2.2/1] max-h-[460px] bg-gradient-to-br from-emerald-800 via-emerald-700 to-green-800 rounded-2xl border-4 border-emerald-900/60 shadow-inner overflow-hidden select-none">
+            <div ref={boardRef} className="relative w-full aspect-[2/1] sm:aspect-[2.2/1] max-h-[480px] bg-gradient-to-br from-emerald-800 via-emerald-700 to-green-800 rounded-2xl border-4 border-emerald-900/60 shadow-inner overflow-hidden select-none">
               
               {/* Field Grass Texture and Grid Lines */}
               <div className="absolute inset-0 opacity-15 pointer-events-none" style={{
@@ -705,23 +730,63 @@ export default function TacticalBoard({ play, onClose, isModal = false }: Tactic
                 backgroundSize: '20px 20px'
               }} />
 
+              {/* WFDF Regulation Field Dimension Bar (Infographic Standard) */}
+              <div className="absolute top-1 left-0 right-0 z-10 flex items-center justify-between px-3 pointer-events-none text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-white/70 bg-black/25 backdrop-blur-[2px] py-0.5 border-b border-white/10">
+                <span className="flex items-center gap-1 text-emerald-200">
+                  <span>📐 WFDF REGULATION:</span>
+                  <span className="text-white font-extrabold">70 YARDS PLAYING FIELD PROPER (64m)</span>
+                </span>
+                <span className="hidden sm:inline-block text-amber-200 font-extrabold">
+                  40 YARDS WIDTH (37m) • 20 YD ENDZONES
+                </span>
+                <span className="text-cyan-200 font-bold">
+                  BRICK MARKS: 20 YD
+                </span>
+              </div>
+
+              {/* Side Lanes Identifiers (Open Side vs Break Side) */}
+              <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-[9px] sm:text-[10px] font-extrabold tracking-widest text-yellow-300/80 uppercase bg-slate-900/50 px-2 py-0.5 rounded-full border border-yellow-400/20">
+                ▲ LADO ABIERTO (OPEN SIDE) ▲
+              </div>
+              <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-[9px] sm:text-[10px] font-extrabold tracking-widest text-cyan-300/80 uppercase bg-slate-900/50 px-2 py-0.5 rounded-full border border-cyan-400/20">
+                ▼ LADO CERRADO (BREAK SIDE) ▼
+              </div>
+
               {/* Endzones & Boundary Lines */}
               {/* Left Endzone (Defending) */}
-              <div className="absolute left-0 top-0 bottom-0 w-[14%] bg-emerald-900/40 border-r-2 border-dashed border-white/70 flex items-center justify-center pointer-events-none">
-                <span className="text-[10px] sm:text-xs font-black text-white/50 tracking-widest -rotate-90 uppercase">Endzone Def</span>
+              <div className="absolute left-0 top-0 bottom-0 w-[14%] bg-emerald-900/50 border-r-2 border-dashed border-white/80 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-[9px] sm:text-[11px] font-black text-white/60 tracking-widest -rotate-90 uppercase whitespace-nowrap">
+                  ENDZONE DEF (20 YD)
+                </span>
               </div>
 
               {/* Right Endzone (Scoring Goal) */}
-              <div className="absolute right-0 top-0 bottom-0 w-[14%] bg-amber-500/20 border-l-2 border-dashed border-amber-300/80 flex items-center justify-center pointer-events-none">
-                <span className="text-[10px] sm:text-xs font-black text-amber-200/70 tracking-widest rotate-90 uppercase">Zona de Gol 🎯</span>
+              <div className="absolute right-0 top-0 bottom-0 w-[14%] bg-amber-500/25 border-l-2 border-dashed border-amber-300/90 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-[9px] sm:text-[11px] font-black text-amber-200/80 tracking-widest rotate-90 uppercase whitespace-nowrap">
+                  ZONA DE GOL 🎯 (20 YD)
+                </span>
               </div>
 
+              {/* Yardage Hash Ticks (10, 20, 30, 40, 50, 60, 70 yd) */}
+              {[25, 36, 47, 58, 69, 80].map((pct, idx) => (
+                <div key={pct} className="absolute top-0 bottom-0 pointer-events-none border-l border-white/10 flex flex-col justify-between py-6" style={{ left: `${pct}%` }}>
+                  <span className="text-[7px] sm:text-[8px] font-mono text-white/30 -ml-2 select-none">{`${(idx + 1) * 10}y`}</span>
+                  <span className="text-[7px] sm:text-[8px] font-mono text-white/30 -ml-2 select-none">{`${(idx + 1) * 10}y`}</span>
+                </div>
+              ))}
+
               {/* Field Center Marker & Brick Marks */}
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full border border-white/20 pointer-events-none flex items-center justify-center">
-                <div className="w-1.5 h-1.5 bg-white/40 rounded-full" />
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 sm:w-16 sm:h-16 rounded-full border border-white/20 pointer-events-none flex items-center justify-center">
+                <div className="w-1.5 h-1.5 bg-white/50 rounded-full" />
               </div>
-              <div className="absolute left-[30%] top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white/50 rotate-45 pointer-events-none" title="Brick Mark" />
-              <div className="absolute left-[70%] top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white/50 rotate-45 pointer-events-none" title="Brick Mark" />
+              <div className="absolute left-[30%] top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none" title="Brick Mark">
+                <div className="w-2.5 h-2.5 bg-white/70 rotate-45 shadow-sm" />
+                <span className="text-[7px] font-mono font-bold text-white/50 mt-1 uppercase tracking-tighter">Brick</span>
+              </div>
+              <div className="absolute left-[70%] top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none" title="Brick Mark">
+                <div className="w-2.5 h-2.5 bg-white/70 rotate-45 shadow-sm" />
+                <span className="text-[7px] font-mono font-bold text-white/50 mt-1 uppercase tracking-tighter">Brick</span>
+              </div>
 
               {/* Movement Trajectory Trails (SVG Layer) */}
               <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
@@ -747,7 +812,7 @@ export default function TacticalBoard({ play, onClose, isModal = false }: Tactic
                     strokeDasharray="4,4"
                     strokeLinecap="round"
                     markerEnd="url(#arrow-cut)"
-                    className="transition-all duration-700 ease-in-out opacity-80"
+                    className="transition-all duration-700 ease-in-out opacity-90 drop-shadow-sm"
                   />
                 ))}
 
@@ -757,7 +822,7 @@ export default function TacticalBoard({ play, onClose, isModal = false }: Tactic
                     d={`M ${currentPhase.passTrajectory.from.x * 0.01 * 100} ${currentPhase.passTrajectory.from.y * 0.01 * 100} Q ${(currentPhase.passTrajectory.from.x + currentPhase.passTrajectory.to.x) / 2} ${(currentPhase.passTrajectory.from.y + currentPhase.passTrajectory.to.y) / 2 - (currentPhase.passTrajectory.isHigh ? 15 : 4)} ${currentPhase.passTrajectory.to.x} ${currentPhase.passTrajectory.to.y}`}
                     fill="none"
                     stroke="#fde047"
-                    strokeWidth="3"
+                    strokeWidth="3.5"
                     strokeDasharray="6,4"
                     markerEnd="url(#arrow-pass)"
                     className="transition-all duration-700 ease-in-out drop-shadow-md animate-pulse"
@@ -777,7 +842,7 @@ export default function TacticalBoard({ play, onClose, isModal = false }: Tactic
                   <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white shadow-lg border-2 border-yellow-300 ring-4 ring-yellow-400/40 flex items-center justify-center animate-spin" style={{ animationDuration: '3s' }}>
                     <div className="w-2 h-2 rounded-full bg-yellow-400" />
                   </div>
-                  <span className="absolute -top-4 bg-slate-900/90 text-yellow-300 text-[9px] font-bold px-1 rounded shadow whitespace-nowrap">
+                  <span className="absolute -top-4 bg-slate-900/90 text-yellow-300 text-[9px] font-bold px-1.5 py-0.2 rounded shadow whitespace-nowrap">
                     DISCO 🥏
                   </span>
                 </div>
@@ -822,7 +887,7 @@ export default function TacticalBoard({ play, onClose, isModal = false }: Tactic
 
                       {/* Quick Interactive Hover Tooltip */}
                       {isSelected && (
-                        <div className="absolute bottom-full mb-1 z-40 bg-slate-900 text-white p-2 rounded-lg shadow-xl text-xs w-36 text-center border border-indigo-400 pointer-events-none">
+                        <div className="absolute bottom-full mb-1 z-40 bg-slate-900 text-white p-2.5 rounded-lg shadow-xl text-xs w-40 text-center border border-indigo-400 pointer-events-none">
                           <div className="font-bold text-indigo-300">{player.role}</div>
                           <div className="text-[10px] text-gray-300 mt-0.5">{player.actionDesc}</div>
                         </div>
@@ -831,6 +896,38 @@ export default function TacticalBoard({ play, onClose, isModal = false }: Tactic
                   </button>
                 )
               })}
+            </div>
+
+            {/* Tactical Drill Infographic Points Banner (Dump-Swing, Break Cut, Clear) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-start gap-2 shadow-2xs">
+                <span className="text-amber-500 text-base">🔄</span>
+                <div>
+                  <div className="font-bold text-slate-800">Opción Dump-Swing</div>
+                  <div className="text-[11px] text-slate-600">Desahogo de seguridad con Reset O2 en stall count 6.</div>
+                </div>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-start gap-2 shadow-2xs">
+                <span className="text-blue-500 text-base">⚡</span>
+                <div>
+                  <div className="font-bold text-slate-800">Corte al Break-side</div>
+                  <div className="text-[11px] text-slate-600">O4 ataca en diagonal hacia la esquina de la Endzone.</div>
+                </div>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-start gap-2 shadow-2xs">
+                <span className="text-emerald-500 text-base">🧹</span>
+                <div>
+                  <div className="font-bold text-slate-800">Despeje Frontal</div>
+                  <div className="text-[11px] text-slate-600">O3 corre hacia Open Side para limpiar la línea de pase.</div>
+                </div>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-start gap-2 shadow-2xs">
+                <span className="text-indigo-500 text-base">🛡️</span>
+                <div>
+                  <div className="font-bold text-slate-800">Resistencia al Stall</div>
+                  <div className="text-[11px] text-slate-600">Marcaje disciplinado y rotación sin forzar turnovers.</div>
+                </div>
+              </div>
             </div>
 
             {/* Timeline Progress Scrubber */}
@@ -852,7 +949,7 @@ export default function TacticalBoard({ play, onClose, isModal = false }: Tactic
             {/* Playback Controls & Synchronized Phase Selector */}
             <div className="bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               {/* Play / Step Buttons */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => setIsPlaying(p => !p)}
                   className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 shadow transition-all ${
@@ -864,18 +961,28 @@ export default function TacticalBoard({ play, onClose, isModal = false }: Tactic
                   {isPlaying ? '⏸️ Pausar' : '▶️ Reproducir'}
                 </button>
                 <button
+                  onClick={() => {
+                    jumpToPhase(0)
+                    setIsPlaying(true)
+                  }}
+                  className="px-3 py-2 rounded-xl bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 text-sm font-semibold transition-colors"
+                  title="Reiniciar simulación desde el Paso 1"
+                >
+                  ⏮️ Reiniciar
+                </button>
+                <button
                   onClick={prevPhase}
                   className="px-3 py-2 rounded-xl bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 text-sm font-semibold transition-colors"
                   title="Fase anterior"
                 >
-                  ⏮️ Anterior
+                  ◀ Anterior
                 </button>
                 <button
                   onClick={nextPhase}
                   className="px-3 py-2 rounded-xl bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 text-sm font-semibold transition-colors"
                   title="Siguiente fase"
                 >
-                  Siguiente ⏭️
+                  Siguiente ▶
                 </button>
               </div>
 
