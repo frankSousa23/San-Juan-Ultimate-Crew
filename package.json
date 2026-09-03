@@ -47,10 +47,10 @@
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1",
     "tsx": "^4.23.12",
-    "vite": "^8.2.1",
+    "vite": "^6.4.3",
     "zod": "^4.4.3"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "^4.34.8"
+    "@rollup/rollup-linux-x64-gnu": "^4.62.4"
   }
 }

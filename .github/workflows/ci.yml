@@ -35,7 +35,9 @@ jobs:
         node-version: '22'
     
     - name: Install dependencies
-      run: npm install --legacy-peer-deps
+      run: |
+        npm install --legacy-peer-deps
+        npm install @rollup/rollup-linux-x64-gnu --save-optional || true
       continue-on-error: false
     
     - name: Setup environment files
@@ -161,7 +163,9 @@ jobs:
         node-version: '22'
     
     - name: Install dependencies
-      run: npm install --legacy-peer-deps
+      run: |
+        npm install --legacy-peer-deps
+        npm install @rollup/rollup-linux-x64-gnu --save-optional || true
       continue-on-error: false
     
     - name: Run security audit
