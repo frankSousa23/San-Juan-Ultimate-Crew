@@ -32,6 +32,7 @@ import morgan from 'morgan';
 import compression from 'compression';
 import swaggerUi from 'swagger-ui-express';
 import 'dotenv/config';
+import './lib/env.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { requestLogger, errorLogger } from './middleware/logging.js';
 import { 

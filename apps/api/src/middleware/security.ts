@@ -2,6 +2,14 @@ import rateLimit from 'express-rate-limit'
 import helmet from 'helmet'
 import { Request, Response, NextFunction } from 'express'
 
+// Conditional skip: bypassed during Vitest test runs and local dev, enforced in production
+export const shouldSkipRateLimit = (): boolean => {
+  if (process.env.VITEST === 'true' || process.env.NODE_ENV === 'test') {
+    return true
+  }
+  return process.env.NODE_ENV !== 'production'
+}
+
 // Rate limiting - General API requests
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -11,67 +19,67 @@ export const generalLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => true, // Disable rate limiting in development/preview
+  skip: shouldSkipRateLimit,
 })
 
 // Rate limiting - Authentication endpoints
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10000,
+  max: 1000,
   message: {
     error: 'Too many authentication attempts, please try again later.'
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => true, // Disable rate limiting in development/preview
+  skip: shouldSkipRateLimit,
 })
 
 // Rate limiting - Password reset requests
 export const passwordResetLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 1000,
+  max: 100,
   message: {
     error: 'Too many password reset requests. Please wait before trying again.'
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => true,
+  skip: shouldSkipRateLimit,
 })
 
 // Rate limiting - File uploads
 export const uploadLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 1000,
+  max: 200,
   message: {
     error: 'Too many uploads, please try again later.'
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => true,
+  skip: shouldSkipRateLimit,
 })
 
 // Rate limiting - Write operations (POST, PUT, DELETE)
 export const writeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10000,
+  max: 5000,
   message: {
     error: 'Too many write operations, please try again later.'
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => true,
+  skip: shouldSkipRateLimit,
 })
 
 // Rate limiting - Read operations (GET)
 export const readLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
-  max: 10000,
+  max: 5000,
   message: {
     error: 'Too many read requests, please try again later.'
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => true,
+  skip: shouldSkipRateLimit,
 })
 
 // Security headers - configured specifically for iframe preview and cross-origin compatibility

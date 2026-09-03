@@ -1,50 +1,34 @@
-function requireEnv(key: string, defaultValue?: string): string {
-  const value = process.env[key] || defaultValue;
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${key}`);
+import { z } from 'zod'
+import 'dotenv/config'
+
+export const envSchema = z.object({
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  PORT: z.coerce.number().default(3000),
+  JWT_SECRET: z.string().min(1).default('development-jwt-secret-key-change-in-prod'),
+  JWT_EXPIRES_IN: z.string().default('7d'),
+  AUTH_REQUIRED: z.preprocess(
+    (val) => String(val || '').toLowerCase() === 'true',
+    z.boolean()
+  ).default(false),
+  DATABASE_URL: z.string().optional(),
+  CORS_ORIGIN: z.string().optional(),
+})
+
+export type EnvConfig = z.infer<typeof envSchema>
+
+let validatedEnv: EnvConfig
+
+try {
+  validatedEnv = envSchema.parse(process.env)
+  if (validatedEnv.NODE_ENV === 'production' && validatedEnv.JWT_SECRET === 'development-jwt-secret-key-change-in-prod') {
+    console.warn('⚠️ [SECURITY WARNING]: Running in production with default JWT_SECRET. Set a strong JWT_SECRET in environment variables.')
   }
-  return value;
-}
-
-function getEnv(key: string, defaultValue: string): string {
-  return process.env[key] || defaultValue;
-}
-
-function getBoolEnv(key: string, defaultValue: boolean = false): boolean {
-  const value = process.env[key];
-  if (!value) return defaultValue;
-  return value.toLowerCase() === 'true';
-}
-
-function getIntEnv(key: string, defaultValue: number): number {
-  const value = process.env[key];
-  if (!value) return defaultValue;
-  const parsed = parseInt(value, 10);
-  return isNaN(parsed) ? defaultValue : parsed;
-}
-
-function validateJwtSecret(): string {
-  const secret = process.env.JWT_SECRET;
-  if (secret && secret.length >= 32) {
-    return secret;
-  }
+} catch (error) {
+  console.error('❌ [CONFIG ERROR]: Invalid environment configuration:', error)
   if (process.env.NODE_ENV === 'production') {
-    return secret && secret.length > 0 
-      ? secret.padEnd(32, '0') 
-      : 'sigedivo-production-jwt-secret-key-32-chars-minimum-fallback-2026';
+    process.exit(1)
   }
-  return secret || 'dev-secret-sigedivo-ultimate-frisbee-32chars';
+  validatedEnv = envSchema.parse({})
 }
 
-export const env = {
-  NODE_ENV: getEnv('NODE_ENV', 'development'),
-  PORT: getIntEnv('PORT', 3000),
-  DATABASE_URL: getEnv('DATABASE_URL', 'postgresql://sju:sju@localhost:5432/sju_dev?schema=public'),
-  AUTH_REQUIRED: getBoolEnv('AUTH_REQUIRED', false),
-  JWT_SECRET: validateJwtSecret(),
-  JWT_EXPIRES_IN: getEnv('JWT_EXPIRES_IN', '15m'),
-  JWT_REFRESH_EXPIRES_IN: getEnv('JWT_REFRESH_EXPIRES_IN', '7d'),
-  CORS_ORIGIN: getEnv('CORS_ORIGIN', '*'),
-  FRONTEND_URL: getEnv('FRONTEND_URL', 'http://localhost:3000'),
-  LOG_LEVEL: getEnv('LOG_LEVEL', 'info'),
-};
+export const env = validatedEnv
