@@ -20,9 +20,14 @@ describe('Roles and Permissions - Functional Tests', () => {
     }
 
     // Login as admin
-    const adminLogin = await request(app)
+    let adminLogin = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'frankalfonso1988@gmail.com', password: '123456' })
+      .send({ email: 'frankalfonso1988@gmail.com', password: 'passWORD23' })
+    if (adminLogin.status !== 200) {
+      adminLogin = await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'frankalfonso1988@gmail.com', password: '123456' })
+    }
     if (adminLogin.status === 200) {
       adminToken = adminLogin.body.token
       adminUser = adminLogin.body.user

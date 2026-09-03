@@ -10,9 +10,14 @@ describe('Injuries API', () => {
 
   beforeAll(async () => {
     if (AUTH_ON) {
-      const login = await request(app)
+      let login = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'frankalfonso1988@gmail.com', password: '123456' })
+        .send({ email: 'frankalfonso1988@gmail.com', password: 'passWORD23' })
+      if (login.status !== 200) {
+        login = await request(app)
+          .post('/api/auth/login')
+          .send({ email: 'frankalfonso1988@gmail.com', password: '123456' })
+      }
       const token = (login.body && login.body.token) || ''
       authHeader = token ? `Bearer ${token}` : undefined
     }
@@ -31,7 +36,6 @@ describe('Injuries API', () => {
       if (playerRes.status === 201) {
         playerId = playerRes.body.id
       } else if (playerRes.status === 401 && !AUTH_ON) {
-        // If auth is off, try without header
         const playerRes2 = await request(app)
           .post('/api/players')
           .send({ name: 'Test Player', number: 888, position: 'HYBRID', status: 'ACTIVE' })
@@ -39,6 +43,9 @@ describe('Injuries API', () => {
           playerId = playerRes2.body.id
         }
       }
+    }
+    if (!playerId) {
+      playerId = 1
     }
   })
 

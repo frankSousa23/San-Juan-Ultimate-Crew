@@ -50,7 +50,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
 }))
 
 const listQuerySchema = z.object({
-  playerId: z.coerce.number().int().positive().optional(),
+  playerId: z.coerce.number().int().positive({ message: 'playerId debe ser un número entero positivo' }).optional(),
   severity: z.enum(['MILD','MODERATE','SEVERE']).optional(),
   status: z.enum(['ACTIVE','RECOVERING','RESOLVED']).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(20),

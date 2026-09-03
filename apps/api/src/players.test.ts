@@ -8,9 +8,14 @@ describe('Players CRUD', () => {
 
   beforeAll(async () => {
     if (AUTH_ON) {
-      const login = await request(app)
+      let login = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'frankalfonso1988@gmail.com', password: '123456' })
+        .send({ email: 'frankalfonso1988@gmail.com', password: 'passWORD23' })
+      if (login.status !== 200) {
+        login = await request(app)
+          .post('/api/auth/login')
+          .send({ email: 'frankalfonso1988@gmail.com', password: '123456' })
+      }
       const token = (login.body && login.body.token) || ''
       authHeader = token ? `Bearer ${token}` : undefined
     }

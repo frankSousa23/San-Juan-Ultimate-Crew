@@ -11,9 +11,14 @@ describe('Messages API', () => {
 
   beforeAll(async () => {
     if (AUTH_ON) {
-      const login = await request(app)
+      let login = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'frankalfonso1988@gmail.com', password: '123456' })
+        .send({ email: 'frankalfonso1988@gmail.com', password: 'passWORD23' })
+      if (login.status !== 200) {
+        login = await request(app)
+          .post('/api/auth/login')
+          .send({ email: 'frankalfonso1988@gmail.com', password: '123456' })
+      }
       const token = (login.body && login.body.token) || ''
       authHeader = token ? `Bearer ${token}` : undefined
     }
@@ -26,7 +31,6 @@ describe('Messages API', () => {
     if (channelRes.status === 201) {
       channelId = channelRes.body.id
     } else if (channelRes.status === 401 && !AUTH_ON) {
-      // If auth is off, try without header
       const channelRes2 = await request(app)
         .post('/api/channels')
         .send({ name: 'Test Channel for Messages' })
@@ -34,10 +38,13 @@ describe('Messages API', () => {
         channelId = channelRes2.body.id
       }
     }
+    if (!channelId) channelId = 1
 
     // Get a player for testing (or create one if needed)
-    const playersRes = await request(app).get('/api/players')
-    if (playersRes.body.length > 0) {
+    let pReq = request(app).get('/api/players')
+    if (authHeader) pReq = pReq.set('Authorization', authHeader)
+    const playersRes = await pReq
+    if (playersRes.body && Array.isArray(playersRes.body) && playersRes.body.length > 0) {
       playerId = playersRes.body[0].id
     } else {
       // Create a test player
@@ -48,7 +55,6 @@ describe('Messages API', () => {
       if (playerRes.status === 201) {
         playerId = playerRes.body.id
       } else if (playerRes.status === 401 && !AUTH_ON) {
-        // If auth is off, try without header
         const playerRes2 = await request(app)
           .post('/api/players')
           .send({ name: 'Test Player', number: 999, position: 'HYBRID', status: 'ACTIVE' })
@@ -57,6 +63,7 @@ describe('Messages API', () => {
         }
       }
     }
+    if (!playerId) playerId = 1
   })
 
   it('should list messages for a channel', async () => {

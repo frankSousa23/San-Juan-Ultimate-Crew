@@ -10,9 +10,14 @@ describe('Resources API', () => {
 
   beforeAll(async () => {
     if (AUTH_ON) {
-      const login = await request(app)
+      let login = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'frankalfonso1988@gmail.com', password: '123456' })
+        .send({ email: 'frankalfonso1988@gmail.com', password: 'passWORD23' })
+      if (login.status !== 200) {
+        login = await request(app)
+          .post('/api/auth/login')
+          .send({ email: 'frankalfonso1988@gmail.com', password: '123456' })
+      }
       const token = (login.body && login.body.token) || ''
       authHeader = token ? `Bearer ${token}` : undefined
     }
@@ -45,7 +50,8 @@ describe('Resources API', () => {
   })
 
   it('should upload a file as a resource', async () => {
-    const tmpDir = path.resolve(process.cwd(), 'apps', 'api', 'uploads')
+    const isInsideApi = process.cwd().endsWith(path.join('apps', 'api')) || process.cwd().endsWith('apps/api')
+    const tmpDir = isInsideApi ? path.resolve(process.cwd(), 'uploads') : path.resolve(process.cwd(), 'apps', 'api', 'uploads')
     const tmpFile = path.join(tmpDir, `tmp-test-${Date.now()}.txt`)
     let uploadedResourceId: number | null = null
     try {

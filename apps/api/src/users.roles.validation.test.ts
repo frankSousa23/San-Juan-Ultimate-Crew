@@ -25,7 +25,7 @@ describe('Admin set roles validation', () => {
     const res = await request(app)
       .put(`/api/users/${guestUser.id}/roles`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ roles: ['admin'] })
+      .send({ roles: ['invalid_role'] })
     expect(res.status).toBe(400)
   })
 

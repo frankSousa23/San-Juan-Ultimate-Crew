@@ -559,7 +559,8 @@ router.post('/bulk-delete', requirePermission('resources:manage'), asyncHandler(
   return success(res, { deleted: existing.map(e => e.id) })
 }))
 
-const uploadsDir = path.resolve(process.cwd(), 'apps', 'api', 'uploads')
+const isInsideApi = process.cwd().endsWith(path.join('apps', 'api')) || process.cwd().endsWith('apps/api')
+const uploadsDir = isInsideApi ? path.resolve(process.cwd(), 'uploads') : path.resolve(process.cwd(), 'apps', 'api', 'uploads')
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
 
 interface MulterFile {
