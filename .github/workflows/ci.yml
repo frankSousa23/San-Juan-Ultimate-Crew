@@ -35,7 +35,7 @@ jobs:
         node-version: '22'
     
     - name: Install dependencies
-      run: npm install
+      run: npm install --legacy-peer-deps
       continue-on-error: false
     
     - name: Setup environment files
@@ -47,6 +47,8 @@ jobs:
           echo 'DATABASE_URL="postgresql://sju:sju@localhost:5432/sju_test"' > apps/api/.env
           echo 'PORT=4000' >> apps/api/.env
           echo 'AUTH_REQUIRED=false' >> apps/api/.env
+          echo 'JWT_SECRET="development-jwt-secret-key-change-in-prod"' >> apps/api/.env
+          echo 'JWT_EXPIRES_IN="7d"' >> apps/api/.env
         fi
         
         if [ -f apps/web/.env.example ]; then
@@ -159,7 +161,7 @@ jobs:
         node-version: '22'
     
     - name: Install dependencies
-      run: npm install
+      run: npm install --legacy-peer-deps
       continue-on-error: false
     
     - name: Run security audit

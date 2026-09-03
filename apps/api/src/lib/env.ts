@@ -12,6 +12,8 @@ export const envSchema = z.object({
   ).default(false),
   DATABASE_URL: z.string().optional(),
   CORS_ORIGIN: z.string().optional(),
+  FRONTEND_URL: z.string().optional(),
+  API_URL: z.string().optional(),
 })
 
 export type EnvConfig = z.infer<typeof envSchema>
