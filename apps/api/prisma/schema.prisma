@@ -272,6 +272,8 @@ model EventParticipant {
   @@id([eventId, playerId])
   @@index([eventId])
   @@index([playerId])
+  @@index([eventId, teamSide])
+  @@index([eventId, lineType])
 }
 
 model Channel {
@@ -345,6 +347,7 @@ model EventAnnotation {
   @@index([playerId])
   @@index([eventId, playerId])
   @@index([type])
+  @@index([eventId, type])
   @@index([timestamp])
   @@index([eventId, timestamp])
   @@index([opponentTeamName])
@@ -570,6 +573,7 @@ model User {
   @@unique([playerId])
   @@index([teamId])
   @@index([status])
+  @@index([teamId, status])
   @@index([email])
 }
 
