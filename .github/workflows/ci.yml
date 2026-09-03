@@ -129,12 +129,19 @@ jobs:
       run: npm --workspace apps/web run lint -- --quiet
       continue-on-error: false
     
-    - name: Build API
-      run: npm --workspace apps/api run build
+    - name: Build Web
+      run: |
+        npm --workspace apps/web run build 2>&1 | tee build-web.log || {
+          echo "### ❌ Build Web Error Log" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat build-web.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          exit 1
+        }
       continue-on-error: false
     
-    - name: Build Web
-      run: npm --workspace apps/web run build
+    - name: Build API
+      run: npm --workspace apps/api run build
       continue-on-error: false
     
     - name: Run E2E tests
