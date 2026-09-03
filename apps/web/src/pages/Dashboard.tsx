@@ -5,6 +5,13 @@ import { transactionsApi } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import SystemManualModal from '../components/SystemManualModal'
 import { downloadSystemManualPdf } from '../lib/generateManualPdf'
+import PlayerRadarChart from '../components/PlayerRadarChart'
+import {
+  CANONICAL_TEAM_RADAR,
+  CANONICAL_HANDLER_PROFILE,
+  CANONICAL_CUTTER_PROFILE,
+  CANONICAL_TACTICAL_KPIS,
+} from '../lib/performanceStats'
 
 interface FinanceSummary {
   income: number
@@ -19,6 +26,7 @@ export default function Dashboard() {
   const [financeLoading, setFinanceLoading] = useState(true)
   const [showManualModal, setShowManualModal] = useState(false)
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
+  const [activeRoleView, setActiveRoleView] = useState<'TEAM' | 'HANDLER' | 'CUTTER'>('TEAM')
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -298,6 +306,197 @@ export default function Dashboard() {
             <p className="text-xs text-slate-500 mt-1 font-medium">Mensajes e interacciones</p>
           </div>
         )}
+      </div>
+
+      {/* 🏆 Panel de Rendimiento Táctico y Radar de Atletas (Infografía Oficial) */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🏆</span>
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                Panel de Rendimiento Táctico & Radar de Atletas
+              </h2>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+              Métricas avanzadas de Ultimate Frisbee: 5 ejes de habilidad, especialización de Handlers/Cutters y precisión táctica.
+            </p>
+          </div>
+
+          {/* Selector de Perspectiva (Equipo / Handlers / Cutters) */}
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold self-start sm:self-auto">
+            <button
+              onClick={() => setActiveRoleView('TEAM')}
+              className={`px-3 py-1.5 rounded-lg transition-all ${
+                activeRoleView === 'TEAM'
+                  ? 'bg-white text-indigo-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              🛡️ Plantilla General
+            </button>
+            <button
+              onClick={() => setActiveRoleView('HANDLER')}
+              className={`px-3 py-1.5 rounded-lg transition-all ${
+                activeRoleView === 'HANDLER'
+                  ? 'bg-white text-indigo-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              🎯 Handlers
+            </button>
+            <button
+              onClick={() => setActiveRoleView('CUTTER')}
+              className={`px-3 py-1.5 rounded-lg transition-all ${
+                activeRoleView === 'CUTTER'
+                  ? 'bg-white text-indigo-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              ⚡ Cutters
+            </button>
+          </div>
+        </div>
+
+        {/* Grid: Radar Chart a la izquierda (5 cols) y Desglose Táctico a la derecha (7 cols) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          {/* Radar Chart (Pentágono 5 Ejes) */}
+          <div className="lg:col-span-5 flex flex-col items-center justify-center p-4 bg-gradient-to-b from-slate-50 to-indigo-50/30 rounded-2xl border border-slate-200/80">
+            <div className="text-center mb-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
+                {activeRoleView === 'TEAM' ? 'Promedio Global del Equipo' :
+                 activeRoleView === 'HANDLER' ? 'Perfil Especialista: Handler' :
+                 'Perfil Especialista: Cutter'}
+              </span>
+              <h3 className="text-sm font-extrabold text-slate-800 mt-1">
+                Radar Pentagonal de Competencias
+              </h3>
+            </div>
+
+            <PlayerRadarChart
+              data={
+                activeRoleView === 'TEAM'
+                  ? CANONICAL_TEAM_RADAR
+                  : activeRoleView === 'HANDLER'
+                  ? CANONICAL_HANDLER_PROFILE.radarProfile
+                  : CANONICAL_CUTTER_PROFILE.radarProfile
+              }
+              benchmarkData={activeRoleView !== 'TEAM' ? CANONICAL_TEAM_RADAR : undefined}
+              dataLabel={activeRoleView === 'TEAM' ? 'Equipo SJUC' : activeRoleView === 'HANDLER' ? 'Handlers' : 'Cutters'}
+              benchmarkLabel="Promedio Plantilla"
+              size={300}
+            />
+
+            <p className="text-[11px] text-slate-500 text-center mt-2">
+              Escala normalizada de 0 a 100 basada en partidos oficiales, asistencias, defensas y puntuación SOTG.
+            </p>
+          </div>
+
+          {/* Métricas Tácticas & Especialización (7 cols) */}
+          <div className="lg:col-span-7 space-y-4">
+            {/* Medidores Radiales Tácticos (Huck Accuracy & Stall Resistance) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="bg-gradient-to-br from-indigo-50 to-blue-50/50 p-3.5 rounded-xl border border-indigo-100 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-indigo-800">Huck Accuracy</span>
+                  <span className="text-base">🚀</span>
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-black text-indigo-700">{CANONICAL_TACTICAL_KPIS.huckAccuracyPct}%</span>
+                  <span className="text-[10px] text-indigo-500 font-bold">Lanzamientos &gt;30y</span>
+                </div>
+                <div className="w-full bg-indigo-200 rounded-full h-1.5 mt-1 overflow-hidden">
+                  <div className="bg-indigo-600 h-1.5 rounded-full" style={{ width: `${CANONICAL_TACTICAL_KPIS.huckAccuracyPct}%` }} />
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50/50 p-3.5 rounded-xl border border-blue-100 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-blue-800">Resistencia al Stall</span>
+                  <span className="text-base">⏱️</span>
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-black text-blue-700">{CANONICAL_TACTICAL_KPIS.stallOutResistancePct}%</span>
+                  <span className="text-[10px] text-blue-500 font-bold">Antes de stall 7</span>
+                </div>
+                <div className="w-full bg-blue-200 rounded-full h-1.5 mt-1 overflow-hidden">
+                  <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${CANONICAL_TACTICAL_KPIS.stallOutResistancePct}%` }} />
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50/50 p-3.5 rounded-xl border border-emerald-100 space-y-1 col-span-2 sm:col-span-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-emerald-800">Espíritu SOTG</span>
+                  <span className="text-base">🕊️</span>
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-black text-emerald-700">{CANONICAL_TACTICAL_KPIS.averageSpiritScore}</span>
+                  <span className="text-[10px] text-emerald-600 font-bold">de 20 pts (WFDF)</span>
+                </div>
+                <div className="w-full bg-emerald-200 rounded-full h-1.5 mt-1 overflow-hidden">
+                  <div className="bg-emerald-600 h-1.5 rounded-full" style={{ width: `${(CANONICAL_TACTICAL_KPIS.averageSpiritScore / 20) * 100}%` }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Tarjeta de Especialización de Roles */}
+            <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">
+                    {activeRoleView === 'CUTTER' ? CANONICAL_CUTTER_PROFILE.icon : CANONICAL_HANDLER_PROFILE.icon}
+                  </span>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900">
+                      {activeRoleView === 'CUTTER' ? CANONICAL_CUTTER_PROFILE.title : CANONICAL_HANDLER_PROFILE.title}
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      {activeRoleView === 'CUTTER' ? CANONICAL_CUTTER_PROFILE.description : CANONICAL_HANDLER_PROFILE.description}
+                    </p>
+                  </div>
+                </div>
+                <Link to="/estadisticas" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition">
+                  Ver atletas →
+                </Link>
+              </div>
+
+              {/* Métricas específicas del rol */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                {(activeRoleView === 'CUTTER' ? CANONICAL_CUTTER_PROFILE : CANONICAL_HANDLER_PROFILE).primaryMetrics.map((m, idx) => (
+                  <div key={idx} className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs space-y-1">
+                    <span className="text-[10px] font-semibold text-slate-500 block truncate" title={m.label}>
+                      {m.label}
+                    </span>
+                    <span className="text-base font-black text-slate-900 block" style={{ color: m.color }}>
+                      {m.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Performance Trend Line Callout */}
+            <div className="bg-slate-900 text-white rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">📈</span>
+                <div>
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                    Línea de Tendencia: Racha Positiva (+4 Victorias)
+                  </h4>
+                  <p className="text-[11px] text-slate-300">
+                    Efectividad ofensiva 83% en zona roja y 91% de pases completados en los últimos 4 partidos oficiales.
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/roster-torneo"
+                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg transition whitespace-nowrap self-start sm:self-auto shadow-xs"
+              >
+                Líneas de Torneo →
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Próximos Eventos */}

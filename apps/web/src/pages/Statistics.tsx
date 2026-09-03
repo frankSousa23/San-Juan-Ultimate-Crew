@@ -4,6 +4,14 @@ import { useApi } from '../hooks/useApi'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
 import TournamentStatsView from '../components/TournamentStatsView'
+import PlayerRadarChart from '../components/PlayerRadarChart'
+import {
+  CANONICAL_TEAM_RADAR,
+  CANONICAL_HANDLER_PROFILE,
+  CANONICAL_CUTTER_PROFILE,
+  CANONICAL_TACTICAL_KPIS,
+  calculatePlayerRadar,
+} from '../lib/performanceStats'
 
 type Stats = {
   players: number
@@ -25,6 +33,7 @@ type Stats = {
 
 export default function Statistics() {
   const [stats, setStats] = useState<Stats | null>(null)
+  const [radarBenchmark, setRadarBenchmark] = useState<'TEAM' | 'HANDLER' | 'CUTTER'>('TEAM')
   const toasts = useToast()
   const { user, hasRole } = useAuth()
 
@@ -347,6 +356,146 @@ export default function Statistics() {
                   <div className="text-sm">Los eventos programados aparecerán aquí</div>
                 </div>
               )}
+            </div>
+          </div>
+          
+          {/* 🏆 Radar de Rendimiento y Habilidades Atléticas (Infografía Oficial) */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🥏</span>
+                  <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                    Radar Pentagonal de Habilidades & Análisis Táctico
+                  </h3>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                  Evaluación multidimensional de Ultimate Frisbee: Catching, Throwing, Defense, Spirit y Stamina.
+                </p>
+              </div>
+
+              {/* Selector de Comparación */}
+              <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold self-start sm:self-auto">
+                <button
+                  onClick={() => setRadarBenchmark('TEAM')}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${
+                    radarBenchmark === 'TEAM'
+                      ? 'bg-white text-indigo-700 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  🛡️ vs Equipo SJUC
+                </button>
+                <button
+                  onClick={() => setRadarBenchmark('HANDLER')}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${
+                    radarBenchmark === 'HANDLER'
+                      ? 'bg-white text-indigo-700 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  🎯 vs Elite Handler
+                </button>
+                <button
+                  onClick={() => setRadarBenchmark('CUTTER')}
+                  className={`px-3 py-1.5 rounded-lg transition-all ${
+                    radarBenchmark === 'CUTTER'
+                      ? 'bg-white text-indigo-700 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  ⚡ vs Elite Cutter
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+              {/* Radar Chart SVG */}
+              <div className="lg:col-span-6 flex flex-col items-center justify-center p-4 bg-gradient-to-b from-slate-50 to-indigo-50/20 rounded-2xl border border-slate-200/80">
+                <PlayerRadarChart
+                  data={
+                    isPlayer && stats?.personalStats
+                      ? calculatePlayerRadar({
+                          goals: 8,
+                          assists: 11,
+                          defenses: 6,
+                          turnovers: 2,
+                          attendanceRate: stats.personalStats.attendanceRate,
+                        })
+                      : CANONICAL_TEAM_RADAR
+                  }
+                  benchmarkData={
+                    radarBenchmark === 'TEAM'
+                      ? (isPlayer ? CANONICAL_TEAM_RADAR : undefined)
+                      : radarBenchmark === 'HANDLER'
+                      ? CANONICAL_HANDLER_PROFILE.radarProfile
+                      : CANONICAL_CUTTER_PROFILE.radarProfile
+                  }
+                  dataLabel={isPlayer ? (user?.name?.split(' ')[0] || 'Mi Perfil') : 'Equipo SJUC'}
+                  benchmarkLabel={
+                    radarBenchmark === 'TEAM' ? 'Media Equipo' :
+                    radarBenchmark === 'HANDLER' ? 'Patrón Handler' : 'Patrón Cutter'
+                  }
+                  size={320}
+                />
+              </div>
+
+              {/* Métricas Tácticas de Apoyo */}
+              <div className="lg:col-span-6 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-indigo-50/70 p-4 rounded-xl border border-indigo-100">
+                    <span className="text-[11px] font-black uppercase text-indigo-800 tracking-wider block">
+                      🚀 Huck Accuracy
+                    </span>
+                    <span className="text-2xl font-black text-indigo-900 mt-1 block">
+                      {CANONICAL_TACTICAL_KPIS.huckAccuracyPct}%
+                    </span>
+                    <span className="text-[11px] text-indigo-600 font-medium mt-0.5 block">
+                      Pases largos &gt;30 yd completados
+                    </span>
+                  </div>
+
+                  <div className="bg-blue-50/70 p-4 rounded-xl border border-blue-100">
+                    <span className="text-[11px] font-black uppercase text-blue-800 tracking-wider block">
+                      ⏱️ Resistencia al Stall
+                    </span>
+                    <span className="text-2xl font-black text-blue-900 mt-1 block">
+                      {CANONICAL_TACTICAL_KPIS.stallOutResistancePct}%
+                    </span>
+                    <span className="text-[11px] text-blue-600 font-medium mt-0.5 block">
+                      Liberaciones antes del conteo 7
+                    </span>
+                  </div>
+
+                  <div className="bg-emerald-50/70 p-4 rounded-xl border border-emerald-100">
+                    <span className="text-[11px] font-black uppercase text-emerald-800 tracking-wider block">
+                      🕊️ Espíritu de Juego (SOTG)
+                    </span>
+                    <span className="text-2xl font-black text-emerald-900 mt-1 block">
+                      {CANONICAL_TACTICAL_KPIS.averageSpiritScore} / 20
+                    </span>
+                    <span className="text-[11px] text-emerald-600 font-medium mt-0.5 block">
+                      Promedio oficial según rúbrica WFDF
+                    </span>
+                  </div>
+
+                  <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-100">
+                    <span className="text-[11px] font-black uppercase text-amber-800 tracking-wider block">
+                      🎯 Red Zone Conversion
+                    </span>
+                    <span className="text-2xl font-black text-amber-900 mt-1 block">
+                      {CANONICAL_TACTICAL_KPIS.redZoneConversionPct}%
+                    </span>
+                    <span className="text-[11px] text-amber-600 font-medium mt-0.5 block">
+                      Puntos anotados dentro de las 20y
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3.5 bg-slate-100 rounded-xl text-xs text-slate-700 leading-relaxed border border-slate-200">
+                  💡 <span className="font-bold">Consejo de Entrenamiento:</span> Para optimizar el polígono hacia la marca de 90+, priorizar drills de <em>Dump-Swing</em> al corte rápido y transición ofensiva al lado cerrado (Break-side).
+                </div>
+              </div>
             </div>
           </div>
           
