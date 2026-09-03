@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="discGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f43f5e" />
+      <stop offset="100%" stop-color="#be123c" />
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="#0f172a" />
+  <!-- Dynamic Flight Rings -->
+  <ellipse cx="50" cy="50" rx="40" ry="16" fill="none" stroke="url(#glowGrad)" stroke-width="2.5" transform="rotate(-25 50 50)" opacity="0.6" />
+  <ellipse cx="50" cy="50" rx="34" ry="12" fill="url(#discGrad)" transform="rotate(-25 50 50)" />
+  <ellipse cx="50" cy="50" rx="26" ry="8" fill="#fda4af" transform="rotate(-25 50 50)" opacity="0.8" />
+  <circle cx="50" cy="50" r="3.5" fill="#ffffff" />
+</svg>

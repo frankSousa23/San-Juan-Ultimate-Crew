@@ -1,0 +1,19 @@
+{
+  "name": "SIGEDIVO - San Juan Ultimate Crew",
+  "short_name": "SIGEDIVO",
+  "description": "Sistema Integral de Gestión Deportiva para Ultimate Frisbee",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#e11d48",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["sports", "productivity"]
+}
