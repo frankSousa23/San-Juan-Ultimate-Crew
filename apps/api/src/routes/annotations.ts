@@ -37,6 +37,7 @@ import { requireAnnotationAccess } from '../middleware/annotationAccess.js'
 import { validateBody, validateParams } from '../middleware/validation.js'
 import { createAuditHelper } from '../lib/audit.js'
 import { isGuestRequest, GUEST_EVENT_ANNOTATIONS, GUEST_EVENTS } from '../lib/guestDemoData.js'
+import { matchBroadcaster } from '../lib/eventBroadcaster.js'
 
 const router = Router()
 
@@ -148,6 +149,40 @@ router.get('/', requireAuth, asyncHandler(async (req: Request, res: Response) =>
 
   return success(res, annotations)
 }))
+
+/**
+ * @swagger
+ * /api/annotations/stream:
+ *   get:
+ *     summary: Server-Sent Events (SSE) live match stream
+ *     tags: [Annotations]
+ */
+router.get('/stream', (req: Request, res: Response) => {
+  const eventIdRaw = req.query.eventId
+  const eventId = eventIdRaw ? Number(eventIdRaw) : null
+
+  res.setHeader('Content-Type', 'text/event-stream')
+  res.setHeader('Cache-Control', 'no-cache')
+  res.setHeader('Connection', 'keep-alive')
+  res.setHeader('X-Accel-Buffering', 'no')
+  res.flushHeaders?.()
+
+  res.write(`data: ${JSON.stringify({ type: 'CONNECTED', eventId })}\n\n`)
+
+  const listener = (data: any) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`)
+  }
+
+  if (eventId) {
+    matchBroadcaster.on(`event:${eventId}`, listener)
+  }
+
+  req.on('close', () => {
+    if (eventId) {
+      matchBroadcaster.off(`event:${eventId}`, listener)
+    }
+  })
+})
 
 /**
  * @swagger
@@ -326,6 +361,8 @@ router.post('/', requireAuth, requireAnnotationAccess, validateBody(createAnnota
     isRefuerzo: annotation.isRefuerzo,
   })
 
+  matchBroadcaster.broadcast(annotation.eventId, 'ANNOTATION_CREATED', annotation)
+
   return created(res, annotation)
 }))
 
@@ -449,6 +486,8 @@ router.delete('/:id', requireAuth, requireAnnotationAccess, validateParams(annot
     eventId: existing.eventId,
     playerId: existing.playerId,
   })
+
+  matchBroadcaster.broadcast(existing.eventId, 'ANNOTATION_DELETED', { id: Number(id) })
 
   return success(res, { message: 'Annotation deleted successfully' })
 }))

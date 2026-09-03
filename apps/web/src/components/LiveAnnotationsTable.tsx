@@ -106,12 +106,58 @@ export default function LiveAnnotationsTable({ event: initialEvent, onClose, emb
     }
   }
 
+  // Cola de sincronización offline
+  const queueOfflineAnnotation = (item: CreateAnnotationInput) => {
+    try {
+      const q = JSON.parse(localStorage.getItem('sigedivo.offline_queue') || '[]')
+      q.push(item)
+      localStorage.setItem('sigedivo.offline_queue', JSON.stringify(q))
+    } catch {}
+  }
+
+  const flushOfflineQueue = async () => {
+    try {
+      const q: CreateAnnotationInput[] = JSON.parse(localStorage.getItem('sigedivo.offline_queue') || '[]')
+      if (!q.length) return
+      for (const item of q) {
+        await annotationsApi.create(item)
+      }
+      localStorage.removeItem('sigedivo.offline_queue')
+      toasts.success(`¡Sincronizadas ${q.length} anotaciones pendientes!`)
+      loadData()
+    } catch {}
+  }
+
+  useEffect(() => {
+    const handleOnline = () => flushOfflineQueue()
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [])
+
   useEffect(() => {
     loadData()
     loadRivals()
-    if (currentEvent.id > 0) {
-      const interval = setInterval(loadData, 4000)
-      return () => clearInterval(interval)
+
+    // Suscripción a eventos en tiempo real mediante SSE
+    let sse: EventSource | null = null
+    if (currentEvent.id > 0 && typeof window !== 'undefined' && 'EventSource' in window) {
+      try {
+        sse = new EventSource(`/api/annotations/stream?eventId=${currentEvent.id}`)
+        sse.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data)
+            if (data.type === 'ANNOTATION_CREATED' || data.type === 'ANNOTATION_DELETED') {
+              loadData()
+            }
+          } catch {}
+        }
+      } catch {}
+    }
+
+    const interval = setInterval(loadData, 8000)
+    return () => {
+      clearInterval(interval)
+      if (sse) sse.close()
     }
   }, [currentEvent.id])
 
@@ -412,12 +458,21 @@ export default function LiveAnnotationsTable({ event: initialEvent, onClose, emb
         loadData();
         toasts.success(typeLabel);
       }).catch((err) => {
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          queueOfflineAnnotation(payload)
+          toasts.warning('Sin conexión: anotación guardada localmente y se sincronizará al reconectar.')
+          return
+        }
         toasts.error(err?.response?.data?.error || 'No se pudo registrar la anotación');
         loadData();
       });
       return; // Early return to avoid old blocking logic
 
     } catch (err: any) {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        toasts.warning('Sin conexión: guardado en cola local.')
+        return
+      }
       toasts.error(err?.response?.data?.error || 'No se pudo registrar la anotación')
       await loadData()
     }
