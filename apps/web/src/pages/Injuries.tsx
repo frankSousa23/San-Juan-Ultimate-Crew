@@ -9,6 +9,48 @@ import ConfirmModal from '../components/ConfirmModal'
 type InjurySeverity = 'MILD' | 'MODERATE' | 'SEVERE'
 type InjuryStatus = 'ACTIVE' | 'RECOVERING' | 'RESOLVED'
 
+type ClearanceStatus = 'APTO' | 'LIMITADO' | 'BAJA_MEDICA'
+
+const RTP_STAGES = [
+  { label: 'Reposo y control de inflamación', short: 'Fase 1: Reposo' },
+  { label: 'Movilidad articular y fortalecimiento isométrico', short: 'Fase 2: Movilidad' },
+  { label: 'Carrera lineal y agilidad en cortes', short: 'Fase 3: Carrera' },
+  { label: 'Práctica técnico-táctica sin contacto', short: 'Fase 4: Sin Contacto' },
+  { label: 'Alta médica completa para scrimmages y torneos', short: 'Fase 5: Alta Competitiva' },
+]
+
+function getClearanceStatus(injury: InjuryItem): ClearanceStatus {
+  if (injury.status === 'RESOLVED') return 'APTO'
+  if (injury.severity === 'MILD') return 'LIMITADO'
+  return 'BAJA_MEDICA'
+}
+
+function getRecoveryDays(injury: InjuryItem): number | null {
+  if (!injury.endDate) return null
+  const diff = new Date(injury.endDate).getTime() - Date.now()
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
+}
+
+function getRecoveryProgress(injury: InjuryItem): number {
+  if (!injury.endDate) return 0
+  const total = new Date(injury.endDate).getTime() - new Date(injury.startDate).getTime()
+  const elapsed = Date.now() - new Date(injury.startDate).getTime()
+  if (total <= 0) return 100
+  return Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)))
+}
+
+const CLEARANCE_LABEL: Record<ClearanceStatus, string> = {
+  APTO: '🟢 Apto',
+  LIMITADO: '🟡 Limitado',
+  BAJA_MEDICA: '🔴 Baja Médica',
+}
+
+const CLEARANCE_CLASS: Record<ClearanceStatus, string> = {
+  APTO: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+  LIMITADO: 'bg-amber-100 text-amber-800 border-amber-300',
+  BAJA_MEDICA: 'bg-rose-100 text-rose-800 border-rose-300',
+}
+
 interface InjuryItem {
   id: number
   playerId: number
@@ -38,7 +80,21 @@ export default function Injuries() {
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState<any>({ playerId: '', type: '', severity: 'MILD', status: 'ACTIVE', startDate: '', endDate: '', description: '' })
   const [detailInjury, setDetailInjury] = useState<InjuryItem | null>(null)
-  
+  const [rtpChecks, setRtpChecks] = useState<Record<number, boolean[]>>(() => {
+    try { return JSON.parse(localStorage.getItem('injuries.rtpChecks') || '{}') } catch { return {} }
+  })
+
+  const saveRtpChecks = (next: Record<number, boolean[]>) => {
+    setRtpChecks(next)
+    try { localStorage.setItem('injuries.rtpChecks', JSON.stringify(next)) } catch {}
+  }
+
+  const toggleRtp = (injuryId: number, stageIdx: number) => {
+    const current = rtpChecks[injuryId] || Array(RTP_STAGES.length).fill(false)
+    const next = current.map((v: boolean, i: number) => i === stageIdx ? !v : v)
+    saveRtpChecks({ ...rtpChecks, [injuryId]: next })
+  }
+
   const [confirmState, setConfirmState] = useState<{ message: string; onYes: () => Promise<void> } | null>(null)
 
   // API hooks
@@ -255,6 +311,35 @@ export default function Injuries() {
         </div>
       </div>
 
+      {/* 🩺 Panel de Disponibilidad Médica del Equipo */}
+      {items.length > 0 && (() => {
+        const aptos = items.filter(i => getClearanceStatus(i) === 'APTO').length
+        const limitados = items.filter(i => getClearanceStatus(i) === 'LIMITADO').length
+        const bajas = items.filter(i => getClearanceStatus(i) === 'BAJA_MEDICA').length
+        return (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xl">🩺</span>
+              <h3 className="text-base font-black text-slate-900 tracking-tight">Estado de Disponibilidad Médica</h3>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+                <span className="text-2xl font-black text-emerald-700 block">{aptos}</span>
+                <span className="text-xs font-bold text-emerald-600">🟢 Aptos</span>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
+                <span className="text-2xl font-black text-amber-700 block">{limitados}</span>
+                <span className="text-xs font-bold text-amber-600">🟡 Limitados</span>
+              </div>
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-center">
+                <span className="text-2xl font-black text-rose-700 block">{bajas}</span>
+                <span className="text-xs font-bold text-rose-600">🔴 Baja Médica</span>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Tabla */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto -mx-4 sm:mx-0">
@@ -266,6 +351,7 @@ export default function Injuries() {
                   <th className="text-left px-2 sm:px-4 py-2">Tipo</th>
                   <th className="text-left px-2 sm:px-4 py-2">Gravedad</th>
                   <th className="text-left px-2 sm:px-4 py-2">Estado</th>
+                  <th className="text-left px-2 sm:px-4 py-2 hidden lg:table-cell">Aptitud</th>
                   <th className="text-left px-2 sm:px-4 py-2 hidden sm:table-cell">Inicio</th>
                   <th className="text-left px-2 sm:px-4 py-2 hidden md:table-cell">Fin</th>
                   <th className="px-2 sm:px-4 py-2 text-right">Acciones</th>
@@ -298,6 +384,13 @@ export default function Injuries() {
                         {it.status === 'ACTIVE' ? 'Activa' : it.status === 'RECOVERING' ? 'Recuperación' : 'Resuelta'}
                       </span>
                     </td>
+                    <td className="px-2 sm:px-4 py-2 hidden lg:table-cell">
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold border ${
+                        CLEARANCE_CLASS[getClearanceStatus(it)]
+                      }`}>
+                        {CLEARANCE_LABEL[getClearanceStatus(it)]}
+                      </span>
+                    </td>
                     <td className="px-2 sm:px-4 py-2 whitespace-nowrap hidden sm:table-cell text-xs text-gray-600">{new Date(it.startDate).toLocaleDateString()}</td>
                     <td className="px-2 sm:px-4 py-2 whitespace-nowrap hidden md:table-cell text-xs text-gray-600">{it.endDate ? new Date(it.endDate).toLocaleDateString() : '-'}</td>
                     <td className="px-2 sm:px-4 py-2 text-right">
@@ -316,7 +409,7 @@ export default function Injuries() {
                   </tr>
                 ))}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-500">Sin registros.</td></tr>
+                <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-500">Sin registros.</td></tr>
               )}
             </tbody>
           </table>
@@ -456,6 +549,67 @@ export default function Injuries() {
                   )}
                 </div>
               </div>
+
+              {/* 🟢 Clearance Semaphore */}
+              <div className={`rounded-xl p-3 border flex items-center justify-between ${CLEARANCE_CLASS[getClearanceStatus(detailInjury)]}`}>
+                <div>
+                  <span className="text-xs font-black uppercase tracking-wider block mb-0.5">Aptitud Deportiva</span>
+                  <span className="text-lg font-black">{CLEARANCE_LABEL[getClearanceStatus(detailInjury)]}</span>
+                </div>
+                {detailInjury.status !== 'RESOLVED' && (() => {
+                  const daysLeft = getRecoveryDays(detailInjury)
+                  const pct = getRecoveryProgress(detailInjury)
+                  return (
+                    <div className="text-right">
+                      <span className="text-xs font-bold block">
+                        {daysLeft !== null ? `${daysLeft} días restantes` : 'En evaluación'}
+                      </span>
+                      <div className="w-28 bg-white/60 rounded-full h-2 mt-1.5 overflow-hidden">
+                        <div
+                          className="h-2 rounded-full bg-current opacity-70 transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-medium opacity-70">{pct}% recuperación</span>
+                    </div>
+                  )
+                })()}
+              </div>
+
+              {/* 📋 Return-to-Play Checklist */}
+              {detailInjury.status !== 'RESOLVED' && (
+                <div className="bg-slate-900 rounded-xl p-4 text-white space-y-2">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-sm">📋</span>
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-amber-300">Protocolo Return-to-Play (RTP)</span>
+                  </div>
+                  {RTP_STAGES.map((stage, idx) => {
+                    const checks = rtpChecks[detailInjury.id] || Array(RTP_STAGES.length).fill(false)
+                    const done = checks[idx]
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => toggleRtp(detailInjury.id, idx)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-xs font-medium transition-all ${
+                          done
+                            ? 'bg-emerald-500/20 border border-emerald-400/60 text-emerald-300'
+                            : 'bg-slate-800 border border-slate-700 text-slate-300 hover:border-slate-500'
+                        }`}
+                      >
+                        <span className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 font-black text-xs ${
+                          done ? 'border-emerald-400 bg-emerald-400 text-slate-900' : 'border-slate-600'
+                        }`}>
+                          {done ? '✓' : idx + 1}
+                        </span>
+                        <span>{stage.short}</span>
+                      </button>
+                    )
+                  })}
+                  <div className="pt-1 text-[10px] text-slate-500 text-center">
+                    {(rtpChecks[detailInjury.id] || []).filter(Boolean).length}/{RTP_STAGES.length} fases completadas
+                  </div>
+                </div>
+              )}
 
               <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-100">
                 <span className="text-xs text-gray-500 block mb-1 font-medium">Diagnóstico / Observaciones Clínicas</span>
