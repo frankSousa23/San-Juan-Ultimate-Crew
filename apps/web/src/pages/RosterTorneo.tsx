@@ -26,6 +26,56 @@ export default function RosterTorneo() {
   const [confirmState, setConfirmState] = useState<{ title?: string; message: string; onYes: () => Promise<void> } | null>(null)
   const authed = !!getAuthToken() && hasPermission('roster:manage')
 
+  const [activeLineTab, setActiveLineTab] = useState<'OLINE' | 'DLINE'>('OLINE')
+  const [linesConfig, setLinesConfig] = useState<{ oLine: number[]; dLine: number[] }>({ oLine: [], dLine: [] })
+
+  useEffect(() => {
+    if (!eventId) return
+    try {
+      const raw = localStorage.getItem(`rosterTorneo.lines.${eventId}`)
+      if (raw) {
+        setLinesConfig(JSON.parse(raw))
+      } else {
+        setLinesConfig({ oLine: [], dLine: [] })
+      }
+    } catch {
+      setLinesConfig({ oLine: [], dLine: [] })
+    }
+  }, [eventId])
+
+  const saveLinesConfig = (next: { oLine: number[]; dLine: number[] }) => {
+    setLinesConfig(next)
+    if (eventId) {
+      try {
+        localStorage.setItem(`rosterTorneo.lines.${eventId}`, JSON.stringify(next))
+      } catch { /* ignore */ }
+    }
+  }
+
+  const togglePlayerInActiveLine = (pid: number) => {
+    const isOLine = activeLineTab === 'OLINE'
+    const currentList = isOLine ? linesConfig.oLine : linesConfig.dLine
+    if (currentList.includes(pid)) {
+      const nextList = currentList.filter(id => id !== pid)
+      saveLinesConfig({
+        ...linesConfig,
+        [isOLine ? 'oLine' : 'dLine']: nextList,
+      })
+      toasts.info('Jugador retirado de la línea')
+    } else {
+      if (currentList.length >= 7) {
+        toasts.warn('La línea reglamentaria de Ultimate Frisbee ya tiene 7 jugadores.')
+        return
+      }
+      const nextList = [...currentList, pid]
+      saveLinesConfig({
+        ...linesConfig,
+        [isOLine ? 'oLine' : 'dLine']: nextList,
+      })
+      toasts.success(`Jugador asignado a la ${isOLine ? 'O-Line' : 'D-Line'} (${nextList.length}/7)`)
+    }
+  }
+
   useEffect(() => {
     if (!error) return
     const t = setTimeout(() => setError(null), 3500)
@@ -200,16 +250,61 @@ export default function RosterTorneo() {
     }
   }
 
+  // Positional categorization of confirmed participants
+  const positionalMatrix = useMemo(() => {
+    let handlers = 0
+    let cutters = 0
+    let hybrids = 0
+
+    participants.forEach(p => {
+      const pl = p.player || playerById.get(p.playerId)
+      const roleStr = `${p.role || ''} ${pl?.position || ''}`.toUpperCase()
+      if (roleStr.includes('HANDLER') || roleStr.includes('MANEJADOR') || roleStr.includes('LANZADOR')) {
+        handlers++
+      } else if (roleStr.includes('CUTTER') || roleStr.includes('CORTADOR')) {
+        cutters++
+      } else {
+        hybrids++
+      }
+    })
+
+    const total = participants.length
+    return {
+      handlers,
+      cutters,
+      hybrids,
+      total,
+      handlersPct: total > 0 ? Math.round((handlers / total) * 100) : 0,
+      cuttersPct: total > 0 ? Math.round((cutters / total) * 100) : 0,
+      hybridsPct: total > 0 ? Math.round((hybrids / total) * 100) : 0,
+    }
+  }, [participants, playerById])
+
   async function exportCsv() {
     if (!eventId) return
     try {
-      const blob = await exportEventParticipantsCsv(eventId)
+      const header = ['Dorsal', 'Nombre', 'Posicion_Club', 'Rol_Evento', 'Condicion', 'Lado_Equipo', 'O_Line', 'D_Line'].join(',')
+      const rows = participants.map(p => {
+        const pl = p.player || playerById.get(p.playerId)
+        const dorsal = pl?.number ?? ''
+        const name = `"${(pl?.name || '').replace(/"/g, '""')}"`
+        const pos = pl?.position || 'HYBRID'
+        const role = p.role || 'REGULAR'
+        const cond = p.isRefuerzo ? 'REFUERZO' : 'REGULAR'
+        const side = p.teamSide || 'HOME'
+        const inO = linesConfig.oLine.includes(p.playerId) ? 'SI' : 'NO'
+        const inD = linesConfig.dLine.includes(p.playerId) ? 'SI' : 'NO'
+        return [dorsal, name, pos, role, cond, side, inO, inD].join(',')
+      })
+      const csvContent = '\uFEFF' + [header, ...rows].join('\n')
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `roster-evento-${eventId}.csv`
+      a.download = `nomina-oficial-torneo-${eventId}.csv`
       a.click()
       URL.revokeObjectURL(url)
+      toasts.success('Nómina oficial de torneo exportada exitosamente')
     } catch (e: any) {
       setError(e?.message || 'Error al exportar CSV')
     }
@@ -322,6 +417,163 @@ export default function RosterTorneo() {
           </div>
           <div className="text-xs text-purple-700">
             📌 <strong>Regla de Roster:</strong> Los dorsales son obligatorios y únicos por equipo en cada evento.
+          </div>
+        </div>
+      )}
+
+      {/* 🎯 Matriz de Balance Táctico y Constructor de Líneas 7v7 */}
+      {eventId && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🥏</span>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                  Matriz Táctica de Líneas 7v7 & Balance de Plantilla
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Configura y valida las líneas oficiales de 7 jugadores (O-Line / D-Line) y supervisa el balance posicional de la nómina.
+              </p>
+            </div>
+
+            {/* Selector de Línea Activa */}
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold self-start sm:self-auto">
+              <button
+                onClick={() => setActiveLineTab('OLINE')}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                  activeLineTab === 'OLINE'
+                    ? 'bg-amber-500 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                ⚡ O-Line ({linesConfig.oLine.length}/7)
+              </button>
+              <button
+                onClick={() => setActiveLineTab('DLINE')}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                  activeLineTab === 'DLINE'
+                    ? 'bg-rose-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                🛡️ D-Line ({linesConfig.dLine.length}/7)
+              </button>
+            </div>
+          </div>
+
+          {/* Positional Balance Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+            <div className="bg-indigo-50/70 border border-indigo-200 rounded-xl p-3 flex items-center justify-between">
+              <div>
+                <span className="font-extrabold text-indigo-900 block">🎯 Handlers</span>
+                <span className="text-[11px] text-indigo-600 font-medium">Lanzadores / Distribución</span>
+              </div>
+              <span className="text-xl font-black text-indigo-700">
+                {positionalMatrix.handlers} <span className="text-xs font-bold text-indigo-500">({positionalMatrix.handlersPct}%)</span>
+              </span>
+            </div>
+
+            <div className="bg-cyan-50/70 border border-cyan-200 rounded-xl p-3 flex items-center justify-between">
+              <div>
+                <span className="font-extrabold text-cyan-900 block">⚡ Cutters</span>
+                <span className="text-[11px] text-cyan-600 font-medium">Cortadores / Zona Roja</span>
+              </div>
+              <span className="text-xl font-black text-cyan-700">
+                {positionalMatrix.cutters} <span className="text-xs font-bold text-cyan-500">({positionalMatrix.cuttersPct}%)</span>
+              </span>
+            </div>
+
+            <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3 flex items-center justify-between">
+              <div>
+                <span className="font-extrabold text-emerald-900 block">🔄 Hybrids</span>
+                <span className="text-[11px] text-emerald-600 font-medium">Versátiles / Transición</span>
+              </div>
+              <span className="text-xl font-black text-emerald-700">
+                {positionalMatrix.hybrids} <span className="text-xs font-bold text-emerald-500">({positionalMatrix.hybridsPct}%)</span>
+              </span>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col justify-center">
+              <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Balance Recomendado</span>
+              <span className="text-xs font-extrabold text-slate-800 mt-0.5">
+                {activeLineTab === 'OLINE' ? '3 Handlers + 4 Cutters' : '2 Handlers + 3 Cutters + 2 Hybrids'}
+              </span>
+            </div>
+          </div>
+
+          {/* Active 7-Player Line Visual Slots */}
+          <div className="bg-slate-900 text-white rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-extrabold uppercase tracking-wider text-amber-300">
+                  {activeLineTab === 'OLINE' ? '⚡ Línea Ofensiva (O-Line) - 7 Atletas' : '🛡️ Línea Defensiva (D-Line) - 7 Atletas'}
+                </span>
+                <span className="text-xs text-slate-400">
+                  ({activeLineTab === 'OLINE' ? linesConfig.oLine.length : linesConfig.dLine.length} de 7 seleccionados)
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const isOLine = activeLineTab === 'OLINE'
+                    saveLinesConfig({
+                      ...linesConfig,
+                      [isOLine ? 'oLine' : 'dLine']: [],
+                    })
+                    toasts.info('Línea reiniciada')
+                  }}
+                  className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 font-bold transition"
+                >
+                  Vaciar Línea
+                </button>
+              </div>
+            </div>
+
+            {/* 7 Interactive Slots */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+              {[0, 1, 2, 3, 4, 5, 6].map(slotIdx => {
+                const currentList = activeLineTab === 'OLINE' ? linesConfig.oLine : linesConfig.dLine
+                const playerId = currentList[slotIdx]
+                const player = playerId ? playerById.get(playerId) : null
+
+                return (
+                  <div
+                    key={slotIdx}
+                    onClick={() => {
+                      if (playerId) togglePlayerInActiveLine(playerId)
+                    }}
+                    className={`p-2.5 rounded-xl border-2 transition-all flex flex-col items-center justify-center text-center min-h-[82px] cursor-pointer ${
+                      player
+                        ? activeLineTab === 'OLINE'
+                          ? 'bg-amber-500/20 border-amber-400/80 hover:bg-amber-500/30'
+                          : 'bg-rose-500/20 border-rose-400/80 hover:bg-rose-500/30'
+                        : 'bg-slate-800/60 border-dashed border-slate-700 hover:border-slate-500 opacity-60'
+                    }`}
+                    title={player ? `Click para quitar a ${player.name}` : 'Slot disponible'}
+                  >
+                    {player ? (
+                      <>
+                        <span className="text-base font-black text-white leading-tight">
+                          #{player.number}
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-200 truncate max-w-[95%]">
+                          {player.name}
+                        </span>
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-amber-300 mt-0.5">
+                          {player.position || 'Cutter'}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-xs text-slate-500 font-mono">Slot {slotIdx + 1}</span>
+                        <span className="text-[10px] text-slate-400 mt-1 font-semibold">+ Asignar</span>
+                      </>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -542,13 +794,41 @@ export default function RosterTorneo() {
                       </div>
                     </div>
                   </div>
-                  {authed && (
-                    <div className="flex justify-end">
+                  <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                    <button
+                      onClick={() => {
+                        setActiveLineTab('OLINE')
+                        togglePlayerInActiveLine(p.playerId)
+                      }}
+                      className={`px-2 py-1 rounded text-xs font-bold transition-all flex items-center gap-1 ${
+                        linesConfig.oLine.includes(p.playerId)
+                          ? 'bg-amber-500 text-white shadow-xs'
+                          : 'bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100'
+                      }`}
+                      title={linesConfig.oLine.includes(p.playerId) ? 'Quitar de O-Line' : 'Agregar a O-Line'}
+                    >
+                      ⚡ O
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveLineTab('DLINE')
+                        togglePlayerInActiveLine(p.playerId)
+                      }}
+                      className={`px-2 py-1 rounded text-xs font-bold transition-all flex items-center gap-1 ${
+                        linesConfig.dLine.includes(p.playerId)
+                          ? 'bg-rose-600 text-white shadow-xs'
+                          : 'bg-rose-50 text-rose-800 border border-rose-300 hover:bg-rose-100'
+                      }`}
+                      title={linesConfig.dLine.includes(p.playerId) ? 'Quitar de D-Line' : 'Agregar a D-Line'}
+                    >
+                      🛡️ D
+                    </button>
+                    {authed && (
                       <button className="px-2.5 py-1 text-xs sm:text-sm rounded bg-rose-600 hover:bg-rose-700 text-white whitespace-nowrap" onClick={() => setConfirmState({ message: `¿Quitar a ${pl?.name ?? 'este jugador'} del roster del torneo?`, onYes: () => removePlayer(p.playerId) })} disabled={loading}>
                         Quitar
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               )
             })}
