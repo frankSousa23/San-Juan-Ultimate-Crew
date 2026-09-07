@@ -1,6 +1,13 @@
 import { Request, Response, NextFunction } from 'express'
 import { logger } from '../lib/logger.js'
 
+const SENSITIVE_QUERY_REGEX = /([?&](?:token|password|secret|key|apiKey)=)[^&]*/gi
+
+export function sanitizeUrl(url: string): string {
+  if (!url) return ''
+  return url.replace(SENSITIVE_QUERY_REGEX, '$1[REDACTED]')
+}
+
 export function requestLogger(req: Request, res: Response, next: NextFunction) {
   const start = Date.now()
   
@@ -10,7 +17,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
     
     logger[logLevel]('HTTP request', {
       method: req.method,
-      url: req.url,
+      url: sanitizeUrl(req.url),
       statusCode: res.statusCode,
       responseTime: duration,
       userAgent: req.get('User-Agent') || '',
@@ -25,7 +32,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
 
 export function errorLogger(error: Error, req: Request, res: Response, next: NextFunction) {
   logger.error('Request error in middleware', error, {
-    url: req.url,
+    url: sanitizeUrl(req.url),
     method: req.method,
     ip: req.ip || req.connection.remoteAddress || '',
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -34,3 +41,4 @@ export function errorLogger(error: Error, req: Request, res: Response, next: Nex
   
   next(error)
 }
+

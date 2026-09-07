@@ -23,11 +23,16 @@
 
 import { performance } from 'perf_hooks'
 
-const BASE_URL = (process.env.API_URL || 'https://san-juan-ultimate-crew.seenode.app').replace(/\/$/, '')
+const BASE_URL = (process.env.API_URL || 'http://localhost:3000').replace(/\/$/, '')
 const API_URL = `${BASE_URL}/api`
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'frankalfonso1988@gmail.com'
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'passWORD23'
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@sigedivo.local'
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
+
+if (!ADMIN_PASSWORD) {
+  console.error('❌ Error: ADMIN_PASSWORD environment variable is required to execute live deployment tests.')
+  process.exit(1)
+}
 
 // ANSI Colors for console formatting
 const colors = {

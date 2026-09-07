@@ -1,20 +1,4 @@
-# backend-security-and-environment Specification
-
-## Purpose
-Provides production rate limiting enforcement, startup environment variable schema validation, universal cryptographic authentication, and sensitive log sanitization for security and deployment reliability.
-
-## Requirements
-
-### Requirement: Production Rate Limiting Enforcement
-The API middleware SHALL enforce rate limits on authentication, password resets, write operations, and general requests when running in production (`NODE_ENV === 'production'`) and bypass them during automated test execution.
-
-#### Scenario: Running in Production Mode
-- **WHEN** requests are received in a production environment
-- **THEN** rate limit headers are evaluated and excess requests receive HTTP 429 Too Many Requests.
-
-#### Scenario: Running Automated Test Suites
-- **WHEN** Vitest or test runners execute with `VITEST === 'true'` or non-production environment
-- **THEN** rate limit restrictions are bypassed to prevent test throttling.
+## MODIFIED Requirements
 
 ### Requirement: Startup Environment Schema Validation
 The API application SHALL validate essential environment variables against a defined schema during process initialization and abort execution with exit code 1 if required production variables are invalid, missing, or set to development fallback values.
@@ -30,6 +14,8 @@ The API application SHALL validate essential environment variables against a def
 #### Scenario: Validating Environment Configuration in Production
 - **WHEN** the backend server boots in production mode (`NODE_ENV === 'production'`)
 - **THEN** configuration validation requires `JWT_SECRET` to be explicitly provided with at least 32 characters, enforces `AUTH_REQUIRED=true` by default, and immediately aborts with exit code 1 if `JWT_SECRET` matches development defaults or is absent.
+
+## ADDED Requirements
 
 ### Requirement: Universal Cryptographic Authentication Verification
 The authentication subsystem SHALL verify user login credentials exclusively through cryptographic comparison against the stored password hash in the database, with zero hardcoded account exceptions or password bypasses.

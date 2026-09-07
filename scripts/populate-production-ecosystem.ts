@@ -11,9 +11,14 @@
  * ============================================================================
  */
 
-const BASE_URL = process.env.DEPLOY_URL || 'https://san-juan-ultimate-crew.seenode.app/api'
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'frankalfonso1988@gmail.com'
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'passWORD23'
+const BASE_URL = process.env.DEPLOY_URL || 'http://localhost:3000/api'
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@sigedivo.local'
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
+
+if (!ADMIN_PASSWORD) {
+  console.error('❌ Error: ADMIN_PASSWORD environment variable is required to execute this script.')
+  process.exit(1)
+}
 
 interface ApiResponse<T = any> {
   status: number

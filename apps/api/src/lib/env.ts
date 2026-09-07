@@ -7,13 +7,32 @@ export const envSchema = z.object({
   JWT_SECRET: z.string().min(1).default('development-jwt-secret-key-change-in-prod'),
   JWT_EXPIRES_IN: z.string().default('7d'),
   AUTH_REQUIRED: z.preprocess(
-    (val) => String(val || '').toLowerCase() === 'true',
+    (val) => {
+      if (val === undefined || val === null || val === '') {
+        return process.env.NODE_ENV === 'production'
+      }
+      return String(val).toLowerCase() === 'true'
+    },
     z.boolean()
   ).default(false),
   DATABASE_URL: z.string().optional(),
   CORS_ORIGIN: z.string().optional(),
   FRONTEND_URL: z.string().optional(),
   API_URL: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.NODE_ENV === 'production') {
+    if (
+      !data.JWT_SECRET ||
+      data.JWT_SECRET === 'development-jwt-secret-key-change-in-prod' ||
+      data.JWT_SECRET.length < 32
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['JWT_SECRET'],
+        message: 'In production, JWT_SECRET must be at least 32 characters long and cannot use the development default value.',
+      })
+    }
+  }
 })
 
 export type EnvConfig = z.infer<typeof envSchema>
@@ -22,11 +41,8 @@ let validatedEnv: EnvConfig
 
 try {
   validatedEnv = envSchema.parse(process.env)
-  if (validatedEnv.NODE_ENV === 'production' && validatedEnv.JWT_SECRET === 'development-jwt-secret-key-change-in-prod') {
-    console.warn('⚠️ [SECURITY WARNING]: Running in production with default JWT_SECRET. Set a strong JWT_SECRET in environment variables.')
-  }
 } catch (error) {
-  console.error('❌ [CONFIG ERROR]: Invalid environment configuration:', error)
+  console.error('❌ [FATAL CONFIG ERROR]: Invalid environment configuration:', error)
   if (process.env.NODE_ENV === 'production') {
     process.exit(1)
   }
@@ -34,3 +50,4 @@ try {
 }
 
 export const env = validatedEnv
+

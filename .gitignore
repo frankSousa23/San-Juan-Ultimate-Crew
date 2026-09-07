@@ -12,10 +12,28 @@ yarn-error.log*
 /.turbo/
 /.next/
 
-# Env
+# Env & Secrets
 .env
 .env.*
 !.env.example
+.env.vault
+*.env.local
+
+# Certificates & Private Keys
+*.pem
+*.key
+*.pfx
+*.p12
+*.crt
+*.cer
+id_rsa*
+id_ed25519*
+
+# Cloud & Package Credentials
+*service-account*.json
+*credentials*.json
+.npmrc
+.pypirc
 
 # Editor
 .vscode/

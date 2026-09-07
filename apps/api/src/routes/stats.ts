@@ -23,6 +23,7 @@
 import { Router, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../lib/prisma.js'
+import { env } from '../lib/env.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import { success, unauthorized, notFound } from '../lib/response.js'
 import { isGuestRequest, GUEST_PLAYERS, GUEST_EVENTS, GUEST_MATCH_STATS, GUEST_EVENT_ANNOTATIONS } from '../lib/guestDemoData.js'
@@ -123,7 +124,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     const [, token] = auth.split(' ')
     if (token) {
       try {
-        const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+        const JWT_SECRET = env.JWT_SECRET
         u = jwt.verify(token, JWT_SECRET) as any
         ;(req as any).user = u
       } catch (err) {

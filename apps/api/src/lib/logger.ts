@@ -7,6 +7,35 @@ interface LogEntry {
   [key: string]: unknown;
 }
 
+const SENSITIVE_KEY_REGEX = /^(password|token|secret|authorization|cookie|apiKey|key|pass|jwt)$/i;
+
+export function sanitizeLogData(data: unknown, depth = 0): unknown {
+  if (depth > 3 || data === null || data === undefined) {
+    return data;
+  }
+  if (typeof data === 'string') {
+    if (/^Bearer\s+[A-Za-z0-9\-._~+/]+=*$/i.test(data.trim())) {
+      return 'Bearer [REDACTED]';
+    }
+    return data;
+  }
+  if (Array.isArray(data)) {
+    return data.map((item) => sanitizeLogData(item, depth + 1));
+  }
+  if (typeof data === 'object') {
+    const sanitized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      if (SENSITIVE_KEY_REGEX.test(key)) {
+        sanitized[key] = '[REDACTED]';
+      } else {
+        sanitized[key] = sanitizeLogData(value, depth + 1);
+      }
+    }
+    return sanitized;
+  }
+  return data;
+}
+
 class Logger {
   private logLevel: LogLevel;
 
@@ -23,11 +52,12 @@ class Logger {
   }
 
   private formatLog(level: LogLevel, message: string, meta?: Record<string, unknown>): LogEntry {
+    const sanitizedMeta = (meta ? sanitizeLogData(meta) : {}) as Record<string, unknown>;
     return {
       level,
       message,
       timestamp: new Date().toISOString(),
-      ...meta,
+      ...sanitizedMeta,
     };
   }
 

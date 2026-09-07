@@ -522,9 +522,6 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
   if (user.passwordHash) {
     try {
       match = await bcrypt.compare(password, user.passwordHash)
-      if (!match && normalizedEmail === 'frankalfonso1988@gmail.com' && (password === 'passWORD23' || password === '123456')) {
-        match = true
-      }
     } catch (_) {
       match = false
     }
@@ -766,8 +763,7 @@ router.post('/forgot-password', asyncHandler(async (req: Request, res: Response)
   if (recentToken) {
     // Token already exists and is still valid, don't create a new one
     return success(res, { 
-      message: 'If an account with that email exists, a password reset link has been sent.',
-      ...(process.env.NODE_ENV === 'development' && { token: recentToken.token })
+      message: 'If an account with that email exists, a password reset link has been sent.'
     })
   }
   
@@ -805,11 +801,7 @@ router.post('/forgot-password', asyncHandler(async (req: Request, res: Response)
   // For now, we'll just log it (in production, use a proper email service)
   if (process.env.NODE_ENV === 'development') {
     const { logger } = await import('../lib/logger.js')
-    logger.info('Password reset token generated', { 
-      email, 
-      token,
-      resetLink: `${env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${token}`
-    })
+    logger.info('Password reset requested for user', { email })
   }
   
   // Clean up old expired/used tokens periodically (background task, non-blocking)
@@ -825,9 +817,7 @@ router.post('/forgot-password', asyncHandler(async (req: Request, res: Response)
   })
   
   return success(res, { 
-    message: 'If an account with that email exists, a password reset link has been sent.',
-    // In development, return the token for testing
-    ...(process.env.NODE_ENV === 'development' && { token })
+    message: 'If an account with that email exists, a password reset link has been sent.'
   })
 }))
 
