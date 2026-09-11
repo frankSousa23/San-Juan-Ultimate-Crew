@@ -1,5 +1,16 @@
 {
   "name": "sigedivo",
+  "version": "1.4.0",
+  "description": "SIGEDIVO - Sistema Integral de Gestión Deportiva para Ultimate Frisbee. Plataforma white-label autohospedable para clubes y asociaciones deportivas.",
+  "keywords": [
+    "ultimate-frisbee",
+    "sports-management",
+    "white-label",
+    "tactical-board",
+    "wfdf",
+    "tournaments",
+    "scrimmages"
+  ],
   "private": true,
   "type": "module",
   "workspaces": [

@@ -92,84 +92,35 @@ async function main() {
     }
   })
 
-  console.log('🛡️ Creando equipos oficiales por defecto...')
+  console.log('🛡️ Creando escuadras oficiales del club...')
   const defaultTeams = [
     {
-      name: 'El Pueblito',
-      tag: 'EPB',
+      name: 'Equipo A',
+      tag: 'EQA',
       categories: 'Open Masculino',
       color: '#111827',
-      notes: 'Equipo Open Masculino - Color representativo Negro',
+      notes: 'Escuadra Principal Open Masculino',
     },
     {
-      name: 'Warao',
-      tag: 'WAR',
+      name: 'Equipo B',
+      tag: 'EQB',
       categories: 'Open Masculino',
-      color: '#1f2937',
-      notes: 'Equipo Open Masculino - Color representativo Negro',
+      color: '#0284c7',
+      notes: 'Escuadra de Desarrollo y Formación',
     },
     {
-      name: 'Medusa',
-      tag: 'MED',
-      categories: 'Open Femenino y Mixto',
-      color: '#7e22ce',
-      notes: 'Equipo Open Femenino y Mixto - Color representativo Púrpura',
-    },
-    {
-      name: 'MotherFlowers',
-      tag: 'MOF',
+      name: 'Femenino',
+      tag: 'FEM',
       categories: 'Open Femenino',
       color: '#ec4899',
-      notes: 'Equipo Open Femenino - Color representativo Rosado',
+      notes: 'Escuadra Femenina Oficial',
     },
     {
-      name: 'Raza',
-      tag: 'RAZ',
-      categories: 'Open Masculino',
-      color: '#dc2626',
-      notes: 'Equipo Open Masculino - Color representativo Rojo',
-    },
-    {
-      name: 'Harakiri',
-      tag: 'HKR',
-      categories: 'Open Masculino',
-      color: '#800020',
-      notes: 'Equipo Open Masculino - Color representativo Vinotinto',
-    },
-    {
-      name: 'Ad Astra',
-      tag: 'AST',
+      name: 'Mixto',
+      tag: 'MIX',
       categories: 'Mixto',
-      color: '#1d4ed8',
-      notes: 'Equipo Mixto - Color representativo Azul',
-    },
-    {
-      name: 'Araguaney',
-      tag: 'ARA',
-      categories: 'Open Masculino',
-      color: '#eab308',
-      notes: 'Equipo Open Masculino - Color representativo Amarillo',
-    },
-    {
-      name: 'Voladores',
-      tag: 'VOL',
-      categories: 'Open Masculino',
-      color: '#f8fafc',
-      notes: 'Equipo Open Masculino - Color representativo Blanco',
-    },
-    {
-      name: 'Trébol',
-      tag: 'TRE',
-      categories: 'Open Masculino',
-      color: '#16a34a',
-      notes: 'Equipo Open Masculino - Color representativo Verde',
-    },
-    {
-      name: 'Alianza',
-      tag: 'ALI',
-      categories: 'Open Masculino',
-      color: '#ea580c',
-      notes: 'Equipo Open Masculino - Color representativo Naranja',
+      color: '#10b981',
+      notes: 'Escuadra Mixta para Torneos y Caimaneras',
     },
   ]
 

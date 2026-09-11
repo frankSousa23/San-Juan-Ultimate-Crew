@@ -172,131 +172,54 @@ class InMemoryDB {
     assignPerms('treasurer', ['finance:manage', 'finance:view', 'roster:view', 'events:view', 'statistics:view']);
     assignPerms('guest', ['events:view', 'roster:view', 'injuries:view', 'rivals:view', 'plays:view', 'resources:view', 'statistics:view', 'annotations:view']);
 
-    // 3. Equipos del Ecosistema Multi-Equipo por Defecto
+    // 3. Escuadras Internas del Club (White-Label Intra-Club Squads)
     this.teams = [
       {
         id: 1,
-        name: 'El Pueblito',
-        tag: 'EPB',
+        name: 'Equipo A',
+        tag: 'EQA',
         categories: 'Open Masculino',
         color: '#111827',
-        notes: 'Equipo Open Masculino - Color representativo Negro',
+        notes: 'Escuadra Principal Open Masculino',
         logoUrl: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       {
         id: 2,
-        name: 'Warao',
-        tag: 'WAR',
+        name: 'Equipo B',
+        tag: 'EQB',
         categories: 'Open Masculino',
-        color: '#1f2937',
-        notes: 'Equipo Open Masculino - Color representativo Negro',
+        color: '#0284c7',
+        notes: 'Escuadra de Desarrollo y Formación',
         logoUrl: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       {
         id: 3,
-        name: 'Medusa',
-        tag: 'MED',
-        categories: 'Open Femenino y Mixto',
-        color: '#7e22ce',
-        notes: 'Equipo Open Femenino y Mixto - Color representativo Púrpura',
+        name: 'Femenino',
+        tag: 'FEM',
+        categories: 'Open Femenino',
+        color: '#ec4899',
+        notes: 'Escuadra Femenina Oficial',
         logoUrl: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       {
         id: 4,
-        name: 'MotherFlowers',
-        tag: 'MOF',
-        categories: 'Open Femenino',
-        color: '#ec4899',
-        notes: 'Equipo Open Femenino - Color representativo Rosado',
-        logoUrl: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 5,
-        name: 'Raza',
-        tag: 'RAZ',
-        categories: 'Open Masculino',
-        color: '#dc2626',
-        notes: 'Equipo Open Masculino - Color representativo Rojo',
-        logoUrl: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 6,
-        name: 'Harakiri',
-        tag: 'HKR',
-        categories: 'Open Masculino',
-        color: '#800020',
-        notes: 'Equipo Open Masculino - Color representativo Vinotinto',
-        logoUrl: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 7,
-        name: 'Ad Astra',
-        tag: 'AST',
+        name: 'Mixto',
+        tag: 'MIX',
         categories: 'Mixto',
-        color: '#1d4ed8',
-        notes: 'Equipo Mixto - Color representativo Azul',
-        logoUrl: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 8,
-        name: 'Araguaney',
-        tag: 'ARA',
-        categories: 'Open Masculino',
-        color: '#eab308',
-        notes: 'Equipo Open Masculino - Color representativo Amarillo',
-        logoUrl: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 9,
-        name: 'Voladores',
-        tag: 'VOL',
-        categories: 'Open Masculino',
-        color: '#f8fafc',
-        notes: 'Equipo Open Masculino - Color representativo Blanco',
-        logoUrl: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 10,
-        name: 'Trébol',
-        tag: 'TRE',
-        categories: 'Open Masculino',
-        color: '#16a34a',
-        notes: 'Equipo Open Masculino - Color representativo Verde',
-        logoUrl: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 11,
-        name: 'Alianza',
-        tag: 'ALI',
-        categories: 'Open Masculino',
-        color: '#ea580c',
-        notes: 'Equipo Open Masculino - Color representativo Naranja',
+        color: '#10b981',
+        notes: 'Escuadra Mixta para Torneos y Caimaneras',
         logoUrl: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
     ];
-    this.nextId['team'] = 12;
+    this.nextId['team'] = 5;
 
     // 4. Players (Roster por Equipo + Agentes Libres / Sin Equipo)
     this.players = [];
@@ -398,29 +321,23 @@ class InMemoryDB {
 
     // 11. Finanzas: Cuentas, Categorías y Transacciones de Ejemplo Realista
     this.accounts = [
-  { id: 1, name: 'Caja Chica (Efectivo / USD)', type: 'CASH', balanceCents: 15000, description: 'Fondos en efectivo para hidratación, hielo y gastos menores de cancha.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 2, name: 'Cuenta Bancaria / Pago Móvil / Zelle', type: 'BANK', balanceCents: 125000, description: 'Cuenta bancaria para cuotas mensuales de atletas, inscripciones y patrocinios.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-];
+      { id: 1, name: 'Caja Chica (Efectivo / USD)', type: 'CASH', balanceCents: 0, description: 'Fondos en efectivo para hidratación, hielo y gastos menores de cancha.', createdAt: new Date(), updatedAt: new Date() },
+      { id: 2, name: 'Cuenta Bancaria / Pago Móvil / Zelle', type: 'BANK', balanceCents: 0, description: 'Cuenta bancaria para cuotas mensuales de atletas, inscripciones y patrocinios.', createdAt: new Date(), updatedAt: new Date() },
+    ];
     this.nextId['account'] = 3;
 
     this.categories = [
-  { id: 1, name: 'Cuotas de Membresía Mensual', kind: 'INCOME', description: 'Pago de mensualidades y mantenimiento deportivo de atletas.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 2, name: 'Venta de Discos Oficiales 175g', kind: 'INCOME', description: 'Venta de discos oficiales Discraft Ultra-Star de competencia.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 3, name: 'Patrocinios y Donaciones', kind: 'INCOME', description: 'Aportes de aliados y patrocinadores del club.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 4, name: 'Compra de Discos y Conos', kind: 'EXPENSE', description: 'Adquisición de material técnico reglamentario.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 5, name: 'Hidratación y Primeros Auxilios', kind: 'EXPENSE', description: 'Botellones de agua, hielo, vendas y botiquín.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-  { id: 6, name: 'Inscripción a Torneo Nacional', kind: 'EXPENSE', description: 'Pago de Bid Fee y cuotas de participación en torneos.', createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-];
+      { id: 1, name: 'Cuotas de Membresía Mensual', kind: 'INCOME', description: 'Pago de mensualidades y mantenimiento deportivo de atletas.', createdAt: new Date(), updatedAt: new Date() },
+      { id: 2, name: 'Venta de Discos Oficiales 175g', kind: 'INCOME', description: 'Venta de discos oficiales Discraft Ultra-Star de competencia.', createdAt: new Date(), updatedAt: new Date() },
+      { id: 3, name: 'Patrocinios y Donaciones', kind: 'INCOME', description: 'Aportes de aliados y patrocinadores del club.', createdAt: new Date(), updatedAt: new Date() },
+      { id: 4, name: 'Compra de Discos y Conos', kind: 'EXPENSE', description: 'Adquisición de material técnico reglamentario.', createdAt: new Date(), updatedAt: new Date() },
+      { id: 5, name: 'Hidratación y Primeros Auxilios', kind: 'EXPENSE', description: 'Botellones de agua, hielo, vendas y botiquín.', createdAt: new Date(), updatedAt: new Date() },
+      { id: 6, name: 'Inscripción a Torneo Nacional', kind: 'EXPENSE', description: 'Pago de Bid Fee y cuotas de participación en torneos.', createdAt: new Date(), updatedAt: new Date() },
+    ];
     this.nextId['category'] = 7;
 
-    this.transactions = [
-    { id: 1, type: 'INCOME', amountCents: 10000, description: 'Cobro de cuotas mensuales de atletas (Enero)', occurredAt: new Date(new Date().getTime() - 86400000 * 18).toISOString(), accountId: 2, categoryId: 1, createdBy: 1, createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-    { id: 2, type: 'INCOME', amountCents: 7500, description: 'Venta de 5 discos oficiales Discraft Ultra-Star 175g', occurredAt: new Date(new Date().getTime() - 86400000 * 12).toISOString(), accountId: 2, categoryId: 2, createdBy: 1, createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-    { id: 3, type: 'EXPENSE', amountCents: 12000, description: 'Compra de lote de 10 discos oficiales de competencia', occurredAt: new Date(new Date().getTime() - 86400000 * 10).toISOString(), accountId: 2, categoryId: 4, createdBy: 1, createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-    { id: 4, type: 'EXPENSE', amountCents: 1850, description: 'Agua potable y bolsas de hielo para entrenamiento de fin de semana', occurredAt: new Date(new Date().getTime() - 86400000 * 5).toISOString(), accountId: 1, categoryId: 5, createdBy: 1, createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') },
-    { id: 5, type: 'EXPENSE', amountCents: 15000, description: 'Anticipo de Bid Fee - Copa Nacional de Ultimate Frisbee', occurredAt: new Date(new Date().getTime() - 86400000 * 3).toISOString(), accountId: 2, categoryId: 6, createdBy: 1, createdAt: new Date('2025-01-01T10:00:00Z'), updatedAt: new Date('2025-01-01T10:00:00Z') }
-  ];
-    this.nextId['transaction'] = 6;
+    this.transactions = [];
+    this.nextId['transaction'] = 1;
 
     // 12. Jugadas Tácticas (Playbook) - Ultimate Frisbee / Disco Volador
     this.plays = [

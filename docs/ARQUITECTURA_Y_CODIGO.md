@@ -95,7 +95,7 @@ Diseñado para la velocidad y precisión táctil requerida en el campo de juego:
 ## 🧪 4. Pruebas y Validación de Calidad en Producción
 
 El proyecto incluye un pipeline exhaustivo de pruebas automatizadas:
-- **Ultra-Suite E2E en Vivo (`scripts/run-live-deploy-tests.ts`):** 34 casos de prueba que certifican el 100% de los 22 endpoints en el deploy de Seenode en 12.13s con 0% de fallos.
+- **Ultra-Suite E2E en Vivo (`scripts/run-live-deploy-tests.ts`):** 34 casos de prueba que certifican el 100% de los 22 endpoints del backend (apuntando a localhost o a instancia desplegada) en ~12s con 0% de fallos.
 - **Benchmark de Estrés y Concurrencia:** Ráfagas de 50 lecturas simultáneas (p95: 373ms) y 20 escrituras atómicas procesadas en paralelo.
 - **Pruebas Unitarias y de Integración API:** Ejecutadas con `vitest` en `apps/api/src/*.test.ts`.
 - **Pruebas End-to-End con Navegador:** Ejecutadas con `playwright` en `apps/web/tests/`.
