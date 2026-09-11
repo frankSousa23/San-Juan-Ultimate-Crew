@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { http } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import { downloadSystemManualPdf } from '../lib/generateManualPdf'
+import { branding } from '../config/branding'
 
 export default function About() {
   const { user } = useAuth()
@@ -44,18 +45,21 @@ export default function About() {
     <div className="max-w-4xl mx-auto space-y-8 p-4">
       {/* Cabecera / Intro */}
       <div className="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-2xl p-8 text-white shadow-xl">
-        <h1 className="text-3xl md:text-4xl font-black mb-4 tracking-tight">Acerca de SIGEDIVO (Sistema de Gestión para el Disco Volador)</h1>
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-3">
+          {branding.orgType === 'ASSOCIATION' ? '🏛️ Asociación Regional' : '🥏 Club Deportivo'} • {branding.orgName}
+        </div>
+        <h1 className="text-3xl md:text-4xl font-black mb-4 tracking-tight">Acerca de {branding.appName} — {branding.orgShortName}</h1>
         <p className="text-blue-100 text-lg leading-relaxed max-w-2xl mb-6">
-          <strong>Sistema de Gestión para el Disco Volador</strong> es una plataforma diseñada para modernizar, digitalizar y optimizar la administración táctica y competitiva del Ultimate Frisbee.
+          <strong>{branding.appName} (Sistema de Gestión para el Disco Volador)</strong> es la plataforma oficial de <strong>{branding.orgName}</strong> diseñada para digitalizar y optimizar la administración deportiva, gestión de atletas, rosters por torneo y estadísticas de juego.
         </p>
         
         <div className="bg-white/10 rounded-xl p-5 border border-white/20">
-          <h3 className="font-bold text-amber-300 mb-2">Fase Actual: Versión Beta Multi-Equipo en Producción</h3>
+          <h3 className="font-bold text-emerald-300 mb-2">Arquitectura White-Label y Gestión de Escuadras</h3>
           <p className="text-sm text-blue-50 leading-relaxed mb-3">
-            La plataforma cuenta con soporte nativo <strong>Multi-Equipo y Multi-División</strong>. Clubes, divisiones (Open, Femenino, Mixto, Master) y atletas pueden operar simultáneamente con aislamiento de datos, gestión de roster por equipo, convocatorias tácticas, anotaciones en vivo y panel financiero.
+            Esta instancia está configurada para <strong>{branding.orgName}</strong> con soporte de escuadras internas (Equipo A, Equipo B, Femenino, Mixto, Master). Permite convocar listas esporádicas para torneos, registrar mesa técnica en vivo, balances de tesorería y seguimiento de lesiones.
           </p>
           <div className="text-xs text-blue-200 uppercase tracking-wider font-semibold">
-            Autor: Frank Sousa (frankalfonso1988@gmail.com) • San Juan de los Morros, Estado Guárico, Venezuela
+            Sede: {branding.location} • Contacto: {branding.contactEmail || 'Soporte SIGEDIVO'}
           </div>
         </div>
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { teamsApi, TeamItem } from '../lib/api'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
+import { branding } from '../config/branding'
 
 export default function AdminTeams() {
   const [teams, setTeams] = useState<TeamItem[]>([])
@@ -76,10 +77,10 @@ export default function AdminTeams() {
 
       if (editingTeam) {
         await teamsApi.update(editingTeam.id, payload)
-        showSuccessToast('Equipo actualizado con éxito')
+        showSuccessToast('Escuadra actualizada con éxito')
       } else {
         await teamsApi.create(payload)
-        showSuccessToast('Equipo creado con éxito')
+        showSuccessToast('Escuadra creada con éxito')
       }
       setShowCreateModal(false)
       await loadTeams()
@@ -97,34 +98,47 @@ export default function AdminTeams() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Equipos</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900">Escuadras y Ramas</h1>
+            <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full border border-emerald-200">
+              {branding.orgShortName}
+            </span>
+          </div>
           <p className="text-sm text-gray-600">
-            Administra los equipos y divisiones que participan en la plataforma
+            Administra las escuadras, categorías y ramas internas de la organización (Equipo A, Equipo B, Femenino, Mixto, Master) para asignación de atletas y rosters.
           </p>
         </div>
         {isAdminOrDirectiva && (
           <button
             id="btn-create-team"
             onClick={handleOpenCreate}
-            className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors"
+            className="inline-flex items-center justify-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors"
           >
-            + Nuevo Equipo
+            + Nueva Escuadra
           </button>
         )}
       </div>
 
+      {/* Informative banner about internal squads vs external rivals */}
+      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs text-emerald-900 flex items-start gap-2">
+        <span className="text-base">💡</span>
+        <div>
+          <strong>Estructura de la Organización:</strong> Las escuadras aquí configuradas corresponden a las divisiones internas de <strong>{branding.orgName}</strong>. Los clubes rivales y oponentes externos para partidos y torneos se gestionan de forma independiente en la sección de <strong>Rivales</strong>.
+        </div>
+      </div>
+
       {/* Grid of Teams */}
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Cargando equipos...</div>
+        <div className="text-center py-12 text-gray-500">Cargando escuadras...</div>
       ) : teams.length === 0 ? (
         <div className="bg-white rounded-lg border border-dashed border-gray-300 p-12 text-center">
-          <p className="text-gray-500 mb-4">No hay equipos registrados aún en el sistema.</p>
+          <p className="text-gray-500 mb-4">No hay escuadras registradas aún en {branding.orgName}.</p>
           {isAdminOrDirectiva && (
             <button
               onClick={handleOpenCreate}
-              className="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 font-medium"
+              className="px-4 py-2 bg-emerald-600 text-white rounded text-sm hover:bg-emerald-700 font-medium"
             >
-              Crear el primer equipo
+              Crear la primera escuadra
             </button>
           )}
         </div>
@@ -221,41 +235,36 @@ export default function AdminTeams() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl space-y-4">
             <h3 className="text-lg font-bold text-gray-900">
-              {editingTeam ? 'Editar Equipo' : 'Nuevo Equipo'}
+              {editingTeam ? 'Editar Escuadra / Rama' : 'Nueva Escuadra / Rama'}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre del Equipo / Club <span className="text-red-500">*</span>
+                    Nombre de la Escuadra / Rama <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Ej: Warao, Medusa, Motherflowers"
-                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Ej: Equipo A (Open), Equipo B (Desarrollo), Femenino"
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500"
                   />
                   {!editingTeam && (
                     <div className="mt-2">
                       <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">
-                        Sugerencias Base:
+                        Sugerencias de Ramas Internas:
                       </span>
                       <div className="flex flex-wrap gap-1.5">
                         {[
-                          { label: 'El Pueblito', col: '#111827', tag: 'EPB', cat: 'Open Masculino' },
-                          { label: 'Warao', col: '#1F2937', tag: 'WAR', cat: 'Open Masculino' },
-                          { label: 'Medusa', col: '#7E22CE', tag: 'MED', cat: 'Open Femenino y Mixto' },
-                          { label: 'MotherFlowers', col: '#EC4899', tag: 'MOF', cat: 'Open Femenino' },
-                          { label: 'Raza', col: '#DC2626', tag: 'RAZ', cat: 'Open Masculino' },
-                          { label: 'Harakiri', col: '#800020', tag: 'HKR', cat: 'Open Masculino' },
-                          { label: 'Ad Astra', col: '#1D4ED8', tag: 'AST', cat: 'Mixto' },
-                          { label: 'Araguaney', col: '#EAB308', tag: 'ARA', cat: 'Open Masculino' },
-                          { label: 'Voladores', col: '#F8FAFC', tag: 'VOL', cat: 'Open Masculino' },
-                          { label: 'Trébol', col: '#16A34A', tag: 'TRE', cat: 'Open Masculino' },
-                          { label: 'Alianza', col: '#EA580C', tag: 'ALI', cat: 'Open Masculino' },
-                          { label: 'Agente Libre / Refuerzo', col: '#64748B', tag: 'LIB', cat: 'General' },
+                          { label: 'Equipo A (Open)', col: '#059669', tag: 'EQA', cat: 'Open Principal' },
+                          { label: 'Equipo B (Desarrollo)', col: '#0284c7', tag: 'EQB', cat: 'Open Desarrollo' },
+                          { label: 'Escuadra Femenina', col: '#ec4899', tag: 'FEM', cat: 'Femenino' },
+                          { label: 'Escuadra Mixta', col: '#8b5cf6', tag: 'MIX', cat: 'Mixto' },
+                          { label: 'Master (+33)', col: '#f59e0b', tag: 'MAS', cat: 'Master' },
+                          { label: 'Sub-20 / Juvenil', col: '#10b981', tag: 'SUB', cat: 'Juvenil' },
+                          { label: 'Refuerzos / Torneo', col: '#64748b', tag: 'REF', cat: 'Convocatoria Especial' },
                         ].map(sug => (
                           <button
                             key={sug.label}
@@ -266,7 +275,7 @@ export default function AdminTeams() {
                               setTag(sug.tag)
                               setCategories(sug.cat)
                             }}
-                            className="text-xs px-2.5 py-1 rounded-full border border-gray-200 bg-gray-50 hover:bg-indigo-50 hover:border-indigo-300 text-gray-700 transition-colors"
+                            className="text-xs px-2.5 py-1 rounded-full border border-gray-200 bg-gray-50 hover:bg-emerald-50 hover:border-emerald-300 text-gray-700 transition-colors"
                           >
                             + {sug.label}
                           </button>

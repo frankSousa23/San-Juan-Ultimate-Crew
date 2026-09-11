@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { generateSystemManualPdf } from '../lib/generateManualPdf'
 import { generateResourcePdf, RESOURCE_DOCS } from '../lib/generateResourcePdfs'
+import { branding } from '../config/branding'
 import toast from 'react-hot-toast'
 
 export const Landing: React.FC = () => {
@@ -67,7 +68,7 @@ export const Landing: React.FC = () => {
   const simulatePoint = (team: 'A' | 'B') => {
     if (team === 'A') {
       setTeamScoreA(prev => prev + 1)
-      setLastAction('¡Gol de San Juan Ultimate Crew! Asistencia de #10 a #07 en Endzone.')
+      setLastAction(`¡Gol de ${branding.orgShortName}! Asistencia de #10 a #07 en Endzone.`)
     } else {
       setTeamScoreB(prev => prev + 1)
       setLastAction('Gol del equipo rival. Transición ofensiva rápida.')
@@ -81,8 +82,8 @@ export const Landing: React.FC = () => {
 
   const faqs = [
     {
-      q: '¿Qué es SIGEDIVO y a quién está dirigido?',
-      a: 'SIGEDIVO (Sistema de Gestión para el Disco Volador) es una plataforma deportiva integral de código abierto diseñada para clubes, selecciones, entrenadores, capitanes y mesas técnicas de Ultimate Frisbee y disciplinas de disco volador. Centraliza Roster, Anotaciones en Vivo, Brackets de Torneos, Estadísticas, Finanzas, Salud y Manuales Oficiales.',
+      q: `¿Qué es ${branding.appName} y a quién está dirigido?`,
+      a: `${branding.appName} (Sistema de Gestión para el Disco Volador) es la plataforma de gestión deportiva diseñada para clubes, selecciones, entrenadores, capitanes y mesas técnicas de Ultimate Frisbee y disciplinas de disco volador. Centraliza Roster, Anotaciones en Vivo, Brackets de Torneos, Estadísticas, Finanzas, Salud y Manuales Oficiales.`,
     },
     {
       q: '¿Cómo puedo probar el sistema sin crear una cuenta?',
@@ -126,11 +127,11 @@ export const Landing: React.FC = () => {
           </div>
 
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-slate-950 tracking-tight leading-tight max-w-4xl mx-auto">
-            Organiza, Analiza y Triunfa en el <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-600">Disco Volador</span>
+            Organiza, Analiza y Triunfa con <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-600">{branding.orgShortName}</span>
           </h1>
 
           <p className="mt-5 text-base sm:text-lg lg:text-xl text-black dark:text-black font-medium max-w-3xl mx-auto leading-relaxed" style={{ color: '#000000' }}>
-            <strong className="text-black font-bold">SIGEDIVO</strong> es la plataforma tecnológica todo-en-uno para equipos y torneos de Ultimate Frisbee. Gestiona rosters multi-división, toma anotaciones táctiles en tiempo real, genera brackets, analiza estadísticas avanzadas y descarga manuales oficiales en PDF.
+            <strong className="text-black font-bold">{branding.appName}</strong> es la plataforma tecnológica todo-en-uno de <strong>{branding.orgName}</strong> para la gestión de atletas y torneos de Ultimate Frisbee. Gestiona rosters multi-división, toma anotaciones táctiles en tiempo real, genera brackets, analiza estadísticas avanzadas y descarga manuales oficiales en PDF.
           </p>
 
           {/* Action CTAs */}
@@ -251,7 +252,7 @@ export const Landing: React.FC = () => {
             {/* Team A */}
             <div className="bg-slate-800/60 p-5 rounded-2xl border border-slate-700 text-center">
               <div className="text-3xl mb-1">🥏</div>
-              <h3 className="font-bold text-lg text-white">San Juan Ultimate</h3>
+              <h3 className="font-bold text-lg text-white">{branding.orgShortName}</h3>
               <p className="text-xs text-blue-300 font-medium">Línea activa: {activeLine}</p>
               <div className="text-5xl font-black text-blue-400 my-3 font-mono">{teamScoreA}</div>
               <button
@@ -553,7 +554,7 @@ export const Landing: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <div className="p-2.5 bg-slate-800 rounded-lg flex justify-between items-center border border-slate-700">
-                    <span>Semifinal 1: San Juan UC vs Furia Disc</span>
+                    <span>Semifinal 1: {branding.orgShortName} vs Furia Disc</span>
                     <span className="font-bold font-mono text-emerald-400">15 - 12 (Final)</span>
                   </div>
                   <div className="p-2.5 bg-slate-800 rounded-lg flex justify-between items-center border border-slate-700">
@@ -561,7 +562,7 @@ export const Landing: React.FC = () => {
                     <span className="font-bold font-mono text-emerald-400">15 - 14 (Final)</span>
                   </div>
                   <div className="p-2.5 bg-indigo-900/60 rounded-lg flex justify-between items-center border border-indigo-500">
-                    <span className="font-bold">GRAN FINAL: San Juan UC vs Caracas Ultimate</span>
+                    <span className="font-bold">GRAN FINAL: {branding.orgShortName} vs Caracas Ultimate</span>
                     <span className="font-bold font-mono text-amber-300">Por Jugar</span>
                   </div>
                 </div>
@@ -890,7 +891,7 @@ export const Landing: React.FC = () => {
         </div>
 
         <p className="max-w-2xl mx-auto leading-relaxed">
-          <strong>SIGEDIVO (Sistema de Gestión para el Disco Volador)</strong> — Desarrollado con ❤️ por <strong>Frank Sousa</strong> (<code>frankSousa23</code>) para la comunidad de Ultimate Frisbee en San Juan de los Morros, Guárico, Venezuela y el mundo.
+          <strong>{branding.appName}</strong> — Plataforma oficial de <strong>{branding.orgName}</strong>. Desarrollado con ❤️ para la comunidad deportiva de Ultimate Frisbee.
         </p>
 
         <p className="text-[11px] text-slate-400">

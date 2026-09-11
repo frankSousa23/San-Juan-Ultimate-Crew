@@ -87,6 +87,7 @@ walkthrough.md
 implementation_plan.md
 PROJECT_STATUS.md
 GUIA_*.md
+!docs/GUIA_*.md
 DEVELOPMENT.md
 
 # Documentación temporal de desarrollo (no subir al repo)

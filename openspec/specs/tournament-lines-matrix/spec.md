@@ -29,3 +29,27 @@ The system SHALL enable captains and admins to export the confirmed tournament s
 #### Scenario: Exporting Roster
 - **WHEN** user clicks "Exportar Nómina Oficial"
 - **THEN** a formatted CSV file of the tournament roster is generated and downloaded.
+
+### Requirement: Squad-Based and Sporadic Event Roster Assembly
+The tournament roster subsystem SHALL allow coaches and administrators to assemble, filter, and organize event rosters according to the host organization's internal squads and divisions (such as Equipo A, Equipo B, Femenino, and Mixto), enabling athletes from the master pool to be rostered into sporadic or event-specific squads.
+
+#### Scenario: Assembling an Event Roster by Squad Division
+- **WHEN** a team manager or coach accesses `/roster-torneo` for a tournament or match
+- **THEN** the interface allows filtering athletes and assigning participants to the relevant internal squad division (e.g. Equipo A, Equipo B, Femenino, Mixto) for that event.
+
+#### Scenario: Sporadic Multi-Squad Participation Across Events
+- **WHEN** an athlete is assigned to an event-specific roster for a particular tournament
+- **THEN** their participation and statistics are tracked within that event's squad context without restricting them from participating in different squad divisions in other events.
+
+### Requirement: Intra-Club Dual-Squad Scrimmage and Tournament Scorekeeping
+The tournament and match scorekeeping subsystem SHALL support internal scrimmages and intra-club tournament fixtures (`isInternalScrimmage: true`) between two internal squads of the host organization (such as Equipo A vs Equipo B), recording goals, assists, Callahan scores, and turnovers for athletes on both sides of the scoreboard (`HOME` and `AWAY`).
+
+#### Scenario: Scoring Points in an Internal Club Scrimmage
+- **WHEN** an annotator records a goal, assist, or defensive block in an internal club match
+- **THEN** the system attributes the statistics directly to the corresponding athlete in the master player pool and updates the live match score for their squad.
+
+#### Scenario: Consolidated Leaderboards for Dual-Squad Fixtures
+- **WHEN** an internal match finishes and statistics are consolidated
+- **THEN** individual performances from both the home and away squads are aggregated into the organization's leaderboards without data loss.
+
+

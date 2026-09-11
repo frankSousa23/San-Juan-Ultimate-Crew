@@ -324,6 +324,7 @@ export default function TournamentFixtureGeneratorModal({
         teamId: m.homeTeamId || null,
         awayTeamId: m.awayTeamId || null,
         rivalId: m.awayRivalId || null,
+        isInternalScrimmage: Boolean(m.awayTeamId && !m.awayRivalId),
         matchCategory: m.matchCategory,
         officialAnnotatorId: tournament.officialAnnotatorId || null,
         isAnnotatorLocked: tournament.isAnnotatorLocked || false,

@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * SIGEDIVO - ULTRA-SUITE E2E & EXTREME STRESS BENCHMARK RUNNER (v3)
- * Target: https://san-juan-ultimate-crew.seenode.app
+ * Target: process.env.API_URL || http://localhost:3000 (Self-Hosted / Live Instance)
  * ============================================================================
  * Cobertura exhaustiva de todos los subsistemas del backend (40+ pruebas):
  * 1. Health & Admin JWT Authentication & Dynamic Dorsal Discovery

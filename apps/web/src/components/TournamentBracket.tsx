@@ -113,7 +113,7 @@ export default function TournamentBracket({
     // Process completed or score-bearing matches
     sortedMatches.forEach(m => {
       // If teams are present
-      const homeName = m.team?.name || 'Equipo Local'
+      const homeName = m.team?.name || (m.isInternalScrimmage ? 'Escuadra Clara' : 'Equipo Local')
       const awayName = m.awayTeam?.name || (m.isInternalScrimmage ? 'Escuadra Oscura' : 'Equipo Rival')
       const homeId = m.team?.id ? String(m.team.id) : `home_${m.id}`
       const awayId = m.awayTeam?.id ? String(m.awayTeam.id) : (m.rivalId ? `rival_${m.rivalId}` : `away_${m.id}`)
@@ -431,7 +431,7 @@ export default function TournamentBracket({
                               className="w-3 h-3 rounded-full border shadow-2xs shrink-0"
                               style={{ backgroundColor: m.team?.color || '#3B82F6' }}
                             />
-                            <span className="truncate">{m.team?.name || 'Equipo Local'}</span>
+                            <span className="truncate">{m.team?.name || (m.isInternalScrimmage ? 'Escuadra Clara' : 'Equipo Local')}</span>
                           </div>
                           <span className="font-mono font-bold text-slate-700 text-sm">
                             {m.status === 'COMPLETED' ? '✓' : '-'}
@@ -556,7 +556,7 @@ export default function TournamentBracket({
                                 className="w-2.5 h-2.5 rounded-full"
                                 style={{ backgroundColor: m.team?.color || '#3B82F6' }}
                               />
-                              <span>{m.team?.name || 'Local'}</span>
+                              <span>{m.team?.name || (m.isInternalScrimmage ? 'Clara' : 'Local')}</span>
                               <span className="text-gray-400 font-normal">vs</span>
                               <span
                                 className="w-2.5 h-2.5 rounded-full"

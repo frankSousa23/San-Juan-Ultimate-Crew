@@ -6,6 +6,7 @@ import type { EventItem } from '../types/event'
 import type { Player, Team } from '../types/player'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
+import { branding } from '../config/branding'
 
 export default function RosterTorneo() {
   const { hasPermission } = useAuth()
@@ -382,18 +383,23 @@ export default function RosterTorneo() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h2 className="text-xl font-semibold">Roster de Torneo por Evento</h2>
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">Roster Oficial de Torneo & Convocatorias</h2>
+          <p className="text-xs text-slate-500">
+            Arma la nómina deportiva del club para cada evento convocando atletas de cualquier escuadra o rama interna.
+          </p>
+        </div>
         <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-          <label className="text-sm flex items-center">Evento:</label>
+          <label className="text-sm flex items-center font-medium">Evento:</label>
           <select className="border rounded px-2 py-1 flex-1 sm:flex-initial" value={eventId ?? ''} onChange={e => setEventId(Number(e.target.value))}>
             {events.map(ev => (
               <option key={ev.id} value={ev.id}>{ev.title} — {new Date(ev.startsAt).toLocaleString()}</option>
             ))}
           </select>
-          <button className="px-3 py-1 rounded bg-emerald-600 text-white whitespace-nowrap" onClick={exportCsv} disabled={!eventId || loading}>Exportar CSV</button>
+          <button className="px-3 py-1 rounded bg-emerald-600 text-white whitespace-nowrap font-medium hover:bg-emerald-700 transition" onClick={exportCsv} disabled={!eventId || loading}>Exportar CSV</button>
           {eventId && (
             <button
-              className="px-3 py-1 rounded bg-gray-100 text-gray-800 whitespace-nowrap"
+              className="px-3 py-1 rounded bg-gray-100 text-gray-800 whitespace-nowrap font-medium hover:bg-gray-200 transition"
               onClick={() => {
                 try {
                   const url = new URL(window.location.href)
@@ -411,12 +417,12 @@ export default function RosterTorneo() {
         </div>
       </div>
       {eventId && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 bg-purple-50 border border-purple-200 rounded-lg text-sm text-purple-900">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-900">
           <div>
             <span className="font-semibold">Evento seleccionado:</span> {events.find(e => e.id === eventId)?.title}
           </div>
-          <div className="text-xs text-purple-700">
-            📌 <strong>Regla de Roster:</strong> Los dorsales son obligatorios y únicos por equipo en cada evento.
+          <div className="text-xs text-emerald-800">
+            📌 <strong>Convocatoria Flexible:</strong> Convoca atletas del padrón de {branding.orgShortName} (Equipo A, B, Femenino, Mixto) para conformar la lista específica de este campeonato.
           </div>
         </div>
       )}
@@ -584,23 +590,26 @@ export default function RosterTorneo() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded shadow p-4">
           <div className="flex flex-col gap-2 mb-2">
-            <h3 className="font-medium">Jugadores disponibles</h3>
+            <div>
+              <h3 className="font-medium text-slate-900">Atletas Disponibles para Convocatoria</h3>
+              <p className="text-xs text-slate-500">Filtra por escuadra interna, posición o estado para convocar al roster del torneo.</p>
+            </div>
             <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center text-sm flex-wrap">
               <input className="border rounded px-2 py-1 flex-1 min-w-[120px]" placeholder="Buscar nombre o #"
                      value={q} onChange={e => setQ(e.target.value)} />
               {teams.length > 0 && (
                 <select 
-                  className="border rounded px-2 py-1 bg-indigo-50/40 text-indigo-900 font-medium"
+                  className="border rounded px-2 py-1 bg-emerald-50/60 text-emerald-950 font-medium"
                   value={selectedTeamId}
                   onChange={e => setSelectedTeamId(e.target.value)}
                 >
-                  <option value="">Todos los Equipos/Categorías</option>
+                  <option value="">Todas las Escuadras / Padrón General</option>
                   {teams.map(t => (
                     <option key={t.id} value={String(t.id)}>
-                      {t.name}
+                      Escuadra: {t.name}
                     </option>
                   ))}
-                  <option value="no_team">Sin Equipo Asignado</option>
+                  <option value="no_team">Sin Escuadra Fija / Convocatoria Libre</option>
                 </select>
               )}
               <select className="border rounded px-2 py-1" value={pos} onChange={e => setPos(e.target.value)}>
@@ -704,12 +713,17 @@ export default function RosterTorneo() {
 
         <div className="bg-white rounded shadow p-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-      <div className="flex items-center gap-2">
-        <h3 className="font-medium">Seleccionados para este evento</h3>
-        <span className="inline-flex items-center justify-center text-xs bg-purple-600 text-white rounded-full px-2 py-0.5">
-          {participants.length}
-        </span>
-      </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-medium text-slate-900">Roster Convocado para este Evento</h3>
+                <span className="inline-flex items-center justify-center text-xs bg-emerald-600 text-white rounded-full px-2 py-0.5 font-bold">
+                  {participants.length}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Nómina deportiva y roles asignados para este partido o torneo.
+              </p>
+            </div>
       {authed && (
         <button className="px-2 py-1 rounded bg-rose-600 text-white disabled:opacity-50 whitespace-nowrap"
           onClick={() => setConfirmState({ message: `¿Quitar ${participants.length} seleccionados de este evento?`, onYes: removeAllSelected })}

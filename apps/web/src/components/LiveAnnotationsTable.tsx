@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { annotationsApi, playersApi, rivalsApi, eventsApi } from '../lib/api'
+import { annotationsApi, playersApi, rivalsApi, eventsApi, eventParticipantsApi } from '../lib/api'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
 import { EventAnnotation, CreateAnnotationInput, AnnotationType } from '../types/annotation'
 import { Player } from '../types/player'
-import { EventItem } from '../types/event'
+import { EventItem, EventParticipant } from '../types/event'
 import ConfirmModal from '../components/ConfirmModal'
 import MesaTecnicaModal from '../components/MesaTecnicaModal'
+import branding from '../config/branding'
 
 interface LiveAnnotationsTableProps {
   event: EventItem
@@ -53,6 +54,7 @@ export default function LiveAnnotationsTable({ event: initialEvent, onClose, emb
   
   const [annotations, setAnnotations] = useState<EventAnnotation[]>([])
   const [players, setPlayers] = useState<Player[]>([])
+  const [eventParticipants, setEventParticipants] = useState<EventParticipant[]>([])
   const [registeredRivals, setRegisteredRivals] = useState<Array<{ id: number; name: string }>>([])
   const [selectedRivalId, setSelectedRivalId] = useState<number | null>(currentEvent.rivalId || null)
   const [awayClubPlayerIds, setAwayClubPlayerIds] = useState<Set<number>>(new Set())
@@ -76,10 +78,10 @@ export default function LiveAnnotationsTable({ event: initialEvent, onClose, emb
   } | null>(null)
 
   // Configuración del evento
-  const isInternal = currentEvent.isInternalScrimmage || false
+  const isInternal = Boolean(currentEvent.isInternalScrimmage || (currentEvent.teamId && currentEvent.awayTeamId))
   const [isVersus, setIsVersus] = useState(!!currentEvent.rivalId || isInternal || currentEvent.type === 'AMISTOSO' || currentEvent.type === 'MATCH' || !!currentEvent.awayTeamId)
   const [opponentTeamName, setOpponentTeamName] = useState(currentEvent.awayTeam?.name || (isInternal ? 'Equipo Oscuro' : 'Equipo Rival'))
-  const [homeTeamName, setHomeTeamName] = useState(currentEvent.team?.name || (isInternal ? 'Equipo Claro' : 'SIGEDIVO'))
+  const [homeTeamName, setHomeTeamName] = useState(currentEvent.team?.name || (isInternal ? 'Equipo Claro' : (branding.orgShortName || 'Club')))
   
   // Jugadores oponentes (para versus externo)
   const [opponentPlayers, setOpponentPlayers] = useState<Array<{ name: string; number: number }>>([])
@@ -209,12 +211,14 @@ export default function LiveAnnotationsTable({ event: initialEvent, onClose, emb
 
   const loadData = async () => {
     try {
-      const [anns, pls] = await Promise.all([
+      const [anns, pls, parts] = await Promise.all([
         annotationsApi.list({ eventId: currentEvent.id }),
         playersApi.list(),
+        eventParticipantsApi.listByEvent(currentEvent.id).catch(() => []),
       ])
       setAnnotations(anns)
       setPlayers(pls)
+      setEventParticipants(parts || [])
       
       const hasOpponent = anns.some(a => a.opponentTeamName || a.opponentPlayerName)
       if (hasOpponent && !isVersus && !isInternal) {
@@ -257,44 +261,91 @@ export default function LiveAnnotationsTable({ event: initialEvent, onClose, emb
 
   const playerStats = useMemo(() => {
     const statsMap = new Map<string, PlayerStats>()
+
+    const hasExplicitSquadDivision = Boolean(
+      (currentEvent.teamId && currentEvent.awayTeamId) ||
+      eventParticipants.some(p => p.teamSide === 'HOME' || p.teamSide === 'AWAY' || p.teamSide === 'LIGHT' || p.teamSide === 'DARK') ||
+      awayClubPlayerIds.size > 0
+    )
     
-    // HOME: Equipo Local (o Equipo Claro)
+    // HOME: Equipo Local (o Escuadra Clara)
     players.forEach(player => {
-      const key = `home-${player.id}`
-      const playerAnns = annotations.filter(a => a.playerId === player.id && (!a.teamSide || a.teamSide === 'HOME'))
-      const assists = annotations.filter(a => a.relatedPlayerId === player.id && a.type === 'GOAL' && (!a.teamSide || a.teamSide === 'HOME')).length
+      let isEligibleHome = true
+      if (isInternal && hasExplicitSquadDivision) {
+        const participant = eventParticipants.find(ep => ep.playerId === player.id)
+        if (
+          participant?.teamSide === 'AWAY' ||
+          participant?.teamSide === 'DARK' ||
+          awayClubPlayerIds.has(player.id) ||
+          (currentEvent.awayTeamId && player.teamId === currentEvent.awayTeamId && !currentEvent.teamId)
+        ) {
+          isEligibleHome = false
+        } else if (currentEvent.teamId && currentEvent.awayTeamId && player.teamId !== currentEvent.teamId) {
+          if (participant?.teamSide !== 'HOME' && participant?.teamSide !== 'LIGHT') {
+            isEligibleHome = false
+          }
+        }
+      }
 
-      statsMap.set(key, {
-        playerId: player.id,
-        playerName: player.name,
-        playerNumber: player.number,
-        teamName: homeTeamName,
-        teamSide: 'HOME',
-        goals: playerAnns.filter(a => a.type === 'GOAL').length,
-        assists,
-        interceptions: playerAnns.filter(a => a.type === 'DEFENSE' || a.type === ("CALLAHAN" as any)).length,
-        turnovers: playerAnns.filter(a => a.type === 'TURNOVER').length,
-      })
-    })
-
-    // AWAY: Equipo Oscuro (nuestros jugadores si es interno) o Rival / Amistoso con múltiples equipos
-    if (isInternal) {
-      players.forEach(player => {
-        const key = `away-club-${player.id}`
-        const playerAnns = annotations.filter(a => a.playerId === player.id && a.teamSide === 'AWAY')
-        const assists = annotations.filter(a => a.relatedPlayerId === player.id && a.type === 'GOAL' && a.teamSide === 'AWAY').length
+      if (isEligibleHome) {
+        const key = `home-${player.id}`
+        const playerAnns = annotations.filter(a => a.playerId === player.id && (!a.teamSide || a.teamSide === 'HOME'))
+        const assists = annotations.filter(a => a.relatedPlayerId === player.id && a.type === 'GOAL' && (!a.teamSide || a.teamSide === 'HOME')).length
 
         statsMap.set(key, {
           playerId: player.id,
           playerName: player.name,
           playerNumber: player.number,
-          teamName: opponentTeamName,
-          teamSide: 'AWAY',
+          teamName: homeTeamName,
+          teamSide: 'HOME',
           goals: playerAnns.filter(a => a.type === 'GOAL').length,
           assists,
           interceptions: playerAnns.filter(a => a.type === 'DEFENSE' || a.type === ("CALLAHAN" as any)).length,
           turnovers: playerAnns.filter(a => a.type === 'TURNOVER').length,
         })
+      }
+    })
+
+    // AWAY: Escuadra Oscura (nuestros atletas si es interno) o Rival / Amistoso con múltiples equipos
+    if (isInternal) {
+      players.forEach(player => {
+        let isEligibleAway = true
+        if (hasExplicitSquadDivision) {
+          const participant = eventParticipants.find(ep => ep.playerId === player.id)
+          if (
+            (participant?.teamSide === 'HOME' || participant?.teamSide === 'LIGHT') &&
+            !awayClubPlayerIds.has(player.id)
+          ) {
+            isEligibleAway = false
+          } else if (
+            currentEvent.teamId &&
+            currentEvent.awayTeamId &&
+            player.teamId !== currentEvent.awayTeamId &&
+            !awayClubPlayerIds.has(player.id) &&
+            participant?.teamSide !== 'AWAY' &&
+            participant?.teamSide !== 'DARK'
+          ) {
+            isEligibleAway = false
+          }
+        }
+
+        if (isEligibleAway) {
+          const key = `away-club-${player.id}`
+          const playerAnns = annotations.filter(a => a.playerId === player.id && a.teamSide === 'AWAY')
+          const assists = annotations.filter(a => a.relatedPlayerId === player.id && a.type === 'GOAL' && a.teamSide === 'AWAY').length
+
+          statsMap.set(key, {
+            playerId: player.id,
+            playerName: player.name,
+            playerNumber: player.number,
+            teamName: opponentTeamName,
+            teamSide: 'AWAY',
+            goals: playerAnns.filter(a => a.type === 'GOAL').length,
+            assists,
+            interceptions: playerAnns.filter(a => a.type === 'DEFENSE' || a.type === ("CALLAHAN" as any)).length,
+            turnovers: playerAnns.filter(a => a.type === 'TURNOVER').length,
+          })
+        }
       })
     } else if (isVersus) {
       // 1. Jugadores del club jugando como refuerzo / rival en amistosos
@@ -305,7 +356,7 @@ export default function LiveAnnotationsTable({ event: initialEvent, onClose, emb
           const assists = annotations.filter(a => a.relatedPlayerId === player.id && a.type === 'GOAL' && a.teamSide === 'AWAY').length
           statsMap.set(key, {
             playerId: player.id,
-            playerName: `${player.name} (SIGEDIVO)`,
+            playerName: `${player.name} (${branding.orgShortName || 'Club'})`,
             playerNumber: player.number,
             teamName: opponentTeamName,
             teamSide: 'AWAY',
@@ -344,7 +395,7 @@ export default function LiveAnnotationsTable({ event: initialEvent, onClose, emb
     }
     
     return Array.from(statsMap.values())
-  }, [annotations, players, opponentPlayers, awayClubPlayerIds, isVersus, isInternal, homeTeamName, opponentTeamName])
+  }, [annotations, players, eventParticipants, opponentPlayers, awayClubPlayerIds, isVersus, isInternal, homeTeamName, opponentTeamName, currentEvent.teamId, currentEvent.awayTeamId])
 
   const addOpponentPlayer = () => {
     if (!newOpponentPlayerName.trim() || !newOpponentPlayerNumber.trim()) return toasts.error('Nombre y número son requeridos')
@@ -813,6 +864,96 @@ export default function LiveAnnotationsTable({ event: initialEvent, onClose, emb
         {loading && <div className="text-gray-600 text-center py-12 font-bold text-lg animate-pulse">Cargando pizarra de juego en tiempo real...</div>}
         {error && <div className="text-red-600 text-center py-4 bg-red-50 rounded-xl font-bold border border-red-200">{error}</div>}
         
+        {/* Panel de Configuración de Caimanera / Cruce Interno Entre Escuadras */}
+        {!loading && canManage && isInternal && (
+          <div className="p-3 sm:p-4 bg-white shadow-sm border border-indigo-100 rounded-2xl space-y-3">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pb-2 border-b border-indigo-50">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🥏</span>
+                <div>
+                  <h4 className="font-black text-xs sm:text-sm text-gray-900 uppercase tracking-wide">
+                    Encuentro Interno de la Organización ({homeTeamName} vs {opponentTeamName})
+                  </h4>
+                  <p className="text-[11px] text-gray-500 font-medium">
+                    Ambas escuadras pertenecen al club. Los puntos, asistencias y defensas se atribuyen a los atletas en la tabla general.
+                  </p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded-lg text-xs font-bold shrink-0">
+                ⭐ Modo Dual-Squad Activo
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
+                <label className="block text-xs font-black text-indigo-700 uppercase mb-1">Nombre Escuadra Local (Clara)</label>
+                <input 
+                  type="text" 
+                  value={homeTeamName} 
+                  onChange={(e) => setHomeTeamName(e.target.value)} 
+                  className="w-full px-3 py-2 text-sm sm:text-base border-2 border-gray-200 focus:border-indigo-500 rounded-xl font-bold" 
+                  placeholder="Escuadra Clara / Equipo A" 
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-black text-purple-700 uppercase mb-1">Nombre Escuadra Visitante (Oscura)</label>
+                <input 
+                  type="text" 
+                  value={opponentTeamName} 
+                  onChange={(e) => setOpponentTeamName(e.target.value)} 
+                  className="w-full px-3 py-2 text-sm sm:text-base border-2 border-gray-200 focus:border-purple-500 rounded-xl font-bold" 
+                  placeholder="Escuadra Oscura / Equipo B" 
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-2">
+              <div className="text-xs text-gray-600 font-semibold">
+                Asignar jugador a <span className="text-purple-700 font-bold">{opponentTeamName}</span>:
+              </div>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <select
+                  value={selectedClubReinforcement}
+                  onChange={(e) => setSelectedClubReinforcement(e.target.value)}
+                  className="flex-1 sm:w-64 px-3 py-1.5 text-xs font-bold border-2 border-gray-200 rounded-xl"
+                >
+                  <option value="">Seleccionar atleta para {opponentTeamName}...</option>
+                  {players
+                    .filter(p => !awayClubPlayerIds.has(p.id))
+                    .map(p => (
+                      <option key={`internal-assign-${p.id}`} value={p.id}>
+                        #{p.number} {p.name}
+                      </option>
+                    ))}
+                </select>
+                <button
+                  onClick={addClubReinforcementToAway}
+                  disabled={!selectedClubReinforcement}
+                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 active:scale-95 disabled:opacity-50 text-white rounded-xl text-xs font-black transition-all"
+                >
+                  + Mover a {opponentTeamName}
+                </button>
+              </div>
+            </div>
+            
+            {awayClubPlayerIds.size > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-dashed border-gray-100">
+                <span className="text-xs font-bold text-gray-500">Asignados a {opponentTeamName}:</span>
+                {Array.from(awayClubPlayerIds).map(pId => {
+                  const p = players.find(x => x.id === pId)
+                  if (!p) return null
+                  return (
+                    <div key={`internal-away-badge-${p.id}`} className="flex items-center gap-1.5 px-2 py-0.5 bg-purple-50 border border-purple-200 rounded-lg text-xs font-bold text-purple-900">
+                      <span>#{p.number} {p.name}</span>
+                      <button onClick={() => removeClubFromAway(p.id)} className="text-purple-400 hover:text-red-600 font-bold ml-1">✕</button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Panel de Configuración Rápida de Rival / Amistoso en Versus */}
         {!loading && canManage && isVersus && !isInternal && (
           <div className="p-3 sm:p-4 bg-white shadow-sm border border-purple-100 rounded-2xl space-y-3">
@@ -1005,9 +1146,18 @@ export default function LiveAnnotationsTable({ event: initialEvent, onClose, emb
                       <div>
                         <div className="font-black text-gray-900 text-sm sm:text-base flex flex-wrap items-center gap-2">
                           <span>
-                            {ann.player ? `#${ann.player.number} ${ann.player.name}` : 
-                             ann.opponentPlayerName ? `#${ann.opponentPlayerNumber} ${ann.opponentPlayerName} (${ann.opponentTeamName || 'Rival'})` : 
-                             'Jugador no especificado'}
+                            {ann.player ? (
+                              <>
+                                <span>#{ann.player.number} {ann.player.name}</span>
+                                <span className="text-xs font-semibold text-gray-500 ml-1">
+                                  ({ann.teamSide === 'AWAY' ? (opponentTeamName || 'Visitante') : (homeTeamName || 'Local')})
+                                </span>
+                              </>
+                            ) : ann.opponentPlayerName ? (
+                              <span>#{ann.opponentPlayerNumber} {ann.opponentPlayerName} ({ann.opponentTeamName || 'Rival'})</span>
+                            ) : (
+                              'Jugador no especificado'
+                            )}
                           </span>
                           <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                             ann.type === 'GOAL' ? 'bg-green-200 text-green-800' :
@@ -1066,7 +1216,7 @@ export default function LiveAnnotationsTable({ event: initialEvent, onClose, emb
       {/* 4. FOOTER */}
       <div className="p-3 sm:p-4 bg-white border-t border-gray-200 flex justify-between items-center z-10">
         <div className="text-xs text-gray-500 font-medium hidden sm:block">
-          Modo Torneo y Pizarra Táctil activa • SIGEDIVO
+          Modo Torneo y Pizarra Táctil activa • {branding.appName || 'SIGEDIVO'}
         </div>
         <button 
           onClick={onClose} 

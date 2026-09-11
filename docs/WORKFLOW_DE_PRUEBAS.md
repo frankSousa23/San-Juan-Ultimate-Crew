@@ -91,7 +91,7 @@ Sigue estos pasos dentro de la plataforma para validar que todas las reglas de n
 
 ## ⚡ 3. Ejecución Automatizada del Test Runner en Vivo (Ultra-Suite E2E)
 
-Para ejecutar la verificación completa de forma autónoma contra el despliegue en producción (`https://san-juan-ultimate-crew.seenode.app`):
+Para ejecutar la verificación completa de forma autónoma contra el entorno en ejecución (local o remoto configurando `API_URL`):
 
 ```bash
 # Ejecutar los 34 casos de prueba y benchmarks de concurrencia

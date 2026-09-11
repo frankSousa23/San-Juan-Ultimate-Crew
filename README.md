@@ -4,16 +4,18 @@
 ![E2E Certified](https://img.shields.io/badge/E2E%20Live%20Suite-34%2F34%20PASS%20(100%25)-brightgreen?logo=checkmarx)
 ![Stress Test](https://img.shields.io/badge/Stress%20Benchmark-50%20Reads%20%2B%2020%20Writes%20(100%25%20OK)-blue)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
-![Deploy](https://img.shields.io/badge/Live%20Deploy-Seenode%20PaaS-success?logo=vercel)
+![Docker](https://img.shields.io/badge/Deploy-Docker%20Compose-2496ED?logo=docker&logoColor=white)
 ![React](https://img.shields.io/badge/Frontend-React%2018%20%2B%20Vite%206-blue)
 ![Express](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-lightgrey)
 ![Prisma](https://img.shields.io/badge/ORM-Prisma%207%20%2B%20PostgreSQL-indigo)
-![Release](https://img.shields.io/badge/Release-v1.3.0%20Certified%20Live-purple)
+![White-Label](https://img.shields.io/badge/Architecture-White--Label%20Multi--Instance-success)
+![Release](https://img.shields.io/badge/Release-v1.4.0%20Open--Source-purple)
 
-> 🚀 **Instancia en Producción Activa:** [https://san-juan-ultimate-crew.seenode.app/](https://san-juan-ultimate-crew.seenode.app/)  
-> *(Cuenta con **Modo Invitado de 1 Clic** para explorar todo el sistema y sus datos de demostración sin necesidad de registro).*
+> 🚀 **Plataforma Autohospedable y White-Label (Multi-Instancia):**  
+> Diseñada para que cualquier club deportivo (ej. *El Pueblito Ultimate Club*) o asociación regional (ej. *AGDV*, *AADV*) pueda clonar el repositorio y desplegar su propia instancia personalizada mediante Docker o VPS en minutos. Consulta la **[Guía de Despliegue para Clubes y Asociaciones](docs/GUIA_DESPLIEGUE_CLUB.md)**.  
 >
-> 🏆 **Certificación E2E en Vivo:** 34/34 pruebas automatizadas aprobadas (100% éxito) en 12.13s contra el despliegue en producción con benchmark de estrés de 50 lecturas y 20 escrituras simultáneas. Comprobar con: `npx tsx scripts/run-live-deploy-tests.ts`.
+> 🧪 **Modo Demostración y Pruebas Locales:**  
+> Cuenta con **Modo Invitado de 1 Clic** integrado en local para explorar todo el sistema y sus datos de prueba sin necesidad de configuración externa. Ejecutable con `docker compose up` o `npm run dev`.
 
 ---
 

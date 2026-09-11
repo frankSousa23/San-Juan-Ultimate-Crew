@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf'
+import { branding } from '../config/branding'
 
 export function generateSystemManualPdf(): jsPDF {
   const doc = new jsPDF({
@@ -300,9 +301,9 @@ export function generateSystemManualPdf(): jsPDF {
       mockup: '[ FINANZAS ] Balance Neto: +$870.00 USD | Ingresos: $1,300.00 | Egresos: $430.00 | Cuentas: Banco ($650) / Caja ($220)',
     },
     {
-      title: '3.5 Gestión Multi-Equipo y Divisiones (/admin/equipos)',
-      desc: 'Módulo para Directiva y Super Admin. Permite registrar múltiples equipos (Open, Femenino, Mixto, Master), configurar colores institucionales, escudos vectoriales y monitorear métricas agregadas garantizando aislamiento de datos.',
-      mockup: '[ EQUIPOS ] San Juan Ultimate (Open) | Guárico Frisbee (Femenino) | AADV All-Stars (Mixto) | Total: 3 Clubes Activos',
+      title: '3.5 Gestión de Escuadras y Ramas (/admin/teams)',
+      desc: `Módulo para Directiva y Super Admin. Permite registrar las escuadras y divisiones internas de ${branding.orgName} (Equipo A, Equipo B, Femenino, Mixto, Master) y gestionar sus convocatorias.`,
+      mockup: `[ ESCUADRAS ] ${branding.orgShortName} (Open) | ${branding.orgShortName} (Femenino) | ${branding.orgShortName} (Mixto) | Estado: Activas`,
     },
   ]
 

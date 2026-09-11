@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTheme } from "../hooks/useTheme"
 import { useAuth } from '../contexts/AuthContext'
 import SystemManualModal from './SystemManualModal'
+import { branding } from '../config/branding'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -150,10 +151,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-2">
               <span className="text-2xl">🥏</span>
-              <span className="font-extrabold text-lg sm:text-xl text-slate-900 tracking-tight">SIGEDIVO</span>
+              <div className="flex flex-col">
+                <span className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight leading-none">{branding.appName}</span>
+                <span className="text-[10px] text-emerald-600 font-semibold">{branding.orgShortName}</span>
+              </div>
             </Link>
-            <span className="hidden sm:inline-block text-xs bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full">
-              Disco Volador
+            <span className="hidden sm:inline-block text-xs bg-emerald-50 text-emerald-800 font-bold px-2 py-0.5 rounded-full border border-emerald-200">
+              {branding.orgType === 'ASSOCIATION' ? 'Asociación' : 'Club'}
             </span>
           </div>
 
@@ -220,8 +224,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <Link to="/" className="flex items-center gap-2">
             <span className="text-2xl">🥏</span>
             <div className="flex flex-col">
-              <span className="text-lg font-black tracking-tight text-white">SIGEDIVO</span>
-              <span className="text-[10px] text-blue-400 font-semibold uppercase tracking-wider">Ultimate Frisbee</span>
+              <span className="text-lg font-black tracking-tight text-white">{branding.appName}</span>
+              <span className="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">{branding.orgShortName}</span>
             </div>
           </Link>
           <button

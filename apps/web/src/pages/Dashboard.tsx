@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useStats } from '../hooks/useData'
 import { transactionsApi } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
+import { branding } from '../config/branding'
 import SystemManualModal from '../components/SystemManualModal'
 import { downloadSystemManualPdf } from '../lib/generateManualPdf'
 import PlayerRadarChart from '../components/PlayerRadarChart'
@@ -220,7 +221,7 @@ export default function Dashboard() {
               </h3>
               <p className="text-xs text-slate-300 flex items-center gap-1.5">
                 <span>📍</span>
-                <span>{nextMatch.location || 'Polideportivo San Juan - Cancha Principal'}</span>
+                <span>{nextMatch.location || `${branding.location} - Cancha Principal`}</span>
               </p>
             </div>
 

@@ -1,6 +1,6 @@
 # 🥏 SIGEDIVO — Reporte Oficial de Certificación E2E y Despliegue en Producción
 
-**URL de Producción Activa:** [https://san-juan-ultimate-crew.seenode.app/](https://san-juan-ultimate-crew.seenode.app/)  
+**Arquitectura y Despliegue:** Autohospedable White-Label (Docker Compose / VPS / PaaS)  
 **Autor:** Frank Sousa (`frankSousa23`) & San Juan Ultimate Crew  
 **Fecha de Certificación:** 26 de Agosto de 2026  
 **Entorno de Despliegue:** Seenode PaaS (Node.js 22 LTS, PostgreSQL 16, Vite 6 + React 18 SPA)  
@@ -58,7 +58,7 @@ La plataforma **SIGEDIVO (Sistema de Gestión para el Disco Volador)** ha sido s
 =================================================================
              BENCHMARK DE CONCURRENCIA EN PRODUCCIÓN             
 =================================================================
-Target: https://san-juan-ultimate-crew.seenode.app
+Target: process.env.API_URL || http://localhost:3000
 
 1. LECTURAS CONCURRENTES (50 peticiones simultáneas distribuidas):
    - Peticiones Totales: 50

@@ -3,7 +3,7 @@
 **Plataforma:** SIGEDIVO (Sistema de Gestión para el Disco Volador)  
 **Versión:** 1.3.0 (Certified Live Production Deploy / Licencia MIT)  
 **Autor:** Frank Sousa (`frankSousa23`) & San Juan Ultimate Crew  
-**Estado:** 🟢 Desplegado en Producción (`https://san-juan-ultimate-crew.seenode.app/`) y Certificado al 100% E2E
+**Estado:** 🟢 Arquitectura White-Label Autohospedable (Docker / VPS) y Certificado al 100% E2E
 
 ---
 

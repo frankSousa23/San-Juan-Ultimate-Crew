@@ -148,6 +148,7 @@ export default function TournamentMatchPlannerModal({
         teamId: teamId ? Number(teamId) : null,
         awayTeamId: awayTeamId ? Number(awayTeamId) : null,
         rivalId: rivalId ? Number(rivalId) : null,
+        isInternalScrimmage: Boolean(awayTeamId || (!rivalId && !awayTeamId && tournament.isInternalScrimmage)),
         matchCategory,
         officialAnnotatorId: officialAnnotatorId ? Number(officialAnnotatorId) : null,
         isAnnotatorLocked: Boolean(isAnnotatorLocked),
