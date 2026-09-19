@@ -437,7 +437,35 @@ export default function Plays() {
           </div>
 
           {/* Right Column: Interactive Tactical Board & Simulation (7 Cols) */}
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-7 space-y-3">
+            {/* Mobile Quick Play Selector */}
+            {filtered.length > 0 && (
+              <div className="lg:hidden bg-white p-3 rounded-2xl border border-slate-200 shadow-xs space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="mobile-play-select" className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+                    Cambiar Jugada Rápida
+                  </label>
+                  <span className="text-[11px] text-indigo-600 font-bold">{filtered.length} disponibles</span>
+                </div>
+                <select
+                  id="mobile-play-select"
+                  value={selectedPlay?.id || ''}
+                  onChange={(e) => {
+                    const found = filtered.find(p => p.id === Number(e.target.value))
+                    if (found) setSelectedPlay(found)
+                  }}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs sm:text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500"
+                >
+                  {filtered.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.category === 'OFFENSE' ? '⚡ ' : p.category === 'DEFENSE' ? '🛡️ ' : '🎯 '}
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {selectedPlay ? (
               <div className="space-y-4">
                 <TacticalBoard play={selectedPlay} />

@@ -331,69 +331,142 @@ export default function Finances() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto -mx-4 sm:mx-0">
-          <div className="inline-block min-w-full align-middle sm:px-0">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left px-2 sm:px-4 py-2">Fecha</th>
-                  <th className="text-left px-2 sm:px-4 py-2">Tipo</th>
-                  <th className="text-left px-2 sm:px-4 py-2 hidden md:table-cell">Cuenta</th>
-                  <th className="text-left px-2 sm:px-4 py-2 hidden lg:table-cell">Categoría</th>
-                  <th className="text-right px-2 sm:px-4 py-2">Monto</th>
-                  <th className="text-left px-2 sm:px-4 py-2 hidden xl:table-cell">Descripción</th>
-                  <th className="px-2 sm:px-4 py-2 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map(it => (
-                  <tr key={it.id} className="border-t hover:bg-gray-50/70 transition-colors">
-                    <td className="px-2 sm:px-4 py-2 whitespace-nowrap text-xs sm:text-sm">
-                      <button onClick={() => setDetailItem(it)} className="text-left font-medium text-indigo-900 hover:text-indigo-600 hover:underline">
-                        {new Date(it.occurredAt).toLocaleString()}
-                      </button>
-                    </td>
-                    <td className="px-2 sm:px-4 py-2">
-                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                        it.type === 'INCOME' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                        it.type === 'EXPENSE' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
-                        'bg-blue-50 text-blue-700 border border-blue-200'
-                      }`}>
-                        {it.type === 'INCOME' ? 'Ingreso' : it.type === 'EXPENSE' ? 'Egreso' : 'Transferencia'}
-                      </span>
-                    </td>
-                    <td className="px-2 sm:px-4 py-2 hidden md:table-cell text-gray-700">{it.account?.name || it.accountId}</td>
-                    <td className="px-2 sm:px-4 py-2 hidden lg:table-cell text-gray-600">{it.category?.name || (it.categoryId ? `Cat #${it.categoryId}` : '-')}</td>
-                    <td className="px-2 sm:px-4 py-2 text-right whitespace-nowrap font-medium">
-                      <span className={it.type === 'INCOME' ? 'text-emerald-600' : it.type === 'EXPENSE' ? 'text-rose-600' : 'text-blue-600'}>
-                        {it.type === 'INCOME' ? '+' : it.type === 'EXPENSE' ? '-' : ''}{(it.amountCents/100).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}
-                      </span>
-                    </td>
-                    <td className="px-2 sm:px-4 py-2 hidden xl:table-cell text-gray-500 max-w-xs truncate">{it.description || '-'}</td>
-                    <td className="px-2 sm:px-4 py-2">
-                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 justify-end">
-                        <button onClick={() => setDetailItem(it)} className="text-xs text-gray-600 hover:text-indigo-600 border border-gray-200 rounded px-1.5 py-0.5 sm:px-2 sm:py-1 whitespace-nowrap">
-                          Ver
-                        </button>
-                        {authed && <button onClick={() => openEdit(it)} className="text-indigo-700 hover:underline text-xs sm:text-sm whitespace-nowrap">Editar</button>}
-                        {authed && <button onClick={() => remove(it.id)} className="text-red-700 hover:underline text-xs sm:text-sm whitespace-nowrap">Eliminar</button>}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {items.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-6 text-center text-gray-500">No hay transacciones para el filtro.</td>
-                  </tr>
+      {/* Responsive Transaction View */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        {/* Mobile View: Cards (md:hidden) */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {items.map(it => {
+            const isIncome = it.type === 'INCOME'
+            const isExpense = it.type === 'EXPENSE'
+            return (
+              <div key={it.id} className="p-3.5 space-y-2 hover:bg-slate-50/70 transition-colors">
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                    isIncome ? 'bg-emerald-100 text-emerald-800' :
+                    isExpense ? 'bg-rose-100 text-rose-800' :
+                    'bg-blue-100 text-blue-800'
+                  }`}>
+                    {isIncome ? 'Ingreso' : isExpense ? 'Egreso' : 'Transferencia'}
+                  </span>
+                  <span className={`text-base font-black tracking-tight ${
+                    isIncome ? 'text-emerald-600' : isExpense ? 'text-rose-600' : 'text-blue-600'
+                  }`}>
+                    {isIncome ? '+' : isExpense ? '-' : ''}
+                    {(it.amountCents / 100).toLocaleString('es-PR', { style: 'currency', currency: 'USD' })}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span>{new Date(it.occurredAt).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  <span className="font-semibold text-slate-700">{it.category?.name || 'General'}</span>
+                </div>
+
+                {it.description && (
+                  <p className="text-xs text-slate-600 line-clamp-1 italic">
+                    "{it.description}"
+                  </p>
                 )}
-              </tbody>
-            </table>
-          </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-slate-100/80 text-xs">
+                  <span className="text-[11px] text-slate-400">
+                    🏦 {it.account?.name || 'Caja Club'}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setDetailItem(it)}
+                      className="px-2 py-1 text-slate-600 hover:text-blue-600 font-bold bg-slate-100 rounded-lg text-xs"
+                    >
+                      Ver
+                    </button>
+                    {authed && (
+                      <>
+                        <button
+                          onClick={() => openEdit(it)}
+                          className="px-2 py-1 text-indigo-700 font-bold bg-indigo-50 rounded-lg text-xs"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => remove(it.id)}
+                          className="px-2 py-1 text-rose-700 font-bold bg-rose-50 rounded-lg text-xs"
+                        >
+                          Eliminar
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+          {items.length === 0 && (
+            <div className="p-8 text-center text-slate-500 text-sm">
+              No hay transacciones para el filtro seleccionado.
+            </div>
+          )}
         </div>
+
+        {/* Desktop View: Full Table (hidden md:block) */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-slate-50/80 border-b border-slate-200">
+              <tr>
+                <th className="text-left px-4 py-3 font-bold text-slate-700">Fecha</th>
+                <th className="text-left px-4 py-3 font-bold text-slate-700">Tipo</th>
+                <th className="text-left px-4 py-3 font-bold text-slate-700">Cuenta</th>
+                <th className="text-left px-4 py-3 font-bold text-slate-700">Categoría</th>
+                <th className="text-right px-4 py-3 font-bold text-slate-700">Monto</th>
+                <th className="text-left px-4 py-3 font-bold text-slate-700">Descripción</th>
+                <th className="px-4 py-3 text-right font-bold text-slate-700">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {items.map(it => (
+                <tr key={it.id} className="hover:bg-slate-50/70 transition-colors">
+                  <td className="px-4 py-3 whitespace-nowrap text-xs sm:text-sm">
+                    <button onClick={() => setDetailItem(it)} className="text-left font-medium text-indigo-900 hover:text-indigo-600 hover:underline">
+                      {new Date(it.occurredAt).toLocaleString()}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                      it.type === 'INCOME' ? 'bg-emerald-100 text-emerald-800' :
+                      it.type === 'EXPENSE' ? 'bg-rose-100 text-rose-800' :
+                      'bg-blue-100 text-blue-800'
+                    }`}>
+                      {it.type === 'INCOME' ? 'Ingreso' : it.type === 'EXPENSE' ? 'Egreso' : 'Transferencia'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-700 font-medium">{it.account?.name || it.accountId}</td>
+                  <td className="px-4 py-3 text-slate-600">{it.category?.name || (it.categoryId ? `Cat #${it.categoryId}` : '-')}</td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap font-bold">
+                    <span className={it.type === 'INCOME' ? 'text-emerald-600' : it.type === 'EXPENSE' ? 'text-rose-600' : 'text-blue-600'}>
+                      {it.type === 'INCOME' ? '+' : it.type === 'EXPENSE' ? '-' : ''}{(it.amountCents/100).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-500 max-w-xs truncate">{it.description || '-'}</td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center gap-1.5 justify-end">
+                      <button onClick={() => setDetailItem(it)} className="text-xs text-slate-600 hover:text-indigo-600 border border-slate-200 rounded px-2 py-1">
+                        Ver
+                      </button>
+                      {authed && <button onClick={() => openEdit(it)} className="text-indigo-700 hover:underline text-xs font-bold">Editar</button>}
+                      {authed && <button onClick={() => remove(it.id)} className="text-red-700 hover:underline text-xs font-bold">Eliminar</button>}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500">No hay transacciones para el filtro.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
         {/* Pagination */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-2 text-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 bg-slate-50/50 border-t border-slate-200 text-sm">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <div className="whitespace-nowrap">Total: {total}</div>
             <label className="flex items-center gap-1 whitespace-nowrap">Por página:

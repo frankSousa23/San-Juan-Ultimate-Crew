@@ -139,7 +139,7 @@ function AppRoutes() {
         <Route path="/recursos" element={<ProtectedRoute requiredRole={['player', 'coach', 'admin', 'directiva', 'captain', 'marketing', 'treasurer', 'annotator', 'guest']}><Resources /></ProtectedRoute>} />
 
         {/* Treasurer & Admin Routes */}
-        <Route path="/finanzas" element={<ProtectedRoute requiredRole={['treasurer', 'admin', 'directiva', 'guest']}><Finances /></ProtectedRoute>} />
+        <Route path="/finanzas" element={<ProtectedRoute requiredRole={['treasurer', 'admin', 'directiva']}><Finances /></ProtectedRoute>} />
         <Route path="/admin/usuarios" element={<ProtectedRoute requiredRole={['admin', 'directiva']}><AdminUsers /></ProtectedRoute>} />
         <Route path="/admin/equipos" element={<ProtectedRoute requiredRole={['admin', 'directiva']}><AdminTeams /></ProtectedRoute>} />
         <Route path="/admin/feedback" element={<ProtectedRoute requiredRole="admin"><AdminFeedback /></ProtectedRoute>} />

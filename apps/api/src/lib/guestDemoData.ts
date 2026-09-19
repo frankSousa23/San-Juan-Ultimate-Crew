@@ -1,23 +1,8 @@
 import jwt from 'jsonwebtoken'
 import { Request } from 'express'
 
-export function isGuestRequest(req: Request): boolean {
-  const user = (req as any).user
-  if (user?.email === 'guest@sigedivo.com') return true
-
-  const roles = (req as any).userRoles
-  if (Array.isArray(roles) && roles.includes('guest') && !roles.includes('admin')) return true
-  
-  const auth = req.headers?.authorization || ''
-  const [, token] = auth.split(' ')
-  if (token) {
-    try {
-      const decoded = jwt.decode(token) as any
-      if (decoded?.email === 'guest@sigedivo.com') return true
-    } catch {
-      // ignore
-    }
-  }
+export function isGuestRequest(_req?: Request): boolean {
+  // Modo sandbox para invitado eliminado: el sistema opera directamente con los datos reales en producción
   return false
 }
 

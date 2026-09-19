@@ -51,7 +51,7 @@ export default function Statistics() {
 
   const isAdmin = hasRole('admin')
   const isPlayer = hasRole('player') || !!user?.playerId
-  const isGuest = !isAdmin && !isPlayer && !hasRole('captain') && !hasRole('coach') && !hasRole('treasurer')
+  const isGeneralMember = !isAdmin && !isPlayer && !hasRole('captain') && !hasRole('coach') && !hasRole('treasurer')
   const isCaptain = hasRole('captain')
   const isCoach = hasRole('coach')
   const isTreasurer = hasRole('treasurer')
@@ -68,9 +68,9 @@ export default function Statistics() {
              isPlayer ? 'Mis Estadísticas' : 
              'Estadísticas del Equipo'}
           </h2>
-          {isGuest && (
+          {isGeneralMember && (
             <p className="text-sm text-gray-600 mt-1">
-              Vista pública del sistema - Únete como jugador para ver tus estadísticas personales
+              Vista institucional y resumen general del sistema deportivo
             </p>
           )}
           {(isCaptain || isCoach) && (
@@ -196,7 +196,7 @@ export default function Statistics() {
             </div>
           )}
 
-          {isPlayer && stats.personalStats && (
+          {isPlayer && !isAdmin && stats.personalStats && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow p-6">
                 <div className="text-blue-100 text-sm">Eventos Asistidos</div>
@@ -216,7 +216,7 @@ export default function Statistics() {
             </div>
           )}
 
-          {isGuest && (
+          {isGeneralMember && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow p-6">
                 <div className="text-blue-100 text-sm">Jugadores Activos</div>

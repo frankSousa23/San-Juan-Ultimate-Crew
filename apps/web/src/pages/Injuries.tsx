@@ -340,80 +340,158 @@ export default function Injuries() {
         )
       })()}
 
-      {/* Tabla */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto -mx-4 sm:mx-0">
-          <div className="inline-block min-w-full align-middle sm:px-0">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left px-2 sm:px-4 py-2">Jugador</th>
-                  <th className="text-left px-2 sm:px-4 py-2">Tipo</th>
-                  <th className="text-left px-2 sm:px-4 py-2">Gravedad</th>
-                  <th className="text-left px-2 sm:px-4 py-2">Estado</th>
-                  <th className="text-left px-2 sm:px-4 py-2 hidden lg:table-cell">Aptitud</th>
-                  <th className="text-left px-2 sm:px-4 py-2 hidden sm:table-cell">Inicio</th>
-                  <th className="text-left px-2 sm:px-4 py-2 hidden md:table-cell">Fin</th>
-                  <th className="px-2 sm:px-4 py-2 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(it => (
-                  <tr key={it.id} className="border-t hover:bg-gray-50/70 transition-colors">
-                    <td className="px-2 sm:px-4 py-2 whitespace-nowrap">
-                      <button onClick={() => setDetailInjury(it)} className="text-left font-medium text-rose-900 hover:text-rose-600 hover:underline">
-                        {it.player ? `#${it.player.number} ${it.player.name}` : `ID: ${it.playerId}`}
+      {/* Responsive Injuries View */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        {/* Mobile View: Cards (md:hidden) */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {filtered.map(it => {
+            const clearance = getClearanceStatus(it)
+            return (
+              <div key={it.id} className="p-3.5 space-y-2.5 hover:bg-slate-50/70 transition-colors">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <button
+                      onClick={() => setDetailInjury(it)}
+                      className="text-left font-black text-slate-900 text-sm hover:text-rose-600 tracking-tight"
+                    >
+                      {it.player ? `#${it.player.number} ${it.player.name}` : `ID: ${it.playerId}`}
+                    </button>
+                    <div className="text-xs text-slate-500 font-medium mt-0.5">
+                      {it.type}
+                    </div>
+                  </div>
+                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border shrink-0 ${
+                    CLEARANCE_CLASS[clearance]
+                  }`}>
+                    {CLEARANCE_LABEL[clearance]}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                  <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${
+                    it.severity === 'MILD' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                    it.severity === 'MODERATE' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
+                    'bg-rose-50 text-rose-700 border border-rose-200'
+                  }`}>
+                    {it.severity === 'MILD' ? 'Leve' : it.severity === 'MODERATE' ? 'Moderada' : 'Grave'}
+                  </span>
+                  <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${
+                    it.status === 'ACTIVE' ? 'bg-rose-100 text-rose-800' :
+                    it.status === 'RECOVERING' ? 'bg-blue-100 text-blue-800' :
+                    'bg-emerald-100 text-emerald-800'
+                  }`}>
+                    {it.status === 'ACTIVE' ? 'Activa' : it.status === 'RECOVERING' ? 'En Recuperación' : 'Alta / Resuelta'}
+                  </span>
+                  <span className="text-slate-400 text-[11px] ml-auto">
+                    📅 {new Date(it.startDate).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-1.5 border-t border-slate-100">
+                  <button
+                    onClick={() => setDetailInjury(it)}
+                    className="px-2.5 py-1 text-xs text-slate-600 hover:text-rose-600 font-bold bg-slate-100 rounded-lg"
+                  >
+                    Ver Ficha
+                  </button>
+                  {hasPermission('injuries:manage') && (
+                    <>
+                      <button
+                        onClick={() => openEdit(it)}
+                        className="px-2.5 py-1 text-xs text-indigo-700 font-bold bg-indigo-50 rounded-lg"
+                      >
+                        Editar
                       </button>
-                    </td>
-                    <td className="px-2 sm:px-4 py-2">{it.type}</td>
-                    <td className="px-2 sm:px-4 py-2">
-                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                        it.severity === 'MILD' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                        it.severity === 'MODERATE' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
-                        'bg-rose-50 text-rose-700 border border-rose-200'
-                      }`}>
-                        {it.severity === 'MILD' ? 'Leve' : it.severity === 'MODERATE' ? 'Moderada' : 'Grave'}
-                      </span>
-                    </td>
-                    <td className="px-2 sm:px-4 py-2">
-                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                        it.status === 'ACTIVE' ? 'bg-rose-100 text-rose-800' :
-                        it.status === 'RECOVERING' ? 'bg-blue-100 text-blue-800' :
-                        'bg-emerald-100 text-emerald-800'
-                      }`}>
-                        {it.status === 'ACTIVE' ? 'Activa' : it.status === 'RECOVERING' ? 'Recuperación' : 'Resuelta'}
-                      </span>
-                    </td>
-                    <td className="px-2 sm:px-4 py-2 hidden lg:table-cell">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold border ${
-                        CLEARANCE_CLASS[getClearanceStatus(it)]
-                      }`}>
-                        {CLEARANCE_LABEL[getClearanceStatus(it)]}
-                      </span>
-                    </td>
-                    <td className="px-2 sm:px-4 py-2 whitespace-nowrap hidden sm:table-cell text-xs text-gray-600">{new Date(it.startDate).toLocaleDateString()}</td>
-                    <td className="px-2 sm:px-4 py-2 whitespace-nowrap hidden md:table-cell text-xs text-gray-600">{it.endDate ? new Date(it.endDate).toLocaleDateString() : '-'}</td>
-                    <td className="px-2 sm:px-4 py-2 text-right">
-                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 justify-end">
-                        <button onClick={() => setDetailInjury(it)} className="text-xs text-gray-600 hover:text-rose-600 border border-gray-200 rounded px-1.5 py-0.5 whitespace-nowrap">
-                          Ver
-                        </button>
-                        {hasPermission('injuries:manage') && (
-                          <>
-                            <button className="text-indigo-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => openEdit(it)}>Editar</button>
-                            <button className="text-red-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => remove(it.id)}>Eliminar</button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      <button
+                        onClick={() => remove(it.id)}
+                        className="px-2.5 py-1 text-xs text-rose-700 font-bold bg-rose-50 rounded-lg"
+                      >
+                        Eliminar
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+          {!loading && filtered.length === 0 && (
+            <div className="p-8 text-center text-slate-500 text-sm">
+              Sin registros médicos para los filtros aplicados.
+            </div>
+          )}
+        </div>
+
+        {/* Desktop View: Full Table (hidden md:block) */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-slate-50/80 border-b border-slate-200">
+              <tr>
+                <th className="text-left px-4 py-3 font-bold text-slate-700">Jugador</th>
+                <th className="text-left px-4 py-3 font-bold text-slate-700">Tipo</th>
+                <th className="text-left px-4 py-3 font-bold text-slate-700">Gravedad</th>
+                <th className="text-left px-4 py-3 font-bold text-slate-700">Estado</th>
+                <th className="text-left px-4 py-3 font-bold text-slate-700">Aptitud</th>
+                <th className="text-left px-4 py-3 font-bold text-slate-700">Inicio</th>
+                <th className="text-left px-4 py-3 font-bold text-slate-700">Fin</th>
+                <th className="px-4 py-3 text-right font-bold text-slate-700">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filtered.map(it => (
+                <tr key={it.id} className="hover:bg-slate-50/70 transition-colors">
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <button onClick={() => setDetailInjury(it)} className="text-left font-medium text-rose-900 hover:text-rose-600 hover:underline">
+                      {it.player ? `#${it.player.number} ${it.player.name}` : `ID: ${it.playerId}`}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3">{it.type}</td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                      it.severity === 'MILD' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                      it.severity === 'MODERATE' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
+                      'bg-rose-50 text-rose-700 border border-rose-200'
+                    }`}>
+                      {it.severity === 'MILD' ? 'Leve' : it.severity === 'MODERATE' ? 'Moderada' : 'Grave'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                      it.status === 'ACTIVE' ? 'bg-rose-100 text-rose-800' :
+                      it.status === 'RECOVERING' ? 'bg-blue-100 text-blue-800' :
+                      'bg-emerald-100 text-emerald-800'
+                    }`}>
+                      {it.status === 'ACTIVE' ? 'Activa' : it.status === 'RECOVERING' ? 'Recuperación' : 'Resuelta'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                      CLEARANCE_CLASS[getClearanceStatus(it)]
+                    }`}>
+                      {CLEARANCE_LABEL[getClearanceStatus(it)]}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-xs text-slate-600">{new Date(it.startDate).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-xs text-slate-600">{it.endDate ? new Date(it.endDate).toLocaleDateString() : '-'}</td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center gap-1.5 justify-end">
+                      <button onClick={() => setDetailInjury(it)} className="text-xs text-slate-600 hover:text-rose-600 border border-slate-200 rounded px-2 py-1 whitespace-nowrap">
+                        Ver
+                      </button>
+                      {hasPermission('injuries:manage') && (
+                        <>
+                          <button className="text-indigo-700 hover:underline text-xs font-bold whitespace-nowrap" onClick={() => openEdit(it)}>Editar</button>
+                          <button className="text-red-700 hover:underline text-xs font-bold whitespace-nowrap" onClick={() => remove(it.id)}>Eliminar</button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
               {!loading && filtered.length === 0 && (
-                <tr><td colSpan={8} className="px-4 py-6 text-center text-gray-500">Sin registros.</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-500">Sin registros.</td></tr>
               )}
             </tbody>
           </table>
-          </div>
         </div>
         <div className="p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
           <div>

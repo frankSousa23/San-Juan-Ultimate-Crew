@@ -55,7 +55,9 @@ export function ChannelSection({
   return (
     <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 min-h-[400px] sm:min-h-[600px]">
       {/* Channels list */}
-      <div className="col-span-1 md:col-span-3 bg-white rounded-lg shadow p-3 flex flex-col min-h-[300px] sm:min-h-0">
+      <div className={`col-span-1 md:col-span-3 bg-white rounded-xl shadow-sm border border-slate-200 p-3 flex flex-col min-h-[300px] sm:min-h-0 ${
+        activeId ? 'hidden md:flex' : 'flex'
+      }`}>
         <div className="flex items-center justify-between mb-2">
           <div className="font-semibold text-gray-700">Canales</div>
           <div className="flex items-center gap-3">
@@ -111,10 +113,29 @@ export function ChannelSection({
       </div>
 
       {/* Messages */}
-      <div className="col-span-1 md:col-span-9 bg-white rounded-lg shadow flex flex-col">
-        <div className="border-b px-4 py-2 flex items-center justify-between bg-gray-50">
-          <div className="font-semibold text-gray-800">
-            {activeChannel?.name || 'Selecciona un canal'}
+      <div className={`col-span-1 md:col-span-9 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col ${
+        !activeId ? 'hidden md:flex' : 'flex'
+      }`}>
+        <div className="border-b px-4 py-2 flex items-center justify-between bg-gray-50 rounded-t-xl">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {activeId && (
+              <button
+                onClick={() => {
+                  setActiveId(null)
+                  const next = new URLSearchParams(params)
+                  next.delete('channelId')
+                  setSearchParams(next)
+                }}
+                className="md:hidden text-xs text-purple-700 font-bold px-2 py-1 bg-purple-100 rounded-lg hover:bg-purple-200 transition flex items-center gap-1 shrink-0"
+                aria-label="Volver a lista de canales"
+              >
+                <span>←</span>
+                <span>Canales</span>
+              </button>
+            )}
+            <div className="font-semibold text-gray-800 truncate">
+              {activeChannel?.name || 'Selecciona un canal'}
+            </div>
           </div>
           {activeId && (
             <div className="flex items-center gap-2">

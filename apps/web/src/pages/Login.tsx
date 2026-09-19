@@ -10,21 +10,6 @@ export const Login: React.FC = () => {
   const navigate = useNavigate()
   const [params] = useSearchParams()
 
-  async function handleGuestLogin() {
-    setEmail('guest@sigedivo.com')
-    setPassword('123456')
-    setError(null)
-    try {
-      await login('guest@sigedivo.com', '123456')
-      const next = params.get('next') || '/'
-      navigate(next, { replace: true })
-    } catch (err: any) {
-      console.error('[GuestLogin Error]', err)
-      const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Error al iniciar sesión como invitado'
-      setError(errorMessage)
-    }
-  }
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
@@ -58,37 +43,6 @@ export const Login: React.FC = () => {
           <div className="text-4xl mb-2">🥏</div>
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white break-words leading-tight">SIGEDIVO</h2>
           <p className="text-sm sm:text-base text-gray-600 dark:text-slate-400 mt-2 font-medium break-words">Sistema de Gestión para el Disco Volador</p>
-        </div>
-
-        
-        {/* Acceso Modo Invitado */}
-        <div className="mb-6 space-y-3">
-          <div className="bg-emerald-50/90 dark:bg-slate-800/90 border border-emerald-200 dark:border-emerald-700/60 rounded-2xl p-4 sm:p-5 shadow-sm">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xl shrink-0 shadow-sm">
-                🌟
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-bold text-sm text-emerald-950 dark:text-emerald-200">Acceso de Demostración (Modo Invitado)</h3>
-                  <span className="text-[10px] font-bold uppercase bg-emerald-200 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200 px-2 py-0.5 rounded-full">
-                    1 Clic
-                  </span>
-                </div>
-                <p className="text-xs text-emerald-900 dark:text-slate-200 mt-1.5 leading-relaxed">
-                  ¿Quieres explorar el sistema sin registrarte? Ingresa con el rol <strong className="text-emerald-950 dark:text-emerald-300 font-bold">Invitado (guest@sigedivo.com)</strong> para ver el Roster, Calendario, Estadísticas, Pizarrón Táctico y el Manual Oficial en PDF.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleGuestLogin}
-                  disabled={isLoading}
-                  className="mt-3 w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 active:scale-95 text-white text-xs sm:text-sm font-bold rounded-xl shadow transition flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  <span>🚀 Entrar como Invitado (Modo Muestra)</span>
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">

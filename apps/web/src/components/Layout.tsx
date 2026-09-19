@@ -346,37 +346,50 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </div>
 
+      {/* Mobile Backdrop Overlay */}
+      {sidebarOpen && (
+        <div
+          id="mobile-sidebar-backdrop"
+          className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs lg:hidden transition-opacity duration-200"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b h-16 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-40">
-          <div className="flex items-center gap-3 lg:gap-4">
+        <header className="bg-white shadow-sm border-b h-16 flex items-center justify-between px-3 sm:px-4 lg:px-6 sticky top-0 z-30">
+          <div className="flex items-center gap-2.5 sm:gap-3 lg:gap-4">
             <button
+              id="sidebar-toggle-btn"
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100"
+              className="lg:hidden text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100 transition active:scale-95"
+              aria-label="Abrir menú de navegación"
             >
               <span className="text-xl">☰</span>
             </button>
-            <h2 className="text-base sm:text-lg font-bold text-gray-800 truncate hidden sm:block">
+            <h2 className="text-sm sm:text-base lg:text-lg font-bold text-gray-800 truncate">
               {activeItemName}
             </h2>
             
             {/* Contexto Multi-Equipo (Badge) */}
             {user && (
               <div 
-                className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-slate-900 to-slate-800 text-white text-xs font-semibold rounded-full shadow-sm border border-slate-700"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-slate-900 to-slate-800 text-white text-xs font-semibold rounded-full shadow-sm border border-slate-700"
                 title="Equipo actual de gestión"
               >
                 <span className="text-blue-400">🛡️</span>
-                <span className="truncate max-w-[100px] sm:max-w-[200px]">
+                <span className="truncate max-w-[120px] sm:max-w-[200px]">
                   {user.teamName || (user.roles?.includes('admin') ? 'Admin Global' : 'Sin Equipo')}
                 </span>
               </div>
             )}
           </div>
 
-          <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="flex items-center space-x-1.5 sm:space-x-3">
             <button
+              id="theme-toggle-btn"
               onClick={toggleTheme}
               className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition"
               title="Cambiar tema"
@@ -385,8 +398,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </button>
 
             <button
+              id="system-manual-btn"
               onClick={() => setManualOpen(true)}
-              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs sm:text-sm font-bold rounded-lg border border-blue-200 transition active:scale-95 shadow-sm"
+              className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs sm:text-sm font-bold rounded-lg border border-blue-200 transition active:scale-95 shadow-xs"
               title="Ver manual y guía oficial del sistema"
             >
               <span>📘</span>
@@ -396,10 +410,81 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </header>
 
-        {/* Dynamic Main View */}
-        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
-          {children}
+        {/* Dynamic Main View with smooth transition */}
+        <main className="flex-1 p-3.5 sm:p-4 lg:p-6 pb-24 lg:pb-6 overflow-y-auto">
+          <div key={location.pathname} className="animate-fadeIn">
+            {children}
+          </div>
         </main>
+
+        {/* Mobile Bottom Navigation Bar */}
+        <nav
+          id="mobile-bottom-navigation"
+          aria-label="Navegación móvil principal"
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-1 py-1 shadow-lg safe-area-bottom flex items-center justify-around"
+        >
+          <Link
+            id="mobile-nav-home"
+            to="/"
+            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all active:scale-95 ${
+              isActive('/') || isActive('/dashboard')
+                ? 'text-blue-600 font-extrabold bg-blue-50/80'
+                : 'text-slate-500 hover:text-slate-900 font-medium'
+            }`}
+          >
+            <span className="text-lg leading-none">🏠</span>
+            <span className="text-[10px] mt-0.5 tracking-tight">Inicio</span>
+          </Link>
+
+          <Link
+            id="mobile-nav-roster"
+            to="/roster"
+            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all active:scale-95 ${
+              isActive('/roster')
+                ? 'text-blue-600 font-extrabold bg-blue-50/80'
+                : 'text-slate-500 hover:text-slate-900 font-medium'
+            }`}
+          >
+            <span className="text-lg leading-none">👥</span>
+            <span className="text-[10px] mt-0.5 tracking-tight">Roster</span>
+          </Link>
+
+          <Link
+            id="mobile-nav-events"
+            to="/eventos"
+            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all active:scale-95 ${
+              isActive('/eventos')
+                ? 'text-blue-600 font-extrabold bg-blue-50/80'
+                : 'text-slate-500 hover:text-slate-900 font-medium'
+            }`}
+          >
+            <span className="text-lg leading-none">📅</span>
+            <span className="text-[10px] mt-0.5 tracking-tight">Eventos</span>
+          </Link>
+
+          <Link
+            id="mobile-nav-annotations"
+            to="/anotaciones"
+            className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all active:scale-95 ${
+              isActive('/anotaciones')
+                ? 'text-blue-600 font-extrabold bg-blue-50/80'
+                : 'text-slate-500 hover:text-slate-900 font-medium'
+            }`}
+          >
+            <span className="text-lg leading-none">🥏</span>
+            <span className="text-[10px] mt-0.5 tracking-tight">Anotar</span>
+          </Link>
+
+          <button
+            id="mobile-nav-menu"
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-500 hover:text-slate-900 font-medium transition-all active:scale-95"
+          >
+            <span className="text-lg leading-none">☰</span>
+            <span className="text-[10px] mt-0.5 tracking-tight">Más</span>
+          </button>
+        </nav>
       </div>
 
       <SystemManualModal isOpen={manualOpen} onClose={() => setManualOpen(false)} />

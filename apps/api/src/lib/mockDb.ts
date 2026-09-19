@@ -225,10 +225,10 @@ class InMemoryDB {
     this.players = [];
     this.nextId['player'] = 1;
 
-    // 5. Users (Admin, Guest, Capitanes, Coaches, Mesa Técnica y Atletas)
+    // 5. Users (Admin, Capitanes, Coaches, Mesa Técnica y Atletas)
     const coreUsers = [
       { id: 1, email: 'frankalfonso1988@gmail.com', name: 'Frank Sousa (Admin)', role: 'admin', playerId: null, teamId: null },
-      { id: 2, email: 'guest@sigedivo.com', name: 'Invitado / Demostración', role: 'guest', playerId: null, teamId: null },
+      { id: 2, email: 'guest@sigedivo.com', name: 'Usuario Prueba', role: 'guest', playerId: null, teamId: null },
       { id: 3, email: 'player@sigedivo.com', name: 'Atleta Oficial', role: 'player', playerId: null, teamId: 1 }
     ];
 

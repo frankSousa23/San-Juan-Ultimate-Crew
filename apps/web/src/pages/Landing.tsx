@@ -1,14 +1,14 @@
 import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { generateSystemManualPdf } from '../lib/generateManualPdf'
 import { generateResourcePdf, RESOURCE_DOCS } from '../lib/generateResourcePdfs'
 import { branding } from '../config/branding'
+import { ProjectInfographic } from '../components/ProjectInfographic'
 import toast from 'react-hot-toast'
 
 export const Landing: React.FC = () => {
-  const { user, login, isLoading } = useAuth()
-  const navigate = useNavigate()
+  const { user } = useAuth()
 
   // Interactive Live Scoreboard Simulator State
   const [teamScoreA, setTeamScoreA] = useState(11)
@@ -25,18 +25,6 @@ export const Landing: React.FC = () => {
 
   // PDF Generation loading states
   const [generatingPdf, setGeneratingPdf] = useState(false)
-
-  const handleGuestLogin = async () => {
-    try {
-      toast.loading('Iniciando sesión como Invitado...', { id: 'guest-login' })
-      await login('guest@sigedivo.com', '123456')
-      toast.success('¡Bienvenido al modo demostración de SIGEDIVO!', { id: 'guest-login' })
-      navigate('/', { replace: true })
-    } catch (err: any) {
-      toast.error('Error al ingresar como invitado', { id: 'guest-login' })
-      console.error(err)
-    }
-  }
 
   const handleDownloadManual = () => {
     try {
@@ -86,8 +74,8 @@ export const Landing: React.FC = () => {
       a: `${branding.appName} (Sistema de Gestión para el Disco Volador) es la plataforma de gestión deportiva diseñada para clubes, selecciones, entrenadores, capitanes y mesas técnicas de Ultimate Frisbee y disciplinas de disco volador. Centraliza Roster, Anotaciones en Vivo, Brackets de Torneos, Estadísticas, Finanzas, Salud y Manuales Oficiales.`,
     },
     {
-      q: '¿Cómo puedo probar el sistema sin crear una cuenta?',
-      a: 'Puedes hacer clic en el botón "🚀 Probar Modo Invitado" en cualquier parte de esta página. Iniciarás sesión con 1 solo clic con credenciales de muestra para explorar todas las pantallas, pizarras, estadísticas y recursos sin comprometer datos reales.',
+      q: '¿Cómo integro a mi equipo o asociación deportiva en producción?',
+      a: 'SIGEDIVO está 100% listo para producción. El Administrador del club o asociación inicia sesión con su cuenta oficial o registra la organización desde la plataforma. A partir de allí, el cuerpo técnico configura las divisiones (Open, Femenino, Mixto), da de alta a los atletas del roster y comienza a gestionar convocatorias, partidos oficiales, actas en PDF y finanzas directamente en el sistema real sin intermediarios ni modos sandbox.',
     },
     {
       q: '¿Puedo registrar mi propio equipo o club?',
@@ -105,10 +93,10 @@ export const Landing: React.FC = () => {
 
   return (
     <div className="w-full bg-slate-50 text-slate-900 font-sans pb-16">
-      {/* Top Banner / Beta Announcement */}
+      {/* Top Banner / Announcement */}
       <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white px-4 py-2 text-xs sm:text-sm text-center font-medium shadow-inner flex items-center justify-center gap-2 flex-wrap">
-        <span className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider animate-pulse">
-          Beta Abierta v1.2.0
+        <span className="bg-emerald-500 text-white px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider">
+          Producción v1.2.0 Oficial
         </span>
         <span>Plataforma Oficial para Ultimate Frisbee y Deportes de Disco Volador</span>
         <span className="hidden md:inline text-slate-400">•</span>
@@ -152,20 +140,11 @@ export const Landing: React.FC = () => {
                   <span>🔐 Iniciar Sesión</span>
                 </Link>
 
-                <button
-                  type="button"
-                  onClick={handleGuestLogin}
-                  disabled={isLoading}
-                  className="w-full sm:w-auto px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-base rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2"
-                >
-                  <span>🚀 Probar Modo Invitado (1 Clic)</span>
-                </button>
-
                 <Link
                   to="/register"
-                  className="w-full sm:w-auto px-6 py-3.5 bg-white hover:bg-slate-50 active:scale-95 text-slate-800 font-bold text-base rounded-xl border border-slate-300 shadow-sm transition flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-7 py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-base rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2"
                 >
-                  <span>✍️ Registrarse</span>
+                  <span>✍️ Registrar Club / Atleta</span>
                 </Link>
               </>
             )}
@@ -206,6 +185,24 @@ export const Landing: React.FC = () => {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Official Architecture & System Infographic Section */}
+      <section className="py-12 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-100 text-cyan-800 text-xs font-bold mb-3 shadow-sm border border-cyan-200">
+            <span>🥏</span>
+            <span className="uppercase tracking-wider">Arquitectura e Identidad Oficial</span>
+          </div>
+          <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+            La Revolución Digital del Ultimate Frisbee
+          </h2>
+          <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-3xl mx-auto">
+            Una solución integral y gratuita para la gestión de clubes y asociaciones, profesionalizando el deporte en Latinoamérica con tecnología de punta.
+          </p>
+        </div>
+
+        <ProjectInfographic />
       </section>
 
       {/* Interactive Live Scoreboard Simulator */}
@@ -858,7 +855,7 @@ export const Landing: React.FC = () => {
             ¿Listo para llevar la gestión de tu equipo al siguiente nivel?
           </h2>
           <p className="mt-3 text-sm sm:text-base text-blue-100 max-w-2xl mx-auto leading-relaxed">
-            Comienza a utilizar SIGEDIVO hoy mismo. Ingresa con el modo de demostración o regístrate con tu club.
+            Comienza a utilizar SIGEDIVO hoy mismo. Inicia sesión con tu cuenta o registra a tu club para entrar en producción.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
             <Link
@@ -867,14 +864,12 @@ export const Landing: React.FC = () => {
             >
               🔐 Iniciar Sesión en SIGEDIVO
             </Link>
-            <button
-              type="button"
-              onClick={handleGuestLogin}
-              disabled={isLoading}
-              className="w-full sm:w-auto px-7 py-3.5 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-extrabold text-base rounded-xl shadow-lg transition"
+            <Link
+              to="/register"
+              className="w-full sm:w-auto px-8 py-3.5 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-extrabold text-base rounded-xl shadow-lg transition flex items-center justify-center gap-2"
             >
-              🚀 Entrar como Invitado (Modo Demo)
-            </button>
+              ✍️ Registrar Club / Atleta
+            </Link>
           </div>
         </div>
       </section>

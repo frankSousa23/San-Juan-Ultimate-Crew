@@ -116,7 +116,7 @@ export function generateSystemManualPdf(): jsPDF {
   doc.setTextColor(51, 65, 85)
   doc.text('• Administrador Principal (frankalfonso1988@gmail.com): Aprobación de cuentas y configuración.', margin + 12, 182)
   doc.text('• Registros Nuevos: Ingresan en estado PENDIENTE hasta ser verificados y asignados a su rol y equipo.', margin + 12, 189)
-  doc.text('• Modo Invitado (guest@sigedivo.com): Permite exploración inmediata en solo lectura sin registro.', margin + 12, 196)
+  doc.text('• Integración Directa de Equipos: Configuración de divisiones, altas de atletas y gestión federativa directa.', margin + 12, 196)
   doc.text('• Auditoría: Registro inmutable de cada transacción con marca de tiempo UTC e IP autorizadora.', margin + 12, 203)
 
   // Metadatos inferiores
@@ -402,22 +402,21 @@ export function generateSystemManualPdf(): jsPDF {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(10)
   doc.setTextColor(22, 101, 52)
-  doc.text('4. GUÍA DEL MODO INVITADO, CAIMANERAS Y DEMO PÚBLICA', margin + 6, m2Y + 9)
+  doc.text('4. GUÍA DE INTEGRACIÓN DE EQUIPO, CAIMANERAS Y PARTIDOS INFORMALES', margin + 6, m2Y + 9)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7.8)
   doc.setTextColor(20, 83, 45)
   const guestLines = [
-    '• Acceso Inmediato en 1 Clic: En la pantalla de login (/login), el botón "Acceso Invitado" permite explorar',
-    '  el Roster, Calendario, Estadísticas, Pizarrón Táctico y descargar este manual sin registrarse.',
-    '• Modo Caimanera (Partidos Informales / Mixtos): Permite incorporar jugadores invitados o refuerzos temporales',
-    '  en partidos de práctica. Cuando el jugador se registra formalmente, la mesa técnica puede fusionar',
-    '  atómicamente todas sus estadísticas acumuladas a su perfil oficial.',
-    '• Permisos de Solo Lectura: El modo invitado no permite alterar datos, crear transacciones financieras,',
-    '  modificar alineaciones ni consultar los registros privados de auditoría.',
+    '• Sistema Listo para Producción: Diseñado para entrar en operación directa en clubes y asociaciones.',
+    '  Sin modos sandbox ni limitaciones de prueba: el uso real del sistema nutre la base de datos oficial.',
+    '• Modo Caimanera (Partidos Informales / Mixtos): Permite incorporar atletas de práctica o refuerzos temporales.',
+    '  Cuando el jugador se registra formalmente, la mesa técnica puede fusionar atómicamente sus estadísticas',
+    '  acumuladas en partidos informales directamente a su ficha de atleta oficial.',
+    '• Control de Acceso por Roles (RBAC): Cada usuario cuenta con capacidades específicas (Admin, Capitán,',
+    '  Entrenador, Tesorero, Mesa Técnica o Jugador) para salvaguardar la integridad de las planillas.',
     '• Modo Oscuro (Dark Mode): Conmutador visual persistente (☀️/🌙) en la barra superior con contraste óptimo.',
-    '• Solicitud de Membresía: Cualquier invitado puede completar el formulario de registro en /register para',
-    '  solicitar su incorporación formal al equipo.',
+    '• Incorporación de Atletas: Registro en /register con aprobación inmediata del Administrador del club.',
   ]
   let gY = m2Y + 16
   for (const line of guestLines) {

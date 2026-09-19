@@ -14,8 +14,8 @@
 > 🚀 **Plataforma Autohospedable y White-Label (Multi-Instancia):**  
 > Diseñada para que cualquier club deportivo (ej. *El Pueblito Ultimate Club*) o asociación regional (ej. *AGDV*, *AADV*) pueda clonar el repositorio y desplegar su propia instancia personalizada mediante Docker o VPS en minutos. Consulta la **[Guía de Despliegue para Clubes y Asociaciones](docs/GUIA_DESPLIEGUE_CLUB.md)**.  
 >
-> 🧪 **Modo Demostración y Pruebas Locales:**  
-> Cuenta con **Modo Invitado de 1 Clic** integrado en local para explorar todo el sistema y sus datos de prueba sin necesidad de configuración externa. Ejecutable con `docker compose up` o `npm run dev`.
+> ⚡ **Listo para Producción e Integración Inmediata:**  
+> Sistema libre de modos sandbox o datos ficticios de prueba: listo para registrar atletas reales, convocar entrenamientos, anotar partidos oficiales en vivo con botones táctiles y gestionar tesorería. Ejecutable con `docker compose up` o `npm run dev`.
 
 ---
 
@@ -43,64 +43,15 @@ Este proyecto es software libre y de código abierto bajo la **[Licencia MIT](LI
 
 ---
 
-## 📸 Galería de Vistas y Funcionalidades
+## 🥏 Infografía Oficial: Arquitectura e Identidad del Sistema
 
-A continuación, se presenta un recorrido visual por los módulos principales de SIGEDIVO, diseñados bajo una arquitectura limpia, responsiva y orientada a la experiencia del usuario (UX) en campo.
+![SIGEDIVO: La Revolución Digital del Ultimate Frisbee](./docs/images/revolucion_digital_del_ultimate.svg)
 
-### 🔐 1. Inicio de Sesión y Modo Demostración
-El portal de acceso seguro del sistema. Cuenta con validación JWT, un diseño responsivo de alto contraste y un **Modo Invitado de 1 Clic** que permite explorar un ecosistema completo de demostración sin necesidad de registro.
-![Inicio de Sesión](./docs/images/00_login.png)
-
-### 📊 2. Dashboard Principal
-El panel de control (Dashboard) ofrece una vista panorámica en tiempo real del club. Integra widgets rápidos de estado del Roster (jugadores activos y lesionados), próximos torneos y un resumen financiero inmediato.
-![Dashboard Principal](./docs/images/01_dashboard.png)
-![Dashboard de Rendimiento del Equipo](./docs/images/19_team_performance_dashboard.jpg)
-
-### 🏃 3. Roster y Perfil de Atletas
-Gestión completa de la plantilla oficial. Permite organizar a los jugadores por línea de juego, posición (Handler, Cutter, Híbrido), y enlazar su estado médico y estadísticas históricas.
-![Roster Oficial](./docs/images/02_roster.png)
-
-### ⏱️ 4. Pizarra Táctica y Anotaciones en Vivo (Móvil y Escritorio)
-El corazón estadístico del sistema. Diseñado específicamente para ser usado en el campo de juego desde una Tablet o Smartphone. Los botones son táctiles y de gran tamaño para registrar asistencias, goles, defensas (D's) y pérdidas al instante.
-<div align="center">
-  <img src="./docs/images/03_anotaciones_selector.png" width="48%" alt="Anotaciones Selector" />
-  <img src="./docs/images/14_anotaciones_movil_tactil.png" width="48%" alt="Anotaciones Móvil Táctil" />
-</div>
-
-### 📅 5. Eventos, Torneos, Convocatorias y Mesa Técnica
-Módulo de logística deportiva para coordinar prácticas, partidos oficiales, caimaneras y torneos multinivel con plantillas rápidas. Incluye confirmación de asistencia (RSVP), control de mesa técnica, fases de grupo, semifinales y finales.
-![Eventos y Torneos](./docs/images/04_eventos_torneos.png)
-
-### 📈 6. Estadísticas de Rendimiento (Analytics)
-Procesamiento de datos en tiempo real (Puntos Jugados, +/- Plus/Minus, Goles, Asistencias) que alimenta tablas de líderes y permite al cuerpo técnico tomar decisiones informadas sobre las líneas.
-![Estadísticas Generales](./docs/images/10_estadisticas.png)
-
-### 💰 7. Control de Finanzas y Tesorería
-Herramienta contable dedicada a la Directiva y Tesorería del club. Seguimiento riguroso de pagos de mensualidades, inscripción a torneos (Bid Fees), compra de discos y control del balance (Caja Chica y Cuentas Bancarias).
-![Tesorería y Finanzas](./docs/images/05_finanzas.png)
-
-### 📋 8. Libro de Jugadas (Playbook) Tácticas
-Un espacio formativo y estratégico donde los entrenadores (Coaches) publican las formaciones oficiales del equipo (e.g. *Vertical Stack*, *Horizontal Stack*, *Defensa Cup*).
-![Playbook Táctico](./docs/images/07_jugadas_tacticas.png)
-![Pizarrón Táctico Vertical Stack](./docs/images/24_tactical_drill_board.jpg)
-
-### 🏥 9. Parte Médico y Gestión de Lesiones
-Un seguimiento evolutivo de las lesiones de los atletas, desde el momento del incidente hasta la recuperación total (Alta médica), permitiendo a los entrenadores proteger la salud física del roster.
-![Gestión de Lesiones](./docs/images/06_lesiones.png)
-
-### 🛡️ 10. Scouting de Rivales
-Base de datos técnica de equipos adversarios. Permite almacenar puntos fuertes, tácticas habituales y análisis detallado de jugadores clave para planificar estrategias previas a los encuentros.
-![Scouting de Rivales](./docs/images/08_scouting_rivales.png)
-
-### ⚙️ 11. Administración del Sistema y Equipos (Directiva)
-Panel exclusivo para la Administración. Desde aquí se aprueban las solicitudes de nuevos atletas, se asignan roles (Capitán, Entrenador, Directiva, Tesorero, Anotador, Marketing) y se gestionan los diferentes equipos y categorías que conviven en el sistema.
-![Admin Usuarios](./docs/images/12_admin_usuarios.png)
+> **Contexto del Proyecto:** Infografía oficial que sintetiza la identidad, propósito white-label y social, módulos de gestión deportiva en campo, gobernanza RBAC y el stack tecnológico de SIGEDIVO para la profesionalización del Ultimate Frisbee en Venezuela y Latinoamérica.
 
 ---
 
 ## 🚀 Módulos y Funcionalidades del Sistema
-
-![Mapa de Funcionalidades del Sistema](./docs/images/22_features_mapping.jpg)
 
 ### 0. 🛡️ Arquitectura Multi-Equipo y Multi-División
 - **Aislamiento Seguro de Datos:** Soporte nativo para la coexistencia de múltiples equipos, clubes o categorías (Open, Femenino, Mixto, Master) en una sola instancia.
@@ -158,8 +109,6 @@ Panel exclusivo para la Administración. Desde aquí se aprueban las solicitudes
 
 ## 👥 Matriz de Roles y Permisos (RBAC)
 
-![Roles de Usuario del Sistema](./docs/images/23_system_user_roles.jpg)
-
 | Rol | Roster | Eventos / Torneos | Anotaciones en Vivo | Finanzas | Jugadas / Playbook | Admin Usuarios / Equipos |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **admin** | Total | Total | Total | Total | Total | Total |
@@ -170,16 +119,10 @@ Panel exclusivo para la Administración. Desde aquí se aprueban las solicitudes
 | **treasurer** | Lectura | Lectura | Lectura | Total | Lectura | No |
 | **marketing** | Lectura | Lectura | Lectura | No | Lectura | No |
 | **player** | Edición Propia | Lectura / RSVP | Lectura | No | Lectura | No |
-| **guest** | Lectura Demo | Lectura Demo | Lectura Demo | Lectura Demo | Lectura Demo | No |
 
 ---
 
 ## 🛠️ Stack Tecnológico
-
-<div align="center">
-  <img src="./docs/images/20_web_application_architecture.jpg" width="48%" alt="Arquitectura Técnica Web" />
-  <img src="./docs/images/21_arquitectura_tecnica.jpg" width="48%" alt="Arquitectura en la Nube" />
-</div>
 
 | Capa | Tecnología |
 | :--- | :--- |

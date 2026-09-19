@@ -40,7 +40,6 @@ export default function Events() {
   const toasts = useToast()
   const navigate = useNavigate()
   const { user, hasPermission, hasRole } = useAuth()
-  const isGuest = hasRole('guest') || user?.email === 'guest@sigedivo.com'
   const canManageEvents = hasPermission('events:manage') || hasRole('admin') || hasRole('captain') || hasRole('coach') || hasRole('directiva')
 
   const canUserAnnotate = (e: EventItem) => {
@@ -335,54 +334,58 @@ export default function Events() {
                         )}
                       </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-                      <span className={`text-xs px-2.5 py-1 rounded-full whitespace-nowrap font-medium ${statusBadge[e.status]}`}>{STATUS_LABELS[e.status]}</span>
-                      <div className="text-xs sm:text-sm text-gray-600 whitespace-nowrap font-medium">{e.startsAt ? new Date(e.startsAt).toLocaleString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</div>
+                    <div className="flex flex-col sm:items-end gap-2 shrink-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs px-2.5 py-0.5 rounded-full whitespace-nowrap font-medium ${statusBadge[e.status]}`}>{STATUS_LABELS[e.status]}</span>
+                        <div className="text-xs text-gray-500 whitespace-nowrap font-medium">{e.startsAt ? new Date(e.startsAt).toLocaleString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</div>
+                      </div>
                       
-                      {canUserAnnotate(e) && (
-                        <button 
-                          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-lg text-xs sm:text-sm whitespace-nowrap font-bold transition shadow-xs flex items-center gap-1" 
-                          onClick={() => setAnnotEvent(e)}
-                          title="Abrir Pizarra y Anotador en Vivo"
-                        >
-                          <span>🥏</span>
-                          <span>Anotaciones</span>
-                        </button>
-                      )}
-
-                      {canManageEvents && (
-                        <>
-                          {(e.type === 'TOURNAMENT' || e.type === 'FULL_DAY_OPEN' || e.type === 'FULL_DAY_MIXTO' || e.type === 'MATCH' || e.type === 'AMISTOSO') && (
-                            <button
-                              className="bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded-lg text-xs sm:text-sm whitespace-nowrap font-bold transition shadow-xs flex items-center gap-1"
-                              onClick={() => setMesaTecnicaTarget(e)}
-                              title="Designar responsables de Mesa Técnica, planillero, cronometrista y relevos"
-                            >
-                              <span>📋</span>
-                              <span>Mesa Técnica</span>
-                            </button>
-                          )}
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        {canUserAnnotate(e) && (
                           <button 
-                            className="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-lg text-xs sm:text-sm whitespace-nowrap font-semibold transition" 
-                            onClick={() => setRescheduleTarget(e)}
-                            title="Modificar horario, retrasos o contingencias climáticas rápidamente"
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-lg text-xs whitespace-nowrap font-bold transition shadow-xs flex items-center gap-1 active:scale-95" 
+                            onClick={() => setAnnotEvent(e)}
+                            title="Abrir Pizarra y Anotador en Vivo"
                           >
-                            ⏱️ Horario
+                            <span>🥏</span>
+                            <span>Anotaciones</span>
                           </button>
-                          <button className="text-teal-700 hover:underline text-xs sm:text-sm whitespace-nowrap font-medium" onClick={() => setAttEvent(e)}>📋 Asistencia</button>
-                          <button className="text-gray-700 hover:underline text-xs sm:text-sm whitespace-nowrap font-medium" onClick={() => setEditTarget(e)}>Editar</button>
-                          <button className="text-red-600 hover:underline text-xs sm:text-sm whitespace-nowrap font-medium" onClick={() => {
-                            setConfirmState({
-                              eventId: e.id,
-                              title: 'Confirmar eliminación',
-                              message: `¿Eliminar evento "${e.title}"? Esta acción no se puede deshacer.`,
-                              onYes: async () => {
-                                await deleteEvent(e.id)
-                              }
-                            })
-                          }}>Eliminar</button>
-                        </>
-                      )}
+                        )}
+
+                        {canManageEvents && (
+                          <>
+                            {(e.type === 'TOURNAMENT' || e.type === 'FULL_DAY_OPEN' || e.type === 'FULL_DAY_MIXTO' || e.type === 'MATCH' || e.type === 'AMISTOSO') && (
+                              <button
+                                className="bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded-lg text-xs whitespace-nowrap font-bold transition shadow-xs flex items-center gap-1 active:scale-95"
+                                onClick={() => setMesaTecnicaTarget(e)}
+                                title="Designar responsables de Mesa Técnica, planillero, cronometrista y relevos"
+                              >
+                                <span>📋</span>
+                                <span>Mesa</span>
+                              </button>
+                            )}
+                            <button 
+                              className="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-semibold transition" 
+                              onClick={() => setRescheduleTarget(e)}
+                              title="Modificar horario, retrasos o contingencias climáticas rápidamente"
+                            >
+                              ⏱️ Horario
+                            </button>
+                            <button className="bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-semibold transition" onClick={() => setAttEvent(e)}>Asistencia</button>
+                            <button className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition" onClick={() => setEditTarget(e)}>Editar</button>
+                            <button className="text-red-600 hover:bg-red-50 px-2 py-1 rounded-lg text-xs whitespace-nowrap font-medium transition" onClick={() => {
+                              setConfirmState({
+                                eventId: e.id,
+                                title: 'Confirmar eliminación',
+                                message: `¿Eliminar evento "${e.title}"? Esta acción no se puede deshacer.`,
+                                onYes: async () => {
+                                  await deleteEvent(e.id)
+                                }
+                              })
+                            }}>Eliminar</button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                   {e.type === 'TOURNAMENT' && e.children && e.children.length > 0 && (
@@ -403,22 +406,25 @@ export default function Events() {
                                 </button>
                                 <div className="text-xs text-gray-500 mt-0.5">{typeLabel[child.type] || child.type}</div>
                               </div>
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${statusBadge[child.status]}`}>{STATUS_LABELS[child.status]}</span>
-                                <div className="text-xs text-gray-600 whitespace-nowrap">{child.startsAt ? new Date(child.startsAt).toLocaleString() : ''}</div>
+                              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap font-medium ${statusBadge[child.status]}`}>{STATUS_LABELS[child.status]}</span>
+                                <div className="text-xs text-gray-500 whitespace-nowrap">{child.startsAt ? new Date(child.startsAt).toLocaleString('es-ES', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</div>
+                                {canUserAnnotate(child as any) && (
+                                  <button className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-md text-xs whitespace-nowrap font-bold transition flex items-center gap-1" onClick={() => setAnnotEvent(child as any)}>
+                                    <span>🥏</span>
+                                    <span>Anotar</span>
+                                  </button>
+                                )}
                                 {canManageEvents && (
                                   <>
                                     <button 
-                                      className="text-amber-700 hover:underline text-xs whitespace-nowrap font-medium" 
+                                      className="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-md text-xs whitespace-nowrap font-medium" 
                                       onClick={() => setRescheduleTarget(child as any)}
                                     >
                                       ⏱️ Horario
                                     </button>
-                                    <button className="text-teal-700 hover:underline text-xs whitespace-nowrap" onClick={() => setAttEvent(child as any)}>Asistencia</button>
+                                    <button className="bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 px-2 py-0.5 rounded-md text-xs whitespace-nowrap font-medium" onClick={() => setAttEvent(child as any)}>Asistencia</button>
                                   </>
-                                )}
-                                {canUserAnnotate(child as any) && (
-                                  <button className="text-purple-700 hover:underline text-xs whitespace-nowrap font-medium" onClick={() => setAnnotEvent(child as any)}>🥏 Anotaciones</button>
                                 )}
                               </div>
                             </div>
@@ -1012,7 +1018,6 @@ function AnnotationsModal({ eventItem, onClose }: { eventItem: EventItem; onClos
   const toasts = useToast()
   const navigate = useNavigate()
   const { user, hasPermission, hasRole } = useAuth()
-  const isGuest = hasRole('guest') || user?.email === 'guest@sigedivo.com'
   
   const canManage = (() => {
     if (hasRole('admin') || hasRole('directiva') || hasPermission('events:manage') || hasPermission('annotations:manage')) return true;

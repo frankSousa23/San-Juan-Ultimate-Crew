@@ -396,9 +396,9 @@ export default function Resources() {
           }}>Crear</button>
         </div>
       </div>
-      ) : (
-        <div className="bg-yellow-50 text-yellow-800 border border-yellow-200 rounded p-3">
-          Inicia sesión para crear recursos y subir archivos.
+      ) : authed ? null : (
+        <div className="bg-amber-50 text-amber-800 border border-amber-200 rounded-lg p-3 text-xs sm:text-sm">
+          Inicia sesión con credenciales autorizadas para gestionar y publicar recursos del club.
         </div>
       )}
 

@@ -253,61 +253,138 @@ export default function Rivals() {
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto -mx-4 sm:mx-0">
-          <div className="inline-block min-w-full align-middle sm:px-0">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left px-2 sm:px-4 py-2">Rival</th>
-                  <th className="text-left px-2 sm:px-4 py-2 hidden md:table-cell">Fortalezas</th>
-                  <th className="text-left px-2 sm:px-4 py-2 hidden md:table-cell">Debilidades</th>
-                  <th className="text-left px-2 sm:px-4 py-2 hidden sm:table-cell">Último encuentro</th>
-                  <th className="text-left px-2 sm:px-4 py-2 hidden lg:table-cell">Notas</th>
-                  <th className="px-2 sm:px-4 py-2 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(it => (
-                  <tr key={it.id} className="border-t hover:bg-gray-50/70 transition-colors">
-                    <td className="px-2 sm:px-4 py-2 font-medium">
-                      <button onClick={() => setDetailRival(it)} className="text-left text-indigo-900 hover:text-indigo-600 hover:underline">
-                        {it.name}
+        {/* Vista Móvil (Cards) */}
+        <div className="md:hidden divide-y divide-gray-100">
+          {filtered.map(it => (
+            <div key={`card-${it.id}`} className="p-4 space-y-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <button
+                  onClick={() => setDetailRival(it)}
+                  className="font-bold text-base text-indigo-950 hover:text-indigo-600 text-left"
+                >
+                  {it.name}
+                </button>
+                {it.lastPlayedAt && (
+                  <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
+                    {new Date(it.lastPlayedAt).toLocaleDateString('es-ES', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                )}
+              </div>
+
+              {(it.strengths || it.weaknesses) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {it.strengths && (
+                    <div className="bg-emerald-50 text-emerald-800 p-2 rounded-lg border border-emerald-100">
+                      <span className="font-bold block text-[10px] uppercase tracking-wider text-emerald-600">Fortalezas</span>
+                      <p className="line-clamp-2 mt-0.5">{it.strengths}</p>
+                    </div>
+                  )}
+                  {it.weaknesses && (
+                    <div className="bg-rose-50 text-rose-800 p-2 rounded-lg border border-rose-100">
+                      <span className="font-bold block text-[10px] uppercase tracking-wider text-rose-600">Debilidades</span>
+                      <p className="line-clamp-2 mt-0.5">{it.weaknesses}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {it.notes && (
+                <p className="text-xs text-slate-500 line-clamp-2 italic">
+                  "{it.notes}"
+                </p>
+              )}
+
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <button
+                  className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg px-2.5 py-1 font-medium transition"
+                  onClick={() => setDetailRival(it)}
+                >
+                  Ficha
+                </button>
+                <button
+                  className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg px-2.5 py-1 font-medium transition"
+                  onClick={() => openStats(it)}
+                >
+                  Estadísticas
+                </button>
+                {hasPermission('rivals:manage') && (
+                  <>
+                    <button 
+                      className="text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg px-2.5 py-1 font-medium transition" 
+                      onClick={() => openEdit(it)}
+                    >
+                      Editar
+                    </button>
+                    <button 
+                      className="text-xs text-rose-600 hover:bg-rose-50 rounded-lg px-2.5 py-1 font-medium transition" 
+                      onClick={() => remove(it.id)}
+                    >
+                      Eliminar
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <div className="p-6 text-center text-gray-500 text-sm">Sin rivales registrados.</div>
+          )}
+        </div>
+
+        {/* Vista Escritorio (Tabla) */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50 text-gray-700">
+              <tr>
+                <th className="text-left px-4 py-2.5">Rival</th>
+                <th className="text-left px-4 py-2.5">Fortalezas</th>
+                <th className="text-left px-4 py-2.5">Debilidades</th>
+                <th className="text-left px-4 py-2.5">Último encuentro</th>
+                <th className="text-left px-4 py-2.5">Notas</th>
+                <th className="px-4 py-2.5 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(it => (
+                <tr key={it.id} className="border-t hover:bg-gray-50/70 transition-colors">
+                  <td className="px-4 py-2.5 font-medium">
+                    <button onClick={() => setDetailRival(it)} className="text-left text-indigo-900 hover:text-indigo-600 hover:underline">
+                      {it.name}
+                    </button>
+                  </td>
+                  <td className="px-4 py-2.5 text-gray-700 max-w-xs truncate">{it.strengths || '-'}</td>
+                  <td className="px-4 py-2.5 text-gray-700 max-w-xs truncate">{it.weaknesses || '-'}</td>
+                  <td className="px-4 py-2.5 whitespace-nowrap text-xs text-gray-600">{it.lastPlayedAt ? new Date(it.lastPlayedAt).toLocaleDateString() : '-'}</td>
+                  <td className="px-4 py-2.5 text-gray-500 max-w-xs truncate">{it.notes || '-'}</td>
+                  <td className="px-4 py-2.5 text-right">
+                    <div className="flex flex-wrap items-center gap-1.5 justify-end">
+                      <button
+                        className="text-xs text-gray-600 hover:text-indigo-600 border border-gray-200 rounded-lg px-2 py-1 whitespace-nowrap"
+                        onClick={() => setDetailRival(it)}
+                      >
+                        Ficha
                       </button>
-                    </td>
-                    <td className="px-2 sm:px-4 py-2 hidden md:table-cell text-gray-700 max-w-xs truncate">{it.strengths || '-'}</td>
-                    <td className="px-2 sm:px-4 py-2 hidden md:table-cell text-gray-700 max-w-xs truncate">{it.weaknesses || '-'}</td>
-                    <td className="px-2 sm:px-4 py-2 whitespace-nowrap hidden sm:table-cell text-xs text-gray-600">{it.lastPlayedAt ? new Date(it.lastPlayedAt).toLocaleDateString() : '-'}</td>
-                    <td className="px-2 sm:px-4 py-2 hidden lg:table-cell text-gray-500 max-w-xs truncate">{it.notes || '-'}</td>
-                    <td className="px-2 sm:px-4 py-2 text-right">
-                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 justify-end">
-                        <button
-                          className="text-xs text-gray-600 hover:text-indigo-600 border border-gray-200 rounded px-1.5 py-0.5 whitespace-nowrap"
-                          onClick={() => setDetailRival(it)}
-                        >
-                          Ficha
-                        </button>
-                        <button
-                          className="text-xs text-slate-700 hover:text-indigo-700 border border-slate-200 rounded px-1.5 py-0.5 whitespace-nowrap bg-slate-50"
-                          onClick={() => openStats(it)}
-                        >
-                          Estadísticas
-                        </button>
-                        {hasPermission('rivals:manage') && (
-                          <>
-                            <button className="text-indigo-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => openEdit(it)}>Editar</button>
-                            <button className="text-red-700 hover:underline text-xs sm:text-sm whitespace-nowrap" onClick={() => remove(it.id)}>Eliminar</button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      <button
+                        className="text-xs text-slate-700 hover:text-indigo-700 border border-slate-200 rounded-lg px-2 py-1 whitespace-nowrap bg-slate-50"
+                        onClick={() => openStats(it)}
+                      >
+                        Estadísticas
+                      </button>
+                      {hasPermission('rivals:manage') && (
+                        <>
+                          <button className="text-indigo-700 hover:underline text-xs whitespace-nowrap px-1" onClick={() => openEdit(it)}>Editar</button>
+                          <button className="text-red-700 hover:underline text-xs whitespace-nowrap px-1" onClick={() => remove(it.id)}>Eliminar</button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
               {filtered.length === 0 && (
                 <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-500">Sin rivales.</td></tr>
               )}
             </tbody>
           </table>
-          </div>
         </div>
         <div className="p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
           <div>

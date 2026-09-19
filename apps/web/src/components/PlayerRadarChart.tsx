@@ -80,12 +80,12 @@ export default function PlayerRadarChart({
   const benchmarkPoints = benchmarkData ? getPolygonPoints(benchmarkData) : null
 
   return (
-    <div className={`flex flex-col items-center select-none ${className}`}>
+    <div className={`flex flex-col items-center select-none w-full max-w-full overflow-hidden ${className}`}>
       <svg
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
-        className="overflow-visible"
+        className="overflow-visible max-w-full h-auto"
       >
         <defs>
           <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">

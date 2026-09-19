@@ -32,7 +32,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function loadFinanceSummary() {
-      if (!hasPermission('finance:view') && !hasRole('admin') && !hasRole('guest')) {
+      if (!hasPermission('finance:view') && !hasRole('admin')) {
         setFinanceLoading(false)
         return
       }
@@ -65,11 +65,10 @@ export default function Dashboard() {
 
   const isAdmin = hasRole('admin')
   const isPlayer = hasRole('player') || !!user?.playerId
-  const isGuest = hasRole('guest') || user?.email === 'guest@sigedivo.com'
   const isCaptain = hasRole('captain')
   const isCoach = hasRole('coach')
   const isTreasurer = hasRole('treasurer')
-  const canViewFinance = hasPermission('finance:view') || isAdmin || isGuest
+  const canViewFinance = hasPermission('finance:view') || isAdmin
   const canViewMessages = hasPermission('communications:view') || isAdmin || isPlayer
 
   // Identificar el partido más próximo o en curso para la Live Hero Card
@@ -106,48 +105,6 @@ export default function Dashboard() {
           </div>
         )}
       </div>
-
-      {/* 🌟 Banner de Modo Invitado */}
-      {isGuest && (
-        <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 rounded-2xl shadow-md p-5 sm:p-6 text-white">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">🌟</span>
-                <span className="text-xs font-extrabold uppercase bg-white/20 px-2.5 py-0.5 rounded-full backdrop-blur-sm">
-                  Modo Invitado / Demostración 1-Clic
-                </span>
-              </div>
-              <h2 className="text-lg sm:text-xl font-bold">¡Explora el ecosistema completo de SIGEDIVO!</h2>
-              <p className="text-xs sm:text-sm text-emerald-100 max-w-2xl leading-relaxed">
-                Estás navegando con datos de muestra en vivo. Consulta el <strong>Roster</strong>, revisa el <strong>Calendario</strong>, simula jugadas en el <strong>Playbook</strong> o descarga el <strong>Manual Oficial en PDF</strong>.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => setShowManualModal(true)}
-                className="px-3.5 py-2 bg-white text-emerald-900 hover:bg-emerald-50 active:scale-95 font-bold text-xs sm:text-sm rounded-xl shadow transition"
-              >
-                📘 Ver Manual
-              </button>
-              <button
-                onClick={() => {
-                  setIsDownloadingPdf(true)
-                  try {
-                    downloadSystemManualPdf()
-                  } finally {
-                    setTimeout(() => setIsDownloadingPdf(false), 800)
-                  }
-                }}
-                disabled={isDownloadingPdf}
-                className="px-3.5 py-2 bg-emerald-950/40 hover:bg-emerald-950/60 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl border border-emerald-400/30 transition"
-              >
-                {isDownloadingPdf ? 'Generando...' : '📥 Descargar PDF'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ⚡ Barra de Acciones Rápidas (Quick Action Bar) */}
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
@@ -241,7 +198,7 @@ export default function Dashboard() {
       {/* 📊 Métricas y Widgets Principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {/* Jugadores */}
-        {(hasPermission('roster:view') || isAdmin || isPlayer || isGuest) && (
+        {(hasPermission('roster:view') || isAdmin || isPlayer) && (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">Atletas en Roster</h3>
@@ -259,7 +216,7 @@ export default function Dashboard() {
         )}
 
         {/* Eventos */}
-        {(hasPermission('events:view') || isAdmin || isPlayer || isGuest) && (
+        {(hasPermission('events:view') || isAdmin || isPlayer) && (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">Calendario & Eventos</h3>
