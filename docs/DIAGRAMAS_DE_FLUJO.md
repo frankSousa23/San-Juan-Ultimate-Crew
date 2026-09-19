@@ -1,5 +1,5 @@
 # 📊 Diagramas de Flujo Oficiales del Sistema — SIGEDIVO
-### Sistema de Gestión para el Disco Volador (San Juan Ultimate Crew)
+### Sistema de Gestión para el Disco Volador — Plataforma Oficial y White-Label
 
 Este documento unifica y formaliza todos los **diagramas de flujo de trabajo, arquitectura, lógica de negocio y seguridad** de la plataforma SIGEDIVO. Está optimizado para renderizarse automáticamente en GitHub, VS Code, editores Markdown compatibles con Mermaid y en el visualizador HTML interactivo incluido en [`docs/diagramas_flujo_visualizador.html`](./diagramas_flujo_visualizador.html).
 

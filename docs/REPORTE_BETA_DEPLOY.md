@@ -1,7 +1,7 @@
 # 🥏 SIGEDIVO — Reporte Oficial de Certificación E2E y Despliegue en Producción
 
 **Arquitectura y Despliegue:** Autohospedable White-Label (Docker Compose / VPS / PaaS)  
-**Autor:** Frank Sousa (`frankSousa23`) & San Juan Ultimate Crew  
+**Autor:** Frank Sousa (`frankSousa23`) & SIGEDIVO Contributors  
 **Fecha de Certificación:** 26 de Agosto de 2026  
 **Entorno de Despliegue:** Seenode PaaS (Node.js 22 LTS, PostgreSQL 16, Vite 6 + React 18 SPA)  
 **Resultado Global E2E:** 🟢 **34/34 Casos de Prueba Aprobados (100% PASS)** en **12.13s**  

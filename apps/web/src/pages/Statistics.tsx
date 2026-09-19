@@ -384,7 +384,7 @@ export default function Statistics() {
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  🛡️ vs Equipo SJUC
+                  🛡️ vs Promedio Equipo
                 </button>
                 <button
                   onClick={() => setRadarBenchmark('HANDLER')}
@@ -431,7 +431,7 @@ export default function Statistics() {
                       ? CANONICAL_HANDLER_PROFILE.radarProfile
                       : CANONICAL_CUTTER_PROFILE.radarProfile
                   }
-                  dataLabel={isPlayer ? (user?.name?.split(' ')[0] || 'Mi Perfil') : 'Equipo SJUC'}
+                  dataLabel={isPlayer ? (user?.name?.split(' ')[0] || 'Mi Perfil') : 'Promedio Equipo'}
                   benchmarkLabel={
                     radarBenchmark === 'TEAM' ? 'Media Equipo' :
                     radarBenchmark === 'HANDLER' ? 'Patrón Handler' : 'Patrón Cutter'

@@ -340,7 +340,7 @@ export default function Dashboard() {
                   : CANONICAL_CUTTER_PROFILE.radarProfile
               }
               benchmarkData={activeRoleView !== 'TEAM' ? CANONICAL_TEAM_RADAR : undefined}
-              dataLabel={activeRoleView === 'TEAM' ? 'Equipo SJUC' : activeRoleView === 'HANDLER' ? 'Handlers' : 'Cutters'}
+              dataLabel={activeRoleView === 'TEAM' ? 'Promedio Equipo' : activeRoleView === 'HANDLER' ? 'Handlers' : 'Cutters'}
               benchmarkLabel="Promedio Plantilla"
               size={300}
             />

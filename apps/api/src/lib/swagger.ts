@@ -5,11 +5,11 @@ const options: swaggerJsdoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'SIGEDIVO (Sistema de Gestión para el Disco Volador) — API Oficial del Disco Volador',
-      version: '1.0.0',
+      title: 'SIGEDIVO — API Oficial del Disco Volador',
+      version: '1.4.0',
       description: 'API REST para la gestión deportiva, estadísticas en vivo, pizarra táctica de torneos, finanzas y administración de clubes de Ultimate Frisbee / Disco Volador.\n\n**Autor:** Frank Sousa (`frankSousa23`) — San Juan de los Morros, Estado Guárico, Venezuela.\n**Impulsando:** Asociación Guariqueña del Disco Volador (AGDV) | En apoyo a la Federación del Disco Volador de Venezuela (FDVV) y la Asociación Aragüeña del Disco Volador (AADV).',
       contact: {
-        name: 'Frank Sousa (SIGEDIVO (Sistema de Gestión para el Disco Volador))',
+        name: 'Frank Sousa (SIGEDIVO)',
         url: 'https://github.com/frankSousa23/San-Juan-Ultimate-Crew',
       },
       license: {
@@ -131,9 +131,10 @@ const options: swaggerJsdoc.Options = {
             },
             roles: {
               type: 'array',
-              items: { type: 'string', enum: ['admin', 'captain', 'coach', 'treasurer', 'player', 'guest'] },
+              items: { type: 'string', enum: ['admin', 'directiva', 'captain', 'coach', 'annotator', 'treasurer', 'marketing', 'player', 'guest'] },
               description: 'Roles asignados al usuario en la matriz RBAC',
             },
+            teamId: { type: 'integer', nullable: true, description: 'ID del equipo al que pertenece el usuario' },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
           },
@@ -276,7 +277,33 @@ const options: swaggerJsdoc.Options = {
           type: 'object',
           properties: {
             id: { type: 'integer' },
-            name: { type: 'string', enum: ['admin', 'captain', 'coach', 'treasurer', 'player', 'guest'] },
+            name: { type: 'string', enum: ['admin', 'directiva', 'captain', 'coach', 'annotator', 'treasurer', 'marketing', 'player', 'guest'] },
+            createdAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        Team: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            name: { type: 'string' },
+            tag: { type: 'string', nullable: true },
+            categories: { type: 'string', nullable: true },
+            notes: { type: 'string', nullable: true },
+            color: { type: 'string', nullable: true },
+            logoUrl: { type: 'string', nullable: true },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        Feedback: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            name: { type: 'string', nullable: true },
+            email: { type: 'string', nullable: true },
+            category: { type: 'string' },
+            message: { type: 'string' },
+            userId: { type: 'integer', nullable: true },
             createdAt: { type: 'string', format: 'date-time' },
           },
         },
@@ -323,11 +350,13 @@ const options: swaggerJsdoc.Options = {
       { name: 'Messages', description: 'Mensajería en Tiempo Real' },
       { name: 'News', description: 'Noticias Oficiales y Comunicados del Club' },
       { name: 'Resources', description: 'Recursos Informativos, Documentos y Reglamento WFDF' },
+      { name: 'Teams', description: 'Gestión de Equipos, Categorías, Colores Institucionales y Multi-Tenancy' },
+      { name: 'Feedback', description: 'Buzón de Sugerencias, Reporte de Incidencias y Atención al Usuario' },
       { name: 'Audit', description: 'Trazabilidad y Logs de Auditoría del Sistema' },
       { name: 'Health', description: 'Monitoreo de Estado del Servidor y Base de Datos' },
     ],
   },
-  apis: ['./src/routes/*.ts'],
+  apis: ['./src/routes/*.ts', './src/routes/*.js', './apps/api/src/routes/*.ts'],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);

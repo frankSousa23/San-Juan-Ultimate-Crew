@@ -23,7 +23,7 @@ Al ejecutar el seeder (`npm run prisma:seed`), el sistema se inicializa con el s
 - **Atletas Pendientes de Aprobación:** `jugador3` (Sofía) y `jugador4` (Miguel)
 
 ### Roster Oficial y Multi-Equipo
-Los jugadores están divididos entre equipos (*San Juan Ultimate Crew - Open*, *San Juan Ultimate Crew - Femenino*) y asignados a posiciones oficiales de Ultimate: *Handlers*, *Cutters* o *Hybrids*.
+Los jugadores están divididos entre equipos (*División Open*, *División Femenina*, *División Mixta*) y asignados a posiciones oficiales de Ultimate: *Handlers*, *Cutters* o *Hybrids*.
 
 ### Eventos Creados
 - **Evento 1 (Completado):** Entrenamiento Selección O-Line.
