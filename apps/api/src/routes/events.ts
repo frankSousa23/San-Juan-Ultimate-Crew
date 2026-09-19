@@ -26,6 +26,8 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { requirePermission } from './auth.js';
 import { z } from 'zod';
+import jwt from 'jsonwebtoken';
+import { env } from '../lib/env.js';
 import { validateBody, validateParams } from '../middleware/validation.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { createAuditHelper } from '../lib/audit.js';
@@ -63,16 +65,28 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     return success(res, GUEST_EVENTS);
   }
 
-  const u = (req as any).user;
-  const isAdmin = u?.roles?.includes('admin') || u?.roles?.includes('directiva');
+  let u = (req as any).user;
+  if (!u && req.headers.authorization) {
+    try {
+      const [, token] = req.headers.authorization.split(' ');
+      if (token) {
+        u = jwt.verify(token, env.JWT_SECRET) as any;
+        (req as any).user = u;
+      }
+    } catch {
+      // Ignorar token no válido para navegación pública
+    }
+  }
+
+  const isAdmin = !u || u?.roles?.includes('admin') || u?.roles?.includes('directiva') || (!u?.teamId && !u?.playerId);
   const userTeamId = u?.teamId;
   const playerId = u?.playerId;
 
   const whereClause: any = {};
-  if (!isAdmin) {
+  if (!isAdmin && userTeamId) {
     whereClause.OR = [
-      { teamId: userTeamId || -1 },
-      { awayTeamId: userTeamId || -1 },
+      { teamId: userTeamId },
+      { awayTeamId: userTeamId },
       { teamId: null }
     ];
     if (playerId) {

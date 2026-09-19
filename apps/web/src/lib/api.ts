@@ -840,3 +840,27 @@ export const teamsApi = {
   },
 }
 
+// Maintenance & Onboarding API
+export interface MaintenanceStatus {
+  playerCount: number
+  eventCount: number
+  transactionCount: number
+  isClean: boolean
+}
+
+export const maintenanceApi = {
+  getStatus: async (): Promise<MaintenanceStatus> => {
+    const { data } = await http.get('/api/admin/maintenance/status')
+    return (data as any)?.data || data
+  },
+  cleanSampleData: async (): Promise<{ message: string; deletedCounts: Record<string, number> }> => {
+    const { data } = await http.post('/api/admin/maintenance/clean-sample-data', {})
+    return (data as any)?.data || data
+  },
+  seedSampleData: async (): Promise<{ message: string }> => {
+    const { data } = await http.post('/api/admin/maintenance/seed-sample-data', {})
+    return (data as any)?.data || data
+  },
+}
+
+

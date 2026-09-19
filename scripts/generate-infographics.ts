@@ -1,4 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+import fs from 'fs'
+import path from 'path'
+import { execSync } from 'child_process'
+
+const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
   <defs>
     <!-- Gradients -->
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -422,4 +426,17 @@
     </g>
   </g>
 
-</svg>
+</svg>`
+
+fs.writeFileSync('apps/web/public/revolucion_digital_ultimate.svg', svgContent, 'utf8')
+fs.writeFileSync('docs/images/revolucion_digital_del_ultimate.svg', svgContent, 'utf8')
+console.log('SVG files created successfully')
+
+// Now convert SVG to PNG using convert command
+try {
+  execSync('convert -density 150 apps/web/public/revolucion_digital_ultimate.svg apps/web/public/SIGEDIVO__Gestión_de_Disco_Volador.png')
+  execSync('cp apps/web/public/SIGEDIVO__Gestión_de_Disco_Volador.png docs/images/SIGEDIVO__Gestión_de_Disco_Volador.png')
+  console.log('PNG files generated successfully via ImageMagick')
+} catch (err) {
+  console.error('Convert failed:', err.message)
+}

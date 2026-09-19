@@ -63,20 +63,46 @@ export default function About() {
           </div>
         </div>
 
-        {/* Botón Descarga de Guía PDF */}
-        <div className="mt-6 pt-6 border-t border-white/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h4 className="font-bold text-white text-base">📄 Documentación Oficial y Guía de Roles en PDF</h4>
-            <p className="text-xs text-blue-200">Descarga el manual completo de SIGEDIVO: roles, permisos, matriz de vistas, flujos de aprobación y buenas prácticas.</p>
+        {/* Botones Descarga de Documentación y Presentación Ejecutiva */}
+        <div className="mt-6 pt-6 border-t border-white/20 space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h4 className="font-bold text-white text-base">📄 Documentación Oficial y Guía de Roles en PDF</h4>
+              <p className="text-xs text-blue-200">Descarga el manual completo de SIGEDIVO: roles, permisos, matriz de vistas, flujos de aprobación y buenas prácticas.</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-slate-900 font-bold px-5 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition text-sm whitespace-nowrap cursor-pointer"
+            >
+              <span>📥</span> {isDownloadingPdf ? 'Generando PDF...' : 'Descargar Manual PDF'}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleDownloadPdf}
-            disabled={isDownloadingPdf}
-            className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-slate-900 font-bold px-5 py-2.5 rounded-xl shadow-lg hover:shadow-xl transition text-sm whitespace-nowrap cursor-pointer"
-          >
-            <span>📥</span> {isDownloadingPdf ? 'Generando PDF...' : 'Descargar PDF'}
-          </button>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-white/10">
+            <div>
+              <h4 className="font-bold text-emerald-300 text-base">📊 Presentación Ejecutiva Oficial (15 Diapositivas)</h4>
+              <p className="text-xs text-blue-200">Láminas de arquitectura multi-equipo, 3 pilares, mesa técnica, finanzas, RBAC y certificación en producción.</p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <a
+                href="/presentacion.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-bold px-4 py-2.5 rounded-xl border border-white/20 transition text-sm whitespace-nowrap"
+              >
+                <span>🖥️</span> Ver Online
+              </a>
+              <a
+                href="/SIGEDIVO_Presentacion_Ejecutiva_2026.pdf"
+                download="SIGEDIVO_Presentacion_Ejecutiva_2026.pdf"
+                className="inline-flex items-center gap-2 bg-emerald-400 hover:bg-emerald-300 text-slate-900 font-bold px-4 py-2.5 rounded-xl shadow-lg transition text-sm whitespace-nowrap"
+              >
+                <span>📥</span> Descargar PDF
+              </a>
+            </div>
+          </div>
         </div>
       </div>
 

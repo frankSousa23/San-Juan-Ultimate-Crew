@@ -41,7 +41,7 @@ flowchart TD
         B2{"¿Tiene Cuenta?"}:::decision
         B3["Formulario Registro (/register)"]:::frontLayer
         B4["Formulario Login (/login)"]:::frontLayer
-        B5["Modo Demo / Invitado (1-Clic)"]:::frontLayer
+        B5["Acceso y Exploración Inicial"]:::frontLayer
         B6["Guard de Rutas & AuthContext (JWT + Rol)"]:::frontLayer
         B7["Panel Principal (Dashboard General)"]:::frontLayer
     end

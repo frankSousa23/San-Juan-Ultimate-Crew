@@ -43,11 +43,23 @@ Este proyecto es software libre y de código abierto bajo la **[Licencia MIT](LI
 
 ---
 
-## 🥏 Infografía Oficial: Arquitectura e Identidad del Sistema
+## 🥏 Infografía Oficial y Presentación Ejecutiva
 
-![SIGEDIVO: La Revolución Digital del Ultimate Frisbee](./docs/images/revolucion_digital_del_ultimate.svg)
+![SIGEDIVO: La Revolución Digital en la Gestión del Ultimate Frisbee](./docs/images/SIGEDIVO__Gestión_de_Disco_Volador.png)
 
-> **Contexto del Proyecto:** Infografía oficial que sintetiza la identidad, propósito white-label y social, módulos de gestión deportiva en campo, gobernanza RBAC y el stack tecnológico de SIGEDIVO para la profesionalización del Ultimate Frisbee en Venezuela y Latinoamérica.
+> **Contexto del Proyecto:** Infografía oficial de alta resolución y presentación ejecutiva que sintetizan la identidad, propósito white-label, módulos de gestión deportiva en campo, gobernanza RBAC y el stack tecnológico de SIGEDIVO para la profesionalización del Ultimate Frisbee en Venezuela y el mundo.
+
+### 📚 Recursos Ejecutivos Descargables
+- **📊 Presentación Ejecutiva Oficial (15 Diapositivas):** **[Descargar PDF Oficial (15 Láminas)](./docs/SIGEDIVO_Presentacion_Ejecutiva_2026.pdf)** | **[Ver Diapositivas Online](./docs/presentacion_sigedivo_publico.html)**
+- **🖼️ Infografía de Arquitectura e Identidad:** **[Descargar Imagen PNG Ultra-HD](./docs/images/SIGEDIVO__Gestión_de_Disco_Volador.png)** | **[Ver SVG Vectorial](./docs/images/revolucion_digital_del_ultimate.svg)**
+- **📄 Manual Completo de Operaciones y Roles:** **[Descargar Manual PDF](./apps/web/public/SIGEDIVO_Manual_de_Usuario_y_Roles.pdf)**
+
+---
+
+### 🏛️ Tres Pilares Fundamentales de Implementación
+1. **🎨 Identidad White-Label:** Tu marca, tus colores, tu escudo. Diseñado para que cada club (ej. *El Pueblito Ultimate Club*) o asociación (*AGDV*, *AADV*) lo haga completamente suyo.
+2. **🖥️ Despliegue Autohospedable:** Soberanía total de datos. Sin bloqueos de proveedores. Despliégalo en tu propia infraestructura (Docker/VPS) manteniendo el control absoluto de rosters y finanzas.
+3. **🚀 Listo para Producción:** Cero entornos sandbox o datos ficticios obligatorios. Listo desde el día uno para registrar atletas reales, torneos y anotar partidos oficiales.
 
 ---
 
@@ -156,12 +168,20 @@ npm run dev
 
 ---
 
-## 🔐 Control de Acceso y Modo Demostración
+## 🔐 Control de Acceso, Datos de Prueba y Puesta en Marcha
 
-- **Acceso de Demostración (Modo Invitado en 1 Clic):**  
-  En la pantalla de inicio de sesión (`/login`), se incluye un botón de **Acceso Demostrativo en 1 Clic** que permite explorar de forma inmediata el Roster, Calendario, Pizarrón Táctico, Estadísticas, Finanzas y el Manual Oficial sin requerir registro previo ni configuración manual.
+- **Información Inicial de Prueba (Exploración y Verificación):**  
+  Al clonar o desplegar el proyecto, el sistema cuenta con un conjunto sencillo y coherente de datos de prueba (8 atletas de muestra distribuidos en las escuadras oficiales, 1 partido completado con acta de anotaciones en vivo y estadísticas, 1 entrenamiento próximo convocado con RSVP y transacciones financieras). Esto permite a cualquier persona comprobar el flujo completo de datos, transiciones, leaderboards y reportes desde el primer segundo.
+
+- **🧹 Limpieza a Cero en 1 Clic (Para Empezar en Producción):**  
+  Para comenzar a integrar tu club u organización deportiva desde cero, el Administrador puede ingresar al panel de **Administración de Usuarios** (`/admin/usuarios`) o **Monitoreo** (`/admin/monitoring`) y pulsar el botón **"Limpiar Datos y Empezar de Cero"** (o ejecutar en consola `npm run db:clean`). Esta acción elimina todos los atletas de muestra, eventos y registros contables de prueba, dejando la plataforma totalmente en blanco con las cuentas en `$0.00` y lista para cargar la información oficial de tu club. También es posible recargar los datos de prueba en cualquier momento con **"Recargar Datos de Muestra"** (`npm run db:seed`).
+
+- **Credenciales Iniciales de Administración:**  
+  - **Email:** `frankalfonso1988@gmail.com`  
+  - **Contraseña:** `passWORD23`
+
 - **Registro Seguro y Aprobación Administrativa:**  
-  Los nuevos registros de usuarios ingresan en estado `PENDING` para ser validados y asignados a su rol (`admin`, `directiva`, `captain`, `coach`, `annotator`, `treasurer`, `marketing`, `player`) y equipo desde el panel de administración (`/admin/usuarios`).
+  Los nuevos registros de usuarios ingresan en estado `PENDING` para ser validados y asignados a su rol (`admin`, `directiva`, `captain`, `coach`, `annotator`, `treasurer`, `player`) y equipo desde el panel de administración (`/admin/usuarios`).
 
 ---
 

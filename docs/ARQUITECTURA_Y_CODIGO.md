@@ -56,7 +56,7 @@ SIGEDIVO está diseñado bajo una arquitectura **Full-Stack desacoplada y modula
 | `/apps/api/src/routes/` | **Enrutadores REST Modulares:** `teams.ts`, `players.ts`, `events.ts`, `annotations.ts`, `stats.ts`, `auth.ts`, `users.ts`, `transactions.ts`, `accounts.ts`, `categories.ts`, `plays.ts`, `injuries.ts`, `rivals.ts`, `resources.ts`, `channels.ts`, `messages.ts`, `attendance.ts`, `feedback.ts`, `audit.ts`. |
 | `/apps/api/src/middleware/` | **Seguridad y Control:** `auth.ts` (JWT/RBAC), `security.ts` (Rate Limiters, Sanitización), `errorHandler.ts` y `logging.ts`. |
 | `/apps/web/src/App.tsx` | **Enrutador Frontend:** Rutas públicas (`/login`, `/register`), privadas protegidas por rol y modal interactivo de manual. |
-| `/apps/web/src/contexts/AuthContext.tsx` | **Estado Global de Sesión:** Manejo de tokens, inicio de sesión estándar y Modo Invitado (1-Clic), validación de roles (`hasRole`). |
+| `/apps/web/src/contexts/AuthContext.tsx` | **Estado Global de Sesión:** Manejo reactivo de tokens JWT, persistencia local, verificación de sesión y validación de roles (`hasRole`). |
 | `/apps/web/src/features/events/` | **Mesa Técnica y Torneos:** Pizarrón de anotaciones en vivo (`LiveAnnotationsTable.tsx`), registro de puntos táctiles y actas de partido. |
 | `/apps/web/src/pages/Plays.tsx` | **Playbook y Simulador Táctico:** Animación interactiva de formaciones (*Vertical Stack*, *Horizontal Stack*, *Cup 3-3-1*) y pizarra libre. |
 | `/apps/web/src/components/SystemManualModal.tsx` | **Manual del Sistema:** Visualizador interactivo de manual de operaciones, permisos RBAC, diagramas WFDF y exportador en PDF. |

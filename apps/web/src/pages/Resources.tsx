@@ -212,7 +212,7 @@ export default function Resources() {
 
   return (
     <div className="space-y-6">
-      {/* Tarjeta Destacada: Manual del Usuario y Guía de Operaciones SIGEDIVO (PDF Oficial) */}
+      {/* Tarjeta Destacada 1: Manual del Usuario y Guía de Operaciones SIGEDIVO (PDF Oficial) */}
       <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 rounded-2xl shadow-xl border border-blue-900/50 p-5 sm:p-7 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
@@ -259,6 +259,56 @@ export default function Resources() {
             >
               <span>{isDownloadingPdf ? 'Generando PDF...' : '📥 Descargar PDF'}</span>
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Tarjeta Destacada 2: Presentación Ejecutiva Oficial (15 Diapositivas) e Infografía */}
+      <div className="bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-950 rounded-2xl shadow-xl border border-emerald-900/50 p-5 sm:p-7 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-2 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">📊</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/10 px-2.5 py-0.5 rounded-full border border-emerald-400/30">
+                15 Diapositivas Ejecutivas
+              </span>
+              <span className="text-xs font-semibold text-cyan-300 bg-cyan-500/20 px-2.5 py-0.5 rounded-full border border-cyan-400/30">
+                El Motor Tecnológico
+              </span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              SIGEDIVO: El Motor Tecnológico para el Disco Volador
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Presentación ejecutiva de 15 láminas que desglosa los 3 pilares de implementación, arquitectura multi-equipo,
+              mesa técnica 1-touch, radar de atletas, módulo de tesorería, matriz RBAC y certificación con 100% de éxito en producción.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 shrink-0">
+            <a
+              href="/presentacion.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto px-4 py-2.5 bg-white/10 hover:bg-white/20 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/20 shadow transition flex items-center justify-center gap-2"
+            >
+              <span>🖥️ Ver Diapositivas Online</span>
+            </a>
+            <a
+              href="/SIGEDIVO_Presentacion_Ejecutiva_2026.pdf"
+              download="SIGEDIVO_Presentacion_Ejecutiva_2026.pdf"
+              className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-lg transition flex items-center justify-center gap-2"
+            >
+              <span>📥 Descargar PDF (15 Láminas)</span>
+            </a>
+            <a
+              href="/SIGEDIVO__Gestión_de_Disco_Volador.png"
+              download="SIGEDIVO__Gestión_de_Disco_Volador.png"
+              className="w-full sm:w-auto px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs sm:text-sm rounded-xl border border-cyan-500/30 shadow transition flex items-center justify-center gap-2"
+            >
+              <span>🖼️ Infografía PNG</span>
+            </a>
           </div>
         </div>
       </div>

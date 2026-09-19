@@ -71,6 +71,7 @@ import annotationsRouter from './routes/annotations.js';
 import newsRouter from './routes/news.js';
 import { teamsRouter } from './routes/teams.js';
 import { feedbackRouter } from './routes/feedback.js';
+import { maintenanceRouter } from './routes/maintenance.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -181,6 +182,9 @@ app.use('/api/auth', authRouter);
 
 // Gestión de Usuarios y Permisos RBAC (Panel Super Admin)
 app.use('/api/users', usersRouter);
+
+// Mantenimiento y Puesta en Marcha (Limpieza de datos de prueba / Seeder)
+app.use('/api/admin/maintenance', maintenanceRouter);
 
 // Pista de Auditoría Inmutable (Audit Trail)
 app.use('/api/audit', auditRouter);

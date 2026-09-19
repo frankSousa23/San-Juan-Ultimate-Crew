@@ -13,8 +13,7 @@ Para facilitar la evaluación, el sistema cuenta con:
 Al ejecutar el seeder (`npm run prisma:seed`), el sistema se inicializa con el siguiente escenario pre-configurado:
 
 ### Roles y Usuarios
-- **Super Administrador:** `frankalfonso1988@gmail.com` (Acceso total)
-- **Invitado / Demo:** `guest@sigedivo.com` (Acceso de demostración)
+- **Super Administrador:** `frankalfonso1988@gmail.com` (Acceso total y configuración)
 - **Capitanes:** `capitan1@sigedivo.com` (María) y `capitan2@sigedivo.com` (Juan)
 - **Coaches / Entrenadores:** `coach1@sigedivo.com` (Pedro) y `coach2@sigedivo.com` (Luis)
 - **Anotadores Oficiales:** `anotador1@sigedivo.com` (Mesa Técnica)
@@ -86,6 +85,13 @@ Sigue estos pasos dentro de la plataforma para validar que todas las reglas de n
 1. Ve a **Pizarra Táctica** y visualiza las formaciones oficiales (*Vertical Stack*, *Horizontal Stack*, *Defensa Zona Cup*).
 2. Ve a **Recursos y Documentación** (`/recursos`).
 3. **Acción:** Haz clic en **"Descargar Manual Maestro en PDF"** y en las guías técnicas individuales (Reglas WFDF, Rúbrica SOTG, Señales de Mano). Verifica que el PDF generado se descargue con diseño limpio y sin errores.
+
+### Fase H: Limpieza a Cero y Puesta en Marcha Oficial (Clean Slate)
+1. Ingresa como **Administrador** (`frankalfonso1988@gmail.com`).
+2. Dirígete a **Administración de Usuarios** (`/admin/usuarios`) o **Monitoreo** (`/admin/monitoring`).
+3. En la tarjeta de **Puesta en Marcha**, pulsa **"Limpiar Datos y Empezar de Cero"** (o ejecuta `npm run db:clean`).
+4. **Validación:** Comprueba que la base de datos vacía los atletas de prueba, eventos y transacciones, manteniendo al Administrador y las cuentas a saldo cero ($0.00), lista para la carga oficial.
+5. Puedes pulsar **"Recargar Datos de Muestra"** en cualquier momento para volver a poblar datos de prueba.
 
 ---
 

@@ -409,7 +409,7 @@ export function generateSystemManualPdf(): jsPDF {
   doc.setTextColor(20, 83, 45)
   const guestLines = [
     '• Sistema Listo para Producción: Diseñado para entrar en operación directa en clubes y asociaciones.',
-    '  Sin modos sandbox ni limitaciones de prueba: el uso real del sistema nutre la base de datos oficial.',
+    '  Despliegue autónomo: el uso del sistema nutre la base de datos oficial con datos limpios y trazables.',
     '• Modo Caimanera (Partidos Informales / Mixtos): Permite incorporar atletas de práctica o refuerzos temporales.',
     '  Cuando el jugador se registra formalmente, la mesa técnica puede fusionar atómicamente sus estadísticas',
     '  acumuladas en partidos informales directamente a su ficha de atleta oficial.',

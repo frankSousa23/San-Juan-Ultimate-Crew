@@ -26,7 +26,9 @@
     "dev:api": "npm --workspace apps/api run dev",
     "dev:web": "npm --workspace apps/web run dev",
     "prisma:generate": "npm --workspace apps/api run prisma:generate",
-    "prisma:seed": "npm --workspace apps/api run prisma:seed"
+    "prisma:seed": "npm --workspace apps/api run prisma:seed",
+    "db:seed": "npm --workspace apps/api run prisma:seed",
+    "db:clean": "npm --workspace apps/api run prisma:clean"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",

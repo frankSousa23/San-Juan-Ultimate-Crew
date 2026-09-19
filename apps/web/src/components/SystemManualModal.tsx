@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function SystemManualModal({ isOpen, onClose }: Props) {
-  const [activeTab, setActiveTab] = useState<'roles' | 'modules' | 'tactics' | 'flow' | 'license' | 'guest' | 'faq'>('roles')
+  const [activeTab, setActiveTab] = useState<'roles' | 'modules' | 'tactics' | 'flow' | 'license' | 'onboarding' | 'faq'>('roles')
   const [isDownloading, setIsDownloading] = useState(false)
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -133,14 +133,14 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
             <span>📜</span> Licencia & Normativa
           </button>
           <button
-            onClick={() => setActiveTab('guest')}
+            onClick={() => setActiveTab('onboarding')}
             className={`shrink-0 px-3.5 py-2 text-xs sm:text-sm font-black rounded-xl transition-all duration-150 whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
-              activeTab === 'guest'
+              activeTab === 'onboarding'
                 ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-600/30'
                 : 'text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700'
             }`}
           >
-            <span>🌟</span> Modo Invitado (Guest)
+            <span>🚀</span> Puesta en Marcha y Datos
           </button>
           <button
             onClick={() => setActiveTab('faq')}
@@ -204,10 +204,10 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
                     <div className="text-[10px] text-teal-600 dark:text-teal-300 mt-1 bg-white dark:bg-slate-900 p-1 rounded border border-teal-200 dark:border-teal-800/80">Finanzas, Marcador en Vivo, SOTG</div>
                   </div>
                   <div className="p-3 bg-sky-50 dark:bg-sky-950/40 border-2 border-sky-300 dark:border-sky-800/80 rounded-xl">
-                    <div className="text-lg">🏃 🌟</div>
-                    <div className="font-black text-xs text-sky-900 dark:text-sky-200">PLANTEL & DEMO</div>
-                    <div className="text-[11px] text-sky-700 dark:text-sky-300 font-bold mt-1">Jugador • Invitado</div>
-                    <div className="text-[10px] text-sky-600 dark:text-sky-300 mt-1 bg-white dark:bg-slate-900 p-1 rounded border border-sky-200 dark:border-sky-800/80">Convocatorias, Playbook, Muestra</div>
+                    <div className="text-lg">🏃 🤝</div>
+                    <div className="font-black text-xs text-sky-900 dark:text-sky-200">PLANTEL & ATLETAS</div>
+                    <div className="text-[11px] text-sky-700 dark:text-sky-300 font-bold mt-1">Jugador • Refuerzo</div>
+                    <div className="text-[10px] text-sky-600 dark:text-sky-300 mt-1 bg-white dark:bg-slate-900 p-1 rounded border border-sky-200 dark:border-sky-800/80">Convocatorias, Playbook, Perfil</div>
                   </div>
                 </div>
               </div>
@@ -683,41 +683,45 @@ export default function SystemManualModal({ isOpen, onClose }: Props) {
             </div>
           )}
 
-          {/* TAB: GUEST MODE */}
-          {activeTab === 'guest' && (
+          {/* TAB: ONBOARDING & DATA MANAGEMENT */}
+          {activeTab === 'onboarding' && (
             <div className="space-y-6 animate-in fade-in duration-150">
               <div className="bg-gradient-to-r from-emerald-900 to-teal-950 rounded-2xl p-5 sm:p-6 text-white shadow-md">
                 <h3 className="font-black text-xl sm:text-2xl text-white mb-2 flex items-center gap-2">
-                  <span>🌟</span> Modo Invitado (Guest Role) / Demo Pública
+                  <span>🚀</span> Puesta en Marcha y Gestión de Datos Iniciales
                 </h3>
                 <p className="text-xs sm:text-sm text-emerald-100 max-w-3xl leading-relaxed">
-                  Permite a cualquier aficionado, directivo o deportista explorar la plataforma sin alterar estadísticas oficiales.
+                  SIGEDIVO está diseñado para que cualquier persona u organización deportiva pueda descargar, desplegar y comprobar el flujo completo de información de manera inmediata.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-5 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800/70 bg-white dark:bg-slate-800/90 shadow-sm space-y-2">
                   <h4 className="font-black text-emerald-900 dark:text-emerald-300 text-sm flex items-center gap-2">
-                    <span>✅</span> Funciones Habilitadas:
+                    <span>🌱</span> 1. Exploración con Datos Sencillos de Prueba:
                   </h4>
-                  <ul className="text-xs text-slate-700 dark:text-slate-300 space-y-1.5 pl-4 list-disc">
-                    <li>Exploración del <strong>Roster de Jugadores</strong> y dorsales.</li>
-                    <li>Consulta del <strong>Calendario de Eventos</strong> y torneos.</li>
-                    <li>Estadísticas globales de goles, asistencias y defensas.</li>
-                    <li>Visualización del <strong>Playbook Táctico</strong> de jugadas.</li>
-                    <li>Descarga de este <strong>Manual Oficial en PDF</strong>.</li>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                    Al levantar la plataforma, se cargan atletas de muestra, eventos y movimientos de tesorería para que el equipo directivo pueda explorar los marcadores en vivo, el libro contable y las estadísticas antes de comenzar.
+                  </p>
+                  <ul className="text-xs text-slate-700 dark:text-slate-300 space-y-1.5 pl-4 list-disc pt-1">
+                    <li>Visualiza el roster por divisiones (Open, Mixto, Femenino).</li>
+                    <li>Prueba la mesa técnica en vivo y las hojas de anotaciones.</li>
+                    <li>Verifica los balances contables por categoría.</li>
                   </ul>
                 </div>
 
                 <div className="p-5 rounded-2xl border-2 border-rose-200 dark:border-rose-800/70 bg-white dark:bg-slate-800/90 shadow-sm space-y-2">
                   <h4 className="font-black text-rose-900 dark:text-rose-300 text-sm flex items-center gap-2">
-                    <span>🚫</span> Restricciones por Seguridad:
+                    <span>🧹</span> 2. Limpieza a Cero y Comienzo Oficial:
                   </h4>
-                  <ul className="text-xs text-slate-700 dark:text-slate-300 space-y-1.5 pl-4 list-disc">
-                    <li>No puede modificar marcadores ni anotaciones en vivo.</li>
-                    <li>No tiene acceso al módulo contable de <strong>Finanzas</strong>.</li>
-                    <li>No puede editar fichas médicas ni historiales de lesiones.</li>
-                    <li>No puede administrar usuarios ni ver logs de auditoría.</li>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                    Cuando tu club esté listo para producción, el Administrador puede ingresar a <strong>Admin Usuarios</strong> o <strong>Monitoreo</strong> y presionar <strong>"Limpiar Datos y Empezar de Cero"</strong>:
+                  </p>
+                  <ul className="text-xs text-slate-700 dark:text-slate-300 space-y-1.5 pl-4 list-disc pt-1">
+                    <li>Elimina todos los atletas, eventos y transacciones de prueba.</li>
+                    <li>Conserva intacto el usuario Admin y la configuración del club.</li>
+                    <li>Deja el sistema en blanco y las cuentas en $0.00 para la carga real.</li>
+                    <li>Permite recargar los datos de prueba en cualquier momento.</li>
                   </ul>
                 </div>
               </div>

@@ -221,15 +221,113 @@ class InMemoryDB {
     ];
     this.nextId['team'] = 5;
 
-    // 4. Players (Roster por Equipo + Agentes Libres / Sin Equipo)
-    this.players = [];
-    this.nextId['player'] = 1;
+    // 4. Players (Roster Oficial de Muestra para Exploración e Integración)
+    this.players = [
+      {
+        id: 1,
+        name: 'Franco Sousa',
+        number: 1,
+        position: 'HANDLER',
+        status: 'ACTIVE',
+        heightCm: 182,
+        experience: 'Capitán • Especialista en pase largo y pivote ofensivo',
+        teamId: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 2,
+        name: 'Carlos Mendoza',
+        number: 2,
+        position: 'CUTTER',
+        status: 'ACTIVE',
+        heightCm: 185,
+        experience: 'Capitán Ofensivo • Cortes profundos a la endzone',
+        teamId: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 3,
+        name: 'Eduardo Silva',
+        number: 3,
+        position: 'HANDLER',
+        status: 'ACTIVE',
+        heightCm: 178,
+        experience: 'Coach Táctico • Manejo de ritmo y desahogo de stall',
+        teamId: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 4,
+        name: 'Alejandro Ramos',
+        number: 4,
+        position: 'HANDLER',
+        status: 'ACTIVE',
+        heightCm: 175,
+        experience: 'Armador Línea O • Precisión en lanzamientos invertidos',
+        teamId: 2,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 5,
+        name: 'Gabriel Torres',
+        number: 5,
+        position: 'CUTTER',
+        status: 'ACTIVE',
+        heightCm: 188,
+        experience: 'Cutter Titular • Gran salto vertical y recepción aérea',
+        teamId: 2,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 6,
+        name: 'Valentina Rojas',
+        number: 10,
+        position: 'HANDLER',
+        status: 'ACTIVE',
+        heightCm: 168,
+        experience: 'Capitana Femenina • Visión de campo y rompimiento de marcas',
+        teamId: 3,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 7,
+        name: 'Camila Pineda',
+        number: 11,
+        position: 'CUTTER',
+        status: 'ACTIVE',
+        heightCm: 172,
+        experience: 'Cutter defensiva • Presión en media cancha',
+        teamId: 3,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 8,
+        name: 'Mariana López',
+        number: 14,
+        position: 'CUTTER',
+        status: 'ACTIVE',
+        heightCm: 165,
+        experience: 'Velocidad y resistencia • Cortes explosivos al break',
+        teamId: 4,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+    this.nextId['player'] = 9;
 
-    // 5. Users (Admin, Capitanes, Coaches, Mesa Técnica y Atletas)
+    // 5. Users (Admin y Atletas con roles oficiales)
     const coreUsers = [
-      { id: 1, email: 'frankalfonso1988@gmail.com', name: 'Frank Sousa (Admin)', role: 'admin', playerId: null, teamId: null },
-      { id: 2, email: 'guest@sigedivo.com', name: 'Usuario Prueba', role: 'guest', playerId: null, teamId: null },
-      { id: 3, email: 'player@sigedivo.com', name: 'Atleta Oficial', role: 'player', playerId: null, teamId: 1 }
+      { id: 1, email: 'frankalfonso1988@gmail.com', name: 'Frank Sousa (Admin)', role: 'admin', playerId: 1, teamId: 1 },
+      { id: 2, email: 'carlos.mendoza@sigedivo.com', name: 'Carlos Mendoza', role: 'captain', playerId: 2, teamId: 1 },
+      { id: 3, email: 'eduardo.silva@sigedivo.com', name: 'Eduardo Silva', role: 'coach', playerId: 3, teamId: 1 },
+      { id: 4, email: 'atleta@sigedivo.com', name: 'Atleta Oficial', role: 'player', playerId: 4, teamId: 2 }
     ];
 
     this.users = coreUsers.map((u) => ({
@@ -243,7 +341,7 @@ class InMemoryDB {
       createdAt: new Date(),
       updatedAt: new Date(),
     }));
-    this.nextId['user'] = 4;
+    this.nextId['user'] = 5;
 
     coreUsers.forEach((u) => {
       this.userRoles.push({ userId: u.id, roleId: roleMap[u.role] });
@@ -284,45 +382,175 @@ class InMemoryDB {
     this.rivalPlayers = [];
     this.nextId['rivalPlayer'] = 1;
 
-    // 7. Eventos (Torneo Mixto de Fin de Mes con Fixtures + Evento Completado Previo)
-    const tournamentDate = new Date('2026-08-29T08:00:00Z');
-    const tournamentEndDate = new Date('2026-08-30T19:00:00Z');
+    // 7. Eventos de Muestra (1 Partido Completado con Mesa Técnica + 1 Entrenamiento Próximo)
+    const nowTime = Date.now();
+    const pastDate = new Date(nowTime - 86400000 * 2);
+    const futureDate = new Date(nowTime + 86400000 * 2);
 
-    this.events = [];
-    this.nextId['event'] = 1;
+    this.events = [
+      {
+        id: 1,
+        title: 'Amistoso Preparatorio vs Comunidad El Oso',
+        type: 'MATCH',
+        status: 'COMPLETED',
+        location: 'Polideportivo Municipal - Cancha 1',
+        startsAt: pastDate,
+        endsAt: new Date(pastDate.getTime() + 7200000),
+        teamId: 1,
+        awayTeamId: 2,
+        officialAnnotatorId: 1,
+        description: 'Partido preparatorio de pretemporada con registro completo de mesa técnica.',
+        isAnnotatorLocked: true,
+        matchCategory: 'GROUP_STAGE',
+        createdAt: pastDate,
+        updatedAt: pastDate,
+      },
+      {
+        id: 2,
+        title: 'Entrenamiento Táctico de Manejo y Cortes (Stack Vertical)',
+        type: 'TRAINING',
+        status: 'UPCOMING',
+        location: 'Cancha Central Universitaria',
+        startsAt: futureDate,
+        endsAt: new Date(futureDate.getTime() + 7200000),
+        teamId: 1,
+        officialAnnotatorId: null,
+        description: 'Práctica intensiva de continuaciones ofensivas y defensa de zona cup 3-3-1.',
+        isAnnotatorLocked: false,
+        matchCategory: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+    this.nextId['event'] = 3;
 
     // 8. Event Participants & Attendance (Nóminas, Refuerzos y Mesa Técnica)
-    this.eventParticipants = [];
-    this.nextId['eventParticipant'] = 24;
+    this.eventParticipants = [
+      { eventId: 1, playerId: 1, role: 'Capitán', status: 'confirmed', lineType: 'O-Line', teamSide: 'HOME', isRefuerzo: false },
+      { eventId: 1, playerId: 2, role: 'Titular', status: 'confirmed', lineType: 'O-Line', teamSide: 'HOME', isRefuerzo: false },
+      { eventId: 1, playerId: 3, role: 'Titular', status: 'confirmed', lineType: 'D-Line', teamSide: 'HOME', isRefuerzo: false },
+      { eventId: 2, playerId: 1, role: 'Capitán', status: 'confirmed', lineType: 'O-Line', teamSide: 'HOME', isRefuerzo: false },
+      { eventId: 2, playerId: 2, role: 'Titular', status: 'confirmed', lineType: 'O-Line', teamSide: 'HOME', isRefuerzo: false },
+      { eventId: 2, playerId: 3, role: 'Titular', status: 'confirmed', lineType: 'D-Line', teamSide: 'HOME', isRefuerzo: false },
+    ];
+    this.nextId['eventParticipant'] = 7;
 
     // Asistencias registradas
-    this.attendances = this.players.map((p, idx) => ({
-      id: idx + 1,
-      eventId: 1,
-      playerId: p.id,
-      status: 'present',
-      confirmedAt: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }));
-    this.nextId['attendance'] = this.players.length + 1;
+    this.attendances = [
+      { id: 1, eventId: 1, playerId: 1, status: 'present', confirmedAt: pastDate, createdAt: pastDate, updatedAt: pastDate },
+      { id: 2, eventId: 1, playerId: 2, status: 'present', confirmedAt: pastDate, createdAt: pastDate, updatedAt: pastDate },
+      { id: 3, eventId: 1, playerId: 3, status: 'present', confirmedAt: pastDate, createdAt: pastDate, updatedAt: pastDate },
+      { id: 4, eventId: 2, playerId: 1, status: 'present', confirmedAt: new Date(), createdAt: new Date(), updatedAt: new Date() },
+      { id: 5, eventId: 2, playerId: 2, status: 'present', confirmedAt: new Date(), createdAt: new Date(), updatedAt: new Date() },
+      { id: 6, eventId: 2, playerId: 3, status: 'tentative', confirmedAt: new Date(), createdAt: new Date(), updatedAt: new Date() },
+    ];
+    this.nextId['attendance'] = 7;
 
-    // 9. Event Annotations (Play-by-play del Evento Completado #6)
-    this.eventAnnotations = [];
-    this.nextId['annotation'] = 11;
+    // 9. Event Annotations (Play-by-play del Evento Completado #1: Marcador 5 - 3)
+    this.eventAnnotations = [
+      {
+        id: 1,
+        eventId: 1,
+        type: 'GOAL',
+        playerId: 1,
+        assistPlayerId: 2,
+        pointNumber: 1,
+        teamScore: 1,
+        opponentScore: 0,
+        notes: 'Pase largo perfecto a la esquina izquierda de la endzone',
+        createdAt: new Date(pastDate.getTime() + 600000),
+      },
+      {
+        id: 2,
+        eventId: 1,
+        type: 'GOAL',
+        playerId: 2,
+        assistPlayerId: 3,
+        pointNumber: 2,
+        teamScore: 2,
+        opponentScore: 0,
+        notes: 'Corte frontal explosivo y recepción limpia',
+        createdAt: new Date(pastDate.getTime() + 1200000),
+      },
+      {
+        id: 3,
+        eventId: 1,
+        type: 'DEFENSE',
+        playerId: 2,
+        pointNumber: 3,
+        teamScore: 2,
+        opponentScore: 1,
+        notes: 'Bloqueo aéreo decisivo en carril central',
+        createdAt: new Date(pastDate.getTime() + 1800000),
+      },
+      {
+        id: 4,
+        eventId: 1,
+        type: 'GOAL',
+        playerId: 3,
+        assistPlayerId: 1,
+        pointNumber: 3,
+        teamScore: 3,
+        opponentScore: 1,
+        notes: 'Transición rápida tras la recuperación del disco',
+        createdAt: new Date(pastDate.getTime() + 2100000),
+      },
+      {
+        id: 5,
+        eventId: 1,
+        type: 'GOAL',
+        playerId: 1,
+        assistPlayerId: 3,
+        pointNumber: 4,
+        teamScore: 4,
+        opponentScore: 2,
+        notes: 'Tiro de revés con comba sobre la marca contraria',
+        createdAt: new Date(pastDate.getTime() + 2700000),
+      },
+      {
+        id: 6,
+        eventId: 1,
+        type: 'GOAL',
+        playerId: 2,
+        assistPlayerId: 1,
+        pointNumber: 5,
+        teamScore: 5,
+        opponentScore: 3,
+        notes: 'Punto decisivo para sellar la victoria',
+        createdAt: new Date(pastDate.getTime() + 3300000),
+      },
+    ];
+    this.nextId['annotation'] = 7;
 
     // 10. PlayerMatchStats
-    this.playerMatchStats = [];
-    this.nextId['playerMatchStats'] = 9;
+    this.playerMatchStats = [
+      { id: 1, eventId: 1, playerId: 1, goals: 2, assists: 2, defenses: 0, turnovers: 1, pointsPlayed: 5 },
+      { id: 2, eventId: 1, playerId: 2, goals: 2, assists: 1, defenses: 1, turnovers: 0, pointsPlayed: 5 },
+      { id: 3, eventId: 1, playerId: 3, goals: 1, assists: 2, defenses: 0, turnovers: 1, pointsPlayed: 5 },
+    ];
+    this.nextId['playerMatchStats'] = 4;
 
     // 11. Spirit Scores
-    this.spiritScores = [];
-    this.nextId['spiritScore'] = 1;
+    this.spiritScores = [
+      {
+        id: 1,
+        eventId: 1,
+        evaluatorTeamId: null,
+        rulesKnowledge: 4,
+        foulsAndContact: 3,
+        fairMindedness: 4,
+        positiveAttitude: 4,
+        communication: 4,
+        comment: 'Excelente actitud deportiva y fluidez en resolución de llamadas.',
+        createdAt: pastDate,
+      },
+    ];
+    this.nextId['spiritScore'] = 2;
 
     // 11. Finanzas: Cuentas, Categorías y Transacciones de Ejemplo Realista
     this.accounts = [
-      { id: 1, name: 'Caja Chica (Efectivo / USD)', type: 'CASH', balanceCents: 0, description: 'Fondos en efectivo para hidratación, hielo y gastos menores de cancha.', createdAt: new Date(), updatedAt: new Date() },
-      { id: 2, name: 'Cuenta Bancaria / Pago Móvil / Zelle', type: 'BANK', balanceCents: 0, description: 'Cuenta bancaria para cuotas mensuales de atletas, inscripciones y patrocinios.', createdAt: new Date(), updatedAt: new Date() },
+      { id: 1, name: 'Caja Chica (Efectivo / USD)', type: 'CASH', balanceCents: 5500, description: 'Fondos en efectivo para hidratación, hielo y gastos menores de cancha.', createdAt: new Date(), updatedAt: new Date() },
+      { id: 2, name: 'Cuenta Bancaria / Pago Móvil / Zelle', type: 'BANK', balanceCents: 20000, description: 'Cuenta bancaria para cuotas mensuales de atletas, inscripciones y patrocinios.', createdAt: new Date(), updatedAt: new Date() },
     ];
     this.nextId['account'] = 3;
 
@@ -336,8 +564,53 @@ class InMemoryDB {
     ];
     this.nextId['category'] = 7;
 
-    this.transactions = [];
-    this.nextId['transaction'] = 1;
+    this.transactions = [
+      {
+        id: 1,
+        accountId: 2,
+        categoryId: 1,
+        type: 'INCOME',
+        amountCents: 12000,
+        description: 'Cuotas de membresía mensual atletas (Septiembre)',
+        date: new Date(nowTime - 86400000 * 5),
+        createdAt: new Date(nowTime - 86400000 * 5),
+        updatedAt: new Date(nowTime - 86400000 * 5),
+      },
+      {
+        id: 2,
+        accountId: 1,
+        categoryId: 4,
+        type: 'EXPENSE',
+        amountCents: 6500,
+        description: 'Adquisición de discos oficiales Discraft 175g Ultra-Star',
+        date: new Date(nowTime - 86400000 * 3),
+        createdAt: new Date(nowTime - 86400000 * 3),
+        updatedAt: new Date(nowTime - 86400000 * 3),
+      },
+      {
+        id: 3,
+        accountId: 2,
+        categoryId: 3,
+        type: 'INCOME',
+        amountCents: 8000,
+        description: 'Aporte de patrocinador local para hidratación de torneo',
+        date: new Date(nowTime - 86400000 * 1),
+        createdAt: new Date(nowTime - 86400000 * 1),
+        updatedAt: new Date(nowTime - 86400000 * 1),
+      },
+      {
+        id: 4,
+        accountId: 1,
+        categoryId: 2,
+        type: 'INCOME',
+        amountCents: 12000,
+        description: 'Venta de discos de entrenamiento a nuevos aspirantes',
+        date: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+    ];
+    this.nextId['transaction'] = 5;
 
     // 12. Jugadas Tácticas (Playbook) - Ultimate Frisbee / Disco Volador
     this.plays = [

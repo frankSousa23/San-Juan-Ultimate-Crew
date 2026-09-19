@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { http, getAuthToken } from '../lib/api'
 import { useApi } from '../hooks/useApi'
 import { useToast } from '../hooks/useToast'
+import InitialDataManagementCard from '../components/InitialDataManagementCard'
 
 interface AuditLog {
   id: number
@@ -112,6 +113,8 @@ export default function SystemMonitoring() {
                 Todos los servicios y endpoints se encuentran verificados y sincronizados.
               </p>
             </div>
+
+            <InitialDataManagementCard />
           </div>
         )
       case 'performance':

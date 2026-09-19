@@ -75,7 +75,7 @@ export const Landing: React.FC = () => {
     },
     {
       q: '¿Cómo integro a mi equipo o asociación deportiva en producción?',
-      a: 'SIGEDIVO está 100% listo para producción. El Administrador del club o asociación inicia sesión con su cuenta oficial o registra la organización desde la plataforma. A partir de allí, el cuerpo técnico configura las divisiones (Open, Femenino, Mixto), da de alta a los atletas del roster y comienza a gestionar convocatorias, partidos oficiales, actas en PDF y finanzas directamente en el sistema real sin intermediarios ni modos sandbox.',
+      a: 'SIGEDIVO está 100% listo para producción. El Administrador del club o asociación inicia sesión con su cuenta oficial o registra la organización desde la plataforma. A partir de allí, el cuerpo técnico configura las divisiones (Open, Femenino, Mixto), da de alta a los atletas del roster y comienza a gestionar convocatorias, partidos oficiales, actas en PDF y finanzas directamente en el sistema real para su organización.',
     },
     {
       q: '¿Puedo registrar mi propio equipo o club?',
@@ -96,7 +96,7 @@ export const Landing: React.FC = () => {
       {/* Top Banner / Announcement */}
       <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white px-4 py-2 text-xs sm:text-sm text-center font-medium shadow-inner flex items-center justify-center gap-2 flex-wrap">
         <span className="bg-emerald-500 text-white px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider">
-          Producción v1.2.0 Oficial
+          Producción v1.4.0 Oficial
         </span>
         <span>Plataforma Oficial para Ultimate Frisbee y Deportes de Disco Volador</span>
         <span className="hidden md:inline text-slate-400">•</span>

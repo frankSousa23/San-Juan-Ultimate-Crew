@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useToast } from '../hooks/useToast'
 import { useAuth } from '../contexts/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
+import InitialDataManagementCard from '../components/InitialDataManagementCard'
 import { http, adminUsersApi, usersApi } from '../lib/api'
 
 interface UserItem { 
@@ -464,6 +465,9 @@ export default function AdminUsers() {
           </div>
         </div>
       )}
+
+      {/* Initial Data Management / Puesta en Marcha */}
+      <InitialDataManagementCard onDataChanged={loadData} />
 
       {/* Pending Users Section */}
       <div className="bg-white rounded-lg shadow overflow-hidden">

@@ -11,7 +11,7 @@
  * 1. Verificación Inicial de Sesión (on mount):
  *    - Recupera el token guardado en `localStorage` y llama a `/api/auth/me` para
  *      reconstruir el perfil del usuario, roles y permisos activos.
- * 2. Inicio de Sesión Estándar y Modo Invitado (1-Clic):
+ * 2. Inicio de Sesión Estándar y Gestión de Token:
  *    - Guarda el token JWT, actualiza el estado reactivo `user` y muestra notificaciones toast.
  * 3. Matriz de Permisos y Roles (RBAC):
  *    - Helper `hasRole(roleName)`: Comprueba si el usuario tiene asignado un rol específico.

@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
 import bcrypt from 'bcryptjs'
+import { seedSampleData } from '../src/lib/sampleDataService.js'
 
 const connectionString = process.env.DATABASE_URL || 'postgresql://sju:sju@localhost:5433/sju_dev?schema=public'
 const pool = new pg.Pool({ connectionString })
@@ -161,7 +162,10 @@ async function main() {
     }
   }
 
-  console.log('✅ Limpieza y seeder completado con éxito!')
+  console.log('📦 Sembrando datos de prueba iniciales para demostración e integración...')
+  await seedSampleData(prisma)
+
+  console.log('✅ Seeder inicial completado con éxito! (Para limpiar y empezar de cero ejecute npm run db:clean)')
 }
 
 main()
